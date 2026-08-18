@@ -7,8 +7,10 @@ import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJ
 import { posprzatajLimity } from "@/platform/rateLimit";
 import { retencjaJesliCzas } from "@/platform/retention/harmonogram";
 import { wZakresieOperacji } from "@/platform/sharing/cache";
+import { wKontekscieLogu } from "@/platform/observability/log";
+import { flushMetryk, zmierzOperacje } from "@/platform/observability/metryki";
 import type { PolitykaRetencji } from "@/platform/retention";
-import { reportServerError } from "@/lib/observability/report";
+import { reportServerError } from "@/platform/observability/report";
 import type { JobHandler } from "@/platform/jobs/types";
 
 /**
@@ -52,7 +54,15 @@ const g = globalThis as unknown as { __omniaJobWorker?: { timer: NodeJS.Timeout 
  * i kończy się razem z zadaniem, więc nie ma czego unieważniać.
  */
 async function processOne(job: JobRecord): Promise<void> {
-  return wZakresieOperacji(() => processOneWewnatrzZakresu(job));
+  // 086 (zadanie 31): zadanie w tle jest dla logów tym, czym żądanie dla trasy — własnym
+  // kontekstem. `requestId` to identyfikator zadania: pozwala zebrać wszystkie linie jednego
+  // przebiegu, także te wypisane głęboko w handlerze, który o kolejce nic nie wie.
+  return wKontekscieLogu(
+    { requestId: job.id, module: job.type.split(".")[0], userId: job.ownerId ?? undefined },
+    // 087 (zadanie 32): zadanie w tle jest operacją modułu — mierzymy je tam, gdzie jest jeden
+    // punkt przejścia dla wszystkich handlerów.
+    () => zmierzOperacje(job.type.split(".")[0], job.type, () => wZakresieOperacji(() => processOneWewnatrzZakresu(job))),
+  );
 }
 
 async function processOneWewnatrzZakresu(job: JobRecord): Promise<void> {
@@ -111,6 +121,10 @@ export function startJobWorker(): void {
     } finally {
       running = false;
     }
+    // 087 (zadanie 32): dosypanie metryk zebranych w pamięci. Jedzie tyknięciem workera, a nie
+    // własnym interwałem, bo to ten sam warunek: proces, który obsługuje zadania, żyje. Poza
+    // `finally`, żeby błąd zapisu metryki nie wyglądał jak błąd przetwarzania zadań.
+    await flushMetryk().catch((e) => reportServerError(e, { kind: "metricsFlush" }));
   };
 
   g.__omniaJobWorker.timer = setInterval(loop, TICK_MS);

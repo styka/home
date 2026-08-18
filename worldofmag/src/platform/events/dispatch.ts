@@ -7,7 +7,7 @@
  * którego ta reguła zabrania.
  */
 
-import { reportServerError } from "@/lib/observability/report";
+import { reportServerError } from "@/platform/observability/report";
 import type { DomainEventRecord, EventSubscriber } from "./subscriber";
 import { przetworzPartie } from "./queue";
 import { rozglos } from "./bus";

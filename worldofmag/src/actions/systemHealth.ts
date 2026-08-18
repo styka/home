@@ -7,6 +7,8 @@ import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/platf
 import { isSecretConfigured } from "@/lib/crypto/secrets";
 import { summarizeExplainPlan, REPRESENTATIVE_QUERIES, type ScanType } from "@/lib/health/queryDiag";
 import { ileSluchaczy } from "@/platform/events/bus";
+import { metrykiPerModul, type PodsumowanieModulu } from "@/platform/observability/metryki";
+import { getDailyCostUsd } from "@/platform/ai/usage";
 
 async function requireAdmin() {
   const session = await auth();
@@ -45,6 +47,21 @@ export type SystemHealth = {
    * odpytywanie awaryjne w `DataFreshness`.
    */
   realtime: { listeners: number };
+  /**
+   * 087 (zadanie 32) — METRYKI OPERACYJNE z rozdz. 11.7.
+   *
+   * `modules` niesie czas (percentyl 95, nie średnią — średnia mówi „czy większości jest dobrze",
+   * p95 mówi „czy komuś jest wolno"), błędy i KONFLIKTY EDYCJI per moduł. `queue` odpowiada na
+   * pytanie „czy worker nadąża", a `events` — „czy outbox nie zalega". Jedno i drugie widać dopiero
+   * wtedy, gdy się je pokaże: zaległa kolejka nie zgłasza się sama.
+   */
+  metrics: {
+    modules: PodsumowanieModulu[];
+    queue: { pending: number; running: number; oldestPendingMin: number | null };
+    events: { undelivered: number; oldestUndeliveredMin: number | null };
+    /** Koszt AI za dobę i liczba kont, które go wygenerowały (rozdz. 11.7, „koszt per doba i per użytkownik"). */
+    ai: { dailyCostUsd: number; activeUsers: number };
+  };
 };
 
 export async function getSystemHealth(): Promise<SystemHealth> {
@@ -144,6 +161,27 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     }
   }
 
+  // 087 (zadanie 32): metryki operacyjne. Kolejka i outbox liczone wprost z tabel — nie ma sensu
+  // dublować ich w agregacie, skoro pytanie brzmi „ile JEST teraz", a nie „ile było".
+  const dobaTemu = new Date(Date.now() - 86_400_000);
+  const [metricModules, pending, running, najstarszeZadanie, undelivered, najstarszeZdarzenie, aiCost, aiUsers] = await Promise.all([
+    metrykiPerModul(24).catch(() => [] as PodsumowanieModulu[]),
+    prisma.job.count({ where: { status: "QUEUED" } }),
+    prisma.job.count({ where: { status: "RUNNING" } }),
+    prisma.job.findFirst({ where: { status: "QUEUED" }, orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+    prisma.domainEvent.count({ where: { deliveredAt: null } }),
+    prisma.domainEvent.findFirst({ where: { deliveredAt: null }, orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+    getDailyCostUsd(),
+    // Potrzebna jest LICZBA kont, nie ich lista — `findMany({distinct})` ściągałby wszystkie
+    // identyfikatory tylko po to, żeby je policzyć w kodzie (i rósłby razem z ruchem).
+    prisma.$queryRaw<{ n: number }[]>`
+      SELECT COUNT(DISTINCT "userId")::int AS n FROM "AiCall"
+      WHERE "createdAt" >= ${dobaTemu} AND "userId" IS NOT NULL`,
+  ]);
+  const minutOd = (d: Date | null | undefined) => (d ? Math.round((Date.now() - d.getTime()) / 60_000) : null);
+  const metricQueue = { pending, running, oldestPendingMin: minutOd(najstarszeZadanie?.createdAt) };
+  const metricEvents = { undelivered, oldestUndeliveredMin: minutOd(najstarszeZdarzenie?.createdAt) };
+
   return {
     build: {
       commit: process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "?",
@@ -164,5 +202,6 @@ export async function getSystemHealth(): Promise<SystemHealth> {
     audit: { total: auditTotal, last: auditLast?.createdAt.toISOString() ?? null },
     queryDiagnostics,
     realtime: { listeners: ileSluchaczy() },
+    metrics: { modules: metricModules, queue: metricQueue, events: metricEvents, ai: { dailyCostUsd: aiCost, activeUsers: aiUsers[0]?.n ?? 0 } },
   };
 }

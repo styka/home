@@ -11,7 +11,7 @@
  * zależnością na zapas (C-53).
  */
 
-import { reportServerError } from "@/lib/observability/report";
+import { reportServerError } from "@/platform/observability/report";
 import { obiegZdarzen } from "./dispatch";
 
 const TICK_MS = 5000;

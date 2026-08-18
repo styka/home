@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import { zanotujOperacje } from "@/platform/observability/metryki";
 
 /**
  * 062 (zadanie 15) — ZAPIS Z WARUNKIEM NA WERSJI (rozdz. 8.5.1).
@@ -85,6 +86,11 @@ export async function updateWithVersion<T extends WersjonowanyModel>(
   // Zero zmienionych wierszy ma DWIE różne przyczyny i użytkownik musi dostać właściwą.
   const biezacy = await model.findUnique({ where: { id }, select: { version: true } });
   if (!biezacy) throw new MissingRecordError(resourceType);
+  // 087 (zadanie 32): konflikt edycji jest METRYKĄ, nie tylko błędem. Rozdz. 11.7 stawia sprawę
+  // wprost: rosnąca liczba konfliktów w JEDNYM module to sygnał, że akurat tam potrzebne jest
+  // współredagowanie (rozdz. 8.6). Bez tego licznika decyzja o CRDT byłaby zgadywaniem.
+  // Moduł wyprowadzamy z typu zasobu (`tasks.task` → `tasks`) — ta sama konwencja co w nadaniach.
+  zanotujOperacje(resourceType.split(".")[0], resourceType, 0, "konflikt");
   throw new ConflictError(resourceType, id, biezacy.version);
 }
 

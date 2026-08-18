@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import { logEvent } from "@/platform/observability/log";
 import { decryptSecret } from "@/lib/crypto/secrets";
 import { parseEffort, type LlmEffort } from "@/platform/llm/effort";
 import {
@@ -140,7 +141,7 @@ export async function resolveLlmChain(op: OperationType, opts: ResolveOptions = 
     // rozgałęzia się tylko na „anthropic vs reszta", więc bez tego filtra wysłałby prompt na
     // endpoint TTS. To druga bariera obok walidacji w `setAssignment` (pas i szelki).
     if (op !== "speech" && isSpeechOnlyKind(p.kind)) {
-      console.warn(`[llm] ${op}: pomijam dostawcę ${p.label} — obsługuje wyłącznie syntezę mowy`);
+      logEvent("warn", "llm.provider.skipped", { op, provider: p.label, powod: "tylko-mowa" });
     } else {
       add({
         kind: (p.kind as ProviderKind) ?? "openai_compat",

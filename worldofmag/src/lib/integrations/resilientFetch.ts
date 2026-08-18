@@ -1,3 +1,4 @@
+import { logEvent } from "@/platform/observability/log";
 // Z-157: ujednolicona warstwa wywołań do integracji zewnętrznych — spójny timeout,
 // retry z backoffem na błędy sieci/przejściowe statusy (429/5xx) i miękka degradacja
 // (`fetchJsonSafe` zwraca null zamiast rzucać). `fetchImpl`/`sleep` są wstrzykiwalne,
@@ -59,12 +60,12 @@ export async function fetchJsonSafe<T = unknown>(url: string, opts: ResilientOpt
   try {
     const res = await resilientFetch(url, opts)
     if (!res.ok) {
-      console.warn(`[integration] ${url} → HTTP ${res.status}`)
+      logEvent("warn", "integration.http", { url, status: res.status })
       return null
     }
     return (await res.json()) as T
   } catch (e) {
-    console.warn(`[integration] ${url} → ${e instanceof Error ? e.message : "błąd"}`)
+    logEvent("warn", "integration.failed", { url, error: e })
     return null
   }
 }

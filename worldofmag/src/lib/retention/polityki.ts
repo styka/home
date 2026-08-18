@@ -65,6 +65,22 @@ const RETENCJA_PLATFORMY: PolitykaRetencji[] = [
       (await prisma.aiCall.deleteMany({ where: { createdAt: { lt: starszeNiz } } })).count,
   },
   {
+    klucz: "operation_metrics",
+    etykieta: "Metryki operacji (percentyle, błędy, konflikty)",
+    domyslneDni: 30,
+    minimumDni: 7,
+    uzasadnienie:
+      "Agregat godzinowy służy do wykrywania regresu, a nie do historii — porównuje się go z zeszłym tygodniem, nie z zeszłym rokiem.",
+    usun: async (starszeNiz) =>
+      (
+        await prisma.operationMetric.deleteMany({
+          // Kubełek to tekst `YYYY-MM-DDTHH`, więc porównanie leksykograficzne jest tu porównaniem
+          // czasu — pod warunkiem tego samego formatu po obu stronach.
+          where: { bucket: { lt: starszeNiz.toISOString().slice(0, 13) } },
+        })
+      ).count,
+  },
+  {
     klucz: "audit_log",
     etykieta: "Ślad audytowy (RBAC, konfiguracja, dostęp)",
     domyslneDni: 1826, // 5 lat (z jednym dniem przestępnym)

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { reportClientError } from "@/lib/observability/report";
+import { reportClientError } from "@/platform/observability/report";
 
 /**
  * Z-111: granica błędu segmentu (App Router). Łapie błędy renderowania/akcji w

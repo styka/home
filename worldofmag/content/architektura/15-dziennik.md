@@ -152,8 +152,8 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status |
 |---|---------|--------|
-| 31 | Logi strukturalne | ⬜ |
-| 32 | Metryki na `/admin/health` | ⬜ |
+| 31 | Logi strukturalne | ✅ | **086.** Brakowało nie formatu (JSON był od Z-096), a **kontekstu** i **ochrony przed PII**. Kontekst (`requestId`/`userId`/`workspaceId`/`module`) wchodzi raz na wejściu i dokleja się sam (`AsyncLocalStorage`, scalanie przy zagnieżdżeniu) — inaczej pola istniałyby w typie i nie w logach. Wartości przechodzą przez `oczysc`: e-maile na `[e-mail]`, obiekty spłaszczone do rozmiaru. Warstwa przeniesiona do platformy, 14 surowych `console.*` zamienionych na zdarzenia, pilnuje tego bramka **`check:logs`** |
+| 32 | Metryki na `/admin/health` | ✅ | **087.** Cztery z siedmiu metryk policzone z istniejących tabel; trzy (czas z **percentylem 95**, błędy per moduł, **konflikty edycji** per moduł) wymagały nowej tabeli `OperationMetric` — **agregat godzinowy z histogramem**, nie wiersz na operację (podwojenie zapisów) i nie średnia (p95 nie da się odtworzyć z sumy). Zliczanie w pamięci instancji, dosypywanie zbiorcze przez workera; bufor czyszczony PRZED zapisem, bo zaniżenie metryki myli mniej niż podwójne policzenie. Konflikt **nie** podbija licznika błędów. Znana granica zapisana: czas Server Action per moduł nieobjęty (Next 14 nie daje haka wokół akcji) |
 | 33 | Rozdzielenie `web` / `worker` / `cron` | ⬜ |
 
 ### Faza 7 — Wielojęzyczność
@@ -2615,3 +2615,66 @@ liczności (czerwieni przypadek dwóch zdarzeń w tej samej milisekundzie), kluc
 przestrzeni — bez tego każda mutacja w systemie unieważniałaby cache wszystkim).
 
 **Bramki:** build **exit 0**, `test:unit` **998/998** (+9), zapadka N+1 bez ruchu (11/14/10).
+
+---
+
+## 086/087 — Zadania 31 i 32: logi strukturalne i metryki operacyjne
+
+### 31 — logi: brakowało nie formatu, a kontekstu i ochrony
+
+`logEvent`/`timed` istniały od Z-096 i wypisywały JSON. Do wymagań rozdz. 11.7 brakowało dwóch
+rzeczy, bez których reszta jest ozdobą.
+
+**Kontekst.** `requestId`/`userId`/`workspaceId`/`module` musiałby podawać wołający, a helper w głębi
+modułu żądania nie zna. Efekt byłby taki, że pola istnieją w typie i nie ma ich w logach. Kontekst
+wchodzi więc raz, na wejściu (`wKontekscieLogu`, `AsyncLocalStorage` — ten sam mechanizm co zakres
+operacji z 084) i dokleja się sam. Zagnieżdżenie **scala**: trasa ustawia `requestId`, akcja dokłada
+`module`, nie gubiąc pierwszego. Wpięte tam, gdzie jest jeden punkt przejścia — w workerze zadanie
+dostaje własny kontekst z `requestId = job.id`.
+
+**Ochrona przed PII.** „Bez PII" w komentarzu to życzenie; pierwszy log z obiektem użytkownika wsadzi
+do strumienia adres e-mail. Wartości przechodzą przez `oczysc`: e-maile → `[e-mail]`, długie teksty
+przycięte, obiekty i tablice spłaszczone **do rozmiaru** — bo obiekt w logu to prawie zawsze cały
+rekord wrzucony odruchowo.
+
+Warstwa przeniesiona z `lib/observability` do `platform/observability` (zdolność przekrojowa),
+a 14 surowych `console.*` w kodzie serwerowym zamienione na zdarzenia. Pilnuje tego nowa bramka
+**`check:logs`**: jedno `console.warn` psuje więcej, niż widać — strumień przestaje być w połowie
+parsowalny i agregator nie umie odpowiedzieć na „ile błędów w module X". Bramka pomija komponenty
+klienckie (tam `console` to narzędzie przeglądarki) i testy, a filtruje **po znaczeniu**: wzorzec
+wymaga nawiasu po nazwie metody, więc `console.groq.com` w podpowiedzi dla administratora nie jest
+wywołaniem.
+
+### 32 — metryki: siedem pozycji, trzy wymagały pamięci
+
+Cztery z siedmiu metryk rozdz. 11.7 dały się policzyć z tabel, które już są (głębokość kolejki, wiek
+najstarszego zadania, zdarzenia niedostarczone, koszt AI per doba i per konto). Trzy — **czas
+operacji z percentylem 95, błędy per moduł i konflikty edycji per moduł** — wymagały zapamiętania
+czegoś, czego nikt nie zapisywał.
+
+**Agregat godzinowy, nie wiersz na operację.** Wiersz na operację to druga tabela rosnąca w tempie
+ruchu i podwojenie zapisów przy każdej akcji. Instancja zlicza w pamięci, worker dosypuje co
+tyknięcie jednym `UPDATE` na kubełek. Cena: przy ubiciu procesu przepada do minuty pomiarów — dla
+metryki bez znaczenia, dla danych użytkownika nie do przyjęcia, i dlatego ten wzorzec jest dobry
+**tylko tutaj**. Bufor czyszczony **przed** zapisem: zaniżenie jest mniej mylące niż policzenie tych
+samych operacji dwa razy.
+
+**Histogram, nie średnia.** Percentyla 95 nie da się odtworzyć z sumy, a to on odpowiada na pytanie
+„czy komuś jest wolno" (średnia odpowiada „czy większości jest dobrze"). Stąd stałe przedziały. Dwie
+wartości brzegowe mają własne napisy: `null` → „—" (brak pomiarów to nie to samo co 0 ms),
+`Infinity` → „> 10 s" (zwrócenie 10000 udawałoby liczbę, której nie znamy).
+
+**Konflikty edycji** liczy `updateWithVersion` — i **nie** podbijają licznika błędów, bo konflikt nie
+jest awarią. Rozdz. 11.7 stawia sprawę wprost: rosnąca liczba konfliktów w jednym module to sygnał,
+że akurat tam potrzebne jest współredagowanie (rozdz. 8.6); bez tej metryki decyzja o CRDT byłaby
+zgadywaniem. Nowa tabela dostała politykę retencji (30 dni) — agregat służy do wykrywania regresu,
+a nie do historii.
+
+**Znany zakres pomiaru.** Mierzymy tam, gdzie istnieje punkt przejścia: zadania w tle, konflikty
+wersji, wywołania modeli. Czas Server Action per moduł zostaje **nieobjęty** — Next 14 nie daje
+haka wokół akcji, a wpięcie pomiaru w ~550 akcji ręcznie byłoby listą, która rozjedzie się przy
+pierwszej nowej. Zapisane jako granica, nie przemilczane.
+
+**Dowód:** 10 przypadków logów + 8 metryk. Sondy: brak scalania kontekstu i brak czyszczenia PII
+czerwienią logi; `EXCLUDED` zamiast `GREATEST` przy maksimum i doliczanie konfliktu do błędów
+czerwienią metryki. Bramka `check:logs` sprawdzona sondą (dodane `console.warn` → build pada).

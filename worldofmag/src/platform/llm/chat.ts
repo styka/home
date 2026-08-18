@@ -1,4 +1,5 @@
 import { resolveLlmChain, type ResolvedLlm } from "./resolver";
+import { logEvent } from "@/platform/observability/log";
 import { isTruncatedAnthropicResponse, isTruncatedOpenAiResponse } from "./truncation";
 import type { AssistantWorkLevel, OperationType } from "./operationTypes";
 import { applyEffort, isEffortRejection, parseEffort, type LlmEffort } from "./effort";
@@ -301,7 +302,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     // ZACHOWUJĄC poprzednią realną porażkę (np. 429 dzienny z 70b) jako uczciwszy komunikat.
     if (isTpmLimitedProvider(cfg) && requestExceedsModelLimit(cfg, opts)) {
       skippedTooLarge = true;
-      console.warn(`[llm] ${opts.op}: pomijam model ${cfg.model} — zapytanie przekracza jego limit TPM (${modelTpmLimit(cfg.model)})`);
+      logEvent("warn", "llm.model.skipped", { op: opts.op, model: cfg.model, powod: "limit-tpm", limitTpm: modelTpmLimit(cfg.model) });
       continue;
     }
     const started = Date.now();
@@ -312,7 +313,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     // próbę bez wysiłku na tym samym modelu. Bez tego 400 — jako błąd NIEPRZEJŚCIOWY — przerwałby
     // łańcuch fallbacku i wywalił całego agenta z powodu opcjonalnego ustawienia.
     if (!res.ok && effortUsed !== "none" && isEffortRejection(res.status, res.message)) {
-      console.warn(`[llm] ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
+      logEvent("warn", "llm.effort.rejected", { op: opts.op, model: cfg.model });
       const plain: ChatOptions = { ...opts, effort: "none" };
       res = cfg.kind === "anthropic" ? await anthropicComplete(cfg, plain) : await openAiComplete(cfg, plain);
       effortUsed = "none";
@@ -365,7 +366,7 @@ export async function chatComplete(opts: ChatOptions): Promise<ChatResult> {
     // Błąd nieprzejściowy (4xx poza 429) → fallback nie pomoże, przerywamy.
     if (!isRetryableLlmStatus(res.status)) break;
     if (i < chain.length - 1) {
-      console.warn(`[llm] ${opts.op}: model ${cfg.model} niedostępny (status ${res.status}) — próbuję fallback`);
+      logEvent("warn", "llm.model.fallback", { op: opts.op, model: cfg.model, status: res.status });
     }
   }
   // 025: gdy WSZYSTKIE ogniwa pominięto jako za małe (żaden nie odpowiedział realnym błędem) —
@@ -600,7 +601,7 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
     // 033: ta sama degradacja co w `chatComplete` — strumień też może dostać 400 za parametr
     // wysiłku, a 400 jest nieprzejściowy, więc bez tego przerwałby łańcuch i oddał błąd klientowi.
     if (!attempt.ok && resolveEffort(cfg, opts) !== "none" && isEffortRejection(attempt.status, attempt.message)) {
-      console.warn(`[llm] stream ${opts.op}: model ${cfg.model} odrzucił parametr wysiłku — ponawiam bez niego`);
+      logEvent("warn", "llm.effort.rejected", { op: opts.op, model: cfg.model, stream: true });
       const plain: ChatOptions = { ...opts, effort: "none" };
       attempt = cfg.kind === "anthropic" ? await anthropicStream(cfg, plain) : await openAiStream(cfg, plain);
     }
@@ -609,7 +610,7 @@ export async function chatStream(opts: ChatOptions): Promise<Response> {
     lastMsg = attempt.message;
     if (!isRetryableLlmStatus(attempt.status)) break;
     if (i < chain.length - 1) {
-      console.warn(`[llm] stream ${opts.op}: model ${cfg.model} niedostępny (status ${attempt.status}) — próbuję fallback`);
+      logEvent("warn", "llm.model.fallback", { op: opts.op, model: cfg.model, status: attempt.status, stream: true });
     }
   }
   return new Response(lastMsg, { status: lastStatus });

@@ -5,7 +5,7 @@ import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug, Gaug
 import type { SystemHealth, HealthCheck } from "@/actions/systemHealth";
 
 export function SystemHealthPage({ health }: { health: SystemHealth }) {
-  const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime, pool } = health;
+  const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime, pool, metrics } = health;
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
@@ -77,6 +77,60 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
               Adres bazy wskazuje na pulę połączeń, ale w URL-u nie ma <code>pgbouncer=true</code>.
               Tryb transakcyjny nie znosi zapytań przygotowanych — dopisz flagę w konfiguracji
               środowiska (aplikacja nie robi tego sama, bo to zmiana sposobu rozmowy z bazą).
+            </div>
+          )}
+        </Card>
+
+        {/* 087 (zadanie 32): metryki operacyjne z rozdz. 11.7. Percentyl 95, a nie średnia —
+            średnia odpowiada „czy większości jest dobrze", p95 „czy komuś jest wolno". */}
+        <Card title="Metryki (24 h)" icon={<Gauge size={15} style={{ color: "var(--accent-green)" }} />}>
+          <Row
+            label="Kolejka zadań"
+            value={`${metrics.queue.pending} czeka · ${metrics.queue.running} w toku${
+              metrics.queue.oldestPendingMin !== null ? ` · najstarsze ${metrics.queue.oldestPendingMin} min` : ""
+            }`}
+          />
+          <Row
+            label="Zdarzenia niedostarczone"
+            value={`${metrics.events.undelivered}${
+              metrics.events.oldestUndeliveredMin !== null ? ` · najstarsze ${metrics.events.oldestUndeliveredMin} min` : ""
+            }`}
+          />
+          <Row
+            label="Koszt AI (doba)"
+            value={`$${metrics.ai.dailyCostUsd.toFixed(2)} · ${metrics.ai.activeUsers} ${metrics.ai.activeUsers === 1 ? "konto" : "kont"}`}
+          />
+          {metrics.modules.length === 0 ? (
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              Brak pomiarów z ostatniej doby. Metryki zbierają się w pamięci instancji i są dosypywane
+              co minutę przez workera — pusto znaczy „nic się nie działo", a nie „nie działa".
+            </span>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Moduł</th>
+                    <th style={thStyle}>Operacji</th>
+                    <th style={thStyle}>p95</th>
+                    <th style={thStyle}>Maks.</th>
+                    <th style={thStyle}>Błędy</th>
+                    <th style={thStyle}>Konflikty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.modules.map((m) => (
+                    <tr key={m.module}>
+                      <td style={tdStyle}>{m.module}</td>
+                      <td style={tdStyle}>{m.count}</td>
+                      <td style={tdStyle}>{formatP95(m.p95Ms)}</td>
+                      <td style={tdStyle}>{m.maxMs} ms</td>
+                      <td style={{ ...tdStyle, color: m.errors > 0 ? "var(--accent-red)" : undefined }}>{m.errors}</td>
+                      <td style={{ ...tdStyle, color: m.conflicts > 0 ? "var(--accent-amber)" : undefined }}>{m.conflicts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </Card>
@@ -160,3 +214,30 @@ function ScanBadge({ scanType }: { scanType: string }) {
     </span>
   );
 }
+
+/**
+ * 087: `null` = brak pomiarów, `Infinity` = przedział otwarty. Jedno i drugie ma własny napis,
+ * bo „0 ms" i „> 10 s" to nie są te same informacje co „nie wiem".
+ */
+function formatP95(ms: number | null): string {
+  if (ms === null) return "—";
+  if (!Number.isFinite(ms)) return "> 10 s";
+  return `≤ ${ms} ms`;
+}
+
+const thStyle: React.CSSProperties = {
+  padding: "6px 8px",
+  fontSize: 11,
+  color: "var(--text-muted)",
+  textAlign: "left",
+  borderBottom: "1px solid var(--border)",
+  whiteSpace: "nowrap",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "6px 8px",
+  fontSize: 12,
+  color: "var(--text-secondary)",
+  borderBottom: "1px solid var(--border)",
+  whiteSpace: "nowrap",
+};

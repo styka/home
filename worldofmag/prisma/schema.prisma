@@ -136,6 +136,33 @@ model UserConsent {
 // Bez klucza obcego do `User`: kluczem jest dowolny podmiot ("user:<id>", w przyszłości też adres IP
 // albo przestrzeń), a wiersz i tak znika po wygaśnięciu okna. FK zmusiłby limiter do rozróżniania
 // podmiotów i wywracał zapis dla podmiotu spoza tabeli `User`.
+// 087 (zadanie 32): METRYKI OPERACJI — agregat godzinowy, nie wiersz na operację.
+// Histogram zamiast średniej, bo percentyla 95 nie da się odtworzyć z sumy, a to właśnie on
+// odpowiada na pytanie „czy komuś jest wolno". Szczegóły w migracji 0248.
+model OperationMetric {
+  id            String @id @default(cuid())
+  bucket        String // `YYYY-MM-DDTHH` (UTC)
+  module        String
+  action        String
+  count         Int    @default(0)
+  errors        Int    @default(0)
+  conflicts     Int    @default(0)
+  durationSumMs BigInt @default(0)
+  durationMaxMs Int    @default(0)
+  b50           Int    @default(0)
+  b100          Int    @default(0)
+  b250          Int    @default(0)
+  b500          Int    @default(0)
+  b1000         Int    @default(0)
+  b2500         Int    @default(0)
+  b5000         Int    @default(0)
+  b10000        Int    @default(0)
+  bInf          Int    @default(0)
+
+  @@unique([bucket, module, action])
+  @@index([bucket])
+}
+
 model RateLimitBucket {
   key     String   @id
   count   Int      @default(0)

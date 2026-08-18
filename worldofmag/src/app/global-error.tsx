@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import "./globals.css";
-import { reportClientError } from "@/lib/observability/report";
+import { reportClientError } from "@/platform/observability/report";
 
 /**
  * Z-111: globalna granica błędu (zastępuje cały root layout, więc renderuje własne

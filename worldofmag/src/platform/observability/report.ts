@@ -6,6 +6,8 @@
  * konsolą (graceful degradation). Dzięki temu reszta kodu woła jeden punkt
  * (`reportClientError` / `reportServerError`) niezależnie od dostawcy.
  */
+import { logEvent } from "@/platform/observability/log";
+
 type Ctx = Record<string, unknown>;
 
 function capture(scope: "client" | "server", error: unknown, context?: Ctx) {
@@ -19,8 +21,13 @@ function capture(scope: "client" | "server", error: unknown, context?: Ctx) {
       /* spadnij do konsoli */
     }
   }
-  // eslint-disable-next-line no-console
-  console.error(`[${scope}]`, error, context ?? "");
+  // 086: błąd też jest logiem strukturalnym — inaczej połowa strumienia jest JSON-em, a połowa
+  // tekstem, i żaden agregator nie umie odpowiedzieć na pytanie „ile błędów w module X".
+  logEvent("error", "error.captured", {
+    scope,
+    error: error instanceof Error ? error.message : String(error),
+    ...(context ?? {}),
+  });
 }
 
 export function reportClientError(error: unknown, context?: Ctx) {

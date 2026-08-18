@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import { logEvent } from "@/platform/observability/log";
 import { workspaceRoleFromTeamRole, type WorkspaceMemberRole } from "./types";
 
 /**
@@ -178,7 +179,7 @@ export async function reconcileWorkspaces(zakres?: {
  */
 
 function ostrzez(co: string, e: unknown) {
-  console.warn(`⚠ Lustro przestrzeni: ${co} nie powiodło się (rozjazd naprawi reconcileWorkspaces).`, e);
+  logEvent("warn", "workspace.mirror.failed", { co, error: e });
 }
 
 /** `syncTeamWorkspace`, ale awaria lustra nie psuje operacji na zespole. */

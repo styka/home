@@ -11,7 +11,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  const { reportServerError } = await import("@/lib/observability/report");
+  const { reportServerError } = await import("@/platform/observability/report");
 
   process.on("unhandledRejection", (reason) => {
     reportServerError(reason, { kind: "unhandledRejection" });

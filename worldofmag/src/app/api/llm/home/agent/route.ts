@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logEvent } from "@/platform/observability/log";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { isAssistantLevel, type AssistantLevel } from "@/types";
@@ -380,7 +381,7 @@ async function runAgentLoopRaw(
           : looksTooLarge
             ? "Zapytanie było zbyt duże dla modelu AI. Spróbuj sformułować je krócej/prościej."
             : "Asystent chwilowo nie może połączyć się z modelem AI. Spróbuj ponownie za chwilę.";
-        if (providerMsg) console.warn(`[agent] błąd LLM (status ${status}): ${providerMsg}`);
+        if (providerMsg) logEvent("warn", "agent.llm.error", { status, message: providerMsg });
         return { status, body: { error: message } };
       }
       lastContent = content;
@@ -509,7 +510,7 @@ async function runAgentLoopRaw(
       // 032: dwie iteracje bez postępu = pętla. Kończymy przebieg częściowym wynikiem, zamiast
       // dobijać do limitu kroków (zgłoszenie Z-2: 6 wywołań modelu, ~0,81 zł, zero odpowiedzi).
       if (unproductiveIterations >= 2) {
-        console.warn(`[agent] przerwanie pętli po ${unproductiveIterations} iteracjach bez postępu (iter ${iter})`);
+        logEvent("warn", "agent.loop.aborted", { unproductiveIterations, iter });
         break;
       }
       continue;
@@ -913,7 +914,7 @@ export async function POST(req: NextRequest) {
           send({ type: "final", status: result.status ?? 200, body: result.body });
         } catch (e) {
           // Nieoczekiwany wyjątek w pętli agenta — nie przeciekamy surowej treści (C-41).
-          console.error("[agent/stream] nieoczekiwany błąd:", e);
+          logEvent("error", "agent.stream.failed", { error: e });
           send({ type: "final", status: 502, body: { error: "Asystent napotkał nieoczekiwany błąd. Spróbuj ponownie za chwilę." } });
         } finally {
           void release().catch(() => {});
