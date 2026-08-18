@@ -1,5 +1,10 @@
 {
   "_opis": "062 (zadanie 15): pliki zapisujące model z kolumną `version`, które ŚWIADOMIE nie używają `updateWithVersion`. Bramka `check:versioning` sprawdza manifest w obie strony — martwy wpis też wywala build.",
-  "_dzisiaj": "Manifest jest PUSTY: oba pliki zapisujące modele pilota przechodzą przez mechanizm. Istnieje po to, żeby następny wyjątek (np. zapis pola, o które nikt się nie ściga) był świadomą decyzją.",
-  "wyjatki": {}
+  "_dzisiaj": "092: manifest ma PIERWSZY wpis. Pilot z 062 (Task, Note) rozszerzony na Recipe, TaskProject, ShoppingList, Contact i StorageItem — ich formularze edycji przechodzą przez mechanizm.",
+  "wyjatki": {
+    "src/modules/kitchen/actions/mealPlans.ts": {
+      "model": "Recipe",
+      "powod": "Zapisuje JEDNO pole znacznikowe: `lastCookedAt` przy odhaczeniu ugotowanego posiłku. Nikt się o tę datę nie ściga — to skutek uboczny innej czynności (domknięcia wpisu w planie), a nie edycja przepisu. Kontrola wersji odrzucałaby tu zapis tylko wtedy, gdy ktoś RÓWNOLEGLE edytuje przepis, i odbierałaby użytkownikowi odhaczenie posiłku z powodu, którego nie umiałby zrozumieć."
+    }
+  }
 }

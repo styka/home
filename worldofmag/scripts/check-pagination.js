@@ -63,17 +63,47 @@ function policzBezTake(tresc) {
   return ile;
 }
 
-const katalogi = [path.join(root, "src/modules"), path.join(root, "src/actions")];
+/**
+ * 093 (zadanie 20): PLIKI, KTÓRYCH ZAPYTANIA MUSZĄ BYĆ KOMPLETNE.
+ *
+ * Zapadka liczyła wszystko jednakowo i przez to mierzyła dwie różne rzeczy jedną liczbą. Eksport
+ * danych z RODO **musi** zwrócić wszystko — to nie jest widok listowy, który da się doładować, i nie
+ * jest dług do spłacenia. 55 z 261 zapytań w liczniku pochodziło stąd, więc próg mówił „mamy 261
+ * list bez paginacji", co po prostu nie było prawdą; a spłata prawdziwego długu wyglądałaby na wolniejszą,
+ * niż jest.
+ *
+ * Wyjątek jest per PLIK i wymaga powodu. Martwy wpis też wywala build — inaczej lista wyjątków
+ * rosłaby jako wygodniejsza alternatywa dla paginacji.
+ */
+const wyjatkiPath = path.join(root, "src/platform/pagination-wyjatki.json");
+const wyjatki = fs.existsSync(wyjatkiPath) ? JSON.parse(fs.readFileSync(wyjatkiPath, "utf8")).pliki ?? {} : {};
+
+const katalogi = [path.join(root, "src/modules"), path.join(root, "src/actions"), path.join(root, "src/lib")];
 let biezace = 0;
 const rozklad = {};
+const zwolnione = {};
+const martweWyjatki = new Set(Object.keys(wyjatki));
 for (const dir of katalogi) {
   if (!fs.existsSync(dir)) continue;
   for (const abs of pliki(dir)) {
+    const rel = path.relative(root, abs).split(path.sep).join("/");
     const n = policzBezTake(fs.readFileSync(abs, "utf8"));
     if (n === 0) continue;
+    if (wyjatki[rel]) {
+      martweWyjatki.delete(rel);
+      zwolnione[rel] = n;
+      continue;
+    }
     biezace += n;
-    rozklad[path.relative(root, abs).split(path.sep).join("/")] = n;
+    rozklad[rel] = n;
   }
+}
+
+if (martweWyjatki.size > 0) {
+  console.error("\n✖ Paginacja: wyjątki dla plików, które nie mają już nieograniczonych zapytań:");
+  for (const f of martweWyjatki) console.error(`  ${f}`);
+  console.error(`\n  Usuń je z ${path.relative(root, wyjatkiPath)} — martwy wyjątek to zaproszenie do dopisania nowego.\n`);
+  process.exit(1);
 }
 
 const baseline = fs.existsSync(manifestPath)
@@ -118,4 +148,8 @@ if (biezace < baseline.maks) {
   process.exit(1);
 }
 
-console.log(`✓ Paginacja: ${biezace} zapytań bez \`take\` — zapadka trzyma (bez wzrostu).`);
+const iloscZwolnionych = Object.values(zwolnione).reduce((a, b) => a + b, 0);
+console.log(
+  `✓ Paginacja: ${biezace} zapytań bez \`take\` — zapadka trzyma (bez wzrostu)` +
+    (iloscZwolnionych > 0 ? `; ${iloscZwolnionych} w ${Object.keys(zwolnione).length} plikach ze świadomym wyjątkiem.` : "."),
+);

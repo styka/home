@@ -1,4 +1,4 @@
 {
-  "_opis": "068 (zadanie 20): ZAPADKA. Liczba wywołań `findMany` bez `take` w akcjach modułów. Może MALEĆ, nigdy rosnąć. Nowe zapytanie listowe ma używać `platform/pagination.ts`. Gdy licznik spadnie, ZMNIEJSZ tę liczbę — inaczej zapadka przestaje trzymać.",
-  "maks": 261
+  "_opis": "068 (zadanie 20): ZAPADKA. Liczba wywołań `findMany` bez `take` w akcjach modułów. Może MALEĆ, nigdy rosnąć. Nowe zapytanie listowe ma używać `platform/pagination.ts`. Gdy licznik spadnie, ZMNIEJSZ tę liczbę — inaczej zapadka przestaje trzymać. 093: pliki, których zapytania muszą być KOMPLETNE (eksport i usuwanie RODO), są od teraz w src/platform/pagination-wyjatki.json — próg 261 mieszał je z prawdziwym długiem.",
+  "maks": 207
 }

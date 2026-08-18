@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import { brakujaceWzgledemNadan } from "@/platform/sharing/lustroOdczyt";
 import { resourceRoleFromLegacy } from "@/platform/workspaces/types";
 import type { ResourceCatalog } from "@/platform/sharing/types";
 
@@ -73,7 +74,11 @@ export const resources: ResourceCatalog = {
           for (const c of czlonkowie) wynik.push({ userId: c.userId, role: rola });
         }
       }
-      return wynik;
+      // 093 (zadanie 12, etap 2): źródłem prawdy są NADANIA. Z tabeli źródłowej dokładamy tylko to,
+      // czego w nadaniach brakuje — a każdy taki brak jest zgłaszany metryką `sharing/lustro.rozjazd`.
+      // Asymetria jest celowa: brak w nadaniach to utrata dostępu u realnej osoby, nadwyżka w nadaniach
+      // to coś, co widać w oknie udostępniania i da się odebrać.
+      return brakujaceWzgledemNadan("pets.pet", id, wynik);
     },
   },
 };

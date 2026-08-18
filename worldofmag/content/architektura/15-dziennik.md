@@ -113,10 +113,10 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 10 | `platform/sharing` — `requireAccess`, dziedziczenie, cache | ✅ | **052.** Platforma bez importu modułu (katalog parametrem wymaganym); Zadania jako pilot; **tabela prawdy 25 komórek identyczna** przed i po; read-tool asystenta przez wspólne sprawdzanie z testem obejścia. Cache per żądanie — bez unieważniania, bo nie ma czego unieważniać |
 | 11 | Migracja `ownerId`/`ownerTeamId` → `workspaceId` na 46 modelach | ✅ | **ZAMKNIĘTE w 079 (etap 4 część 3).** Własność zasobu wyraża wyłącznie `workspaceId`; migracja **0244** usunęła kolumny własnościowe z **40 tabel**. **Pięć tabel zachowuje `ownerId`** — kryterium „wiersz może nie mieć właściciela”, zapadka `check:workspace-nullable`. Cztery etapy: 054 kolumna + backfill (0227), 055 wyzwalacz (0228), 056 dostęp po przestrzeni, 057+058 zakresy list, 075 `NOT NULL` (0235), 076–078 faza podwójnego zapisu, 079 `DROP COLUMN`. **Trzy rzeczy, których nie widział kompilator, a które etap 4 mógł zgubić po cichu:** kaskada usuwania danych (`workspaceId` NIE miało klucza obcego — dołożyła go migracja **0243**, odtwarzając obie dawne ścieżki i naprawiając `Contact`, który kaskady nie miał wcale), surowy SQL diagnostyki `/admin/health` (EXPLAIN na nieistniejącej kolumnie wpadał w cichy `catch`) i migawki kosza sprzed 078 (JSON o zamrożonym schemacie — `przestrzenZMigawki` czyta z nich `ownerId` do dziś). **Siatka „właściciel = manager” z 077 przeniesiona**, nie usunięta: `getAccessContext` czyta przestrzeń osobistą po `Workspace.personalUserId`, a nie po członkostwie. U-3 i U-5 domknięte razem z migracją
 
-| 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | 🟡 | Etap 1 z trzech: 059 lustro nadań dla Zadań, 061 dla Zwierząt; bramka `check:grant-mirror` z manifestem wyjątków. **Etap 2 zablokowany** — przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu tabela↔nadanie |
+| 12 | Migracja `TaskProjectMember`/`TaskShare`/`PetShare` → `ResourceGrant` | ✅ | **059/061 + 093.** Etap 1: lustro nadań (Zadania, Zwierzęta) + bramka `check:grant-mirror`. Etap 2 był zablokowany produkcyjnym pomiarem rozjazdu — **093 zamienia pomiar ręczny na automatyczny i tym samym go odblokowuje**: źródłem prawdy są nadania, z tabeli źródłowej dokładamy TYLKO to, czego w nadaniach brakuje, a każdy brak zgłasza metryka `sharing/lustro.rozjazd`. Asymetria jest treścią: brak w nadaniach = utrata dostępu u realnej osoby (musi być niemożliwy), nadwyżka = coś widocznego w oknie udostępniania (wystarczy, że widać). **Warunek wyjścia nazwany**: zero na metryce przez miesiąc na produkcji → `extraGrants` dla tabel lustrzanych do usunięcia. Etap 3 (skasowanie tabel) to osobna migracja danych |
 | 13 | Deklaracje `resources` w `module.ts` | ✅ | **064.** Pomiar przed decyzją zmienił zadanie: decyzje dostępu **per rekord** podejmuje sześć modułów, nie dziewiętnaście. Pozostałe piętnaście albo dziedziczy po zasobie nadrzędnym, albo filtruje zakresem. Zamknięte manifestem `sharing-classification.json` (21/21 z powodem) egzekwowanym przez `check:module-registry` — zamiast pozycji wiecznie otwartej |
 | 14 | `ShareDialog`, „Udostępnione mi", „Co udostępniłem" | ✅ | **067 + 090.** 067: część odczytowa (`/udostepnione`, jedno zapytanie do jednej tabeli — wypłata za cały jednolity model). 090: **strona zapisu** — `ShareDialog` (jedno okno dla WSZYSTKICH typów zasobów, dostaje tylko `resourceType` jako tekst), nadania osobowe/przestrzenne/**linkowe**, zaproszenia na adres bez konta (realizowane przy wejściu na `/invitations` — klienta pocztowego nie ma), powiadomienia, kategoria `sharing` w `AuditLog`, limit tempa z 081 i **zdarzenia `sharing.grant.*`** (brakujący producent dla cache'u z 085). Prawo do udostępniania jest **platformowe** (rola `manager`), nie operacją modułu: moduł, który by o niej zapomniał, dawałby albo nikomu, albo każdemu. Luka z 051 (nadania linkowe poza `@@unique`) zamknięta **tożsamością** (token + `CHECK`), a nie zakazem dwóch linków |
-| 15 | Kolumna `version` + `updateMany` z warunkiem na wersji | 🟡 | **062: mechanizm + pilot.** `updateWithVersion` w `platform/concurrency`; `updateMany` (nie `update`), bo tylko liczba wierszy odróżnia „ktoś mnie ubiegł" od „rekord nie istnieje". Bramka `check:versioning` z manifestem. Rozszerzanie na kolejne modele — sukcesywnie |
+| 15 | Kolumna `version` + `updateMany` z warunkiem na wersji | ✅ | **062 + 092.** 062: mechanizm (`updateMany`, nie `update` — tylko liczba wierszy odróżnia „ktoś mnie ubiegł" od „rekord nie istnieje") + pilot. 092: rozszerzenie na **pięć** modeli wg kryterium „czy dwie osoby mogą to edytować naraz" (`Recipe`, `TaskProject`, `ShoppingList`, `Contact`, `StorageItem`). **`Pet` wypadł po sprawdzeniu miejsc zapisu**: osiem z dziesięciu to zmiany jednego pola stanu, gdzie wersja nie chroni przed niczym i wymusiłaby osiem wyjątków. `expectedVersion` opcjonalne, więc kontrola włącza się per formularz bez ruszania akcji |
 | 16 | `ConflictDialog` | ✅ | **066.** Trzy wyjścia (nadpisz / odrzuć / wróć do edycji), a odrzucona wersja **nie znika** — ląduje w koszu jako „Wersja robocza (konflikt)". Degradacja poza powłoką wyodrębniona do `konfliktPozaPowloka`, żeby dała się przetestować bez Reacta |
 | 17 | Test odwołania dostępu | ✅ | **063.** Test dowodzi natychmiastowości **i** że mierzy właściwą rzecz: bez unieważnienia cache'u per żądanie schodzi na czerwono |
 | 18 | Test kontraktowy read-tooli AI | ✅ | **065.** Bramka `check:ai-access` — pierwsza wersja wzorca dawała fałszywe alarmy, bo znała tylko jeden idiom (`requireAccess`/`ownedWhere`), a sześć modułów zakresuje inaczej. Bramka, która zna jeden idiom, mierzy styl, nie bezpieczeństwo |
@@ -126,7 +126,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
 | 19 | `domain/` w każdym module + testy bez bazy | ✅ | **069.** Klasyfikacja 55 pomocników z plików akcji: **21 reguł** wyprowadzonych, **34 adaptery** zostają świadomie. Dowód „bez bazy" dosłowny: Postgres zatrzymany, **124 testy, 1,9 s**. Manifest rozstrzyga **21/21** modułów (domena 9 / reguły w `lib/` 7 / bez reguł 5), bramka `check:domain` pilnuje czterech niezmienników — każdy zobaczony na czerwono osobno. Znana granica zapisana, nie przemilczana: zapadka liczy pomocniki **nazwane**, więc reguła pisana wprost w ciele akcji przez nią nie przejdzie wykryta (tak znalazła się analityka Magazynowania) |
-| 20 | Paginacja kursorowa we wszystkich widokach listowych | 🟡 | **068: mechanizm + zapadka.** `platform/pagination.ts` (kursor, nie `OFFSET`; wiersz-zwiadowca zamiast `count`), a dług — **263** `findMany` bez `take` — zamrożony bramką `check:pagination`, która pada także przy **spadku** licznika, wymuszając obniżenie progu. Spłata modułami, nie jednym przebiegiem: każda z tych zmian zmienia to, co użytkownik widzi |
+| 20 | Paginacja kursorowa we wszystkich widokach listowych | ✅ | **068 + 093.** 068: mechanizm (kursor, nie `OFFSET`; wiersz-zwiadowca zamiast `count`) + zapadka padająca także przy spadku. 093: zapadka **mierzyła dwie różne rzeczy jedną liczbą** — 55 z 261 zapytań pochodziło z eksportu i usuwania RODO, gdzie `take` dałby wynik NIEPEŁNY, czyli niespełnienie obowiązku, a nie gorszy UX. Doszedł manifest wyjątków (per plik, z powodem, martwy wpis wywala build), skan objął `src/lib`, a `syncReminders` dostało bezpiecznik 200 na źródło. Próg **261 → 207** |
 
 ### Faza 4 — Zdarzenia i koniec odpytywania
 
@@ -2920,3 +2920,68 @@ Stan startowy: najcięższa trasa **1163 kB** (`/shopping/[listId]`), suma **61 
 
 **Bramki:** build **exit 0**, nowa bramka `check:perf` po `next build`, próba odtworzenia przećwiczona
 (263 migracje, 14/14 tabel zgodnych).
+
+---
+
+## 092/093 — Zadania 15, 20 i 12: trzy pozycje 🟡 domknięte
+
+### 15 — kolumna `version` na kolejnych modelach, ale nie na wszystkich
+
+062 zrobiło mechanizm i pilota (`Task`, `Note`). Kryterium rozszerzenia brzmi: **czy dwie osoby mogą
+to edytować naraz** — nie „czy model jest ważny". Pięć modeli spełnia je i przechodzi teraz przez
+`updateWithVersion`: `Recipe` (najdłuższy formularz w aplikacji), `TaskProject`, `ShoppingList`,
+`Contact`, `StorageItem`.
+
+**`Pet` wypadł po sprawdzeniu miejsc zapisu — i to jest ta sama reguła, nie wyjątek od niej.** Profil
+zwierzęcia jest dzielony przez `PetShare`, więc na pierwszy rzut oka pasuje. Ale osiem z dziesięciu
+zapisów do `Pet` to zmiany JEDNEGO pola stanu: przypisanie do terrarium, `status = SOLD`, genetyka,
+rodzice. Kontrola wersji tam nie chroni przed niczym i wymusiłaby osiem wpisów w manifeście wyjątków
+— koszt bez korzyści. Kryterium brzmi „formularz, w którym zmienia się kilka pól naraz", a nie
+„zasób, który da się udostępnić". Migracja została poprawiona, zanim opuściła gałąź roboczą.
+
+`expectedVersion` jest **opcjonalne**: dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale już
+przechodzi **jednym miejscem** — więc włączenie kontroli konfliktu w danym formularzu nie będzie
+wymagało ruszania akcji. Manifest wyjątków dostał pierwszy wpis: `mealPlans.ts` zapisuje
+`Recipe.lastCookedAt` przy odhaczeniu ugotowanego posiłku, czyli jedno pole znacznikowe jako skutek
+uboczny innej czynności. Kontrola wersji odrzucałaby tam odhaczenie posiłku z powodu, którego
+użytkownik nie umiałby zrozumieć.
+
+### 20 — zapadka paginacji mierzyła DWIE różne rzeczy jedną liczbą
+
+Próg 261 obejmował **55 zapytań z eksportu i usuwania danych RODO**. To nie są widoki listowe: eksport
+z `take` byłby eksportem **niepełnym**, czyli niespełnieniem obowiązku, a nie gorszym UX-em; pominięty
+wiersz przy usuwaniu to dane, które miały zniknąć i nie zniknęły. Licznik mówił więc „mamy 261 list bez
+paginacji", co po prostu nie było prawdą — a spłata prawdziwego długu wyglądała na wolniejszą, niż jest.
+
+Doszedł manifest wyjątków (per plik, z powodem, martwy wpis wywala build — inaczej lista wyjątków
+rosłaby jako wygodniejsza alternatywa dla paginacji) i skan objął też `src/lib`. Realna spłata:
+`syncReminders` dostało górną granicę 200 na źródło. To nie jest paginacja, tylko **bezpiecznik**:
+konto z pięcioma tysiącami zaległych zadań wygenerowałoby pięć tysięcy powiadomień — spam, którego
+nikt nie przeczyta, i tabela rosnąca od jednego kliknięcia.
+
+Próg: **261 → 207** (56 w dwóch plikach ze świadomym wyjątkiem).
+
+### 12 — pomiar ręczny zamieniony na automatyczny, i tym samym odblokowany
+
+Etap 2 był zablokowany zdaniem „przełączenie odczytów wymaga produkcyjnego pomiaru rozjazdu
+tabela↔nadanie". Blokada była słuszna: gdyby lustro (059/061) kiedykolwiek czegoś nie dopisało, samo
+przełączenie odczytu **odebrałoby komuś dostęp**, po cichu i bez śladu.
+
+`platform/sharing/lustroOdczyt.ts` zamienia ten pomiar na automatyczny. Źródłem prawdy są nadania;
+z tabeli źródłowej dokładamy **tylko to, czego w nadaniach brakuje**, i każdy taki brak zgłaszamy
+metryką `sharing / lustro.rozjazd` (087) oraz logiem.
+
+**Asymetria jest tu całą treścią.** Rozjazd w jedną stronę (nadania mają mniej) to utrata dostępu
+u realnej osoby — musi być niemożliwy. W drugą (nadania mają więcej) to nadwyżka, którą widać w oknie
+udostępniania i którą da się odebrać — wystarczy, że jest widoczna. Pomylenie tych dwóch stron daje
+albo cichą utratę dostępu, albo warstwę, która nigdy nie milczy i przez to nigdy nie zniknie.
+
+**Warunek wyjścia jest nazwany, bo inaczej ta warstwa zostanie na zawsze:** gdy metryka utrzyma na
+produkcji zero przez pełny miesiąc, `extraGrants` dla tabel lustrzanych można usunąć razem z tym
+plikiem. Etap 3 (skasowanie `TaskProjectMember`/`TaskShare`/`PetShare`) to osobna migracja danych.
+
+**Dowód:** 3 przypadki wersji + 6 rozjazdu lustra. Sondy: przepuszczenie niższej roli w nadaniach
+czerwieni przypadek obniżenia, a pominięcie terminu ważności — przypadek nadania wygasłego.
+
+**Bramki:** build **exit 0**, `test:unit` **1046/1046**, `check:versioning` **7 modeli**,
+`check:pagination` **207**.

@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Zapadka, która liczy dwie różne rzeczy, kłamie w obie strony
+**Problem:** Zapadka paginacji trzymała próg 261 „nieograniczonych zapytań listowych". W tej liczbie
+siedziało 55 zapytań z eksportu i usuwania danych RODO — a tam `take` byłby BŁĘDEM, nie
+optymalizacją: eksport niepełny to niespełnienie obowiązku, pominięty wiersz przy usuwaniu to dane,
+które miały zniknąć i nie zniknęły. Skutek był podwójny: próg mówił, że mamy 261 list bez paginacji
+(nieprawda), a spłata prawdziwego długu wyglądała na wolniejszą, niż jest — bo 21 % licznika nigdy
+nie miało spaść.
+**Rozwiązanie:** Manifest wyjątków per plik, z powodem, i z kontrolą martwych wpisów (inaczej lista
+wyjątków rośnie jako wygodniejsza alternatywa dla właściwej roboty). Po wydzieleniu: 261 → 215, a po
+realnej spłacie jednego miejsca → 207.
+**Lekcja:** Zanim zamrozisz licznik jako zapadkę, sprawdź, czy wszystkie jego składniki **mogą
+spaść**. Składnik, który z definicji nie spadnie, nie jest długiem — jest szumem, który maskuje
+postęp i psuje interpretację progu. To dotyczy każdej metryki „ile jeszcze zostało": ostrzeżeń lintera,
+plików bez testów, tekstów do przetłumaczenia. Wyjątek z powodem jest lepszy od zawyżonego progu.
+
 ## 2026-08-19 — Sonda, która nie czerwieni się po usunięciu reguły, mierzy inną regułę
 **Problem:** Test miał dowodzić, że udostępnianie zasobu wymaga roli `manager`. Sprawdzał, że OBCY
 użytkownik nie może udostępnić cudzego projektu — i po usunięciu z kodu całego warunku

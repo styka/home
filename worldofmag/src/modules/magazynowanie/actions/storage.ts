@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { assertOwnership } from "@/platform/auth/ownership";
@@ -191,7 +192,8 @@ export async function addStorageItem(data: StorageItemInput): Promise<StorageIte
 
 export async function updateStorageItem(
   id: string,
-  patch: Partial<Omit<StorageItemInput, "teamId">>
+  patch: Partial<Omit<StorageItemInput, "teamId">>,
+  expectedVersion?: number
 ): Promise<StorageItem> {
   const user = await requireAuth();
   await assertStorageItemAccess(id, user.id);
@@ -213,7 +215,11 @@ export async function updateStorageItem(
   if (patch.supplierId !== undefined) data.supplierId = patch.supplierId || null;
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
 
-  const updated = await prisma.storageItem.update({ where: { id }, data });
+  // 092 (zadanie 15): zapis idzie przez mechanizm wersji. `expectedVersion` jest opcjonalne —
+  // dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale JUŻ przechodzi jednym miejscem, więc
+  // włączenie kontroli konfliktu nie będzie wymagało ruszania tej akcji.
+  await updateWithVersion(prisma.storageItem, "magazynowanie.item", id, data, expectedVersion);
+  const updated = await prisma.storageItem.findUniqueOrThrow({ where: { id } });
   revalidatePath("/magazynowanie");
   revalidatePath("/");
   return updated;

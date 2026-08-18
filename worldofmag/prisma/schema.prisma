@@ -423,6 +423,10 @@ model TeamInvitation {
 
 model ShoppingList {
   id            String    @id @default(cuid())
+  // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
+  // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
+  // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
+  version Int @default(0)
   name          String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -698,6 +702,10 @@ model NoteTag {
 
 model TaskProject {
   id           String   @id @default(cuid())
+  // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
+  // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
+  // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
+  version Int @default(0)
   name         String
   description  String?
   color        String   @default("#6b7280")
@@ -1026,6 +1034,10 @@ model AiMessage {
 
 model Recipe {
   id            String    @id @default(cuid())
+  // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
+  // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
+  // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
+  version Int @default(0)
   title         String
   slug          String    @unique
   description   String?
@@ -1216,6 +1228,10 @@ model PantryItem {
 // magazyn nadrzędny (warehouse) oraz dziennik ruchów (przyjęcie/wydanie/korekta).
 model StorageItem {
   id            String    @id @default(cuid())
+  // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
+  // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
+  // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
+  version Int @default(0)
   name          String
   sku           String?
   barcode       String?
@@ -3052,6 +3068,10 @@ model ServicePromoCode {
 // (ownerId/ownerTeamId jako pola skalarne — dostęp przez ownedByWhere). tags = JSON string[].
 model Contact {
   id        String   @id @default(cuid())
+  // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
+  // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
+  // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
+  version Int @default(0)
   name      String
   phone     String?
   email     String?

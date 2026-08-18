@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, getAccessibleWorkspaceIds, ownedWhereAsync, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { categorize } from "@/modules/shopping/contract";
@@ -238,7 +239,7 @@ export async function createRecipe(data: CreateRecipeInput): Promise<Recipe> {
   return recipe;
 }
 
-export async function updateRecipe(id: string, data: UpdateRecipeInput): Promise<Recipe> {
+export async function updateRecipe(id: string, data: UpdateRecipeInput, expectedVersion?: number): Promise<Recipe> {
   const user = await requireAuth();
   await assertRecipeAccess(id, user.id, "edit");
 
@@ -263,7 +264,11 @@ export async function updateRecipe(id: string, data: UpdateRecipeInput): Promise
   if (data.carbs !== undefined) patch.carbs = data.carbs;
   if (data.fat !== undefined) patch.fat = data.fat;
 
-  const recipe = await prisma.recipe.update({ where: { id }, data: patch });
+  // 092 (zadanie 15): zapis idzie przez mechanizm wersji. `expectedVersion` jest opcjonalne —
+  // dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale JUŻ przechodzi jednym miejscem, więc
+  // włączenie kontroli konfliktu nie będzie wymagało ruszania tej akcji.
+  await updateWithVersion(prisma.recipe, "kitchen.recipe", id, patch, expectedVersion);
+  const recipe = await prisma.recipe.findUniqueOrThrow({ where: { id } });
 
   if (data.tagIds) {
     await prisma.recipeTag.deleteMany({ where: { recipeId: id } });

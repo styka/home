@@ -1,0 +1,8 @@
+{
+  "_opis": "093 (zadanie 20): pliki, których zapytania MUSZĄ być kompletne — nie są widokiem listowym i nie są długiem do spłacenia. Zapadka liczyła je razem z prawdziwym długiem i przez to mierzyła dwie różne rzeczy jedną liczbą.",
+  "_zasada": "Wyjątek dostaje plik, w którym niepełny wynik byłby BŁĘDEM, a nie wolniejszym ekranem. Nie dostaje go plik, w którym paginacja jest po prostu pracochłonna. Martwy wpis wywala build — inaczej lista wyjątków rosłaby jako wygodniejsza alternatywa dla paginacji.",
+  "pliki": {
+    "src/actions/privacy.ts": "Eksport danych i usunięcie konta (RODO, rozdz. 12.3). Eksport z `take` byłby eksportem NIEPEŁNYM — czyli niespełnieniem obowiązku, a nie gorszym UX-em. To samo dotyczy usuwania: pominięty wiersz to dane, które miały zniknąć i nie zniknęły.",
+    "src/lib/privacy/purge.ts": "Kasowanie i przekazywanie własności przy usuwaniu konta. `take` zostawiłby część danych — dokładnie ten błąd, przed którym broni test zakresu RODO (079)."
+  }
+}

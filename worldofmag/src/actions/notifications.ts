@@ -6,6 +6,17 @@ import { isoDay } from "@/modules/calendar/contract";
 import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
 
+/**
+ * 093 (zadanie 20): górna granica dla zapytań synchronizacji przypomnień.
+ *
+ * Wszystkie są okienkowane po czasie (najbliższe 3/7/14 dni), więc w normalnym użyciu zwracają
+ * kilkanaście wierszy. `take` nie jest tu paginacją — jest **bezpiecznikiem**: konto z pięcioma
+ * tysiącami zaległych zadań wygenerowałoby pięć tysięcy powiadomień, czyli spam, którego nikt nie
+ * przeczyta, i tabelę, która rośnie od jednego kliknięcia. Dwieście to więcej, niż ktokolwiek ogarnie
+ * w jednym przebiegu, i mniej, niż potrzeba do zrobienia szkody.
+ */
+const LIMIT_PRZYPOMNIEN = 200;
+
 export type NotificationDTO = {
   id: string;
   module: string;
@@ -76,6 +87,7 @@ export async function syncReminders(): Promise<number> {
   const weekLookbackISO = isoDay(new Date(now.getTime() - 8 * MS_DAY));
   const [tasks, health, vehicles, petCare, petTreatments, pantry, dueCards, svcRequests, habits] = await Promise.all([
     prisma.task.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: {
         dueDate: { lt: in3 },
         status: { notIn: ["DONE", "CANCELLED"] },
@@ -88,32 +100,39 @@ export async function syncReminders(): Promise<number> {
       select: { id: true, title: true, dueDate: true, projectId: true },
     }),
     prisma.healthEvent.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { scheduledAt: { gte: now, lt: in7 }, status: { notIn: ["CANCELLED", "DONE"] }, OR: ownScope },
       select: { id: true, title: true, scheduledAt: true },
     }),
     prisma.vehicle.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { OR: ownScope, AND: [{ OR: [{ inspectionDue: { lt: in14 } }, { insuranceDue: { lt: in14 } }] }] },
       select: { id: true, name: true, inspectionDue: true, insuranceDue: true },
     }),
     prisma.petCareTask.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { active: true, nextDueAt: { gte: now, lt: in3 }, pet: { is: { OR: ownScope } } },
       select: { id: true, title: true, nextDueAt: true, petId: true, pet: { select: { name: true } } },
     }),
     prisma.petTreatment.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { active: true, nextDueAt: { gte: now, lt: in3 }, pet: { is: { OR: ownScope } } },
       select: { id: true, name: true, nextDueAt: true, petId: true, pet: { select: { name: true } } },
     }),
     prisma.pantryItem.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { expiresAt: { gte: now, lt: in3 }, OR: ownScope },
       select: { id: true, name: true, expiresAt: true },
     }),
     prisma.vocabulary.count({ where: { dueAt: { lt: now }, deck: { is: { OR: ownScope } } } }),
     prisma.serviceRequest.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { status: "REQUESTED", provider: { is: { userId: user.id } } },
       select: { id: true, title: true },
     }),
     // Z-280: nawyki zaplanowane na dziś, jeszcze nieodhaczone (entries z bieżącego tygodnia).
     prisma.habit.findMany({
+      take: LIMIT_PRZYPOMNIEN,
       where: { archived: false, OR: ownScope },
       select: { id: true, name: true, daysOfWeek: true, weeklyGoal: true, entries: { where: { date: { gte: weekLookbackISO } }, select: { date: true } } },
     }),

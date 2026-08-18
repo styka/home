@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/platform/db/prisma";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { revalidatePath } from "next/cache";
 import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/ownership";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
@@ -100,7 +101,8 @@ export async function updateContact(
     company?: string | null;
     tags?: string[];
     notes?: string | null;
-  }
+  },
+  expectedVersion?: number
 ): Promise<void> {
   const { userId } = await getUserScope();
   const existing = await prisma.contact.findUnique({ where: { id }, select: { workspaceId: true } });
@@ -120,7 +122,10 @@ export async function updateContact(
     const tags = patch.tags.map((t) => t.trim()).filter(Boolean);
     data.tags = tags.length ? JSON.stringify(tags) : null;
   }
-  await prisma.contact.update({ where: { id }, data });
+  // 092 (zadanie 15): zapis idzie przez mechanizm wersji. `expectedVersion` jest opcjonalne —
+  // dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale JUŻ przechodzi jednym miejscem, więc
+  // włączenie kontroli konfliktu nie będzie wymagało ruszania tej akcji.
+  await updateWithVersion(prisma.contact, "contacts.contact", id, data, expectedVersion);
   revalidatePath("/contacts");
 }
 

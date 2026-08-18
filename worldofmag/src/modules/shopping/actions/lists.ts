@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
@@ -129,13 +130,14 @@ export async function createList(name: string, ownerTeamId?: string): Promise<Sh
   return list as unknown as ShoppingList;
 }
 
-export async function renameList(id: string, name: string): Promise<ShoppingList> {
+export async function renameList(id: string, name: string, expectedVersion?: number): Promise<ShoppingList> {
   const user = await requireAuth();
   await assertListAccess(id, user.id);
-  const list = await prisma.shoppingList.update({
-    where: { id },
-    data: { name: name.trim() },
-  });
+  // 092 (zadanie 15): zapis idzie przez mechanizm wersji. `expectedVersion` jest opcjonalne —
+  // dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale JUŻ przechodzi jednym miejscem, więc
+  // włączenie kontroli konfliktu nie będzie wymagało ruszania tej akcji.
+  await updateWithVersion(prisma.shoppingList, "shopping.list", id, { name: name.trim() }, expectedVersion);
+  const list = await prisma.shoppingList.findUniqueOrThrow({ where: { id } });
   revalidatePath("/shopping");
   revalidatePath(`/shopping/${id}`);
   return list as unknown as ShoppingList;

@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import { brakujaceWzgledemNadan } from "@/platform/sharing/lustroOdczyt";
 import type { ResourceCatalog } from "@/platform/sharing/types";
 
 /**
@@ -59,10 +60,16 @@ export const resources: ResourceCatalog = {
         where: { projectId: id },
         select: { userId: true, role: true },
       });
-      return czlonkowie.map((m) => ({
-        userId: m.userId,
-        role: m.role === "MEMBER" ? ("editor" as const) : ("manager" as const),
-      }));
+      // 093 (zadanie 12, etap 2): źródłem prawdy są NADANIA — z tabeli członkostwa dokładamy tylko
+      // to, czego w nadaniach brakuje, i zgłaszamy każdy taki brak metryką (patrz `lustroOdczyt.ts`).
+      return brakujaceWzgledemNadan(
+        "tasks.project",
+        id,
+        czlonkowie.map((m) => ({
+          userId: m.userId,
+          role: m.role === "MEMBER" ? ("editor" as const) : ("manager" as const),
+        })),
+      );
     },
   },
 

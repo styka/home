@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateWithVersion } from "@/platform/concurrency/version";
 import { mirrorProjectMember, unmirrorProjectMember } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
@@ -55,19 +56,23 @@ export async function createTaskProject(
 
 export async function updateTaskProject(
   id: string,
-  patch: { name?: string; color?: string; emoji?: string; description?: string }
+  patch: { name?: string; color?: string; emoji?: string; description?: string },
+  expectedVersion?: number
 ): Promise<TaskProject> {
   const user = await requireAuth();
   await assertProjectAccess(id, user.id, "ADMIN");
 
-  const project = await prisma.taskProject.update({
+  // 092 (zadanie 15): zapis idzie przez mechanizm wersji. `expectedVersion` jest opcjonalne —
+  // dopóki klient go nie przesyła, zapis jest bezwarunkowy, ale JUŻ przechodzi jednym miejscem, więc
+  // włączenie kontroli konfliktu nie będzie wymagało ruszania tej akcji.
+  await updateWithVersion(prisma.taskProject, "tasks.project", id, {
+    ...(patch.name !== undefined && { name: patch.name.trim() }),
+    ...(patch.color !== undefined && { color: patch.color }),
+    ...(patch.emoji !== undefined && { emoji: patch.emoji }),
+    ...(patch.description !== undefined && { description: patch.description }),
+  }, expectedVersion);
+  const project = await prisma.taskProject.findUniqueOrThrow({
     where: { id },
-    data: {
-      ...(patch.name !== undefined && { name: patch.name.trim() }),
-      ...(patch.color !== undefined && { color: patch.color }),
-      ...(patch.emoji !== undefined && { emoji: patch.emoji }),
-      ...(patch.description !== undefined && { description: patch.description }),
-    },
     include: { _count: { select: { tasks: true } } },
   });
 
