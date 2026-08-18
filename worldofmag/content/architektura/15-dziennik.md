@@ -154,7 +154,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 |---|---------|--------|
 | 31 | Logi strukturalne | ✅ | **086.** Brakowało nie formatu (JSON był od Z-096), a **kontekstu** i **ochrony przed PII**. Kontekst (`requestId`/`userId`/`workspaceId`/`module`) wchodzi raz na wejściu i dokleja się sam (`AsyncLocalStorage`, scalanie przy zagnieżdżeniu) — inaczej pola istniałyby w typie i nie w logach. Wartości przechodzą przez `oczysc`: e-maile na `[e-mail]`, obiekty spłaszczone do rozmiaru. Warstwa przeniesiona do platformy, 14 surowych `console.*` zamienionych na zdarzenia, pilnuje tego bramka **`check:logs`** |
 | 32 | Metryki na `/admin/health` | ✅ | **087.** Cztery z siedmiu metryk policzone z istniejących tabel; trzy (czas z **percentylem 95**, błędy per moduł, **konflikty edycji** per moduł) wymagały nowej tabeli `OperationMetric` — **agregat godzinowy z histogramem**, nie wiersz na operację (podwojenie zapisów) i nie średnia (p95 nie da się odtworzyć z sumy). Zliczanie w pamięci instancji, dosypywanie zbiorcze przez workera; bufor czyszczony PRZED zapisem, bo zaniżenie metryki myli mniej niż podwójne policzenie. Konflikt **nie** podbija licznika błędów. Znana granica zapisana: czas Server Action per moduł nieobjęty (Next 14 nie daje haka wokół akcji) |
-| 33 | Rozdzielenie `web` / `worker` / `cron` | ⬜ |
+| 33 | Rozdzielenie `web` / `worker` / `cron` | ✅ | **088.** Jeden obraz, trzy role (`OMNIA_ROLE`), bo osobny build workera to drugi artefakt do wdrażania i pierwsza okazja do rozjazdu wersji. **Domyślna rola `all`** — gdyby było `web`, samo wdrożenie tej zmiany zatrzymałoby kolejkę i retencję bez jednego błędu w logu; wartość nierozpoznana też wraca do `all` **i się zgłasza**. Pętla zadań oddzielona od pracy okresowej (workerów 1–2, `cron` jeden). Worker budzi się na `/api/health` — jedynym żądaniu, które hosting wysyła sam; `role` w odpowiedzi pozwala sprawdzić, czy usługa dostała właściwą. Runbook: `docs/devops/rozdzielenie-procesow.md` |
 
 ### Faza 7 — Wielojęzyczność
 
@@ -2678,3 +2678,44 @@ pierwszej nowej. Zapisane jako granica, nie przemilczane.
 **Dowód:** 10 przypadków logów + 8 metryk. Sondy: brak scalania kontekstu i brak czyszczenia PII
 czerwienią logi; `EXCLUDED` zamiast `GREATEST` przy maksimum i doliczanie konfliktu do błędów
 czerwienią metryki. Bramka `check:logs` sprawdzona sondą (dodane `console.warn` → build pada).
+
+---
+
+## 088 — Zadanie 33: trzy role, jeden obraz
+
+Rozdz. 11.8 dzieli aplikację na `web`, `worker` i `cron`. Powód jest konkretny: ciężkie zadania AI
+przestają konkurować o CPU z obsługą żądań. Rozdzielenie jest tanie, bo kolejka już to udźwignie —
+`claimNext` używa `FOR UPDATE SKIP LOCKED`.
+
+**Jeden obraz, trzy role.** Nie ma osobnych bundli ani punktów wejścia; to ta sama aplikacja z inną
+wartością `OMNIA_ROLE`. Osobny artefakt dla workera znaczyłby drugi element do wdrażania i pierwszą
+okazję, żeby oba rozjechały się wersją.
+
+**Domyślną rolą jest `all` i to jest decyzja.** Dzisiejsze wdrożenie to jedna usługa Rendera robiąca
+wszystko. Gdyby domyślną wartością było `web`, samo wdrożenie tej zmiany zatrzymałoby kolejkę
+i retencję — bez błędu, bez logu, po prostu cisza. Rozdzielenie **włącza się świadomie**, ustawiając
+zmienną w każdej usłudze. Z tego samego powodu wartość nierozpoznana (`workers`, `Worker `) wraca do
+`all` **i zgłasza się w logu**, zamiast wyciszać proces.
+
+**Pętla zadań i praca okresowa rozdzielone.** Wcześniej były jednym `startJobWorker`. Mają różne
+wymagania skalowania: workerów mogą być dwa, procesów `cron` jeden. Retencja i tak odbiera sobie
+prawo do przebiegu atomowo (083), więc dwa procesy jej nie zdublują — ale wykonywanie jej w każdej
+instancji `web` to zbędne obciążenie bazy przy każdym tyknięciu.
+
+**Gdzie budzi się worker.** Nie w `instrumentation.ts` (bundlowane też dla runtime EDGE, a łańcuch
+workera używa modułów node-only — Z-131), więc dotąd startował leniwie z tras API. Instancja bez
+ruchu użytkownika nie wykona jednak żadnej trasy. Budzi się więc na **`/api/health`**: jedynym
+żądaniu, które platforma hostingowa wysyła sama i regularnie. Konsekwencja praktyczna jest
+w runbooku: usługa `worker` **musi** mieć włączoną kontrolę zdrowia, inaczej wstanie i nie zrobi nic.
+Odpowiedź `/api/health` niesie teraz `role` — przy trzech usługach z jednego obrazu to jedyny sposób,
+żeby sprawdzić, czy każda dostała tę, którą miała dostać.
+
+Zgodność wsteczna: `JOBS_WORKER_DISABLED=1` znaczy dokładnie tyle, co rola `web`.
+
+**Czego to nie rozwiązuje:** SSE nadal żyje w jednym procesie — przy skalowaniu `web` poziomo karta
+trzyma strumień na jednej instancji (rozdz. 11.9). Decyzja odłożona w 072, siatką pozostaje
+pięciominutowe odpytywanie awaryjne.
+
+**Dowód:** 5 przypadków (bez bazy — rola jest czystą funkcją środowiska). Sondy: domyślna rola `web`
+zamiast `all` czerwieni pierwszy przypadek, a wykonywanie pracy okresowej także w roli `worker` —
+drugi. Runbook: `docs/devops/rozdzielenie-procesow.md`.

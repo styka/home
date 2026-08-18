@@ -12,6 +12,7 @@
  */
 
 import { reportServerError } from "@/platform/observability/report";
+import { czyPrzetwarzaZadania } from "@/platform/runtime/rola";
 import { obiegZdarzen } from "./dispatch";
 
 const TICK_MS = 5000;
@@ -33,6 +34,9 @@ async function tick(): Promise<void> {
 
 /** Startuje obieg. Wielokrotne wywołanie jest bezpieczne (guard singletona). */
 export function startEventWorker(): void {
+  // 088 (zadanie 33): publikacja outboxu należy do roli `worker` — rozdz. 11.8 wymienia ją obok
+  // zadań w tle, i z tego samego powodu: to praca, która ma nie konkurować o CPU z żądaniami.
+  if (!czyPrzetwarzaZadania()) return;
   if (g.__omniaEventWorker?.timer) return;
   g.__omniaEventWorker = { timer: setInterval(() => void tick(), TICK_MS) };
   void tick();

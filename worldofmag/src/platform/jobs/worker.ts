@@ -7,7 +7,8 @@ import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJ
 import { posprzatajLimity } from "@/platform/rateLimit";
 import { retencjaJesliCzas } from "@/platform/retention/harmonogram";
 import { wZakresieOperacji } from "@/platform/sharing/cache";
-import { wKontekscieLogu } from "@/platform/observability/log";
+import { logEvent, wKontekscieLogu } from "@/platform/observability/log";
+import { czyPrzetwarzaZadania, czyWykonujeOkresowe, rolaNierozpoznana } from "@/platform/runtime/rola";
 import { flushMetryk, zmierzOperacje } from "@/platform/observability/metryki";
 import type { PolitykaRetencji } from "@/platform/retention";
 import { reportServerError } from "@/platform/observability/report";
@@ -98,11 +99,25 @@ export async function runTick(concurrency = CONCURRENCY): Promise<number> {
   return claimed.length;
 }
 
-/** Startuje workera in-process (idempotentnie). Wyłączalny env-em `JOBS_WORKER_DISABLED=1`. */
+/**
+ * Startuje workera in-process (idempotentnie).
+ *
+ * **088 (zadanie 33): pętla zadań i praca OKRESOWA są teraz sterowane osobno.** Pierwsza należy do
+ * roli `worker`, druga do roli `cron` — bo mają różne wymagania skalowania: workerów mogą być dwa,
+ * procesów `cron` jeden. W roli domyślnej (`all`, czyli dzisiejsze wdrożenie jednousługowe) chodzi
+ * jedno i drugie, więc zachowanie się nie zmienia.
+ */
 export function startJobWorker(): void {
-  if (process.env.JOBS_WORKER_DISABLED === "1") return;
+  const zadania = czyPrzetwarzaZadania();
+  const okresowe = czyWykonujeOkresowe();
+  if (!zadania && !okresowe) return;
   if (g.__omniaJobWorker) return; // już wystartowany w tym procesie
   g.__omniaJobWorker = { timer: null, cleanup: null };
+  if (rolaNierozpoznana()) {
+    // Literówka w nazwie roli nie może po cichu wyłączyć przetwarzania — mówimy o tym głośno
+    // i pracujemy dalej w roli `all`.
+    logEvent("warn", "runtime.rola.nierozpoznana", { wartosc: process.env.OMNIA_ROLE });
+  }
 
   let running = false;
   const loop = async () => {
@@ -127,8 +142,8 @@ export function startJobWorker(): void {
     await flushMetryk().catch((e) => reportServerError(e, { kind: "metricsFlush" }));
   };
 
-  g.__omniaJobWorker.timer = setInterval(loop, TICK_MS);
-  g.__omniaJobWorker.cleanup = setInterval(() => {
+  if (zadania) g.__omniaJobWorker.timer = setInterval(loop, TICK_MS);
+  if (okresowe) g.__omniaJobWorker.cleanup = setInterval(() => {
     cleanupOldJobs().catch((e) => reportServerError(e, { kind: "jobCleanup" }));
     // 081: wygasłe okna i dzierżawy limitera. Sprzątanie nie jest warunkiem POPRAWNOŚCI (wygasłe
     // okno zeruje się przy pierwszym trafieniu, wygasły slot da się przejąć) — pilnuje tylko, żeby
