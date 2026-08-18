@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AsyncLocalStorage } from "async_hooks";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { prisma } from "@/platform/db/prisma";
 import type { WorkspaceMemberRole } from "@/platform/workspaces/types";
@@ -38,12 +39,51 @@ import type { AccessContext } from "./types";
  */
 
 /**
- * Memoizacja na czas żądania, jeśli środowisko ją ma; w przeciwnym razie funkcja bez zmian.
+ * 084 (zadanie 28) — ZAKRES OPERACJI POZA ŻĄDANIEM.
+ *
+ * Degradacja opisana wyżej („bez runtime'u React funkcja bez zmian") jest bezpieczna, ale ma cenę,
+ * której nikt nie mierzył: zadanie w tle sprawdzające dostęp pięćdziesiąt razy wykonywało
+ * **dwieście** zapytań o te same członkostwa. Pomiar N+1 pokazał to samo w mniejszej skali —
+ * kalendarz składany z siedmiu wkładów odpytywał `TeamMember` sześć razy pod rząd.
+ *
+ * `AsyncLocalStorage` daje ten sam zakres co żądanie, tylko wyznaczany jawnie: kod owinięty
+ * w `wZakresieOperacji` liczy kontekst raz. Poza żądaniem **i** poza tym owinięciem zachowanie
+ * pozostaje dawne — brak memoizacji, zero ryzyka, że wynik przeżyje dłużej, niż powinien.
+ *
+ * Kolejność jest istotna: `React.cache` ma pierwszeństwo, bo w żądaniu to ON jest nośnikiem stanu
+ * i to jego obietnicę koryguje `dopiszPrzestrzenDoKontekstu`.
+ */
+const zakresOperacji = new AsyncLocalStorage<Map<string, Promise<unknown>>>();
+
+/**
+ * Wyznacza zakres memoizacji dla kodu spoza żądania (worker, zadanie w tle, skrypt, pomiar).
+ * Zagnieżdżenie jest bezpieczne — wewnętrzne wywołanie po prostu korzysta z zewnętrznej mapy.
+ */
+export function wZakresieOperacji<T>(f: () => Promise<T>): Promise<T> {
+  const istniejacy = zakresOperacji.getStore();
+  return istniejacy ? f() : zakresOperacji.run(new Map(), f);
+}
+
+/**
+ * Memoizacja na czas żądania, jeśli środowisko ją ma; w przeciwnym razie na czas OPERACJI, jeśli
+ * ktoś ją wyznaczył; a poza jednym i drugim — funkcja bez zmian.
  * Zawężone do jednego argumentu, bo tyle wystarcza i tyle da się bezpiecznie otypować.
  */
 function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
   const maybeCache = (React as { cache?: <T>(f: T) => T }).cache;
-  return typeof maybeCache === "function" ? maybeCache(fn) : fn;
+  const wZadaniu = typeof maybeCache === "function" ? maybeCache(fn) : null;
+  const nazwa = fn.name || "anon";
+  return (a: A) => {
+    if (wZadaniu) return wZadaniu(a);
+    const mapa = zakresOperacji.getStore();
+    if (!mapa) return fn(a);
+    const klucz = `${nazwa}:${String(a)}`;
+    const gotowe = mapa.get(klucz) as Promise<R> | undefined;
+    if (gotowe) return gotowe;
+    const obietnica = fn(a);
+    mapa.set(klucz, obietnica);
+    return obietnica;
+  };
 }
 
 /**

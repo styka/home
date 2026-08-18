@@ -100,7 +100,6 @@ async function runPlanWeek(
   if (slots.length === 0) throw new JobError("Wybierz co najmniej jeden slot", 400);
   const people = Math.max(1, Math.min(12, Math.floor(payload.people ?? 2)));
 
-  const teamIds = await getUserTeamIds(ownerId);
   const ownerOr = (await ownedOrAsync(ownerId));
 
   const recipes = await prisma.recipe.findMany({

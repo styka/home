@@ -18,7 +18,6 @@ export async function resolveOrCreateList(
   userId: string,
   opts: { listId?: string; listName?: string; activeListId?: string },
 ): Promise<{ id: string; name: string }> {
-  const teamIds = await getUserTeamIds(userId);
   const ownerOr = (await ownedOrAsync(userId));
 
   let list =

@@ -46,6 +46,24 @@ const nextConfig = {
     // na visibility/focus) domyka cross-device świeżość bez ręcznego odświeżania strony.
     staleTimes: { dynamic: 0 },
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // 084 (zadanie 28): `platform/sharing/cache.ts` sięga po `node:async_hooks` (zakres operacji
+      // poza żądaniem). Do grafu KLIENTA trafia nie dlatego, że przeglądarka tego używa, tylko przez
+      // barierę barelową: klient importuje Server Action z `@/modules/portfel/contract`, a kontrakt
+      // — jako zwykły moduł, nie `"use server"` — jest przez webpack ROZWIĄZYWANY w całości, razem
+      // z `lib/autoExpense`. Kod i tak zostaje wytrząśnięty; wywraca się samo rozwiązanie ścieżki,
+      // bo modułu wbudowanego Node klient nie ma. (Import celowo BEZ przedrostka `node:` —
+      // schematy URI webpack rozstrzyga przed aliasami, więc `node:async_hooks` byłoby nie do przykrycia.)
+      //
+      // `false` = pusty moduł po stronie klienta. Jest to poprawne, a nie zamiatające: zakres
+      // operacji w przeglądarce nie ma sensu i ta gałąź nigdy tam nie biegnie. Alternatywy —
+      // dopisanie `"use server"` do kontraktu (wystawiłoby `bookAutoExpense` jako punkt końcowy
+      // wołalny z przeglądarki) albo dublowanie akcji w module Usługi — są gorsze.
+      config.resolve.alias = { ...config.resolve.alias, async_hooks: false };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

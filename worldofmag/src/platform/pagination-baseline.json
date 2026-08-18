@@ -1,4 +1,4 @@
 {
   "_opis": "068 (zadanie 20): ZAPADKA. Liczba wywołań `findMany` bez `take` w akcjach modułów. Może MALEĆ, nigdy rosnąć. Nowe zapytanie listowe ma używać `platform/pagination.ts`. Gdy licznik spadnie, ZMNIEJSZ tę liczbę — inaczej zapadka przestaje trzymać.",
-  "maks": 263
+  "maks": 261
 }

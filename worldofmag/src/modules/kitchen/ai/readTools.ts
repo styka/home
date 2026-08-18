@@ -40,7 +40,6 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const idOrSlug = asStr(args.recipeId);
       const search = asStr(args.search);
       const recipeOwnerOr = async () => {
-        const teamIds = await getUserTeamIds(userId);
         return (await ownedOrAsync(userId));
       };
       let key = idOrSlug;

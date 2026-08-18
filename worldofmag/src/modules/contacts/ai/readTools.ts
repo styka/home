@@ -16,7 +16,6 @@ export const readToolsPrompt = [
 export const readTools: Record<string, AiReadToolHandler> = {
   list_contacts: async (args, userId) => {
       const search = asStr(args.search);
-      const teamIds = await getUserTeamIds(userId);
       const contacts = await prisma.contact.findMany({
         where: {
           ...(await ownedWhereAsync(userId)),

@@ -48,7 +48,6 @@ export async function executeWarsztatAction(action: AIAction, userId: string): P
     const name = asStr(params.name);
     if (!name) throw new Error("Podaj nazwę pozycji");
     const wsName = asStr(params.workshopName) ?? searchQuery?.trim();
-    const teamIds = await getUserTeamIds(userId);
     const ownerOr = (await ownedOrAsync(userId));
     const workshop = wsName
       ? await prisma.workshop.findFirst({

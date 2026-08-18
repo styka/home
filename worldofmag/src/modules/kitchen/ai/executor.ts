@@ -191,7 +191,6 @@ export async function executeKitchenAction(action: AIAction, userId: string): Pr
   }
   if (type === "move_item_to_pantry") {
     const q = searchQuery ?? asStr(params.name);
-    const teamIds = await getUserTeamIds(userId);
     const ownerOr = (await ownedOrAsync(userId));
     const shopItem = await prisma.item.findFirst({
       where: { list: { OR: ownerOr }, name: { contains: q ?? "", mode: "insensitive" } },

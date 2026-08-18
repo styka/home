@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/platform/db/prisma";
+import { prisma, PULA } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { BASE_CONFIG_LEVEL, OPERATION_TYPES, OPERATION_TYPE_META } from "@/platform/llm/operationTypes";
@@ -18,6 +18,14 @@ export type HealthCheck = { label: string; ok: boolean; detail: string };
 export type SystemHealth = {
   build: { commit: string; branch: string; buildDate: string; commitMsg: string };
   db: { ok: boolean; latencyMs: number; migrations: number; lastMigration: string | null };
+  /**
+   * 084 (zadanie 28) — PULA POŁĄCZEŃ. Bez tego widoku „ile połączeń trzyma instancja" jest
+   * pytaniem bez odpowiedzi aż do chwili, gdy Neon odbije wdrożenie komunikatem
+   * `too many connections`. `brakujeFlagiPgbouncer` jest OSTRZEŻENIEM, nie awarią: pula w trybie
+   * transakcyjnym nie znosi zapytań przygotowanych, ale dopisanie flagi to zmiana sposobu, w jaki
+   * produkcja rozmawia z bazą — decyzja człowieka, nie funkcji pomocniczej.
+   */
+  pool: { limit: number; jawnyWUrl: boolean; przezPule: boolean; brakujeFlagiPgbouncer: boolean };
   llm: { ready: boolean; providers: number; enabledProviders: number; assignments: HealthCheck[]; legacyGroq: boolean };
   integrations: HealthCheck[];
   counts: { label: string; value: number }[];
@@ -144,6 +152,12 @@ export async function getSystemHealth(): Promise<SystemHealth> {
       commitMsg: process.env.NEXT_PUBLIC_BUILD_COMMIT_MSG ?? "—",
     },
     db: { ok: dbOk, latencyMs, migrations, lastMigration },
+    pool: {
+      limit: PULA.limit,
+      jawnyWUrl: PULA.jawnyWUrl,
+      przezPule: PULA.przezPule,
+      brakujeFlagiPgbouncer: PULA.brakujeFlagiPgbouncer,
+    },
     llm: { ready: llmReady, providers: providers.length, enabledProviders, assignments, legacyGroq },
     integrations,
     counts,

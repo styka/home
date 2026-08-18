@@ -13,7 +13,6 @@ export async function executeHabitsAction(action: AIAction, userId: string): Pro
   if (type === "toggle_habit") {
     const q = (searchQuery ?? asStr(params.habitName) ?? "").toLowerCase();
     if (!q) throw new Error("Podaj nazwę nawyku");
-    const teamIds = await getUserTeamIds(userId);
     const habit = await prisma.habit.findFirst({
       where: {
         archived: false,

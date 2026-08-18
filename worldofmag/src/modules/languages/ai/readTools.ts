@@ -28,7 +28,6 @@ export const readTools: Record<string, AiReadToolHandler> = {
   },
   list_due_cards: async (args, userId) => {
       const deckName = asStr(args.deckName) ?? asStr(args.search);
-      const teamIds = await getUserTeamIds(userId);
       const deck = await prisma.languageDeck.findFirst({
         where: {
           ...(await ownedWhereAsync(userId)),

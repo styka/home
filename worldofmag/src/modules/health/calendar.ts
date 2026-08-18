@@ -19,7 +19,6 @@ function isoDay(d: Date): string {
 }
 
 async function ownScope(userId: string) {
-  const teamIds = await getUserTeamIds(userId);
   return (await ownedOrAsync(userId));
 }
 

@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Martwego zapytania nie widzi ani kompilator, ani lint — widzi je licznik
+**Problem:** Audyt N+1 pokazał, że kalendarz wykonuje 35 zapytań przy siedmiu wkładach modułowych.
+Sześć z nich to było `const teamIds = await getUserTeamIds(userId)` — wynik nieużywany ani razu,
+pozostałość po migracji na przestrzenie (079 przełożyło miejsca UŻYCIA zespołów, a samo pobranie
+zostało). W całym repozytorium takich martwych wywołań było **siedemnaście**. `tsc` ich nie zgłasza,
+bo zmienna jest „użyta” przez samo przypisanie; `no-unused-vars` też nie, bo deklaracja z inicjalizacją
+liczy się jako użycie w domyślnej konfiguracji.
+**Rozwiązanie:** Znalezione mechanicznie: `grep -c "teamIds" <plik>` równe 1 oznacza, że jedyne
+wystąpienie to deklaracja. Usunięte razem z importami; kalendarz spadł z 35 do 14 zapytań, a zapadka
+paginacji z 263 do 261.
+**Lekcja:** Po każdej migracji, która zmienia SPOSÓB liczenia czegoś (własność, zakres, uprawnienia),
+przejdź jeszcze raz po miejscach, które POBIERAŁY stare dane wejściowe. Konwersja naturalnie skupia
+się na tym, co się liczy, i zostawia to, z czego się liczyło. Najtańszy detektor to policzenie
+wystąpień nazwy zmiennej w pliku — jedno wystąpienie znaczy „martwe”. Najlepszy to licznik zapytań:
+martwe wywołanie jest niewidoczne w typach i widoczne w liczbie zapytań.
+
 ## 2026-08-19 — „Odczytaj, porównaj, zapisz” nie jest odebraniem prawa do przebiegu
 **Problem:** Zadanie okresowe (retencja danych) miało chodzić raz na dobę, ale tyknięcie żyje
 w każdej instancji `web`. Naturalna implementacja — odczytaj znacznik ostatniego przebiegu, porównaj

@@ -5,7 +5,7 @@ import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug, Gaug
 import type { SystemHealth, HealthCheck } from "@/actions/systemHealth";
 
 export function SystemHealthPage({ health }: { health: SystemHealth }) {
-  const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime } = health;
+  const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime, pool } = health;
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
@@ -65,6 +65,20 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
             label="Kanał czasu rzeczywistego"
             value={`${realtime.listeners} ${realtime.listeners === 1 ? "słuchacz" : "słuchaczy"} · ta instancja`}
           />
+          {/* 084 (zadanie 28): pula połączeń. Bez tego „ile połączeń trzyma instancja" jest pytaniem
+              bez odpowiedzi aż do chwili, gdy baza odbije wdrożenie komunikatem o zbyt wielu
+              połączeniach — czyli w najgorszym możliwym momencie. */}
+          <Row
+            label="Pula połączeń"
+            value={`${pool.limit} na instancję · ${pool.jawnyWUrl ? "z DATABASE_URL" : "ustawiona przez aplikację"}${pool.przezPule ? " · przez pulę" : ""}`}
+          />
+          {pool.brakujeFlagiPgbouncer && (
+            <div style={{ fontSize: 11.5, color: "var(--accent-amber)", lineHeight: 1.5, marginTop: 2 }}>
+              Adres bazy wskazuje na pulę połączeń, ale w URL-u nie ma <code>pgbouncer=true</code>.
+              Tryb transakcyjny nie znosi zapytań przygotowanych — dopisz flagę w konfiguracji
+              środowiska (aplikacja nie robi tego sama, bo to zmiana sposobu rozmowy z bazą).
+            </div>
+          )}
         </Card>
 
         {/* Diagnostyka zapytań (Z-037) — EXPLAIN typowych list, monitor regresów wydajności bazy. */}

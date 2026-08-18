@@ -23,7 +23,6 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const search = asStr(args.search);
       const warehouse = asStr(args.warehouse);
       const lowStockOnly = args.lowStockOnly === true || args.lowStockOnly === "true";
-      const teamIds = await getUserTeamIds(userId);
       const items = await prisma.storageItem.findMany({
         where: {
           ...(await ownedWhereAsync(userId)),

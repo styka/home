@@ -17,7 +17,6 @@ function isoDay(d: Date): string {
 }
 
 export default async function calendarEvents(userId: string, { from, to }: CalendarRange): Promise<CalendarContribEvent[]> {
-  const teamIds = await getUserTeamIds(userId);
   const rows = await prisma.task.findMany({
     where: {
       dueDate: { gte: from, lt: to },

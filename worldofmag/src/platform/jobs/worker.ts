@@ -6,6 +6,7 @@
 import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/platform/jobs/queue";
 import { posprzatajLimity } from "@/platform/rateLimit";
 import { retencjaJesliCzas } from "@/platform/retention/harmonogram";
+import { wZakresieOperacji } from "@/platform/sharing/cache";
 import type { PolitykaRetencji } from "@/platform/retention";
 import { reportServerError } from "@/lib/observability/report";
 import type { JobHandler } from "@/platform/jobs/types";
@@ -44,7 +45,17 @@ const CLEANUP_EVERY_MS = 60 * 60 * 1000;
 // Guard singletona przetrwały HMR w dev (Next re-importuje moduły).
 const g = globalThis as unknown as { __omniaJobWorker?: { timer: NodeJS.Timeout | null; cleanup: NodeJS.Timeout | null } };
 
+/**
+ * 084 (zadanie 28): jedno zadanie = jeden ZAKRES OPERACJI. Poza żądaniem `React.cache` nie działa,
+ * więc handler sprawdzający dostęp pięćdziesiąt razy wykonywał dwieście zapytań o te same
+ * członkostwa. Owinięcie daje tej pracy taki sam zakres memoizacji, jaki ma zwykłe żądanie —
+ * i kończy się razem z zadaniem, więc nie ma czego unieważniać.
+ */
 async function processOne(job: JobRecord): Promise<void> {
+  return wZakresieOperacji(() => processOneWewnatrzZakresu(job));
+}
+
+async function processOneWewnatrzZakresu(job: JobRecord): Promise<void> {
   const handler = resolveHandler ? await resolveHandler(job.type) : undefined;
   if (!handler) {
     // Brak handlera = błąd trwały (ponawianie nic nie da).

@@ -67,7 +67,6 @@ export async function markAllNotificationsRead(): Promise<void> {
  */
 export async function syncReminders(): Promise<number> {
   const user = await requireAuth();
-  const teamIds = await getUserTeamIds(user.id);
   const ownScope = (await ownedOrAsync(user.id));
   const now = new Date();
   const in3 = new Date(now.getTime() + 3 * MS_DAY);

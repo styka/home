@@ -29,7 +29,6 @@ export async function executeStorageAction(action: AIAction, userId: string): Pr
     if (!delta || isNaN(delta)) throw new Error("Podaj zmianę ilości (np. -3)");
     const query = searchQuery?.trim();
     if (!query) throw new Error("Wskaż pozycję magazynową");
-    const teamIds = await getUserTeamIds(userId);
     const item = await prisma.storageItem.findFirst({
       where: {
         OR: (await ownedOrAsync(userId)),
