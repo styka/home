@@ -8,7 +8,7 @@ import { getRecentActivity } from "@/actions/activity";
 import { getPendingInvitationsCount } from "@/actions/invitations";
 import { getDashboardPrefs } from "@/actions/dashboardPrefs";
 import { readFavoriteViews } from "@/actions/favoriteViews";
-import { collectDashboardSnapshot } from "@/lib/dashboardSnapshot";
+import { cachowanaMigawkaPulpitu } from "@/lib/cacheAgregatow";
 import { HomePage } from "@/modules/home/ui/HomePage";
 
 /**
@@ -43,7 +43,10 @@ export default async function HomePageRoute() {
   todayEnd.setHours(23, 59, 59, 999);
   const teamIds = await getUserTeamIds(userId);
 
-  const snapshot = await collectDashboardSnapshot(userId, userPermissions, { now, todayStart, todayEnd, teamIds });
+  // 085 (zadanie 29): migawka przez cache agregatów. Klucz niesie stempel przestrzeni (unieważnia
+  // się sam, we wszystkich instancjach) i odcisk uprawnień — bez tego drugiego odebranie dostępu do
+  // modułu zostawiłoby jego dane na pulpicie do wygaśnięcia wpisu.
+  const snapshot = await cachowanaMigawkaPulpitu(userId, userPermissions, { now, todayStart, todayEnd, teamIds });
 
   // Dane KONTA, nie modułu — sięgają po sesję, więc zostają w trasie (plan §7.4).
   const [recentActivity, pendingInvitations] = await Promise.all([

@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — „Przechodzi sam, czerwieni się w zestawie” to zwykle wina PRZYRZĄDU, nie kodu
+**Problem:** Test liczący zapytania (zapadka N+1) zaczął padać wyłącznie w pełnym przebiegu
+`test:unit`, nigdy uruchomiony osobno. Pierwszy odruch: „ostatnia zmiana coś zepsuła, tylko widać to
+przy obciążeniu”. Sprawdzenie kodu niczego nie dało, bo kod był w porządku.
+**Rozwiązanie:** Winny był sam pomiar. Zdarzenia Prismy `$on("query")` przychodzą ASYNCHRONICZNIE,
+więc ostatnie zapytanie przebiegu rozgrzewającego potrafiło dolecieć już po wyzerowaniu licznika
+i policzyć się w oknie pomiarowym jako powtórzenie. Na obciążonej maszynie okno było szersze,
+stąd zależność od reszty zestawu. Poprawka: krótka chwila (`setTimeout 50 ms`) na dojście zdarzeń
+po każdym przebiegu, przed odczytem licznika.
+**Lekcja:** Gdy test jest niestabilny w zależności od OBCIĄŻENIA, a nie od danych, podejrzewaj
+najpierw kanał, którym zbierasz wynik: log zdarzeń, strumień, callback, metrykę. Wszystko, co
+dociera „przy okazji”, dociera z opóźnieniem — a granica okna pomiarowego wyznaczona synchronicznie
+(`licznik = 0`) nie czeka na to, co jeszcze leci. Reguła ogólna: jeśli mierzysz przez kanał
+asynchroniczny, po każdej fazie pomiaru daj mu dojść do końca.
+
 ## 2026-08-19 — Martwego zapytania nie widzi ani kompilator, ani lint — widzi je licznik
 **Problem:** Audyt N+1 pokazał, że kalendarz wykonuje 35 zapytań przy siedmiu wkładach modułowych.
 Sześć z nich to było `const teamIds = await getUserTeamIds(userId)` — wynik nieużywany ani razu,

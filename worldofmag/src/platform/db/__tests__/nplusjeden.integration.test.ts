@@ -57,11 +57,18 @@ test(
       // poza żądaniem `React.cache` nie memoizuje, więc kontekst dostępu liczyłby się od nowa dla
       // każdego wkładu i test zgłaszałby N+1, którego użytkownik nigdy nie widzi.
       const f = () => wZakresieOperacji(async () => { await g(); });
+      // Zdarzenia `$on("query")` przychodzą ASYNCHRONICZNIE, więc ostatnie z przebiegu
+      // rozgrzewającego potrafi dolecieć już po wyzerowaniu licznika i policzyć się jako
+      // powtórzenie. Objaw jest podstępny: test przechodzi uruchomiony sam, a czerwieni się w pełnym
+      // przebiegu, gdy maszyna jest obciążona. Stąd chwila na dojście zdarzeń po każdym przebiegu.
+      const nadazZdarzeniami = () => new Promise((r) => setTimeout(r, 50));
       // Pierwszy przebieg rozgrzewa: Prisma przygotowuje połączenie i plany, a my mierzymy pracę
       // ustaloną, nie koszt startu. Bez tego wynik skakałby między przebiegami.
       await f();
+      await nadazZdarzeniami();
       zapytania = [];
       await f();
+      await nadazZdarzeniami();
       const zliczone = new Map<string, number>();
       for (const q of zapytania) zliczone.set(q, (zliczone.get(q) ?? 0) + 1);
       let najczestsze = "";

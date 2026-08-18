@@ -145,7 +145,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 26 | Współdzielony rate-limit | ✅ | **081.** Liczniki w bazie (`RateLimitBucket`) i **sloty z terminem ważności** zamiast licznika współbieżności (`RateLimitLease`, klucz `(key, slot)`, `holder`) — bo licznik nikt nie zmniejszy po awarii procesu. Zajęcie slotu jest jednym `INSERT … ON CONFLICT … WHERE wygasł`, więc serializuje go indeks, a nie blokada doradcza. Interfejs zachowany poza jednym ustępstwem: funkcje są **asynchroniczne** (sygnatura synchroniczna wymagałaby cache'u, czyli drugiego nośnika stanu). Zakres poza AI: zaproszenia wpięte, nadania z polityką gotową na zadanie 14; rejestracji i poczty w tym wdrożeniu **nie ma** i jest to zapisane, a nie przemilczane. Dowód **z dwoma procesami** + trzy sondy |
 | 27 | Budżety AI | ✅ | **082.** Trzy dziury zamknięte: (1) kontrola kosztów pomijała wywołania **bez `userId`**, czyli zadania w tle — najdroższe operacje w systemie; nowy punkt dławiący w `chatComplete` **i** `chatStream` jest bezwarunkowy. (2) Doszedł pułap **miesięczny** per plan — limit dzienny nie wyraża reguły „nie trzydzieści ciężkich dni z rzędu”. (3) Budżet globalny rozdzielony na **trzy** ustawienia: wyłącznik awaryjny, kwota i „twardy” (czy przekroczenie ZATRZYMUJE, czy tylko alarmuje) — bo budżet, który tylko powiadamia, nie jest budżetem. Progi 50/80/**100** %, deduplikacja per (miesiąc, próg). Widoczność „wykorzystano X z Y” w `/settings` |
 | 28 | Pula połączeń, audyt N+1, indeksy | ✅ | **084.** Indeksy okazały się **zrobione** i wymagały sprawdzenia, nie pracy (47/47 modeli z `workspaceId`, komplet trzech na `ResourceGrant`). Audyt N+1 ma postać **zapadki z dwiema liczbami**: łączna liczba zapytań i największa liczba powtórzeń TEGO SAMEGO SQL-a — druga jest właściwym sygnałem. Pomiar znalazł dwie realne rzeczy: **17 martwych `getUserTeamIds`** (pozostałość po 079 — kompilator ich nie widział) i **brak jakiejkolwiek memoizacji w zadaniach w tle** (`React.cache` działa tylko w żądaniu; doszedł `wZakresieOperacji` na `AsyncLocalStorage`). Kalendarz **35 → 14** zapytań, pulpit 16 → 11, **zero powtórzeń**. Pula: `connection_limit` ustawiany przez aplikację, `pgbouncer=true` **zgłaszany, nie dopisywany** |
-| 29 | Cache agregatów i rozstrzygnięć dostępu | ⬜ |
+| 29 | Cache agregatów i rozstrzygnięć dostępu | ✅ | **085.** Pulpit i kalendarz cache'owane **stemplem przestrzeni w kluczu**, a nie `revalidateTag`-iem: tag unieważnia cache JEDNEJ instancji, a stempel („ostatnie zdarzenie w moich przestrzeniach”, ze znacznikiem **i licznością** — milisekunda nie wystarcza) przestaje być adresowalny wszędzie naraz. TTL 60 s zostaje jako siatka na mutacje bez zdarzenia. W kluczu pulpitu jest też **odcisk uprawnień** — bez niego odebranie dostępu zostawiłoby dane modułu w cache'u. **Rozstrzygnięcia dostępu i lista przestrzeni świadomie NIEcache'owane**: unieważniałyby je zdarzenia `sharing.grant.*`, których producent (zadanie 14) jeszcze nie istnieje, a cache dostępu bez unieważniania to dziura z rozdz. 11.1.3 |
 | 30 | Retencja danych | ✅ | **083.** Siedem polityk z rozdz. 11.6; każda niesie **własne zapytanie kasujące**, więc wykonawca w platformie nie zna ani jednej tabeli, a moduł deklaruje retencję swoich danych u siebie (korzeń: `src/lib/retention/polityki.ts`, polityki **wstrzykiwane** do workera). Trzy doprecyzowania rozdziału: `DomainEvent` kasujemy **tylko dostarczone** (zalegające to praca, nie śmieć), `AiUsage` **nie** podlega retencji (na nim stoją budżety z 082), `ItemHistory` liczy **ostatnie użycie**, nie datę powstania. Dolna granica śladu audytowego działa **przy odczycie**, nie w formularzu. Prawo do przebiegu odbierane **atomowo** — sonda pokazała, że wariant odczytaj-porównaj-zapisz przepuszcza 5 instancji na 5. Ósma kontrola w `check:module-registry` |
 
 ### Faza 6 — Obserwowalność i procesy
@@ -2544,3 +2544,74 @@ przechodzi 5 instancji zamiast jednej).
 
 **Bramki:** build **exit 0**, `test:unit` **977/977** (+8), `check:module-registry` o jedną kontrolę
 bogatszy, zapadka paginacji **263** bez ruchu.
+
+---
+
+## 085 — Zadanie 29: cache, który unieważnia się sam, i jeden, którego świadomie nie ma
+
+Rozdz. 11.5 wymienia cztery pozycje do cache'owania i zaczyna od zastrzeżenia: *„możliwy dopiero po
+zdarzeniach — bez nich nie ma czym unieważniać"*. Zdarzenia są (070–073). Dwie pozycje zostały
+zrobione, dwie **świadomie nie** — i to drugie wymagało więcej myślenia niż pierwsze.
+
+### Unieważnianie wciągnięte do klucza, nie wypychane do cache'u
+
+Naturalną odpowiedzią jest `revalidateTag` na zdarzeniu. Ma jedną wadę, której w tym wdrożeniu nie
+da się obejść: **unieważnia cache TEJ instancji**. Przy dwóch instancjach `web` mutacja obsłużona
+przez pierwszą zostawia drugą ze starym agregatem — objaw „u niektórych nie odświeża się pulpit",
+dokładnie ten, przed którym ostrzega rozdz. 11.9 przy okazji SSE.
+
+Dlatego unieważnianie jest **w kluczu**. `stempelPrzestrzeni` to „ostatnie zdarzenie w moich
+przestrzeniach"; zmienia się przy każdej mutacji, która ogłosiła zdarzenie, więc stary wpis
+przestaje być adresowalny **we wszystkich instancjach naraz** i nikt nikogo nie musi powiadamiać.
+Koszt: jedno zapytanie agregujące po istniejącym indeksie `[workspaceId, createdAt]`, w zamian za
+11 (pulpit) albo 14 (kalendarz) przy trafieniu.
+
+Stempel niesie **znacznik czasu i liczność**, nie sam znacznik. `createdAt` ma dokładność
+milisekundy, więc dwa zdarzenia zapisane razem dałyby ten sam stempel i drugie byłoby niewidoczne.
+Ten przypadek ma własny test — bez niego byłaby to wada odkryta dopiero na produkcji, w postaci
+„czasem nie widać zmiany".
+
+**TTL zostaje jako siatka.** Producentów zdarzeń jest dziś kilku, więc większość mutacji stempla nie
+rusza. Cache bez krótkiego TTL pokazywałby stare dane do następnego zdarzenia, czyli potencjalnie
+godzinami. To ta sama figura, co pięciominutowe odpytywanie awaryjne zachowane w `DataFreshness`
+mimo działającego strumienia (072).
+
+### Uprawnienia w kluczu — bo tu dziurę da się zamknąć bez mechanizmu
+
+Migawka pulpitu zawiera wyłącznie moduły, do których użytkownik ma prawo. Bez uprawnień w kluczu
+odebranie dostępu zostawiłoby dane modułu w cache'u aż do wygaśnięcia wpisu — ta sama klasa błędu,
+o której mówi rozdz. 11.1.3, tyle że możliwa do uniknięcia **bez żadnego unieważniania**. Klucz jest
+wydzieloną funkcją (`kluczPulpitu`) właśnie po to, żeby dało się to sprawdzić testem, a nie tylko
+przeczytać. Uprawnienia wchodzą jako odcisk: klucze `unstable_cache` lądują w nazwach plików na
+dysku instancji, a pełna lista uprawnień w nazwie pliku to niepotrzebny wyciek.
+
+Odwrotny błąd też ma test: **kolejność** uprawnień nie może zmieniać klucza. Sesja jej nie
+gwarantuje, więc bez sortowania ten sam użytkownik miałby dwa wpisy i trafiałby w cache losowo —
+objawem byłoby „pulpit czasem szybki, czasem wolny", czyli coś, czego nikt nigdy nie zgłosi.
+
+### Czego nie cache'ujemy i dlaczego to jest odpowiedź, a nie zaniechanie
+
+**Rozstrzygnięcia dostępu** i **listy przestrzeni użytkownika**. Rozdz. 11.5 sam nazywa pierwsze
+„najważniejszym i najbardziej ryzykownym" i odsyła do 11.1.3. Unieważniać miałyby je zdarzenia
+`sharing.grant.*` — a **strona zapisu nadań nie istnieje** (zadanie 14 jest w toku), więc nie ma dziś
+producenta tych zdarzeń. Kolejność jest jednokierunkowa: najpierw zdarzenie, potem cache; odwrotnie
+to jest po prostu dziura w kontroli dostępu z metryką wydajności w zamian. Do tego czasu obowiązuje
+zakres żądania (052) i zakres operacji (084) — memoizacja znikająca razem z pracą, więc bez czego
+unieważniać. Test odwołania dostępu (063) pilnuje, żeby ta decyzja nie zmieniła się po cichu.
+
+### Wyścig, który psuł POMIAR, a nie kod
+
+Po włączeniu cache'u zapadka N+1 z 084 zaczęła czerwienić się **tylko w pełnym przebiegu testów**,
+nigdy uruchomiona sama. Przyczyną nie była żadna zmiana w kodzie: zdarzenia `$on("query")`
+przychodzą **asynchronicznie**, więc ostatnie zapytanie przebiegu rozgrzewającego potrafiło dolecieć
+już po wyzerowaniu licznika i policzyć się jako powtórzenie. Na obciążonej maszynie okno było
+szersze. Poprawka to chwila na dojście zdarzeń po każdym przebiegu — warto zapamiętać, bo „test
+przechodzi sam, czerwieni się w zestawie" prowadzi odruchowo do szukania winy w kodzie, a nie
+w przyrządzie pomiarowym.
+
+**Dowód:** 4 przypadki stempla na realnym Postgresie + 4 jednostkowe klucza. Trzy sondy: stempel bez
+liczności (czerwieni przypadek dwóch zdarzeń w tej samej milisekundzie), klucz bez uprawnień
+(czerwieni test odebrania dostępu), stempel bez zawężenia do przestrzeni (czerwieni przypadek cudzej
+przestrzeni — bez tego każda mutacja w systemie unieważniałaby cache wszystkim).
+
+**Bramki:** build **exit 0**, `test:unit` **998/998** (+9), zapadka N+1 bez ruchu (11/14/10).
