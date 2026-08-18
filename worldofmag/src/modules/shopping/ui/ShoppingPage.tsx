@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Trash2, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, Trash2, CheckCircle2, Share2 } from "lucide-react";
 import { useCommandPalette } from "@/components/command-palette/CommandPaletteProvider";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { Modal } from "@/components/ui/Modal";
@@ -25,6 +25,8 @@ import { FILTER_TABS, STATUS_CYCLE } from "@/types";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, text, type RawParams } from "@/platform/viewState/viewState";
 import { ModuleView } from "@/components/ui/view";
+import { ShareDialog } from "@/components/sharing/ShareDialog";
+import { useTranslations } from "next-intl";
 
 const SORT_STORAGE_KEY = "wom_shopping_sort";
 
@@ -99,6 +101,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   // 042: „Wyczyść" kasuje kupione pozycje TWARDO (`deleteMany`, bez zapisu do kosza), więc jedno
   // przypadkowe dotknięcie ikony było nieodwracalne. Pytamy o potwierdzenie przed wykonaniem.
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
+  const tShare = useTranslations("sharing");
   const [isPending, startTransition] = useTransition();
 
   // 009-shopping-offline-sync: źródłem pozycji jest stan kliencki — online z propsów serwera
@@ -307,6 +311,20 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             <span>Zakończ zakupy</span>
           </button>
         )}
+        {/* 095: to samo okno, co dla projektu zadań i notatki. Zakupy miały deklarację zasobu od
+            064, ale nie miały skąd jej użyć — pytanie kontrolne rozdz. 14 („czy da się udostępnić
+            notatkę, listę zakupów i przepis TYM SAMYM oknem") wychodziło na „nie" właśnie tu.
+            Online-only jak reszta operacji na LIŚCIE (spec 009). */}
+        <button
+          onClick={() => { if (online) setUdostepnianieOtwarte(true); }}
+          disabled={!online}
+          className="flex items-center justify-center p-1.5 rounded disabled:opacity-40"
+          style={{ color: "var(--text-muted)" }}
+          title={online ? tShare("shareList") : "Niedostępne offline"}
+          aria-label={tShare("shareList")}
+        >
+          <Share2 size={13} />
+        </button>
         <SortControl sortMode={sortMode} stores={stores} onChange={handleSortChange} />
         <span className="text-xs hidden md:block" style={{ color: "var(--text-muted)" }}>
           {statsText}
@@ -402,6 +420,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           financeReady={financeReady}
           onConfirm={(bookToPortfel) => startTransition(async () => { await completeShopping(effListId, { bookToPortfel }); router.push("/shopping"); })}
           onCancel={() => setCompleteOpen(false)}
+        />
+      )}
+
+      {udostepnianieOtwarte && (
+        <ShareDialog
+          resourceType="shopping.list"
+          resourceId={effListId}
+          onClose={() => setUdostepnianieOtwarte(false)}
         />
       )}
 

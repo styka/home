@@ -19,7 +19,7 @@ import type {
 } from "@/types/kitchen";
 import type { Recipe, RecipeIngredient, RecipeStep, RecipeImage, Item } from "@prisma/client";
 import { slugify } from "../domain/slug";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscDoZapisu, filtrMoichRekordow } from "@/platform/workspaces/zapis";
 
 // ─── Access control ───────────────────────────────────────────────────────
 
@@ -72,8 +72,11 @@ export async function getRecipes(opts?: {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
+  // 095: po migracji 0244 `Recipe` nie ma kolumny `ownerId`. „Tylko moje" to dziś przestrzeń
+  // osobista — `filtrMoichRekordow` jest dokładnym następcą dawnego `ownerId = ja` (i celowo
+  // WĘŻSZYM niż `ownedOrAsync`, które obejmuje też przestrzenie zespołów).
   const ownership = opts?.ownedOnly
-    ? [{ ownerId: user.id }]
+    ? [await filtrMoichRekordow(user.id)]
     : (await ownedOrAsync(user.id));
 
   const where: Record<string, unknown> = {

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Pencil, ShoppingCart, CheckCircle2, Trash2, Play } from "lucide-react";
+import { ArrowLeft, Clock, Pencil, ShoppingCart, CheckCircle2, Trash2, Play, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ServingSelector } from "../shared/ServingSelector";
 import { ShopForRecipeDialog } from "./ShopForRecipeDialog";
@@ -13,6 +13,8 @@ import { computeRecipeCost } from "../../lib/recipeCost";
 import type { RecipeFull } from "@/types/kitchen";
 import { DIFFICULTY_LABELS, MEAL_TYPE_LABELS } from "@/types/kitchen";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { ShareDialog } from "@/components/sharing/ShareDialog";
+import { useTranslations } from "next-intl";
 
 interface RecipeViewProps {
   recipe: RecipeFull;
@@ -31,6 +33,8 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
   const { showToast } = useToast();
   const [servings, setServings] = useState(recipe.servings);
   const [shopOpen, setShopOpen] = useState(false);
+  const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
+  const tShare = useTranslations("sharing");
   const [pendingDelete, startDelete] = useTransition();
   const [pendingCook, startCook] = useTransition();
 
@@ -92,6 +96,20 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           <ArrowLeft size={14} /> Przepisy
         </Link>
         <div className="flex items-center gap-1">
+          {/* 095: to samo okno, co dla projektu zadań, notatki i listy zakupów. Kuchnia miała
+              deklarację zasobu od 064 — brakowało wyłącznie wejścia do niej. */}
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={() => setUdostepnianieOtwarte(true)}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm"
+              style={{ color: "var(--text-secondary)" }}
+              title={tShare("shareRecipe")}
+              aria-label={tShare("shareRecipe")}
+            >
+              <Share2 size={14} />
+            </button>
+          ) : null}
           {canEdit ? (
             <Link
               href={`/kitchen/recipes/${recipe.slug}/edit`}
@@ -376,6 +394,14 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
         onClose={() => setShopOpen(false)}
         defaultServings={servings}
       />
+
+      {udostepnianieOtwarte && (
+        <ShareDialog
+          resourceType="kitchen.recipe"
+          resourceId={recipe.id}
+          onClose={() => setUdostepnianieOtwarte(false)}
+        />
+      )}
     </div>
   );
 }

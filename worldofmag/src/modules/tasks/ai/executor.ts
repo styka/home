@@ -180,7 +180,13 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
   }
 
   const resolveProject = async () => {
-    const projOr = [{ ownerId: userId }, { members: { some: { userId } } }];
+    // 095: po migracji 0244 `TaskProject` nie ma kolumny `ownerId`. Dawne „mój projekt" to dziś
+    // przestrzeń osobista (`filtrMoichRekordow` — dokładny następca, nie szerszy `ownedWhereAsync`),
+    // a dostęp przez zespół dalej wyraża członkostwo. Zakres pozostaje ten sam co przed migracją.
+    const projOr: Record<string, unknown>[] = [
+      await filtrMoichRekordow(userId),
+      { members: { some: { userId } } },
+    ];
     const id = asStr(params.projectId);
     if (id) { const p = await prisma.taskProject.findFirst({ where: { OR: projOr, id } }); if (p) return p.id; }
     const q = searchQuery ?? asStr(params.name) ?? "";

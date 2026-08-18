@@ -11,7 +11,7 @@ import { assertListAccess } from "@/modules/shopping/contract";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
 import { dayKeyUTC } from "../domain/dzienPlanu";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
 
 export type MealPlanEntryWithRecipe = MealPlanEntry & {
   recipe: {
@@ -50,9 +50,12 @@ export async function getMealPlan(
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
 
+  // 095: po migracji 0244 `MealPlanEntry` nie ma już kolumny `ownerTeamId` — zawężenie do jednego
+  // zespołu wyraża jego PRZESTRZEŃ. Kontrolę dostępu robi `teamIds.includes(teamId)` linijkę wyżej,
+  // dlatego wolno tu użyć wariantu bez własnej kontroli.
   const ownershipFilter = teamId
     ? teamIds.includes(teamId)
-      ? [{ ownerTeamId: teamId }]
+      ? [{ workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) }]
       : []
     : (await ownedOrAsync(user.id));
 
@@ -101,7 +104,7 @@ export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: 
   const teamIds = await getAccessibleTeamIds(user.id, "kitchen");
   const ownershipFilter = teamId
     ? teamIds.includes(teamId)
-      ? [{ ownerTeamId: teamId }]
+      ? [{ workspaceId: await przestrzenZespoluBezKontroliDostepu(teamId) }]
       : []
     : (await ownedOrAsync(user.id));
   if (ownershipFilter.length === 0) return { total: 0, pricedEntries: 0, totalEntries: 0 };

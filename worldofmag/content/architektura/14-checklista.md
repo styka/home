@@ -118,11 +118,17 @@
 
 Po ukończeniu wszystkich faz odpowiedz na te pytania **kodem, nie deklaracją**:
 
-- [ ] Ile miejsc trzeba dotknąć, żeby dodać moduł? *(cel: 1)*
-- [ ] Czy da się udostępnić notatkę, listę zakupów i przepis? *(cel: tak, tym samym oknem)*
-- [ ] Ile zapytań do bazy generuje bezczynna karta w ciągu 5 minut? *(cel: 0)*
-- [ ] Po ilu sekundach współpracownik widzi moją zmianę na wspólnej liście? *(cel: < 2)*
-- [ ] Co się stanie, gdy dwie osoby zapiszą to samo zadanie? *(cel: wybór, nie ciche nadpisanie)*
-- [ ] Czy użytkownik z rolą `viewer` może zmienić zadanie **przez asystenta AI**? *(cel: nie)*
-- [ ] Czy odebranie dostępu działa natychmiast przy otwartej karcie? *(cel: tak)*
-- [ ] Ile trwa dodanie języka angielskiego? *(cel: praca tłumacza, nie programisty)*
+> **Odpowiedzi (095).** Sprawdzone kodem, nie deklaracją. Trzy pozycje nie osiągnęły celu i są tu
+> wypisane jako niedomknięte — razem z tym, czym są pilnowane, żeby nie wyglądały na przeoczenie.
+
+| Pytanie | Cel | Stan | Czym pilnowane |
+|---|---|---|---|
+| Ile miejsc trzeba dotknąć, żeby dodać moduł? | 1 | ⚠️ **2 obowiązkowe + do 4 warunkowych** — zmierzony kompromis z 050: wspólny korzeń leniwych loaderów wciąga do grafu cele wszystkich `import()` (1889 → 2117 modułów na `/`) | `check:module-registry` sprawdza każde wpięcie **w obie strony** — pominąć po cichu się nie da |
+| Czy da się udostępnić notatkę, listę zakupów i przepis tym samym oknem? | tak | ✅ **tak** (095) — `ShareDialog` przy notatce, liście i przepisie; wcześniej wisiał tylko przy projekcie zadań | `check:module-registry` (klasyfikacja zasobów 21/21), tabela prawdy notatek |
+| Ile zapytań do bazy generuje bezczynna karta w ciągu 5 minut? | 0 | ✅ **0** — pozostałe `setInterval` liczą tylko czas na ekranie albo chodzą wyłącznie w trakcie zadania | `check:realtime` (awaryjne odpytywanie nie częściej niż co 5 min) |
+| Po ilu sekundach współpracownik widzi moją zmianę? | < 2 | ✅ SSE `/api/events`, kanały liczone z sesji | `check:realtime`, `check:events` |
+| Co się stanie, gdy dwie osoby zapiszą to samo zadanie? | wybór | ✅ `updateWithVersion` + `ConflictProvider` | `check:versioning` |
+| Czy `viewer` może zmienić zadanie przez asystenta AI? | nie | ✅ nie | `check:ai-access` + próby obejścia asystentem |
+| Czy odebranie dostępu działa natychmiast przy otwartej karcie? | tak | ✅ tak — rozstrzygnięcia dostępu świadomie **nie są** cache'owane między żądaniami | test odwołania dostępu przy aktywnym SSE |
+| Ile trwa dodanie języka angielskiego? | praca tłumacza | ⚠️ **nadal praca programisty** dla **1416** literałów w 231 plikach | `check:i18n` — zapadka, która nie może rosnąć i wymusza zapisanie każdego spadku |
+| *(dopisane 095)* Czy paginacja kursorowa objęła wszystkie widoki listowe? | tak | ⚠️ **nie — 207 zapytań bez `take`** | `check:pagination` — jak wyżej |

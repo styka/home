@@ -75,7 +75,10 @@
       "editorHint": "zmienia treść",
       "manager": "Zarządzanie",
       "managerHint": "zmienia i udostępnia dalej"
-    }
+    },
+    "shareNote": "Udostępnij tę notatkę",
+    "shareList": "Udostępnij tę listę",
+    "shareRecipe": "Udostępnij ten przepis"
   },
   "tasks": {
     "shareProject": "Udostępnij ten projekt"

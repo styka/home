@@ -2,24 +2,35 @@
 
 import { revalidatePath } from "next/cache";
 import { updateWithVersion } from "@/platform/concurrency/version";
-import { assertOwnership } from "@/platform/auth/ownership";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { Note } from "@/types";
 import { trackActivity } from "@/actions/activity";
 import { recordTrash } from "@/platform/trash/trash";
 import { rankNotesBySearch } from "../lib/searchRank";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
+import { requireModuleAccess, idNotatekNadanychMi } from "../lib/sharingGuard";
+import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
 
-async function assertNoteAccess(noteId: string, userId: string): Promise<void> {
-  const note = await prisma.note.findUnique({
-    where: { id: noteId },
-    select: { workspaceId: true },
-  });
+/**
+ * 095: dostęp do JEDNEJ notatki rozstrzyga platforma (`platform/sharing`), a nie moduł.
+ *
+ * Do 095 był tu `assertOwnership` — „czy notatka jest w którejś z moich przestrzeni". Dla
+ * członka przestrzeni wynik jest **identyczny**: deklaracja odwzorowuje obu rodzajów członków na
+ * `manager`, a `getAccessContext` liczy przestrzenie tą samą funkcją (`getUserTeamIds`), której
+ * używał `assertOwnership`. Zmienia się wyłącznie to, czego wcześniej nie było: NADANIA.
+ *
+ * Rozdzielenie `note.read` / `note.edit` ma znaczenie tylko dla nadań — dla członka przestrzeni
+ * obie operacje wychodzą tak samo, bo obie zaspokaja rola `manager`.
+ */
+async function assertNoteAccess(
+  noteId: string,
+  userId: string,
+  operation: "note.read" | "note.edit" = "note.edit",
+): Promise<void> {
+  const note = await prisma.note.findUnique({ where: { id: noteId }, select: { id: true } });
   if (!note) throw new Error("Notatka nie istnieje");
-  // 079: pełny zakres przestrzeni = dawne `getUserTeamIds`.
   try {
-    await assertOwnership(note, userId);
+    await requireModuleAccess(userId, { type: "notes.note", id: noteId }, operation);
   } catch {
     throw new Error("Brak dostępu do notatki");
   }
@@ -35,7 +46,19 @@ export async function getNotes(filters?: {
   const user = await requireAuth();
   const teamIds = await getAccessibleTeamIds(user.id, "notes");
 
-  const where: Record<string, unknown> = { ...(await ownedWhereAsync(user.id)) };
+  /**
+   * 095: lista obejmuje moje przestrzenie ORAZ notatki nadane mi wprost.
+   *
+   * Bez tej drugiej gałęzi udostępnienie notatki było prawdziwe i niewidoczne: `assertNoteAccess`
+   * przepuszczał obdarowanego, ale notatka nie pojawiała się nigdzie, gdzie jej szuka — a modułu
+   * Notatki nie da się otworzyć „po adresie zasobu", bo listę renderuje jedna strona.
+   * `idNotatekNadanychMi` pomija nadania linkowe i odziedziczone (patrz `platform/sharing/nadaneMi`).
+   */
+  const zakresPrzestrzeni = await ownedWhereAsync(user.id);
+  const nadaneMi = await idNotatekNadanychMi(user.id);
+  const where: Record<string, unknown> = nadaneMi.length
+    ? { OR: [zakresPrzestrzeni, { id: { in: nadaneMi } }] }
+    : { ...zakresPrzestrzeni };
 
   if (filters?.groupId === "NO_GROUP") {
     where.groupId = null;
@@ -48,8 +71,12 @@ export async function getNotes(filters?: {
   }
 
   if (filters?.ownerTeamId) {
-    // Narrow to a specific team's notes only
-    where.OR = [{ ownerTeamId: filters.ownerTeamId }];
+    // 095: zawężenie do notatek JEDNEGO zespołu. Po migracji 0244 `Note` nie ma kolumny
+    // `ownerTeamId` — zespół wyraża jego przestrzeń. Dostęp sprawdza `teamIds` z zakresu modułu:
+    // przestrzeń zespołu, do którego użytkownik nie należy, nie przejdzie przez ten warunek.
+    if (!teamIds.includes(filters.ownerTeamId)) return [];
+    where.workspaceId = await przestrzenZespoluBezKontroliDostepu(filters.ownerTeamId);
+    delete where.OR;
   }
 
   if (filters?.tagIds && filters.tagIds.length > 0) {
@@ -245,7 +272,7 @@ export type NoteAttachmentDTO = { id: string; name: string; url: string; created
 
 export async function getNoteAttachments(noteId: string): Promise<NoteAttachmentDTO[]> {
   const user = await requireAuth();
-  await assertNoteAccess(noteId, user.id);
+  await assertNoteAccess(noteId, user.id, "note.read");
   const rows = await prisma.noteAttachment.findMany({ where: { noteId }, orderBy: { createdAt: "desc" } });
   return rows.map((a) => ({ id: a.id, name: a.name, url: a.url, createdAt: a.createdAt.toISOString() }));
 }
@@ -275,7 +302,7 @@ export type NoteRevisionDTO = { id: string; title: string; content: string; crea
 
 export async function getNoteRevisions(noteId: string): Promise<NoteRevisionDTO[]> {
   const user = await requireAuth();
-  await assertNoteAccess(noteId, user.id);
+  await assertNoteAccess(noteId, user.id, "note.read");
   const rows = await prisma.noteRevision.findMany({
     where: { noteId },
     orderBy: { createdAt: "desc" },

@@ -6,26 +6,89 @@
     "zakres": "Brak decyzji per-rekord: widoczność wynika wyłącznie z zakresu list, ujednoliconego w 057/058."
   },
   "moduly": {
-    "tasks":         { "rodzaj": "deklaracja",  "powod": "052, pilot: projekt i zadanie, dziedziczenie, członkostwa" },
-    "pets":          { "rodzaj": "deklaracja",  "powod": "060: własność zespołowa + PetShare (VIEWER/EDITOR)" },
-    "shopping":      { "rodzaj": "deklaracja",  "powod": "064: lista zakupów — właściciel albo członek zespołu" },
-    "kitchen":       { "rodzaj": "deklaracja",  "powod": "064: przepis (z publicznością do odczytu) i książka kucharska" },
-    "notes":         { "rodzaj": "zakres",      "powod": "Notatka nie ma guardu per-rekord poza sprawdzeniem zakresu; `assertNoteAccess` sprowadza się do 'czy w moim zakresie'. Deklaracja dojdzie razem z udostępnianiem notatek (zadanie 14)." },
-    "health":        { "rodzaj": "zakres",      "powod": "Dane medyczne: własność osobista lub zespołowa, bez udostępnień per-rekord" },
-    "habits":        { "rodzaj": "zakres",      "powod": "Nawyk widoczny przez zakres; brak udostępniania pojedynczego nawyku" },
-    "flota":         { "rodzaj": "zakres",      "powod": "Pojazd przez zakres własności; brak udostępnień per-pojazd" },
-    "portfel":       { "rodzaj": "zakres",      "powod": "Element portfela i budżet przez zakres; finanse nie są dziś udostępniane" },
-    "languages":     { "rodzaj": "zakres",      "powod": "Talia przez zakres własności" },
-    "magazynowanie": { "rodzaj": "zakres",      "powod": "`ownershipOr` — zakres własności, bez decyzji per-rekord" },
-    "warsztaty":     { "rodzaj": "zakres",      "powod": "Jak magazynowanie — wspólny `ownershipOr`" },
-    "contacts":      { "rodzaj": "zakres",      "powod": "Kontakty przez `ownedByWhere`" },
-    "calendar":      { "rodzaj": "zakres",      "powod": "Agregat CZYTAJĄCY cudze moduły — nie ma własnych zasobów, więc nie ma czego deklarować" },
-    "home":          { "rodzaj": "zakres",      "powod": "Pulpit składa migawkę z wkładów innych modułów; własnych zasobów brak" },
-    "weather":       { "rodzaj": "wlasciciel",  "powod": "`l.ownerId !== user.id` — lokalizacje i obserwatory są ściśle osobiste" },
-    "news":          { "rodzaj": "wlasciciel",  "powod": "`t.ownerId !== userId` — tematy i źródła ściśle osobiste" },
-    "truck":         { "rodzaj": "wlasciciel",  "powod": "Profil pojazdu ciężarowego — jeden użytkownik" },
-    "qa":            { "rodzaj": "wlasciciel",  "powod": "Narzędzie wewnętrzne; scenariusze nie są udostępniane" },
-    "reports":       { "rodzaj": "wlasciciel",  "powod": "Raport systemowy albo osobisty; brak udostępniania per-raport" },
-    "services":      { "rodzaj": "wlasciciel",  "powod": "Marketplace ma WŁASNY model widoczności (ogłoszenie publiczne, zapytanie między stronami). Rozdz. 8.10 mówi wprost, że `ServiceStaff` ZOSTAJE, bo to rola w firmie, a nie dostęp do zasobu — wciągnięcie tego w `ResourceGrant` pomyliłoby dwa różne pojęcia." }
+    "tasks": {
+      "rodzaj": "deklaracja",
+      "powod": "052, pilot: projekt i zadanie, dziedziczenie, członkostwa"
+    },
+    "pets": {
+      "rodzaj": "deklaracja",
+      "powod": "060: własność zespołowa + PetShare (VIEWER/EDITOR)"
+    },
+    "shopping": {
+      "rodzaj": "deklaracja",
+      "powod": "064: lista zakupów — właściciel albo członek zespołu"
+    },
+    "kitchen": {
+      "rodzaj": "deklaracja",
+      "powod": "064: przepis (z publicznością do odczytu) i książka kucharska"
+    },
+    "notes": {
+      "rodzaj": "deklaracja",
+      "powod": "095: notatka — właściciel albo członek zespołu, plus nadania. Deklaracja doszła razem z udostępnianiem, dokładnie tak, jak zapowiadał poprzedni wpis („zakres”)."
+    },
+    "health": {
+      "rodzaj": "zakres",
+      "powod": "Dane medyczne: własność osobista lub zespołowa, bez udostępnień per-rekord"
+    },
+    "habits": {
+      "rodzaj": "zakres",
+      "powod": "Nawyk widoczny przez zakres; brak udostępniania pojedynczego nawyku"
+    },
+    "flota": {
+      "rodzaj": "zakres",
+      "powod": "Pojazd przez zakres własności; brak udostępnień per-pojazd"
+    },
+    "portfel": {
+      "rodzaj": "zakres",
+      "powod": "Element portfela i budżet przez zakres; finanse nie są dziś udostępniane"
+    },
+    "languages": {
+      "rodzaj": "zakres",
+      "powod": "Talia przez zakres własności"
+    },
+    "magazynowanie": {
+      "rodzaj": "zakres",
+      "powod": "`ownershipOr` — zakres własności, bez decyzji per-rekord"
+    },
+    "warsztaty": {
+      "rodzaj": "zakres",
+      "powod": "Jak magazynowanie — wspólny `ownershipOr`"
+    },
+    "contacts": {
+      "rodzaj": "zakres",
+      "powod": "Kontakty przez `ownedByWhere`"
+    },
+    "calendar": {
+      "rodzaj": "zakres",
+      "powod": "Agregat CZYTAJĄCY cudze moduły — nie ma własnych zasobów, więc nie ma czego deklarować"
+    },
+    "home": {
+      "rodzaj": "zakres",
+      "powod": "Pulpit składa migawkę z wkładów innych modułów; własnych zasobów brak"
+    },
+    "weather": {
+      "rodzaj": "wlasciciel",
+      "powod": "`l.ownerId !== user.id` — lokalizacje i obserwatory są ściśle osobiste"
+    },
+    "news": {
+      "rodzaj": "wlasciciel",
+      "powod": "`t.ownerId !== userId` — tematy i źródła ściśle osobiste"
+    },
+    "truck": {
+      "rodzaj": "wlasciciel",
+      "powod": "Profil pojazdu ciężarowego — jeden użytkownik"
+    },
+    "qa": {
+      "rodzaj": "wlasciciel",
+      "powod": "Narzędzie wewnętrzne; scenariusze nie są udostępniane"
+    },
+    "reports": {
+      "rodzaj": "wlasciciel",
+      "powod": "Raport systemowy albo osobisty; brak udostępniania per-raport"
+    },
+    "services": {
+      "rodzaj": "wlasciciel",
+      "powod": "Marketplace ma WŁASNY model widoczności (ogłoszenie publiczne, zapytanie między stronami). Rozdz. 8.10 mówi wprost, że `ServiceStaff` ZOSTAJE, bo to rola w firmie, a nie dostęp do zasobu — wciągnięcie tego w `ResourceGrant` pomyliłoby dwa różne pojęcia."
+    }
   }
 }

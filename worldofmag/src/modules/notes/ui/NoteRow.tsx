@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw, Link2, ArrowUpRight } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw, Link2, ArrowUpRight, Share2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { outgoingLinks, backlinks } from "../lib/wikilinks";
@@ -9,6 +9,8 @@ import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
 import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "../actions/notes";
 import { createTag } from "@/actions/tags";
+import { ShareDialog } from "@/components/sharing/ShareDialog";
+import { useTranslations } from "next-intl";
 import type { Note, Tag, NoteGroup } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -65,6 +67,8 @@ export function NoteRow({
   const [previousContent, setPreviousContent] = useState<string | null>(null);
 
   // Voice recording state
+  const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
+  const tShare = useTranslations("sharing");
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceEditing, setIsVoiceEditing] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -564,6 +568,17 @@ export function NoteRow({
                 <path d="M9.5 2L12 4.5L5 11.5H2.5V9L9.5 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
               </svg>
             </button>
+            {/* 095: to samo okno, co dla projektu zadań i zwierzęcia — `ShareDialog` dostaje
+                wyłącznie typ i identyfikator zasobu, więc moduł nie ma tu własnej logiki dostępu. */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setUdostepnianieOtwarte(true); }}
+              className="p-1 rounded focus:outline-none"
+              style={{ color: "var(--text-muted)" }}
+              title={tShare("shareNote")}
+              aria-label={tShare("shareNote")}
+            >
+              <Share2 size={13} />
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(); }}
               className="p-1 rounded focus:outline-none"
@@ -585,6 +600,14 @@ export function NoteRow({
           {new Date(note.updatedAt).toLocaleDateString("pl-PL", { day: "2-digit", month: "short" })}
         </span>
       </div>
+
+      {udostepnianieOtwarte && (
+        <ShareDialog
+          resourceType="notes.note"
+          resourceId={note.id}
+          onClose={() => setUdostepnianieOtwarte(false)}
+        />
+      )}
     </div>
   );
 }

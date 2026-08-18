@@ -835,7 +835,19 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
   are shown separately because they mean three different things to the user (immediate grant / pending
   invitation for an address without an account / link that must be copied). Grants emit
   `sharing.grant.granted|revoked` **in the same transaction** — the missing producer the access cache
-  was waiting for. Mirror-derived grants (059/061) cannot be revoked here: deleting the reflection
+  was waiting for.
+  **095 — the dialog finally reached the resources the control question names.** `ShareDialog` is
+  fully generic (it takes only `resourceType` + `resourceId`), but until 095 it hung in **one** place,
+  the Tasks header — so "share a note, a shopping list and a recipe with the same window" was false
+  for all three. Shopping and Kitchen had declarations since 064 and no entry point; Notes had no
+  declaration at all (`notes.note`, added here, brings the classification to 5 declarations across
+  21 modules). A grant also needs somewhere to *land*: `platform/sharing/nadaneMi.ts`
+  `idZasobowNadanychMi(userId, resourceType, ctx)` is the inverse of `resolveRole` — "**which**
+  resources of this type were shared with me" — and the Notes list query unions it in, because the
+  module has no per-resource route, so a grant would otherwise be real and invisible. It deliberately
+  skips link grants (a link grants whoever holds it, so listing that resource would show it to someone
+  who never received the link) and inherited ones (they surface through the parent).
+  Mirror-derived grants (059/061) cannot be revoked here: deleting the reflection
   would come back on the next sync, and the user would see access that "returned by itself".
 
 ### Admin Panel (`/admin`, gated by `module.admin`)
@@ -937,7 +949,18 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
+- **`check-owner-columns.js`** (also `npm run check:owner-columns`) — 095: **no query may ask for an
+  `ownerId`/`ownerTeamId` that migration 0244 dropped.** Those columns survive on six models only; a
+  dynamic `where` built as `Record<string, unknown>` (this repo's pattern) makes a stale field name
+  invisible to `tsc`, so four such queries survived 079 — two on hot paths (meal plan narrowed to a
+  team, the assistant resolving a task project), each failing at runtime with Prisma's
+  `Unknown argument`. The gate resolves **by model**: `ownerId` on `itemHistory` passes, the same key
+  on `recipe` fails. Keys supplied through a variable are resolved **to a fixed point within the
+  file** — the one-level version caught three of the four (the fourth had the filter one substitution
+  further away), which is why it ships with five mutation probes. No manifest and no exceptions: the
+  first, syntax-only version demanded a reason for 37 files, which is noise, not a decision.
+
 - **`check-logs.js`** (also `npm run check:logs`) — 086: **no raw `console.*` in server code.** One
   `console.warn` breaks more than it looks: half the stream stops being parseable and the aggregator
   can no longer answer „how many errors in module X", because those entries carry no module. Use

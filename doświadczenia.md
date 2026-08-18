@@ -4,6 +4,64 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Bramki pilnowały kształtu migracji, nie tego, czy kod jeszcze o to pyta
+**Problem:** Migracja 0244 usunęła `ownerId`/`ownerTeamId` z 40 tabel. W czterech miejscach kod dalej
+budował po nich warunek zapytania — w tym w planie posiłków zawężonym do zespołu i w rozstrzyganiu
+projektu przez asystenta AI, czyli na ścieżkach, którymi użytkownik chodzi. Prisma odpowiada tam
+`Unknown argument 'ownerTeamId'`. Przeżyło to `tsc` **i** dwadzieścia cztery bramki: warunek powstaje
+jako `Record<string, unknown>` albo tablica literałów w zmiennej, więc dla kompilatora nazwa kolumny
+jest zwykłym kluczem słownika, a wszystkie bramki własnościowe sprawdzały KSZTAŁT migracji (czy
+kolumny znikły, czy triggery są, czy lustro się zgadza) — żadna nie pytała, czy kod nadal woła to,
+co migracja skasowała.
+**Rozwiązanie:** Cztery poprawki (`workspaceId` przez `filtrMoichRekordow` /
+`przestrzenZespoluBezKontroliDostepu`) plus bramka `check:owner-columns`, która rozstrzyga PO MODELU:
+`ownerId` w `itemHistory` przechodzi, ten sam klucz w `recipe` pada. Klucze podane przez zmienną są
+rozwiązywane do punktu stałego w obrębie pliku.
+**Lekcja:** Po usunięciu kolumny sprawdź nie tylko, czy zniknęła, ale **czy ktoś jeszcze o nią pyta**
+— i pamiętaj, że dynamicznie budowany `where` jest dla kompilatora niewidzialny. Jeżeli w repo
+istnieje wzorzec „warunek jako `Record<string, unknown>`", to każde usunięcie pola z bazy wymaga
+własnej bramki, bo typy nie pomogą ani razu.
+
+## 2026-08-19 — Bramka, która żąda uzasadnienia dla 37 plików, nie jest decyzją, tylko szumem
+**Problem:** Pierwsza wersja `check:owner-columns` liczyła każdy klucz `ownerId:` w kodzie serwerowym
+i zażądała wpisu w manifeście dla 37 plików. Większość z nich to były argumenty funkcji
+(`enqueueJob({ownerId})`, `createBudget({ownerTeamId})`, propsy komponentów) — rzeczy, które z bazą
+nie mają nic wspólnego. Manifest tej wielkości nikt nie czyta; bramka, która co drugi build oskarża
+niewinny plik, kończy jako `|| true`.
+**Rozwiązanie:** Filtr po ZNACZENIU zamiast po składni: liczy się tylko klucz, który faktycznie
+dojedzie do Prismy jako nazwa pola — wprost w zbalansowanym argumencie `prisma.<model>.<op>(…)` albo
+przez zmienną rozwiązywaną z tego argumentu. Wynik: zero wyjątków, zero manifestu, 2263 sprawdzone
+wywołania i wszystkie cztery prawdziwe błędy złapane.
+**Lekcja:** Wzorzec „manifest jawnych decyzji" (jak `content-memory-coverage.json`) jest dobry, gdy
+decyzji jest kilkanaście i każda coś znaczy. Gdy bramka produkuje ich kilkadziesiąt, to nie znak, że
+trzeba manifestu — to znak, że bramka mierzy złą rzecz. Najpierw zawęź pytanie, dopiero potem
+dopuszczaj wyjątki.
+
+## 2026-08-19 — Jeden poziom podstawienia za mało: próba mutacyjna złapała dziurę w nowej bramce
+**Problem:** `check:owner-columns` rozwiązywała identyfikatory jednopoziomowo (`where: warunek` →
+definicja `warunek`). Na czterech prawdziwych błędach złapała trzy. Czwarty (`getRecipes`) miał filtr
+o jedno podstawienie dalej: `where` w zmiennej, a filtr własnościowy w DRUGIEJ zmiennej wskazanej
+z niej przez `OR:`. Bez próby mutacyjnej bramka poszłaby do repozytorium zielona i nieprawdziwa.
+**Rozwiązanie:** Rozwiązywanie do punktu stałego (limit rund chroni przed cyklem) + zestaw pięciu
+prób mutacyjnych odtwarzających każdy z czterech błędów osobno plus literał wprost w `where`.
+**Lekcja:** Nowej bramki nie wolno oddać na podstawie tego, że „łapie znany błąd" — trzeba ją
+skonfrontować z **każdym** kształtem błędu, dla którego powstaje, osobno. Kształty różnią się o jedno
+podstawienie, a właśnie ten jeden przypadek zostaje w kodzie.
+
+## 2026-08-19 — Nadanie dostępu bez miejsca, w którym zasób się pojawi, jest prawdziwe i niewidoczne
+**Problem:** Po wpięciu `ShareDialog` do Notatek nadanie działało: guard przepuszczał obdarowanego.
+Notatka i tak była dla niego nieosiągalna — lista notatek jest zawężona do własnych przestrzeni,
+a modułu Notatki nie da się otworzyć „po adresie zasobu", bo całość renderuje jedna strona.
+Funkcja byłaby więc zaimplementowana, przetestowana i bezużyteczna.
+**Rozwiązanie:** Nowa zdolność platformy `idZasobowNadanychMi(userId, resourceType, ctx)` —
+odwrotność `resolveRole`. `resolveRole` odpowiada „czy mam dostęp do TEGO zasobu"; do listy potrzebne
+jest pytanie „których zasobów tego typu mi udostępniono". Świadomie pomija nadania linkowe (link daje
+dostęp temu, kto go ma, więc doklejenie zasobu do czyjejś listy pokazałoby go osobie, która linku
+nigdy nie dostała) i odziedziczone (widać je przez rodzica).
+**Lekcja:** Przy udostępnianiu zawsze sprawdź OBIE strony: czy obdarowany ma prawo **i czy ma jak
+tam dotrzeć**. Kontrola dostępu odpowiada na pytanie o jeden zasób; lista wymaga pytania odwrotnego
+i to jest osobna funkcja, nie efekt uboczny.
+
 ## 2026-08-19 — Opis struktury utrzymywany osobno od struktury zawsze kłamie
 **Problem:** Strona `/admin/architecture` była pisana ręcznie: 449 linii, w tym „SQLite (lokalne dev)"
 długo po przejściu całego projektu na Postgresa i nagłówek „ostatnia aktualizacja: 2026-06-01".

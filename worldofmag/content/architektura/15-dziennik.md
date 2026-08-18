@@ -3031,3 +3031,87 @@ spłacać go modułami. Do tego jeden nazwany warunek wyjścia: usunięcie warst
 lustra, gdy metryka rozjazdu utrzyma zero przez miesiąc.
 
 **Bramki:** build **exit 0**, `check:i18n` **1416**, `check:pagination` **207**, `check:perf` w pasmie.
+
+---
+
+## 095 — Weryfikacja wobec specyfikacji: dwa braki, których tabela statusów nie widziała
+
+Poprzedni przebieg zamknął tabelę na 46/46. Właściciel zadał wtedy pytanie, które okazało się
+najtańszą inwestycją całej przebudowy: **„na pewno? sprawdź specyfikacją"**. Sprawdzenie własnej
+tabeli własną tabelą jest rozumowaniem w kółko, więc punktem odniesienia były tym razem **pytania
+kontrolne z rozdz. 14** — te, na które dokument każe odpowiedzieć *kodem, nie deklaracją*. Dwa
+z ośmiu wypadły źle, a jedno z nich odsłoniło cztery działające błędy.
+
+### Znalezisko 1 — cztery zapytania o kolumny, których nie ma
+
+Migracja 0244 usunęła `ownerId`/`ownerTeamId` z 40 tabel. W czterech miejscach kod dalej o nie pytał:
+
+| Miejsce | Tabela | Osiągalne |
+|---|---|---|
+| `kitchen/actions/mealPlans.ts` (2×) | `MealPlanEntry` | tak — plan posiłków zawężony do zespołu |
+| `kitchen/actions/recipes.ts` | `Recipe` | tak — filtr „tylko moje" |
+| `tasks/ai/executor.ts` | `TaskProject` | tak — **każde** rozstrzygnięcie projektu przez asystenta |
+| `notes/actions/notes.ts` | `Note` | nie (dziś nikt nie podaje tego filtra) |
+
+Potwierdzone uruchomieniem na bazie, nie odczytem schematu: Prisma odpowiada
+`Unknown argument 'ownerTeamId'`. **Dlaczego przeżyły dwadzieścia cztery bramki i `tsc`:** warunek
+zapytania powstaje w tym repozytorium jako `Record<string, unknown>` albo jako tablica literałów
+w zmiennej, więc nazwa pola nie jest dla kompilatora nazwą pola, tylko kluczem w słowniku. Wszystkie
+bramki własnościowe pilnowały **kształtu migracji** — czy kolumny znikły, czy triggery są, czy lustro
+się zgadza — i żadna nie pytała, czy kod nadal woła to, co migracja skasowała.
+
+Nowa bramka `check:owner-columns` pyta. Rozstrzyga po modelu: `ownerId` w `itemHistory` przechodzi,
+ten sam klucz w `recipe` pada. **Pierwsza wersja była zbyt szeroka** — liczyła każdy klucz `ownerId:`
+w kodzie serwerowym i zażądała uzasadnienia dla 37 plików, w większości dla argumentów funkcji
+(`enqueueJob({ownerId})`), które z bazą nie mają nic wspólnego. Manifest z 37 wpisami nie jest
+decyzją, tylko szumem. Druga wersja filtruje po znaczeniu: interesuje ją wyłącznie klucz, który
+**dojedzie do Prismy jako nazwa pola** — wprost albo przez zmienną rozwiązywaną do punktu stałego
+w obrębie pliku. Zero wyjątków, zero manifestu, 2263 sprawdzone wywołania.
+
+Próba mutacyjna pokazała przy okazji, ile jest warta: wersja z **jednopoziomowym** rozwiązywaniem
+zmiennych łapała trzy błędy z czterech. Czwarty (`getRecipes`) miał filtr o jedno podstawienie dalej
+— `where` w zmiennej, a filtr własnościowy w drugiej zmiennej wskazanej z niej przez `OR:`. Gdyby
+bramka poszła do repozytorium bez tej próby, byłaby zielona i nieprawdziwa.
+
+### Znalezisko 2 — „udostępnij notatkę, listę zakupów i przepis"
+
+Pytanie kontrolne brzmi dosłownie: *czy da się udostępnić notatkę, listę zakupów i przepis — tym
+samym oknem?* Odpowiedź brzmiała **nie, dla wszystkich trzech**. `ShareDialog` (090) jest w pełni
+ogólny — dostaje tylko `resourceType` i `resourceId` — ale wisiał w **jednym** miejscu w aplikacji,
+przy projekcie zadań. Zakupy i Kuchnia miały deklaracje zasobów od 064 i nie miały skąd ich użyć;
+Notatki nie miały nawet deklaracji.
+
+Domknięcie to trzy przyciski i jedna deklaracja — ale przy notatkach doszła rzecz ważniejsza od
+przycisku. Nadanie dostępu do notatki byłoby **prawdziwe i niewidoczne**: guard by przepuścił,
+a notatka nie pojawiłaby się nigdzie, bo modułu Notatki nie otwiera się „po adresie zasobu" — listę
+renderuje jedna strona. Stąd nowa zdolność platformy `idZasobowNadanychMi(userId, resourceType, ctx)`:
+odwrotność `resolveRole`. `resolveRole` odpowiada „czy mam dostęp do TEGO", a do listy potrzebne jest
+„**których** mi udostępniono". Pomija nadania linkowe (link daje dostęp temu, kto go ma, a nie
+konkretnemu kontu — doklejenie takiego zasobu do czyjejś listy pokazywałoby go osobie, która linku
+nigdy nie dostała) i odziedziczone (pojawiają się przez rodzica, inaczej ten sam zasób byłby dwa razy).
+
+### Tabela prawdy — jedna komórka różni się i jest wymieniona z nazwy
+
+Przeniesienie guardu notatek na platformę to zmiana reguły dostępu, więc macierz (relacja × operacja)
+poszła przed przełączeniem. **Punkt odniesienia policzony niezależnie, nie odczytany z pliku**: stara
+reguła jest w teście odtworzona wprost, bo zamrożony JSON wygenerowany po zmianie dowodziłby jedynie,
+że kod jest zgodny sam ze sobą.
+
+Wyszła jedna różnica: **właściciel zespołu × notatka jego zespołu** — stara reguła odmawiała, nowa
+przepuszcza. `getUserTeamIds` czyta wiersze `TeamMember`, a założyciel zespołu takiego wiersza nie ma.
+To ta sama komórka, którą 056 rozstrzygnęło dla Zadań, a 060 dla Zwierząt; tu ujawniła się w trzecim
+module. Test pilnuje jej **obustronnie** — że stara reguła faktycznie odmawiała i że nowa przepuszcza
+— żeby wyjątek nie przykrył kiedyś prawdziwego regresu.
+
+### Czego to NIE zmienia
+
+Dwie pozycje z pytań kontrolnych zostają otwarte i są zapadkami, nie brakiem rozstrzygnięcia:
+dodanie języka to nadal praca programisty dla **1416** literałów w 231 plikach (`check:i18n`),
+a paginacja kursorowa nie objęła **207** zapytań listowych (`check:pagination`). Trzecia pozycja —
+„ile miejsc trzeba dotknąć, żeby dodać moduł" — wynosi 2 obowiązkowe plus do 4 warunkowych zamiast
+docelowego 1; to **zmierzony** kompromis z 050 (wspólny korzeń leniwych loaderów wciąga do grafu cele
+wszystkich `import()`: 1889 → 2117 modułów na trasie `/`), a nie zapomniana pozycja. Każde z tych
+miejsc jest pilnowane przez bramkę w obie strony, więc żadnego nie da się pominąć po cichu.
+
+**Bramki:** build **exit 0**, nowa `check:owner-columns` (25 bramek), `check:i18n` **1416** (bez
+wzrostu — nowe napisy poszły przez `t()`), `check:pagination` **207**, tabela prawdy notatek 9/9.

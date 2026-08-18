@@ -19,6 +19,7 @@ export const SHARING_RESOURCES: Record<string, () => Promise<{ default: Resource
   pets: () => import("@/modules/pets/sharing"),
   shopping: () => import("@/modules/shopping/sharing"),
   kitchen: () => import("@/modules/kitchen/sharing"),
+  notes: () => import("@/modules/notes/sharing"),
 };
 
 /** Scalony katalog wszystkich typów zasobów. Ładowany leniwie, memoizowany na proces. */
