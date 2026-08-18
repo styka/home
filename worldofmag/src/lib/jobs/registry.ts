@@ -1,7 +1,8 @@
 import type { JobHandler } from "@/platform/jobs/types";
 import { MODULE_SERVER } from "@/lib/modules.server";
 import platformHandlers from "@/platform/jobs/handlers";
-import { setJobHandlerResolver, startJobWorker } from "@/platform/jobs/worker";
+import { setJobHandlerResolver, setRetentionPolicies, startJobWorker } from "@/platform/jobs/worker";
+import { POLITYKI_RETENCJI } from "@/lib/retention/polityki";
 
 /**
  * 049 — REJESTR ZADAŃ W TLE SKŁADANY Z DEKLARACJI.
@@ -60,5 +61,8 @@ export async function getHandler(type: string): Promise<JobHandler<any, any> | u
  */
 export function ensureJobWorker(): void {
   setJobHandlerResolver(getHandler);
+  // 083 (zadanie 30): retencja jedzie tym samym okresowym tyknięciem co sprzątanie kolejki, ale jej
+  // polityki muszą przyjść stąd — dwie z siedmiu opisują dane modułowe, a platforma modułów nie zna.
+  setRetentionPolicies(POLITYKI_RETENCJI);
   startJobWorker();
 }

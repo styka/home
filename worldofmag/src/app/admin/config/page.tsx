@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { getConfigMasked, getConfigValue } from "@/actions/config";
+import { getConfigMasked, getConfigValue, getRetentionSettings } from "@/actions/config";
+import { RetentionPanel } from "@/components/admin/RetentionPanel";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +18,8 @@ export default async function AdminConfigPage() {
   const braveKey = await getConfigMasked("brave_search_api_key");
   // 031: wartość jawna (nie sekret) — pokazujemy ją adminowi wprost.
   const feedbackProjectId = (await getConfigValue("feedback_project_id")) ?? "";
+  // 083 (zadanie 30): retencja — rozdz. 11.6 wskazuje /admin/config jako jej miejsce.
+  const retencja = await getRetentionSettings();
 
   return (
     <div
@@ -60,6 +63,8 @@ export default async function AdminConfigPage() {
         </Link>
 
         <AdminConfigForm groqKey={groqKey} braveKey={braveKey} feedbackProjectId={feedbackProjectId} />
+
+        <RetentionPanel stan={retencja} />
       </div>
     </div>
   );

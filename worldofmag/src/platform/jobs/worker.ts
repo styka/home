@@ -5,6 +5,8 @@
 
 import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/platform/jobs/queue";
 import { posprzatajLimity } from "@/platform/rateLimit";
+import { retencjaJesliCzas } from "@/platform/retention/harmonogram";
+import type { PolitykaRetencji } from "@/platform/retention";
 import { reportServerError } from "@/lib/observability/report";
 import type { JobHandler } from "@/platform/jobs/types";
 
@@ -23,6 +25,16 @@ let resolveHandler: HandlerResolver | null = null;
 /** Wołane RAZ przez korzeń kompozycji, zanim wystartuje worker. */
 export function setJobHandlerResolver(resolver: HandlerResolver): void {
   resolveHandler = resolver;
+}
+
+/**
+ * 083: polityki retencji — tak samo wstrzykiwane jak rozwiązywanie handlerów i z tego samego powodu.
+ * Bez nich okresowe tyknięcie po prostu nie sprząta (i nie udaje, że sprząta).
+ */
+let politykiRetencji: PolitykaRetencji[] | null = null;
+
+export function setRetentionPolicies(polityki: PolitykaRetencji[]): void {
+  politykiRetencji = polityki;
 }
 
 const TICK_MS = 3000;
@@ -97,5 +109,15 @@ export function startJobWorker(): void {
     // okno zeruje się przy pierwszym trafieniu, wygasły slot da się przejąć) — pilnuje tylko, żeby
     // tabela nie rosła liniowo z liczbą kont, które kiedykolwiek dotknęły asystenta.
     posprzatajLimity().catch((e) => reportServerError(e, { kind: "rateLimitCleanup" }));
+    // 083 (zadanie 30): retencja danych. Prawo do przebiegu jest odbierane atomowo, więc mimo że
+    // tyknięcie chodzi w każdej instancji `web`, kasowanie wykona się raz na dobę.
+    //
+    // Polityki są WSTRZYKNIĘTE, dokładnie jak rozwiązywanie handlerów wyżej: dwie z siedmiu opisują
+    // dane modułowe (Wiadomości, Zakupy), więc ich korzeń kompozycji stoi poza platformą. Sięgnięcie
+    // po niego stąd `import()`-em odwróciłoby zależność — reguła lintu tego nie łapie, bo ścieżka
+    // prowadzi przez `@/lib`, i właśnie dlatego trzeba to trzymać samemu.
+    if (politykiRetencji) {
+      void retencjaJesliCzas(politykiRetencji).catch((e) => reportServerError(e, { kind: "retention" }));
+    }
   }, CLEANUP_EVERY_MS);
 }

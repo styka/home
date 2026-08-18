@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — „Odczytaj, porównaj, zapisz” nie jest odebraniem prawa do przebiegu
+**Problem:** Zadanie okresowe (retencja danych) miało chodzić raz na dobę, ale tyknięcie żyje
+w każdej instancji `web`. Naturalna implementacja — odczytaj znacznik ostatniego przebiegu, porównaj
+z bieżącym czasem, zapisz nowy — wygląda poprawnie i taka nie jest: dwie instancje czytają ten sam
+stary znacznik, obie uznają, że im się należy, i obie ruszają. Sonda mutacyjna z pięcioma
+równoległymi próbami przepuściła **pięć na pięć**.
+**Rozwiązanie:** Prawo odbiera się jednym warunkowym zapisem, a nie sekwencją odczyt→zapis:
+`INSERT … ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value" WHERE "Config"."value" <
+<granica> RETURNING "key"`. Wiersz wraca tylko do zwycięzcy; przegrani dostają pustkę i nic nie robią.
+Ten sam kształt, co przejmowanie slotu dzierżawy w limiterze (081).
+**Lekcja:** Za każdym razem, gdy kod czyta stan, podejmuje decyzję i zapisuje wynik tej decyzji,
+zapytaj, co się stanie, gdy dwa procesy zrobią to naraz — w aplikacji z wieloma instancjami odpowiedź
+brzmi „oba przejdą”. Jeśli decyzja daje się wyrazić warunkiem `WHERE` w tym samym zapisie, wyraź ją
+tam. I napisz test z kilkoma równoległymi próbami: test sekwencyjny przechodzi w obu wariantach, więc
+niczego nie dowodzi.
+
 ## 2026-08-19 — Bramka czytająca „każdy plik wołający X” prędzej czy później czyta testy
 **Problem:** Nowy test integracyjny wołał `chatComplete`, żeby udowodnić, że wyłącznik awaryjny AI
 działa. Dwie bramki (`check:cost-badge`, `check:content-memory`) skanują **każdy plik** z tym

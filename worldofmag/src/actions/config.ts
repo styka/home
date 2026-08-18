@@ -5,6 +5,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { encryptSecret, decryptSecret, maskSecret, isSecretConfigKey } from "@/lib/crypto/secrets";
 import { logAudit } from "@/platform/audit/audit";
+import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
   const session = await auth();
@@ -39,4 +40,77 @@ export async function setConfigValue(key: string, value: string): Promise<void> 
   });
   // Nie logujemy wartości sekretów — tylko fakt zmiany klucza konfiguracji.
   await logAudit("config", "config.set", key, isSecretConfigKey(key) ? `Zmieniono sekret „${key}”` : `Ustawiono „${key}”`);
+}
+
+// ─── 083 (zadanie 30): retencja danych ───────────────────────────────────────
+//
+// Rozdz. 11.6: „retencja konfigurowalna w /admin/config, wykonywana zadaniem okresowym". Lista pól
+// jest **wyprowadzona z polityk**, a nie przepisana — dopisanie polityki (np. przez nowy moduł) samo
+// dokłada pole w panelu. Ręczna lista rozjechałaby się przy pierwszej takiej zmianie i objawiłaby
+// się tabelą, która rośnie mimo „skonfigurowanej" retencji.
+
+export type PolitykaRetencjiDTO = {
+  klucz: string;
+  etykieta: string;
+  dni: number;
+  domyslneDni: number;
+  minimumDni: number;
+  uzasadnienie: string;
+};
+
+export type StanRetencjiDTO = {
+  polityki: PolitykaRetencjiDTO[];
+  ostatniPrzebieg: string | null;
+  ostatniWynik: { klucz: string; etykieta: string; dni: number; usunieto: number; blad?: string }[];
+};
+
+export async function getRetentionSettings(): Promise<StanRetencjiDTO> {
+  await requireAdmin();
+  const { POLITYKI_RETENCJI } = await import("@/lib/retention/polityki");
+  const { dniRetencji } = await import("@/platform/retention");
+  const { RETENCJA_ZNACZNIK_KLUCZ, RETENCJA_WYNIK_KLUCZ } = await import("@/platform/retention/harmonogram");
+
+  const [znacznik, wynik] = await Promise.all([
+    prisma.config.findUnique({ where: { key: RETENCJA_ZNACZNIK_KLUCZ } }),
+    prisma.config.findUnique({ where: { key: RETENCJA_WYNIK_KLUCZ } }),
+  ]);
+
+  const polityki: PolitykaRetencjiDTO[] = [];
+  for (const p of POLITYKI_RETENCJI) {
+    polityki.push({
+      klucz: p.klucz,
+      etykieta: p.etykieta,
+      dni: await dniRetencji(p),
+      domyslneDni: p.domyslneDni,
+      minimumDni: p.minimumDni,
+      uzasadnienie: p.uzasadnienie,
+    });
+  }
+
+  let ostatniWynik: StanRetencjiDTO["ostatniWynik"] = [];
+  try {
+    if (wynik?.value) ostatniWynik = JSON.parse(wynik.value);
+  } catch {
+    // Uszkodzony wpis nie może wywalić panelu administratora — pokazujemy pustą historię.
+  }
+  return { polityki, ostatniPrzebieg: znacznik?.value ?? null, ostatniWynik };
+}
+
+export async function setRetentionDays(klucz: string, dni: number): Promise<void> {
+  await requireAdmin();
+  const { POLITYKI_RETENCJI } = await import("@/lib/retention/polityki");
+  const { kluczKonfiguracji } = await import("@/platform/retention");
+  const polityka = POLITYKI_RETENCJI.find((p) => p.klucz === klucz);
+  // Klucz spoza listy polityk to nie „nieznane ustawienie", tylko próba zapisania czegoś, czego
+  // nikt nigdy nie odczyta — odrzucamy zamiast tworzyć wiersz-widmo w `Config`.
+  if (!polityka) throw new Error(`Nieznana polityka retencji: ${klucz}`);
+  const wartosc = Math.max(polityka.minimumDni, Math.floor(Number(dni) || polityka.domyslneDni));
+  const key = kluczKonfiguracji(polityka);
+  await prisma.config.upsert({
+    where: { key },
+    update: { value: String(wartosc) },
+    create: { key, value: String(wartosc) },
+  });
+  await logAudit("config", "retention.set", key, `Ustawiono retencję „${polityka.etykieta}" na ${wartosc} dni`);
+  revalidatePath("/admin/config");
 }

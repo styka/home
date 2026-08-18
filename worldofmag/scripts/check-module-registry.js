@@ -223,6 +223,37 @@ for (const id of wpieteWkladyPulpitu) {
   }
 }
 
+// ─── 6bb. Polityki retencji wpiete w swoj korzen — W OBIE STRONY (083) ────────────
+//
+// Ten sam uklad co przy wkladzie pulpitu i z tego samego powodu: platforma nie moze importowac
+// modulow, wiec korzen kompozycji polityk stoi w `src/lib/retention/polityki.ts`. Roznica jest
+// w OBJAWIE bledu — niewpieta polityka nie psuje zadnego ekranu. Tabela po prostu rosnie dalej,
+// build jest zielony, a zauwaza sie to po miesiacach, po rachunku za baze.
+const retRootPath = path.join(root, "src/lib/retention/polityki.ts");
+const retRoot = fs.existsSync(retRootPath) ? fs.readFileSync(retRootPath, "utf8") : "";
+const wpietePolityki = new Set(
+  [...retRoot.matchAll(/from ["']@\/modules\/([^/"']+)\/retention["']/g)].map((m) => m[1]),
+);
+const majaPolityki = new Set(
+  [...ids.keys()].filter((id) => fs.existsSync(path.join(modulesDir, id, "retention.ts"))),
+);
+for (const id of majaPolityki) {
+  if (!wpietePolityki.has(id)) {
+    errors.push(
+      `src/modules/${id}/retention.ts nie jest wpiety w src/lib/retention/polityki.ts.\n` +
+        "    Polityka istnieje na dysku i nie istnieje w aplikacji — nic sie nie psuje, tabela po\n" +
+        "    prostu rosnie dalej mimo „skonfigurowanej” retencji.",
+    );
+  }
+}
+for (const id of wpietePolityki) {
+  if (!majaPolityki.has(id)) {
+    errors.push(
+      `src/lib/retention/polityki.ts wpina „${id}", ale src/modules/${id}/retention.ts nie istnieje.`,
+    );
+  }
+}
+
 // ─── 6c. Deklaracja zasobow wpieta w swoj korzen — W OBIE STRONY (052) ────────────
 //
 // Jak przy wkladzie pulpitu: deklaracja zasobow ma wlasny korzen kompozycji

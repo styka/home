@@ -146,7 +146,7 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 | 27 | Budżety AI | ✅ | **082.** Trzy dziury zamknięte: (1) kontrola kosztów pomijała wywołania **bez `userId`**, czyli zadania w tle — najdroższe operacje w systemie; nowy punkt dławiący w `chatComplete` **i** `chatStream` jest bezwarunkowy. (2) Doszedł pułap **miesięczny** per plan — limit dzienny nie wyraża reguły „nie trzydzieści ciężkich dni z rzędu”. (3) Budżet globalny rozdzielony na **trzy** ustawienia: wyłącznik awaryjny, kwota i „twardy” (czy przekroczenie ZATRZYMUJE, czy tylko alarmuje) — bo budżet, który tylko powiadamia, nie jest budżetem. Progi 50/80/**100** %, deduplikacja per (miesiąc, próg). Widoczność „wykorzystano X z Y” w `/settings` |
 | 28 | Pula połączeń, audyt N+1, indeksy | ⬜ |
 | 29 | Cache agregatów i rozstrzygnięć dostępu | ⬜ |
-| 30 | Retencja danych | ⬜ |
+| 30 | Retencja danych | ✅ | **083.** Siedem polityk z rozdz. 11.6; każda niesie **własne zapytanie kasujące**, więc wykonawca w platformie nie zna ani jednej tabeli, a moduł deklaruje retencję swoich danych u siebie (korzeń: `src/lib/retention/polityki.ts`, polityki **wstrzykiwane** do workera). Trzy doprecyzowania rozdziału: `DomainEvent` kasujemy **tylko dostarczone** (zalegające to praca, nie śmieć), `AiUsage` **nie** podlega retencji (na nim stoją budżety z 082), `ItemHistory` liczy **ostatnie użycie**, nie datę powstania. Dolna granica śladu audytowego działa **przy odczycie**, nie w formularzu. Prawo do przebiegu odbierane **atomowo** — sonda pokazała, że wariant odczytaj-porównaj-zapisz przepuszcza 5 instancji na 5. Ósma kontrola w `check:module-registry` |
 
 ### Faza 6 — Obserwowalność i procesy
 
@@ -2473,3 +2473,74 @@ sieci, a nie 503 z komunikatem. Trzy sondy: usunięcie sprawdzenia w `chatComple
 miesięcznego i zignorowanie flagi „twardy" czerwienią po jednym, właściwym podteście.
 
 **Bramki:** build **exit 0**, `test:unit` **969/969** (+7), zapadka paginacji **263** bez ruchu.
+
+---
+
+## 083 — Zadanie 30: retencja, czyli pierwsze skreślanie danych w tej aplikacji
+
+Diagnoza 5.9 była krótka: **poza `cleanupOldJobs` nic nie znika**. Siedem tabel rosło bez granicy,
+najszybciej te dokładane przy każdej operacji (`AiCall`, `DomainEvent`). Rozdz. 11.6 podaje gotową
+tabelę czasów; ta zmiana ją realizuje.
+
+### Polityka opisuje siebie razem z zapytaniem kasującym
+
+`PolitykaRetencji` niesie etykietę, domyślną liczbę dni, **minimum** i funkcję `usun(starszeNiz)`.
+Dzięki temu wykonawca w platformie nie zna ani jednej tabeli, a moduł deklaruje retencję swoich
+danych u siebie (`modules/news/retention.ts`, `modules/shopping/retention.ts`). Korzeń kompozycji
+stoi poza platformą (`src/lib/retention/polityki.ts`) — ten sam układ, co wkłady kalendarza (049)
+i pulpitu (050), z tego samego powodu: platforma nie może importować modułów.
+
+**Worker dostaje polityki WSTRZYKNIĘTE**, jak rozwiązywanie handlerów. Kuszące było sięgnięcie po
+korzeń `import()`-em wprost z `platform/jobs/worker.ts` — reguła lintu tego nie łapie, bo ścieżka
+prowadzi przez `@/lib`. Nie łapie, i właśnie dlatego trzeba to trzymać samemu.
+
+### Dwa miejsca, w których rozdział trzeba było doprecyzować
+
+**„`DomainEvent` — 30 dni po dostarczeniu"** ma dwie części i obie są potrzebne. Kasowanie po samym
+wieku zjadałoby zdarzenia, których worker jeszcze nie przetworzył: po dłuższej awarii outbox jest
+pełen zdarzeń starszych niż 30 dni i wszystkie są **pracą do wykonania**, nie śmieciem. Ten przypadek
+ma własny test.
+
+**„`AiCall` — 12 mies., agregaty dłużej"**: agregatem jest `AiUsage` i **nie podlega retencji** —
+gdyby podlegał, dzienny i miesięczny budżet z 082 straciłby podstawę liczenia.
+
+Trzecie doprecyzowanie dotyczy `ItemHistory`: liczy się `updatedAt`, nie data powstania. Pozycja
+kupowana co tydzień od pięciu lat ma zostać. Też z własnym testem, bo pomyłka tej klasy kasuje
+dokładnie te dane, które są najbardziej używane.
+
+### Dolna granica działa przy ODCZYCIE
+
+Ślad audytowy ma wymóg pięcioletni i pole tekstowe bez ograniczenia pozwoliłoby skrócić go jedną
+literówką. Granica jest więc pilnowana **przy czytaniu wartości**, nie tylko w formularzu: wiersz
+w `Config` da się zmienić z `psql` albo migracją, a walidacja stojąca wyłącznie w akcji obowiązuje
+tylko tych, którzy przez nią przechodzą.
+
+### Prawo do przebiegu odbierane atomowo
+
+Retencja nie jest zadaniem w kolejce — **mapa handlerów jest allowlistą tego, co klient może
+zakolejkować z przeglądarki** (049), a to jest operacja kasująca dane. Chodzi więc z okresowego
+tyknięcia workera, jak `cleanupOldJobs`. Tyknięcie żyje w każdej instancji `web`, więc prawo do
+przebiegu jest odbierane **warunkowym `UPDATE`** na wierszu w `Config`: dostaje je ta instancja,
+której zapis się powiódł.
+
+Wariant „odczytaj znacznik, porównaj, zapisz" wygląda na równoważny i **nie jest** — sonda mutacyjna
+przepuściła 5 równoległych prób na 5. Podwójny przebieg sam w sobie jest nieszkodliwy (drugi nic nie
+znajduje), ale to dwa równoległe `deleteMany` na tabelach, których dotyka cała aplikacja.
+
+Po zadaniu 33 właściwym miejscem będzie proces `cron`; odbieranie prawa zostanie i tam, bo chroni
+też przed nakładającymi się przebiegami.
+
+### Nowa kontrola w bramce rejestru — bo objaw jest inny niż zwykle
+
+`check:module-registry` sprawdza teraz (w obie strony), czy `modules/<x>/retention.ts` jest wpięty
+w korzeń. Przy wkładzie pulpitu niewpięty plik daje **brakujące dane na ekranie**; tutaj nie psuje
+się nic. Tabela po prostu rośnie dalej mimo „skonfigurowanej" retencji, build świeci na zielono,
+a zauważa się to po miesiącach.
+
+**Dowód:** siedem przypadków na realnym Postgresie. Trzy sondy: usunięcie warunku `deliveredAt`
+(czerwieni test zdarzeń zalegających), usunięcie podnoszenia do minimum (czerwieni test granicy
+audytu) i podmiana atomowego odebrania prawa na odczyt-porównanie-zapis (czerwieni test wyścigu —
+przechodzi 5 instancji zamiast jednej).
+
+**Bramki:** build **exit 0**, `test:unit` **977/977** (+8), `check:module-registry` o jedną kontrolę
+bogatszy, zapadka paginacji **263** bez ruchu.

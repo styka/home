@@ -313,7 +313,18 @@
     "reason": "settings",
     "access": "admin"
   },
+  "config:getRetentionSettings": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "config:setConfigValue": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "config:setRetentionDays": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
