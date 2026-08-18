@@ -79,5 +79,37 @@
   },
   "tasks": {
     "shareProject": "Udostępnij ten projekt"
+  },
+  "admin": {
+    "architecture": {
+      "title": "Architektura — stan bieżący",
+      "lead": "Wszystkie liczby i listy na tej stronie są wyprowadzone z repozytorium przy budowaniu — nie ma tu treści pisanej ręcznie, więc nie ma czego aktualizować osobno.",
+      "generated": "Wygenerowano: {kiedy}",
+      "whySection": "Gdzie szukać „dlaczego”",
+      "modulesNote": "Każdy moduł deklaruje się jednym plikiem (module.ts) i wystawia jeden kontrakt (contract.ts). Lista pochodzi z rejestru, nie ze spisu.",
+      "platformNote": "Katalog src/platform nie zna ani jednego modułu — gdy potrzebuje wiedzy o modułach, bierze ją parametrem. Pilnuje tego bramka check:boundaries.",
+      "gatesNote": "Lista wyciągnięta z polecenia build w package.json, więc nie może się z nim rozjechać. Do tego {ile} skryptów bakujących treść dokumentów.",
+      "ratchetsSection": "Zapadki — dług, który nie może rosnąć",
+      "ratchetsNote": "Każda z tych liczb jest progiem w pliku manifestu. Wzrost wywala build; spadek też — poprawę trzeba zapisać, inaczej zapas ukryje następny regres.",
+      "dbSection": "Baza danych",
+      "dbNote": "Bez enumów Prismy: statusy i rodzaje to kolumny String z unią TypeScriptu (C-12). Własność zasobu wyraża wyłącznie przestrzeń; pięć tabel słownikowych zachowuje ownerId, bo ich wiersz może nie mieć właściciela.",
+      "modules": "Moduły ({ile})",
+      "platform": "Zdolności platformy ({ile})",
+      "gates": "Bramki buildu ({ile})",
+      "dbModels": "Modele w schemacie",
+      "dbMigrations": "Zastosowane migracje",
+      "dbWorkspace": "Modele z własnością przez przestrzeń",
+      "dbWorkspaceValue": "{ile} (kolumna workspaceId)",
+      "dbVersion": "Modele z kontrolą wersji",
+      "linkTargetTitle": "Omnia 🧐 — architektura docelowa",
+      "linkTargetDesc": "Stan, do którego dążymy: 14 rozdziałów, 9 faz, 46 zadań, dziennik przebiegów z uzasadnieniami decyzji.",
+      "linkAuditTitle": "Analiza / audyt stanu projektu",
+      "linkAuditDesc": "Skąd wyszliśmy: diagnoza jako debata dwóch zespołów i numerowane wskazania.",
+      "linkPipelineTitle": "Spec-Driven Pipeline",
+      "linkPipelineDesc": "Jak powstają nowe funkcje: /specify → /plan → /tasks → /implement → /verify → /review.",
+      "linkDocsTitle": "Dokumentacja techniczna",
+      "linkDocsDesc": "Runbooki devops, e2e, pokrycie akcji AI, kontrola dostępu.",
+      "permissionNone": "bez uprawnienia modułowego"
+    }
   }
 }

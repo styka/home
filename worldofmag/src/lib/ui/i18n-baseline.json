@@ -2,6 +2,6 @@
   "_opis": "089 (zadanie 35, Faza 7) — zapadka wyciągania tekstów. Liczba literałów widocznych dla użytkownika (tekst w JSX + atrybuty placeholder/title/aria-label/alt/label) rozpoznanych po polskich znakach diakrytycznych.",
   "_jak_czytac": "Wzrost = nowy tekst zaszyty w komponencie zamiast pójść przez t(). Spadek = wyciągnięto kolejny moduł; obniż próg, inaczej zapas ukryje następny regres.",
   "_stan_startowy": 1449,
-  "maks": 1429,
+  "maks": 1416,
   "_uwaga_o_pomiarze": "Pierwszy pomiar (1528) był ZAWYŻONY: wzorzec z `\\b` liczył każdy `aria-label` dwa razy, bo łącznik jest granicą słowa. Po poprawce detektora stan sprzed wyciągania odpowiada 1449; wartość niżej jest po wyciągnięciu `components/ui` i `components/sharing`."
 }

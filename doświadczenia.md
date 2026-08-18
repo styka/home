@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Opis struktury utrzymywany osobno od struktury zawsze kłamie
+**Problem:** Strona `/admin/architecture` była pisana ręcznie: 449 linii, w tym „SQLite (lokalne dev)"
+długo po przejściu całego projektu na Postgresa i nagłówek „ostatnia aktualizacja: 2026-06-01".
+Nikt jej nie zaniedbał złośliwie — po prostu każda zmiana w kodzie wymagała pamiętania o drugim
+miejscu, a przy dwudziestym takim miejscu pamięć przestaje wystarczać. To ta sama patologia, którą ta
+przebudowa likwidowała w ośmiu równoległych listach modułów.
+**Rozwiązanie:** Treść jest teraz WYPROWADZANA przy budowaniu (`scripts/generate-architecture.js`):
+zdolności platformy z katalogu, moduły z rejestru, bramki z polecenia `build` w `package.json`,
+liczby modeli i migracji z `prisma/`, progi zapadek z ich manifestów. Uzasadnień na tej stronie NIE MA
+— są w książkach i dzienniku; trzecie miejsce na „dlaczego" byłoby powrotem tego samego problemu.
+**Lekcja:** Jeżeli dokument POWTARZA fakt, który gdzieś już stoi w kodzie (liczbę, listę, próg,
+wersję), to nie jest dokument — to kopia, która rozejdzie się z oryginałem, i to zwykle w miesiącu,
+w którym nikt nie patrzy. Wygeneruj ją albo nie pisz. Ręcznie pisz wyłącznie to, czego z kodu wyczytać
+NIE MOŻNA: powody decyzji i odrzucone warianty.
+
 ## 2026-08-19 — Zapadka, która liczy dwie różne rzeczy, kłamie w obie strony
 **Problem:** Zapadka paginacji trzymała próg 261 „nieograniczonych zapytań listowych". W tej liczbie
 siedziało 55 zapytań z eksportu i usuwania danych RODO — a tam `take` byłby BŁĘDEM, nie

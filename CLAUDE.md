@@ -343,6 +343,7 @@ dozens of functions is a signal the module does too much.
 /calendar/               # Unified agenda (month grid aggregating all modules)
 /contacts/               # Contacts / lightweight personal CRM (contacts with tags)
 /trash/                  # Unified soft-delete recovery (authenticated-only; restore items deleted across modules, retention-day countdown)
+/udostepnione/           # 067/090: "Shared with me" / "What I shared" — one query to one table across all modules. Write side is `ShareDialog` (mounted next to the resource, e.g. the Tasks header)
 /qa/ [module]            # QA test scenarios (Epic → Story → Scenario); + /scenariusz/[slug]
 /truck/                  # Heavy-vehicle routing (OpenRouteService)
 /reports/ [slug]         # Markdown reports (system/user/team), user-facing
@@ -1210,6 +1211,15 @@ The flow is **`feature → develop → master`**:
   runs on a paid Render tier (does not sleep). Test env (`develop` →
   `worldofmag.onrender.com`) stays on the free tier.
 - [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
+- [ ] **Pay down the three ratchets** — they are the whole remaining backlog of the rebuild, and each
+  one is designed to be paid module by module: texts hard-coded in components (`check:i18n`), list
+  queries without `take` (`check:pagination`), JS bytes per route (`check:perf`). Lower the threshold
+  in the manifest with every module you finish; the gate fails on a drop precisely so the progress
+  gets recorded.
+- [ ] **Remove the mirror-read transition layer** (`platform/sharing/lustroOdczyt.ts`) once the
+  `sharing / lustro.rozjazd` metric holds at zero in production for a full month — the exit condition
+  is named in that file. Then `extraGrants` for `TaskProjectMember`/`PetShare` goes away, and stage 3
+  of task 12 (dropping those tables) becomes a plain data migration.
 
 _Recently shipped (no longer roadmap): Calendar (unified agenda), Service marketplace
 (Usługi) incl. payments/disputes/moderation/staff/favorites/promo codes, Contacts

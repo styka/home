@@ -180,9 +180,9 @@ Legenda: ✅ zrobione · 🟡 częściowo · ⬜ nietknięte
 
 | # | Zadanie | Status | Uwagi |
 |---|---------|--------|-------|
-| 44 | Aktualizacja `CLAUDE.md` i konstytucji | 🟡 | Opisany kontrakt widoku, silnik skórek, obie nowe bramki; konstytucja ma C-33/C-34/C-35. Reszta czeka na Fazy 1–8 |
-| 45 | Aktualizacja `/admin/architecture` i tego dokumentu | 🟡 | |
-| 46 | Wersja **Omnia 🧐** — wpis w historii wersji | ⬜ | |
+| 44 | Aktualizacja `CLAUDE.md` i konstytucji | ✅ | **089 + 094.** `C-32` zmienione w 089 — to był warunek trwałości Fazy 7, bo bez niego kolejne sesje przywracałyby literały, „bo tak każe konstytucja". CLAUDE.md: jedenaście nowych katalogów platformy, trzy nowe bramki z uzasadnieniem, sześć nowych systemów przekrojowych, trasa `/udostepnione` oraz **roadmapa wyrażona zapadkami** — trzy progi są całą pozostałą listą zadań, każdy do spłacania modułami, plus jeden nazwany warunek wyjścia dla warstwy przejściowej z zadania 12 |
+| 45 | Aktualizacja `/admin/architecture` i tego dokumentu | ✅ | **094.** Strona była **pisana ręcznie** (449 linii) i dlatego kłamała: „SQLite (lokalne dev)" długo po przejściu na Postgresa, data aktualizacji sprzed kwartału. Teraz jest **wyprowadzana** — zdolności platformy z katalogu, moduły z rejestru, bramki z polecenia `build`, liczby z `prisma/`, progi z manifestów zapadek. Nie może się rozjechać, bo jej treść JEST stanem repozytorium. Bez uzasadnień: na „dlaczego" są książki i ten dziennik, a trzecie miejsce do aktualizowania byłoby powrotem problemu |
+| 46 | Wersja **Omnia 🧐** — wpis w historii wersji | ✅ | **094.** Historii wersji **nie było** — nie ma `CHANGELOG` i nigdy nie było, a zakładanie go teraz dałoby kolejne miejsce do pamiętania, którego użytkownik nie zobaczy. Wpis jest **raportem** (`omnia-historia-wersji`, migracja 0252) — powierzchnią, którą ta aplikacja MA na dokumenty dla człowieka. Opisuje wersję SYSTEMU, nie listę zmian: trzy rzeczy, które zmieniły się najbardziej, tabela „co użytkownik zobaczy" i osobno **czego świadomie nie zrobiliśmy** |
 
 ---
 
@@ -2985,3 +2985,49 @@ czerwieni przypadek obniżenia, a pominięcie terminu ważności — przypadek n
 
 **Bramki:** build **exit 0**, `test:unit` **1046/1046**, `check:versioning` **7 modeli**,
 `check:pagination` **207**.
+
+---
+
+## 094 — Faza 9: domknięcie. Opis, który nie może się rozjechać
+
+### 45 — `/admin/architecture` była pisana ręcznie i dlatego kłamała
+
+449 linii, w tym „SQLite (lokalne dev)" długo po przejściu na Postgresa i data „ostatnia aktualizacja:
+2026-06-01". To przewidywalny los każdego opisu struktury utrzymywanego **osobno** od struktury —
+i dokładnie ten sam mechanizm, który w tej przebudowie zlikwidowaliśmy w ośmiu miejscach naraz
+(równoległe listy modułów).
+
+Strona jest teraz **wyprowadzana**: zdolności platformy z katalogu `src/platform`, moduły z rejestru,
+bramki z polecenia `build` w `package.json`, liczby modeli i migracji z `prisma/`, progi zapadek
+z ich manifestów. Nie może się rozjechać ze stanem repozytorium, bo jej treść **jest** tym stanem.
+
+Czego tam świadomie nie ma: **uzasadnień**. Na „dlaczego tak" są dwie książki i ten dziennik; strona
+odpowiada na „co tu jest". Dublowanie uzasadnień dałoby trzecie miejsce do aktualizowania, czyli
+problem, który ta zmiana rozwiązuje.
+
+Zapadka i18n zapaliła się na nowej stronie i wymusiła wyciągnięcie jej tekstów — co przy okazji
+obniżyło próg (1429 → 1416), bo stara strona miała więcej prozy niż nowa.
+
+### 46 — historia wersji tam, gdzie użytkownik ją zobaczy
+
+Zadanie mówi „wpis w historii wersji". Historii wersji **nie było**: nie ma pliku `CHANGELOG` i nigdy
+nie było. Zakładanie go teraz oznaczałoby kolejne miejsce do pamiętania — i takie, którego użytkownik
+nigdy nie zobaczy.
+
+Powierzchnią, którą ta aplikacja **ma** na dokumenty dla człowieka, są raporty. Historia wersji jest
+więc raportem seedowanym migracją (`omnia-historia-wersji`), zgodnie z konwencją z CLAUDE.md: widoczna
+tam, gdzie użytkownik już czyta o systemie, i wersjonowana razem z kodem. Wpis opisuje **wersję
+systemu**, nie listę zmian w kodzie: trzy rzeczy, które zmieniły się najbardziej, tabelę „co użytkownik
+zobaczy" i — osobno — **czego świadomie nie zrobiliśmy**, bo to druga połowa uczciwego opisu wersji.
+
+### 44 — konstytucja i CLAUDE.md
+
+`C-32` zmienione już w 089 (warunek trwałości Fazy 7 — bez tego kolejne sesje przywracałyby literały,
+bo tak każe im konstytucja). CLAUDE.md dostał: jedenaście nowych katalogów platformy, trzy nowe bramki
+z uzasadnieniem każdej, sześć nowych systemów przekrojowych, trasę `/udostepnione` i — najważniejsze
+dla następnej sesji — **roadmapę wyrażoną zapadkami**. Trzy progi (`check:i18n`, `check:pagination`,
+`check:perf`) są całą pozostałą listą zadań przebudowy, a każdy z nich jest tak zaprojektowany, żeby
+spłacać go modułami. Do tego jeden nazwany warunek wyjścia: usunięcie warstwy przejściowej odczytu
+lustra, gdy metryka rozjazdu utrzyma zero przez miesiąc.
+
+**Bramki:** build **exit 0**, `check:i18n` **1416**, `check:pagination` **207**, `check:perf` w pasmie.
