@@ -639,7 +639,9 @@
       "FavoritesSidebarSection": {
         "zarzadzajUlubionymiNazwaIkona": "Zarządzaj ulubionymi — nazwa, ikona, kolor, kolejność",
         "zarzadzajUlubionymi": "Zarządzaj ulubionymi",
-        "nieMaszJeszczeZapisanych": "Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją przyciskiem powyżej — wróci tu razem z filtrami."
+        "nieMaszJeszczeZapisanych": "Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją przyciskiem powyżej — wróci tu razem z filtrami.",
+        "rozwinUlubione": "Rozwiń ulubione",
+        "zwinUlubione": "Zwiń ulubione"
       },
       "FavoritesSwitcher": {
         "zarzadzajUlubionymiWUstawieniach": "Zarządzaj ulubionymi w ustawieniach"

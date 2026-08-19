@@ -143,17 +143,17 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
 
 ## Faza 5 — Drobne poprawki układu
 
-- [ ] **T-18** `[P]` — **Z9: kolejność na stronie głównej.** `src/modules/home/ui/HomePage.tsx` —
+- [x] **T-18** `[P]` — **Z9: kolejność na stronie głównej.** `src/modules/home/ui/HomePage.tsx` —
   blok powitania przed `HomeAssistantCard`; oba **poza** listą sekcji personalizowanych, więc
   `DASHBOARD_SECTIONS` i `DashboardPref` nietknięte. Komentarz z 043 **zaktualizowany** (C-54).
   **Gotowe, gdy:** powitanie pierwsze, asystent zaraz po nim, a zapisana kolejność sekcji
   użytkownika bez zmian. *(AC-18)*
-- [ ] **T-19** `[P]` — **Z1: kolumna zaznaczeń.** `src/modules/tasks/ui/TaskRow.tsx` — poza trybem
+- [x] **T-19** `[P]` — **Z1: kolumna zaznaczeń.** `src/modules/tasks/ui/TaskRow.tsx` — poza trybem
   zaznaczania checkbox **nie jest renderowany** (dziś jest, tylko przezroczysty, i zajmuje miejsce).
   Świadome cofnięcie ujawniania przy najechaniu z 042 — komentarz w pliku zaktualizowany.
   **Gotowe, gdy:** klikacz potwierdza **brak elementu w DOM** poza trybem i obecność w trybie;
   wyjście z trybu czyści zaznaczenia. *(AC-1)*
-- [ ] **T-20** — **Z8: zwijana sekcja ulubionych.**
+- [x] **T-20** — **Z8: zwijana sekcja ulubionych.**
   `src/components/favorites/FavoritesSidebarSection.tsx` — nagłówek staje się przyciskiem zwijania
   z licznikiem; stan z `UserMenuPref.favoritesCollapsed`, zapis przez `src/actions/menuPrefs.ts`
   (`revalidatePath`, C-20); przekazanie stanu w `ModuleSidebar.tsx`. Ten sam komponent obsługuje
@@ -162,6 +162,11 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
   **Gotowe, gdy:** po wejściu sekcja zajmuje jeden wiersz, moduły są widoczne bez przewijania,
   a rozwinięcie przeżywa przeładowanie i przejście na inną stronę. *(AC-16, AC-17)*
   — **zależy od T-1, T-2**
+  > **Ustalenie z kodu (C-54):** na mobile **nie było czego naprawiać**. Nakładka menu
+  > (`AppShell`) nigdy nie renderowała sekcji ulubionych — zaczyna się od razu od modułów;
+  > ulubione są tam jedną ikoną w górnym pasku. AC-17 jest więc spełnione przez stan istniejący,
+  > a dokładanie tam sekcji ulubionych „dla symetrii" pogorszyłoby dokładnie to, na co skarżył się
+  > właściciel. Zmiana dotyczy paska bocznego (desktop), bo tylko tam problem istniał.
 
 ---
 
