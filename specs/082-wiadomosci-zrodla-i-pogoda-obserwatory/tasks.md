@@ -44,18 +44,18 @@ obejrzeć na działających danych.
 
 ## Faza 1 — Fundament danych (zadanie 2 i 3 zgłoszenia)
 
-- [ ] **T-4** — **Typy i słowniki katalogu.** Nowy `src/lib/news/katalog.ts` (bez `"use server"`):
+- [x] **T-4** — **Typy i słowniki katalogu.** Nowy `src/lib/news/katalog.ts` (bez `"use server"`):
   unie `NewsCatalogCategory`, `NewsCatalogCheckStatus`, tablice `NEWS_CATALOG_CATEGORIES` i
   `NEWS_CATALOG_COUNTRIES`/`NEWS_CATALOG_LANGUAGES` (klucz + polska etykieta) do zasilenia selektów
   w obu ekranach.
   *Gotowe, gdy:* plik istnieje, `tsc` czysto, zero importów Prismy i Reacta.
 
-- [ ] **T-5** — **Modele w `schema.prisma`.** `NewsSourceCatalog` i `WeatherPref` dokładnie wg planu
+- [x] **T-5** — **Modele w `schema.prisma`.** `NewsSourceCatalog` i `WeatherPref` dokładnie wg planu
   §2.1/§2.2 — statusy jako `String` (C-12), `WeatherPref.workspaceId String @unique` **bez**
   `@default(dbgenerated())`, z komentarzem wyjaśniającym odstępstwo i relacją `onDelete: Cascade`.
   *Gotowe, gdy:* `npx prisma generate` czysto.
 
-- [ ] **T-6** — **Migracja DDL `0254_katalog_zrodel_rss_i_pref_pogody`.** Numer potwierdzić
+- [x] **T-6** — **Migracja DDL `0254_katalog_zrodel_rss_i_pref_pogody`.** Numer potwierdzić
   `npm run next:migration` bezpośrednio przed utworzeniem katalogu. `CREATE TABLE` obu tabel,
   unikalne indeksy (`NewsSourceCatalog_key_key`, `WeatherPref_workspaceId_key`), indeksy pomocnicze
   (`enabled,country` i `category`) oraz FK `WeatherPref → Workspace ON DELETE CASCADE`. DDL pisany
@@ -64,14 +64,14 @@ obejrzeć na działających danych.
   Postgresie przechodzi, `npm run check:schema-drift` bez różnic, a
   `grep -E '^(DROP|ALTER TABLE .* DROP)' migration.sql` nie pokazuje nic nieplanowanego.
 
-- [ ] **T-7** — **Migracja seedu `0255_seed_katalogu_zrodel_rss` — Polska.** Idempotentne
+- [x] **T-7** — **Migracja seedu `0255_seed_katalogu_zrodel_rss` — Polska.** Idempotentne
   `INSERT … ON CONFLICT ("key") DO NOTHING` (C-14, `gen_random_uuid()::text`), wsady po ~50 wierszy
   z komentarzem grupującym. Zakres: ogólne, biznes, sport, technologia, nauka, kultura, zdrowie,
   opinie i regiony — **co najmniej 100 wpisów** `country='PL'`, `language='pl'`.
   *Gotowe, gdy:* `migrate deploy` przechodzi, a powtórne uruchomienie nie dodaje ani nie zmienia
   wierszy.
 
-- [ ] **T-8** — **Migracja seedu — świat** (ta sama migracja co T-7, kolejne wsady). Anglosaskie,
+- [x] **T-8** — **Migracja seedu — świat** (ta sama migracja co T-7, kolejne wsady). Anglosaskie,
   niemieckie, francuskie, hiszpańskie, włoskie, skandynawskie, czeskie/słowackie, ukraińskie,
   agencje prasowe oraz nauka/technologia (NASA, ESA, arXiv, Nature, Ars Technica, Hacker News…).
   *Gotowe, gdy:* `SELECT count(*) FROM "NewsSourceCatalog"` **≥ 400**, a
