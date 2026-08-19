@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, ArrowLeft, Sparkles, Wand2, ClipboardCheck } from "lucide-react";
@@ -44,6 +45,7 @@ function makeKey(): string {
 }
 
 export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSourceLabel }: RecipeEditorProps) {
+  const t = useTranslations("modules.kitchen.RecipeEditor");
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -327,13 +329,13 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
           <ClipboardCheck size={15} style={{ color: "var(--accent-purple)", flexShrink: 0, marginTop: 1 }} />
           <span>
             Dane wczytane {importSourceLabel ? `(${importSourceLabel})` : ""} przez AI mogą zawierać błędy.
-            <strong style={{ color: "var(--text-primary)" }}> Sprawdź i popraw</strong> tytuł, składniki i kroki przed zapisaniem.
+            <strong style={{ color: "var(--text-primary)" }}> {t("sprawdzIPopraw")}</strong> {t("tytulSkladnikiIKroki")}
           </span>
         </div>
       )}
 
       <div className="flex flex-col gap-3">
-        <Field label="Tytuł">
+        <Field label={t("tytul")}>
           <input
             type="text"
             value={title}
@@ -345,7 +347,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
           />
         </Field>
 
-        <Field label="Krótki opis (opcjonalny)">
+        <Field label={t("krotkiOpisOpcjonalny")}>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -355,7 +357,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
           />
         </Field>
 
-        <Field label="URL zdjęcia (opcjonalny)">
+        <Field label={t("urlZdjeciaOpcjonalny")}>
           <ImageUrlInput
             value={coverImageUrl}
             onChange={setCoverImageUrl}
@@ -386,7 +388,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               <ServingSelector value={servings} onChange={setServings} />
             </div>
           </Field>
-          <Field label="Trudność">
+          <Field label={t("trudnosc")}>
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value as Difficulty)}
@@ -408,7 +410,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               disabled={categorizePending}
               className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded disabled:opacity-50"
               style={{ color: "var(--accent-purple)" }}
-              title="AI uzupełni kuchnię, posiłek i trudność na podstawie tytułu, składników i kroków"
+              title={t("aiUzupelniKuchniePosilek")}
             >
               <Wand2 size={12} /> {categorizePending ? "Zgaduję…" : "Zgaduj kategorię (AI)"}
             </button>
@@ -421,12 +423,12 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               type="text"
               value={cuisine}
               onChange={(e) => setCuisine(e.target.value)}
-              placeholder="np. włoska"
+              placeholder={t("npWloska")}
               className="w-full px-2 py-1.5 rounded border text-sm"
               style={inputStyle}
             />
           </Field>
-          <Field label="Posiłek">
+          <Field label={t("posilek")}>
             <select
               value={mealType}
               onChange={(e) => setMealType(e.target.value as MealType | "")}
@@ -439,7 +441,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               ))}
             </select>
           </Field>
-          <Field label="Książka kucharska">
+          <Field label={t("ksiazkaKucharska")}>
             <select
               value={cookbookId}
               onChange={(e) => setCookbookId(e.target.value)}
@@ -457,7 +459,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
         <section>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-              Składniki
+              {t("skladniki")}
             </h2>
             <div className="flex items-center gap-1">
               {hasAI ? (
@@ -487,7 +489,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               style={{ borderColor: "var(--accent-purple)", backgroundColor: "var(--bg-surface)" }}
             >
               <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>
-                Wklej blok tekstu — AI rozpozna składniki.
+                {t("wklejBlokTekstuAi")}
               </p>
               <textarea
                 value={aiText}
@@ -539,7 +541,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                       quantity: e.target.value === "" ? null : Number(e.target.value),
                     })
                   }
-                  placeholder="ilość"
+                  placeholder={t("ilosc")}
                   className="w-16 px-1.5 py-1 rounded border text-xs"
                   style={inputStyle}
                 />
@@ -561,8 +563,8 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                       unitPrice: e.target.value === "" ? null : Number(e.target.value),
                     })
                   }
-                  placeholder="zł/jedn."
-                  title="Cena za jednostkę (do kosztu przepisu)"
+                  placeholder={t("zlJedn")}
+                  title={t("cenaZaJednostkeDo")}
                   className="w-20 px-1.5 py-1 rounded border text-xs"
                   style={inputStyle}
                 />
@@ -582,7 +584,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                       addIngredient();
                     }
                   }}
-                  placeholder="nazwa składnika"
+                  placeholder={t("nazwaSkladnika")}
                   className="flex-1 min-w-0 px-2 py-1 rounded border text-sm"
                   style={inputStyle}
                 />
@@ -605,7 +607,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                 <button
                   type="button"
                   onClick={() => removeIngredient(ing._key)}
-                  aria-label="Usuń składnik"
+                  aria-label={t("usunSkladnik")}
                   style={{ color: "var(--accent-red)" }}
                 >
                   <Trash2 size={14} />
@@ -647,7 +649,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
                   <button
                     type="button"
                     onClick={() => removeStep(s._key)}
-                    aria-label="Usuń krok"
+                    aria-label={t("usunKrok")}
                     className="ml-auto"
                     style={{ color: "var(--accent-red)" }}
                   >
@@ -701,12 +703,12 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
           </div>
         </section>
 
-        <Field label="Wartości odżywcze (na 1 porcję, opcjonalnie)">
+        <Field label={t("wartosciOdzywczeNa1")}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <input type="number" min="0" inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} placeholder="kcal" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
-            <input type="number" min="0" step="0.1" inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} placeholder="białko (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
-            <input type="number" min="0" step="0.1" inputMode="decimal" value={carbs} onChange={(e) => setCarbs(e.target.value)} placeholder="węgl. (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
-            <input type="number" min="0" step="0.1" inputMode="decimal" value={fat} onChange={(e) => setFat(e.target.value)} placeholder="tłuszcz (g)" className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} placeholder={t("bialkoG")} className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={carbs} onChange={(e) => setCarbs(e.target.value)} placeholder={t("weglG")} className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
+            <input type="number" min="0" step="0.1" inputMode="decimal" value={fat} onChange={(e) => setFat(e.target.value)} placeholder={t("tluszczG")} className="w-full px-3 py-2 rounded border text-sm" style={inputStyle} />
           </div>
         </Field>
 
@@ -715,7 +717,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
-            placeholder="np. Najlepiej z guanciale, pieprz świeżo mielony."
+            placeholder={t("npNajlepiejZGuanciale")}
             className="w-full px-3 py-2 rounded border text-sm resize-y"
             style={inputStyle}
           />
@@ -726,10 +728,10 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
         ) : (
           <section>
             <h2 className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
-              Zdjęcia i załączniki
+              {t("zdjeciaIZalaczniki")}
             </h2>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Zapisz przepis, aby dodać zdjęcia kartek i odczytać z nich tekst (OCR).
+              {t("zapiszPrzepisAbyDodac")}
             </p>
           </section>
         )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
@@ -18,13 +19,14 @@ interface FavoriteCardsProps {
  * użytkownik jeszcze nie używa, nie ma prawa zajmować miejsca nad fałdą.
  */
 export function FavoriteCards({ favorites, permissions }: FavoriteCardsProps) {
+  const t = useTranslations("components.favorites.FavoriteCards");
   const accessible = filterAccessibleFavorites(favorites, permissions, isPathLocked);
 
   if (accessible.length === 0) {
     return (
       <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <Star size={12} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
-        Zapisz miejsce gwiazdką w pasku, żeby wracać tu jednym kliknięciem.
+        {t("zapiszMiejsceGwiazdkaW")}
       </p>
     );
   }

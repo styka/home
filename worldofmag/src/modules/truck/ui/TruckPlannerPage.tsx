@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Truck, MapPin, ExternalLink, Loader2, AlertTriangle, Save, Check, Info } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
@@ -41,6 +42,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleInput | null }) {
+  const t = useTranslations("modules.truck.TruckPlannerPage");
   const [form, setForm] = useState<Record<keyof VehicleInput, string>>(() => {
     const base = initialProfile ?? DEFAULTS;
     return {
@@ -114,7 +116,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--accent-amber)", background: "rgba(245,158,11,0.08)" }}>
         <AlertTriangle size={15} style={{ color: "var(--accent-amber)", flexShrink: 0, marginTop: 1 }} />
         <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-          <strong style={{ color: "var(--text-primary)" }}>Funkcja eksperymentalna.</strong> Trasy TIR są we wczesnej fazie — wynik z OpenRouteService bywa przybliżony i nie uwzględnia wszystkich ograniczeń. Zawsze zweryfikuj trasę przed wyjazdem.
+          <strong style={{ color: "var(--text-primary)" }}>Funkcja eksperymentalna.</strong> {t("trasyTirSaWe")}
         </span>
       </div>
 
@@ -175,22 +177,22 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
         <div style={cardBox}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
-              <label style={labelStyle} htmlFor="t-origin">Skąd</label>
+              <label style={labelStyle} htmlFor="t-origin">{t("skad")}</label>
               <input
                 id="t-origin"
                 value={origin}
                 onChange={(e) => setOrigin(e.target.value)}
-                placeholder="np. Warszawa, Marszałkowska 1"
+                placeholder={t("npWarszawaMarszalkowska1")}
                 style={inputStyle}
               />
             </div>
             <div>
-              <label style={labelStyle} htmlFor="t-dest">Dokąd</label>
+              <label style={labelStyle} htmlFor="t-dest">{t("dokad")}</label>
               <input
                 id="t-dest"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
-                placeholder="np. Kraków, Rynek Główny 1"
+                placeholder={t("npKrakowRynekGlowny")}
                 style={inputStyle}
               />
             </div>
@@ -217,7 +219,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
           </button>
           {!hasProfile && (
             <p style={{ fontSize: 11, color: "var(--accent-amber)", marginTop: 8, marginBottom: 0 }}>
-              Najpierw zapisz profil pojazdu powyżej.
+              {t("najpierwZapiszProfilPojazdu")}
             </p>
           )}
         </div>
@@ -252,7 +254,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
               <Metric value={`${result.distanceKm} km`} label="dystans" />
               <Metric value={formatDuration(result.durationMin)} label="czas jazdy" />
-              <Metric value={String(result.roadworksAvoided)} label="robót uwzględnionych" />
+              <Metric value={String(result.roadworksAvoided)} label={t("robotUwzglednionych")} />
             </div>
 
             <a
@@ -273,7 +275,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
                 textDecoration: "none",
               }}
             >
-              <ExternalLink size={16} /> Otwórz w Google Maps
+              <ExternalLink size={16} /> {t("otworzWGoogleMaps")}
             </a>
 
             <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>

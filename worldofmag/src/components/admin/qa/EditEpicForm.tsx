@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function EditEpicForm({ mode, initial, defaultModule }: Props) {
+  const t = useTranslations("components.admin.qa.EditEpicForm");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -63,27 +65,27 @@ export function EditEpicForm({ mode, initial, defaultModule }: Props) {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Field label="Tytuł">
+          <Field label={t("tytul")}>
             <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} autoFocus />
           </Field>
 
-          <Field label="Moduł">
+          <Field label={t("modul")}>
             <select value={module} onChange={(e) => setModule(e.target.value)} style={{ ...inputStyle, cursor: "pointer", minWidth: 200 }} disabled={mode === "edit"}>
               {QA_MODULES.map((m) => <option key={m.slug} value={m.slug}>{m.label}</option>)}
             </select>
           </Field>
 
           {mode === "create" && (
-            <Field label="Slug (opcjonalnie — auto z tytułu)">
+            <Field label={t("slugOpcjonalnieAutoZ")}>
               <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={`epic-${module}-...`} style={inputStyle} />
             </Field>
           )}
 
-          <Field label="Opis (krótki)">
+          <Field label={t("opisKrotki")}>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
           </Field>
 
-          <Field label="Kolejność (mniejsze = wyżej)">
+          <Field label={t("kolejnoscMniejszeWyzej")}>
             <input type="number" value={order} onChange={(e) => setOrder(parseInt(e.target.value) || 0)} style={{ ...inputStyle, maxWidth: 100 }} />
           </Field>
 

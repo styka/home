@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Bot } from "lucide-react";
 import { getFinanceSettings, setFinanceSettings } from "../actions/portfelAuto";
@@ -8,6 +9,7 @@ import { getFinanceSettings, setFinanceSettings } from "../actions/portfelAuto";
 // Opt-out — domyślnie WŁĄCZONY (zachowuje dotychczasowe zachowanie); użytkownik
 // może wyłączyć, by dane finansowe nie trafiały do promptu LLM. Samowystarczalny.
 export function FinanceAiAccessToggle() {
+  const t = useTranslations("modules.portfel.FinanceAiAccessToggle");
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -35,9 +37,9 @@ export function FinanceAiAccessToggle() {
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
       <Bot size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: "var(--text-primary)" }}>Dostęp asystenta AI do danych finansowych</div>
+        <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{t("dostepAsystentaAiDo")}</div>
         <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-          Gdy włączone, asystent może czytać Twoje salda i elementy portfela. Wyłącz, by nie trafiały do AI.
+          {t("gdyWlaczoneAsystentMoze")}
         </div>
       </div>
       <button
@@ -46,7 +48,7 @@ export function FinanceAiAccessToggle() {
         disabled={pending}
         role="switch"
         aria-checked={enabled}
-        aria-label="Dostęp AI do danych finansowych"
+        aria-label={t("dostepAiDoDanych")}
         style={{
           position: "relative",
           width: 42,

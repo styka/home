@@ -1,10 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ChevronLeft, Activity, CheckCircle2, XCircle, Database, Cpu, Plug, Gauge } from "lucide-react";
 import type { SystemHealth, HealthCheck } from "@/actions/systemHealth";
 
 export function SystemHealthPage({ health }: { health: SystemHealth }) {
+  const t = useTranslations("components.admin.SystemHealthPage");
   const { build, db, llm, integrations, counts, audit, queryDiagnostics, realtime, pool, metrics } = health;
 
   return (
@@ -20,7 +22,7 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
 
         {/* Baza danych */}
         <Card title="Baza danych" icon={<Database size={15} style={{ color: "var(--accent-blue)" }} />}>
-          <Row label="Połączenie" value={<StatusDot ok={db.ok} text={db.ok ? `OK (${db.latencyMs} ms)` : "Brak połączenia"} />} />
+          <Row label={t("polaczenie")} value={<StatusDot ok={db.ok} text={db.ok ? `OK (${db.latencyMs} ms)` : "Brak połączenia"} />} />
           <Row label="Zastosowane migracje" value={String(db.migrations)} />
           <Row label="Ostatnia migracja" value={<span className="mono" style={{ fontSize: 12 }}>{db.lastMigration ?? "—"}</span>} />
         </Card>
@@ -42,7 +44,7 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
 
         {/* Build */}
         <Card title="Wersja (build)">
-          <Row label="Gałąź" value={<span className="mono" style={{ fontSize: 12 }}>{build.branch}</span>} />
+          <Row label={t("galaz")} value={<span className="mono" style={{ fontSize: 12 }}>{build.branch}</span>} />
           <Row label="Commit" value={<span className="mono" style={{ fontSize: 12 }}>{build.commit}</span>} />
           <Row label="Data buildu" value={<span style={{ fontSize: 12 }}>{build.buildDate}</span>} />
           <Row label="Opis commita" value={<span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{build.commitMsg}</span>} />
@@ -62,21 +64,19 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
           {/* 079 (U-6): jedyny licznik kanału czasu rzeczywistego w całym systemie. Zero przy
               otwartych kartach znaczy „strumień nie działa", a nie „nikt nie patrzy". */}
           <Row
-            label="Kanał czasu rzeczywistego"
+            label={t("kanalCzasuRzeczywistego")}
             value={`${realtime.listeners} ${realtime.listeners === 1 ? "słuchacz" : "słuchaczy"} · ta instancja`}
           />
           {/* 084 (zadanie 28): pula połączeń. Bez tego „ile połączeń trzyma instancja" jest pytaniem
               bez odpowiedzi aż do chwili, gdy baza odbije wdrożenie komunikatem o zbyt wielu
               połączeniach — czyli w najgorszym możliwym momencie. */}
           <Row
-            label="Pula połączeń"
+            label={t("pulaPolaczen")}
             value={`${pool.limit} na instancję · ${pool.jawnyWUrl ? "z DATABASE_URL" : "ustawiona przez aplikację"}${pool.przezPule ? " · przez pulę" : ""}`}
           />
           {pool.brakujeFlagiPgbouncer && (
             <div style={{ fontSize: 11.5, color: "var(--accent-amber)", lineHeight: 1.5, marginTop: 2 }}>
-              Adres bazy wskazuje na pulę połączeń, ale w URL-u nie ma <code>pgbouncer=true</code>.
-              Tryb transakcyjny nie znosi zapytań przygotowanych — dopisz flagę w konfiguracji
-              środowiska (aplikacja nie robi tego sama, bo to zmiana sposobu rozmowy z bazą).
+              {t("adresBazyWskazujeNa")} <code>pgbouncer=true</code>{t("trybTransakcyjnyNieZnosi")}
             </div>
           )}
         </Card>
@@ -85,7 +85,7 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
             średnia odpowiada „czy większości jest dobrze", p95 „czy komuś jest wolno". */}
         <Card title="Metryki (24 h)" icon={<Gauge size={15} style={{ color: "var(--accent-green)" }} />}>
           <Row
-            label="Kolejka zadań"
+            label={t("kolejkaZadan")}
             value={`${metrics.queue.pending} czeka · ${metrics.queue.running} w toku${
               metrics.queue.oldestPendingMin !== null ? ` · najstarsze ${metrics.queue.oldestPendingMin} min` : ""
             }`}
@@ -102,19 +102,18 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
           />
           {metrics.modules.length === 0 ? (
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              Brak pomiarów z ostatniej doby. Metryki zbierają się w pamięci instancji i są dosypywane
-              co minutę przez workera — pusto znaczy „nic się nie działo", a nie „nie działa".
+              {t("brakPomiarowZOstatniej")}
             </span>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>Moduł</th>
+                    <th style={thStyle}>{t("modul")}</th>
                     <th style={thStyle}>Operacji</th>
                     <th style={thStyle}>p95</th>
                     <th style={thStyle}>Maks.</th>
-                    <th style={thStyle}>Błędy</th>
+                    <th style={thStyle}>{t("bledy")}</th>
                     <th style={thStyle}>Konflikty</th>
                   </tr>
                 </thead>
@@ -136,9 +135,9 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
         </Card>
 
         {/* Diagnostyka zapytań (Z-037) — EXPLAIN typowych list, monitor regresów wydajności bazy. */}
-        <Card title="Diagnostyka zapytań (EXPLAIN)" icon={<Gauge size={15} style={{ color: "var(--accent-blue)" }} />}>
+        <Card title={t("diagnostykaZapytanExplain")} icon={<Gauge size={15} style={{ color: "var(--accent-blue)" }} />}>
           {queryDiagnostics.length === 0 ? (
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak danych do próbki (pusta baza).</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakDanychDoProbki")}</span>
           ) : (
             <>
               {queryDiagnostics.map((q) => (
@@ -151,7 +150,7 @@ export function SystemHealthPage({ health }: { health: SystemHealth }) {
                 </div>
               ))}
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                Monitor regresów. „Seq” na małych tabelach jest normalny; sygnałem jest Seq Scan na dużej, gorącej liście (utracony indeks).
+                {t("monitorRegresowSeqNa")}
               </div>
             </>
           )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 
@@ -10,6 +11,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ value, onChange, onClose }: SearchBarProps) {
+  const t = useTranslations("modules.shopping.SearchBar");
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

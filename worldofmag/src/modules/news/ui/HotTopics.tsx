@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Flame, Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ import {
 
 /** `onTopicsChanged` odświeża listę tematów w module — bez zmiany widoku (040). */
 export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) {
+  const t = useTranslations("modules.news.HotTopics");
   const { showToast } = useToast();
   const [data, setData] = useState<HotTopicsResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,8 +123,8 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Flame size={18} className="text-[var(--accent-amber)]" />
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Gorące tematy</h2>
-          <span className="text-xs text-[var(--text-muted)]">ostatnie 24h · wszystkie źródła</span>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("goraceTematy")}</h2>
+          <span className="text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</span>
         </div>
         {(hidden?.length ?? 0) > 0 && (
           <button
@@ -156,8 +158,7 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
       {showHidden && hidden && hidden.length > 0 && (
         <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
           <p className="mb-2 text-xs text-[var(--text-muted)]">
-            Te tematy nie będą proponowane. Możesz je przywrócić na listę propozycji albo od razu
-            zacząć monitorować.
+            {t("teTematyNieBeda")}
           </p>
           <ul className="space-y-2">
             {hidden.map((h) => (
@@ -165,7 +166,7 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
                 <span className="text-sm text-[var(--text-primary)]">{h.title}</span>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => unhide(h, false)} disabled={busy}>
-                    <Undo2 size={14} /> Przywróć
+                    <Undo2 size={14} /> {t("przywroc")}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={() => unhide(h, true)} disabled={busy}>
                     <Plus size={14} /> Monitoruj
@@ -180,14 +181,14 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
       {loading && data === null ? (
         <div className="flex flex-col items-center gap-2 py-12 text-[var(--text-muted)]">
           <Loader2 className="animate-spin" />
-          <span className="text-sm">Analizuję nagłówki z ostatnich 24 godzin…</span>
+          <span className="text-sm">{t("analizujeNaglowkiZOstatnich")}</span>
         </div>
       ) : failed ? (
         <div className="rounded-lg border border-[var(--accent-red)] bg-[var(--bg-surface)] p-4 text-sm">
-          <p className="text-[var(--text-primary)]">Nie udało się przygotować gorących tematów.</p>
+          <p className="text-[var(--text-primary)]">{t("nieUdaloSiePrzygotowac")}</p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">{failed}</p>
           <Button variant="secondary" size="sm" className="mt-3" onClick={() => load(true)}>
-            Spróbuj ponownie
+            {t("sprobujPonownie")}
           </Button>
         </div>
       ) : data?.pending ? (
@@ -196,7 +197,7 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
         <AiContentPending
           busy={loading}
           onGenerate={() => load(true)}
-          title="Gorące tematy powstaną po kliknięciu"
+          title={t("goraceTematyPowstanaPo")}
           hint="Ta sekcja jest ustawiona na „na żądanie”, więc wejście na zakładkę nic nie kosztuje."
           actionLabel="Przeanalizuj nagłówki"
           sectionKind="news.hotTopics"
@@ -207,8 +208,7 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
         />
       ) : topics.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--text-muted)]">
-          Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź
-          źródła w ustawieniach.
+          {t("brakSwiezychMaterialowDo")}
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">

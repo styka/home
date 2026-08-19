@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Plus, Check, X, Pencil, Trash2 } from "lucide-react";
 import { createTaskTag, updateTaskTag, deleteTaskTag } from "../actions/taskTags";
@@ -16,6 +17,7 @@ interface TaskTagsManagerProps {
 }
 
 export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
+  const t = useTranslations("modules.tasks.TaskTagsManager");
   const confirmDialog = useConfirm();
   const [tags, setTags] = useState<TaskTagDef[]>(initialTags);
   const [isAdding, setIsAdding] = useState(false);
@@ -89,7 +91,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
         <h1 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          🏷️ Tagi zadań
+          {t("tagiZadan")}
         </h1>
         <button
           onClick={() => setIsAdding(true)}
@@ -148,7 +150,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
         {tags.length === 0 && !isAdding ? (
           <div className="flex flex-col items-center justify-center py-16" style={{ color: "var(--text-muted)" }}>
             <div className="text-4xl mb-3">🏷️</div>
-            <p className="text-sm">Brak tagów. Stwórz pierwszy tag.</p>
+            <p className="text-sm">{t("brakTagowStworzPierwszy")}</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -208,7 +210,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
                         border: `1px solid ${tag.color}44`,
                       }}
                     >
-                      podgląd
+                      {t("podglad")}
                     </span>
                     <button
                       onClick={() => { setEditingId(tag.id); setEditName(tag.name); setEditColor(tag.color); }}
@@ -222,7 +224,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
                       onClick={() => handleDelete(tag.id)}
                       className="focus:outline-none hover:opacity-70"
                       style={{ color: "var(--accent-red)" }}
-                      title="Usuń"
+                      title={t("usun")}
                     >
                       <Trash2 size={14} />
                     </button>

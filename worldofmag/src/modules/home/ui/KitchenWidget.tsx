@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ChefHat, AlertTriangle, Clock, Users } from "lucide-react";
 
@@ -52,6 +53,7 @@ function expiryText(daysLeft: number): string {
 }
 
 export function KitchenWidget({ todayMeals, expiring, locked }: KitchenWidgetProps) {
+  const t = useTranslations("modules.home.KitchenWidget");
   if (locked) return null;
   if (todayMeals.length === 0 && expiring.length === 0) return null;
 
@@ -80,7 +82,7 @@ export function KitchenWidget({ todayMeals, expiring, locked }: KitchenWidgetPro
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h3 style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
             <Clock size={10} style={{ marginRight: 4, verticalAlign: "middle" }} />
-            Co dziś gotujemy
+            {t("coDzisGotujemy")}
           </h3>
           {todayMeals.map((m) => {
             const Tag = m.recipeSlug ? Link : "div";
@@ -121,7 +123,7 @@ export function KitchenWidget({ todayMeals, expiring, locked }: KitchenWidgetPro
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h3 style={{ fontSize: 11, color: "var(--kitchen-expiring)", textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
             <AlertTriangle size={10} style={{ marginRight: 4, verticalAlign: "middle" }} />
-            Kończy się termin
+            {t("konczySieTermin")}
           </h3>
           {expiring.map((e) => (
             <Link

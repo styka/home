@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, Unlink, Wrench, AlertTriangle } from "lucide-react";
@@ -39,6 +40,7 @@ export function AquariumSection({ pet }: { pet: PetWithRelations }) {
 }
 
 function EnclosureSection({ pet, group }: { pet: PetWithRelations; group: EnvGroup }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -77,7 +79,7 @@ function EnclosureSection({ pet, group }: { pet: PetWithRelations; group: EnvGro
               {meta.label}{dims ? ` · ${dims}` : ""}{enc.location ? ` · ${enc.location}` : ""}
             </div>
           </div>
-          <button onClick={unassign} disabled={isPending} title="Odłącz" style={iconBtn}><Unlink size={14} /></button>
+          <button onClick={unassign} disabled={isPending} title={t("odlacz")} style={iconBtn}><Unlink size={14} /></button>
         </div>
       </div>
 
@@ -127,6 +129,7 @@ function SectionTitle({ title, action }: { title: string; action?: ReactNode }) 
 // ── No enclosure: assign or create ──────────────────────────────────────────
 
 function NoEnclosure({ pet, group }: { pet: PetWithRelations; group: EnvGroup }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -183,7 +186,7 @@ function NoEnclosure({ pet, group }: { pet: PetWithRelations; group: EnvGroup })
 
       {enclosures.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <SectionTitle title="Przypisz istniejący" />
+          <SectionTitle title={t("przypiszIstniejacy")} />
           {enclosures.map((e) => (
             <button key={e.id} onClick={() => assign(e.id)} disabled={isPending}
               style={{ textAlign: "left", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", cursor: "pointer", color: "var(--text-primary)", fontSize: 13 }}>
@@ -205,8 +208,8 @@ function NoEnclosure({ pet, group }: { pet: PetWithRelations; group: EnvGroup })
               </select>
             </Field>
             {group === "aquarium"
-              ? <Field label="Pojemność (l)"><input style={inputStyle} inputMode="decimal" value={volumeL} onChange={(e) => setVolumeL(e.target.value)} /></Field>
-              : <Field label="Długość (cm)"><input style={inputStyle} inputMode="decimal" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} /></Field>}
+              ? <Field label={t("pojemnoscL")}><input style={inputStyle} inputMode="decimal" value={volumeL} onChange={(e) => setVolumeL(e.target.value)} /></Field>
+              : <Field label={t("dlugoscCm")}><input style={inputStyle} inputMode="decimal" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} /></Field>}
           </div>
           <Field label="Lokalizacja"><input style={inputStyle} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="np. salon" /></Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -216,7 +219,7 @@ function NoEnclosure({ pet, group }: { pet: PetWithRelations; group: EnvGroup })
         </div>
       ) : (
         <button onClick={() => setCreating(true)} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--accent-orange)", background: "none", border: "1px dashed var(--border)", borderRadius: 8, padding: "10px 12px", cursor: "pointer" }}>
-          <Plus size={15} /> Utwórz nowy zbiornik
+          <Plus size={15} /> {t("utworzNowyZbiornik")}
         </button>
       )}
     </div>
@@ -226,6 +229,7 @@ function NoEnclosure({ pet, group }: { pet: PetWithRelations; group: EnvGroup })
 // ── Add reading ─────────────────────────────────────────────────────────────
 
 function ReadingControls({ enclosure, group, ranges }: { enclosure: PetEnclosure; group: EnvGroup; ranges: Record<string, Range> }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -257,7 +261,7 @@ function ReadingControls({ enclosure, group, ranges }: { enclosure: PetEnclosure
       <GhostButton onClick={() => setRangesOpen(true)}>Zakresy docelowe</GhostButton>
 
       {open && (
-        <Modal title="Nowy pomiar parametrów" onClose={() => setOpen(false)} wide
+        <Modal title={t("nowyPomiarParametrow")} onClose={() => setOpen(false)} wide
           footer={<><GhostButton onClick={() => setOpen(false)}>Anuluj</GhostButton><PrimaryButton onClick={add} disabled={isPending}>Zapisz</PrimaryButton></>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {params.map((p) => (
@@ -275,6 +279,7 @@ function ReadingControls({ enclosure, group, ranges }: { enclosure: PetEnclosure
 }
 
 function TargetRangesModal({ enclosure, group, current, onClose }: { enclosure: PetEnclosure; group: EnvGroup; current: Record<string, Range>; onClose: () => void }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -303,7 +308,7 @@ function TargetRangesModal({ enclosure, group, current, onClose }: { enclosure: 
   return (
     <Modal title="Zakresy docelowe" onClose={onClose} wide
       footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={save} disabled={isPending}>Zapisz</PrimaryButton></>}>
-      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Puste pole = użyj domyślnego zakresu bezpieczeństwa.</p>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("pustePoleUzyjDomyslnego")}</p>
       {params.map((p) => (
         <div key={p.key} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{p.label}</span>
@@ -318,6 +323,7 @@ function TargetRangesModal({ enclosure, group, current, onClose }: { enclosure: 
 // ── Equipment ────────────────────────────────────────────────────────────────
 
 function EquipmentBlock({ enclosure, equipment }: { enclosure: PetEnclosure; equipment: EquipItem[] }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -342,11 +348,11 @@ function EquipmentBlock({ enclosure, equipment }: { enclosure: PetEnclosure; equ
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <SectionTitle title="Sprzęt" action={
+      <SectionTitle title={t("sprzet")} action={
         <button onClick={() => setOpen(true)} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-orange)", background: "none", border: "none", cursor: "pointer" }}><Plus size={14} /> Dodaj</button>
       } />
       {equipment.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Brak sprzętu (grzałka, filtr, żarówka UVB…).</p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("brakSprzetuGrzalkaFiltr")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {equipment.map((eq, i) => {
@@ -368,10 +374,10 @@ function EquipmentBlock({ enclosure, equipment }: { enclosure: PetEnclosure; equ
       )}
 
       {open && (
-        <Modal title="Dodaj sprzęt" onClose={() => setOpen(false)}
+        <Modal title={t("dodajSprzet")} onClose={() => setOpen(false)}
           footer={<><GhostButton onClick={() => setOpen(false)}>Anuluj</GhostButton><PrimaryButton onClick={add} disabled={isPending}>Dodaj</PrimaryButton></>}>
-          <Field label="Nazwa *"><input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Żarówka UVB 10.0" /></Field>
-          <Field label="Wymień do (opcjonalnie)"><input type="date" style={inputStyle} value={replaceBy} onChange={(e) => setReplaceBy(e.target.value)} /></Field>
+          <Field label="Nazwa *"><input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("npZarowkaUvb10")} /></Field>
+          <Field label={t("wymienDoOpcjonalnie")}><input type="date" style={inputStyle} value={replaceBy} onChange={(e) => setReplaceBy(e.target.value)} /></Field>
         </Modal>
       )}
     </div>
@@ -381,6 +387,7 @@ function EquipmentBlock({ enclosure, equipment }: { enclosure: PetEnclosure; equ
 // ── History ──────────────────────────────────────────────────────────────────
 
 function ReadingsHistory({ enclosure, group, ranges }: { enclosure: PetEnclosure & { readings: PetEnvironmentReading[] }; group: EnvGroup; ranges: Record<string, Range> }) {
+  const t = useTranslations("modules.pets.PetHusbandry");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const params = paramsForGroup(group);
@@ -392,7 +399,7 @@ function ReadingsHistory({ enclosure, group, ranges }: { enclosure: PetEnclosure
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <SectionTitle title="Historia pomiarów" />
+      <SectionTitle title={t("historiaPomiarow")} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {readings.map((r) => (
           <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { statusMetaFor, type Task, type ProjectStatusConfig } from "@/types";
 
@@ -26,6 +27,7 @@ function dayLabel(iso: string): string {
 
 /** Widok osi czasu (T1): zadania pogrupowane po dniu terminu (zaległe → przyszłe), bez terminu na końcu. */
 export function TimelineView({ tasks, statusConfig, onOpen }: { tasks: Task[]; statusConfig: ProjectStatusConfig; onOpen: (id: string) => void }) {
+  const t = useTranslations("modules.tasks.TimelineView");
   const { groups, noDate } = useMemo(() => {
     const map = new Map<string, Task[]>();
     const noDate: Task[] = [];
@@ -44,7 +46,7 @@ export function TimelineView({ tasks, statusConfig, onOpen }: { tasks: Task[]; s
   return (
     <div className="flex-1 min-h-0 overflow-y-auto" style={{ padding: 12 }}>
       {groups.length === 0 && noDate.length === 0 && (
-        <div style={{ fontSize: 13, color: "var(--text-muted)", padding: 8 }}>Brak zadań do pokazania.</div>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", padding: 8 }}>{t("brakZadanDoPokazania")}</div>
       )}
       {groups.map(([iso, items]) => {
         const overdue = iso < todayIso;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -23,6 +24,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; streak?: { streak: number; reviewedToday: number } }) {
+  const t = useTranslations("modules.languages.LanguagesHomePage");
   const totalCards = decks.reduce((s, d) => s + (d._count?.cards ?? 0), 0);
   const totalDue = decks.reduce((s, d) => s + (d.dueCount ?? 0), 0);
   const totalLearned = decks.reduce((s, d) => s + (d.learnedCount ?? 0), 0);
@@ -80,7 +82,7 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
       state="ready"
       icon={<GraduationCap size={22} />}
       iconColor="var(--accent-purple)"
-      title="Nauka języków"
+      title={t("naukaJezykow")}
       subtitle="Twórz talie słówek i ucz się ich powtórkami rozłożonymi w czasie"
       headerAction={
         <button
@@ -96,7 +98,7 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
       {decks.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
           <StatTile value={decks.length} label="Talie" color="var(--accent-purple)" />
-          <StatTile value={totalCards} label="Słówek" color="var(--accent-blue)" icon={<BookOpen size={14} />} />
+          <StatTile value={totalCards} label={t("slowek")} color="var(--accent-blue)" icon={<BookOpen size={14} />} />
           <StatTile value={totalLearned} label="Przeczonych" color="var(--accent-green)" />
           {totalDue > 0 && <StatTile value={totalDue} label="Do nauki" color="var(--accent-amber)" icon={<Flame size={14} />} />}
           {streak && streak.streak > 0 && (
@@ -109,28 +111,28 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
         <div style={{ ...cardStyle, flexDirection: "column", alignItems: "stretch", gap: 12, cursor: "default" }}>
           <div>
             <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Nazwa talii</label>
-            <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Słownictwo do demo projektu" autoFocus />
+            <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("npSlownictwoDoDemo")} autoFocus />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Język znany</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("jezykZnany")}</label>
               <input style={inputStyle} value={nativeLang} onChange={(e) => setNativeLang(e.target.value)} />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Język uczony</label>
+              <label style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("jezykUczony")}</label>
               <input style={inputStyle} value={targetLang} onChange={(e) => setTargetLang(e.target.value)} />
             </div>
           </div>
           <div>
             <label style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
               <Sparkles size={12} style={{ color: "var(--accent-amber)" }} />
-              Tekst źródłowy (opcjonalnie) — AI wyciągnie z niego słówka
+              {t("tekstZrodlowyOpcjonalnieAi")}
             </label>
             <textarea
               style={{ ...inputStyle, minHeight: 96, resize: "vertical", fontFamily: "inherit" }}
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
-              placeholder="Wklej kod, artykuł lub dowolny tekst w języku, którego się uczysz…"
+              placeholder={t("wklejKodArtykulLub")}
             />
           </div>
           {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>}
@@ -185,7 +187,7 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
                     borderRadius: 999,
                     padding: "2px 8px",
                   }}
-                  title="Słówka do powtórki"
+                  title={t("slowkaDoPowtorki")}
                 >
                   {d.dueCount} do nauki
                 </span>

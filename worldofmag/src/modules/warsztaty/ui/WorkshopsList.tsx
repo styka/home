@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function WorkshopsList({ workshops, mode, teams }: Props) {
+  const t = useTranslations("modules.warsztaty.WorkshopsList");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -87,10 +89,10 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
         >
           <Wrench size={32} className="mx-auto mb-3" style={{ color: "var(--accent-amber)" }} />
           <p className="mb-1" style={{ color: "var(--text-secondary)" }}>
-            Nie masz jeszcze żadnego warsztatu.
+            {t("nieMaszJeszczeZadnego")}
           </p>
           <p className="text-sm">
-            Utwórz pierwszy — wybierzesz profil (stolarski, samochodowy, malarski…), a my podpowiemy, jaki sprzęt warto mieć.
+            {t("utworzPierwszyWybierzeszProfil")}
           </p>
         </div>
       ) : (
@@ -109,7 +111,7 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
                 <div className="flex items-start justify-between">
                   <span className="text-2xl" aria-hidden>{wt.emoji}</span>
                   {w.workspace?.teamId ? (
-                    <Users size={15} style={{ color: "var(--accent-purple)" }} aria-label="Warsztat zespołowy" />
+                    <Users size={15} style={{ color: "var(--accent-purple)" }} aria-label={t("warsztatZespolowy")} />
                   ) : null}
                 </div>
                 <div className="font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -141,7 +143,7 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
             className="w-full py-2 rounded text-sm font-medium disabled:opacity-50"
             style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
           >
-            Utwórz warsztat
+            {t("utworzWarsztat")}
           </button>
         }
       >
@@ -152,7 +154,7 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="np. Garaż, Pracownia malarska"
+            placeholder={t("npGarazPracowniaMalarska")}
             className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
             style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           />
@@ -184,14 +186,14 @@ export function WorkshopsList({ workshops, mode, teams }: Props) {
           <input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="np. garaż, piwnica, pokój 2"
+            placeholder={t("npGarazPiwnicaPokoj")}
             className="w-full mb-3 px-3 py-2 rounded text-sm border outline-none"
             style={{ backgroundColor: "var(--bg-base)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           />
 
           {mode === "pro" && teams.length > 0 ? (
             <>
-              <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>Właściciel</label>
+              <label className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>{t("wlasciciel")}</label>
               <select
                 value={teamId}
                 onChange={(e) => setTeamId(e.target.value)}

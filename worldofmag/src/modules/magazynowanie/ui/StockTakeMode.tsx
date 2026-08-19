@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
@@ -14,6 +15,7 @@ interface StockTakeModeProps {
 const NO_WAREHOUSE = "Bez magazynu";
 
 export function StockTakeMode({ items }: StockTakeModeProps) {
+  const t = useTranslations("modules.magazynowanie.StockTakeMode");
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -76,7 +78,7 @@ export function StockTakeMode({ items }: StockTakeModeProps) {
         Spis magazynu
       </h1>
       <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-        Wpisz aktualną ilość każdej pozycji. Zmiany trafią do dziennika ruchów jako korekta (spis).
+        {t("wpiszAktualnaIloscKazdej")}
       </p>
 
       <div className="flex flex-col gap-4">

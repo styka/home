@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CheckSquare, ChevronRight, Users, Clock, PawPrint, Car, ShieldCheck, Wrench, AlertCircle, GraduationCap, HeartPulse, Stethoscope, FlaskConical } from "lucide-react";
 import type { TaskPriority, CareAgendaItem } from "@/types";
@@ -517,6 +518,7 @@ function HealthColumn({ events }: { events: HealthUpcoming[] }) {
 }
 
 function LanguagesColumn({ decks }: { decks: DeckDue[] }) {
+  const t = useTranslations("modules.home.TodaySnapshot");
   return (
     <div
       style={{
@@ -543,7 +545,7 @@ function LanguagesColumn({ decks }: { decks: DeckDue[] }) {
             letterSpacing: "0.05em",
           }}
         >
-          <GraduationCap size={13} /> Powtórki
+          <GraduationCap size={13} /> {t("powtorki")}
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
             {decks.reduce((s, d) => s + d.dueCount, 0)}
           </span>
@@ -636,6 +638,7 @@ function dueLabel(daysLeft: number): string {
 }
 
 function MealsColumn({ meals }: { meals: TodayMealPreview[] }) {
+  const t = useTranslations("modules.home.TodaySnapshot");
   return (
     <div
       style={{
@@ -662,7 +665,7 @@ function MealsColumn({ meals }: { meals: TodayMealPreview[] }) {
             letterSpacing: "0.05em",
           }}
         >
-          <Clock size={13} /> Posiłki
+          <Clock size={13} /> {t("posilki")}
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
             {meals.length}
           </span>

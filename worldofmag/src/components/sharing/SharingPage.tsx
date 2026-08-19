@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Share2, Users, User } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
@@ -67,6 +68,7 @@ export function SharingPage({
   doMnie: SharedGrantRow[];
   odeMnie: SharedGrantRow[];
 }) {
+  const t = useTranslations("components.sharing.SharingPage");
   const [zakladka, setZakladka] = useState<"doMnie" | "odeMnie">("doMnie");
 
   return (
@@ -75,7 +77,7 @@ export function SharingPage({
       state="ready"
       icon={<Share2 size={22} />}
       iconColor="var(--accent-blue)"
-      title="Udostępnianie"
+      title={t("udostepnianie")}
       href="/udostepnione"
       subtitle="Jedno miejsce dla wszystkich modułów — kto ma dostęp do czego."
       filters={
@@ -113,9 +115,7 @@ export function SharingPage({
         />
       )}
       <p className="text-xs px-4 py-4" style={{ color: "var(--text-muted)" }}>
-        Odwoływanie dostępu jednym kliknięciem dojdzie razem z etapem 2 zadania 12 — dopóki dostęp
-        rozstrzygają dawne tabele udostępnień, usunięcie samego nadania nic by nie zmieniło,
-        a przycisk obiecywałby skutek, którego nie ma.
+        {t("odwolywanieDostepuJednymKliknieciem")}
       </p>
     </ModuleView>
   );

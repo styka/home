@@ -50,6 +50,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+  const t = useTranslations("modules.tasks.TasksPage");
   const confirmDialog = useConfirm();
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
 
@@ -507,11 +508,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="bg-transparent text-sm font-semibold focus:outline-none w-full"
             style={{ color: "var(--text-primary)" }}
           >
-            <option value="today">📅 Dziś</option>
-            <option value="upcoming">📆 Nadchodzące</option>
-            <option value="overdue">⚠️ Zaległe</option>
+            <option value="today">{t("dzis")}</option>
+            <option value="upcoming">{t("nadchodzace")}</option>
+            <option value="overdue">{t("zalegle")}</option>
             <option value="all">◎ Wszystkie</option>
-            {projectId === "multi" && <option value="multi">🗂 Wiele projektów</option>}
+            {projectId === "multi" && <option value="multi">{t("wieleProjektow")}</option>}
             {allProjects.filter((p) => p.isInbox).map((p) => (
               <option key={p.id} value={p.id}>📥 {p.name}</option>
             ))}
@@ -536,7 +537,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             }}
             className="flex items-center gap-2 min-w-0 overflow-x-auto [&>*]:flex-shrink-0"
             role="toolbar"
-            aria-label="Pasek akcji listy — przewiń w poziomie, by zobaczyć więcej"
+            aria-label={t("pasekAkcjiListyPrzewin")}
           >
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
@@ -558,7 +559,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             className="p-1.5 rounded focus:outline-none"
             style={{ color: isSearchOpen ? "var(--accent-blue)" : "var(--text-muted)" }}
             title="Szukaj (/ lub f)"
-            aria-label="Szukaj zadań"
+            aria-label={t("szukajZadan")}
           >
             <Search size={15} />
           </button>
@@ -608,7 +609,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   color: groupBy === "priority" ? "var(--text-primary)" : "var(--text-muted)",
                   backgroundColor: groupBy === "priority" ? "var(--bg-hover)" : "transparent",
                 }}
-                title="Grupuj po priorytetach (jak w „Dziś”)"
+                title={t("grupujPoPriorytetachJak")}
                 aria-label="Grupuj po priorytetach"
               >
                 <Flag size={15} />
@@ -623,7 +624,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               className="p-1.5 rounded focus:outline-none"
               style={{ color: selectionMode ? "var(--accent-blue)" : "var(--text-muted)" }}
               title="Zaznacz wiele (edycja zbiorcza)"
-              aria-label="Zaznacz wiele zadań"
+              aria-label={t("zaznaczWieleZadan")}
             >
               <CheckSquare size={15} />
             </button>
@@ -635,7 +636,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               className="p-1.5 rounded focus:outline-none"
               style={{ color: "var(--text-muted)" }}
               title="Statusy listy (konfiguracja)"
-              aria-label="Konfiguracja statusów listy"
+              aria-label={t("konfiguracjaStatusowListy")}
             >
               <SlidersHorizontal size={15} />
             </button>
@@ -659,8 +660,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ color: "var(--text-muted)" }}
-            title="Kosz — przywróć usunięte"
-            aria-label="Kosz — przywróć usunięte zadania"
+            title={t("koszPrzywrocUsuniete")}
+            aria-label={t("koszPrzywrocUsunieteZadania")}
           >
             <ArchiveRestore size={15} />
           </Link>
@@ -687,7 +688,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {actionScroll.left && (
             <button
               type="button"
-              aria-label="Przewiń pasek akcji w lewo"
+              aria-label={t("przewinPasekAkcjiW")}
               onClick={() => actionsScrollRef.current?.scrollBy({ left: -140, behavior: "smooth" })}
               className="absolute left-0 top-0 bottom-0 flex items-center pl-0.5 pr-4 focus:outline-none"
               style={{ background: "linear-gradient(to right, var(--bg-surface) 60%, transparent)" }}
@@ -698,7 +699,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {actionScroll.right && (
             <button
               type="button"
-              aria-label="Przewiń pasek akcji w prawo"
+              aria-label={t("przewinPasekAkcjiW2")}
               onClick={() => actionsScrollRef.current?.scrollBy({ left: 140, behavior: "smooth" })}
               className="absolute right-0 top-0 bottom-0 flex items-center pr-0.5 pl-4 focus:outline-none"
               style={{ background: "linear-gradient(to left, var(--bg-surface) 60%, transparent)" }}
@@ -748,7 +749,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               href={`/tasks/multi?group=${multiGroupId}&edit=1`}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs flex-shrink-0 ml-1"
               style={{ color: "var(--text-muted)" }}
-              title="Edytuj grupę (nazwa / projekty)"
+              title={t("edytujGrupeNazwaProjekty")}
             >
               <Pencil size={11} />
             </Link>
@@ -779,7 +780,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               if (e.key === "Escape") { setSearchQuery(""); setIsSearchOpen(false); setAiSearchResults(null); }
               if (e.key === "Enter") handleAISearch();
             }}
-            placeholder="Szukaj zadań… (Enter = szukaj AI)"
+            placeholder={t("szukajZadanEnterSzukaj")}
             className="flex-1 bg-transparent text-sm focus:outline-none"
             style={{ color: "var(--text-primary)" }}
           />

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { Item } from "@/types";
 import { CategoryGroup } from "./CategoryGroup";
 import { ItemRow } from "./ItemRow";
@@ -31,12 +32,13 @@ export function ItemList({
   sortBy = "category",
   otherLists,
 }: ItemListProps) {
+  const t = useTranslations("modules.shopping.ItemList");
   if (items.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center" style={{ color: "var(--text-muted)" }}>
-          <p className="text-sm">Brak produktów.</p>
-          <p className="text-xs mt-1">Naciśnij <kbd>a</kbd>, aby dodać.</p>
+          <p className="text-sm">{t("brakProduktow")}</p>
+          <p className="text-xs mt-1">{t("nacisnij")} <kbd>a</kbd>{t("abyDodac")}</p>
         </div>
       </div>
     );

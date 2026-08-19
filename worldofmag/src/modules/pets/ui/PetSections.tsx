@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -51,6 +52,7 @@ function SectionShell({ title, onAdd, addLabel, children }: { title: string; onA
 }
 
 function Row({ children, onDelete, onComplete, completing }: { children: ReactNode; onDelete?: () => void; onComplete?: () => void; completing?: boolean }) {
+  const t = useTranslations("modules.pets.PetSections");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
       <div style={{ minWidth: 0, flex: 1 }}>{children}</div>
@@ -60,7 +62,7 @@ function Row({ children, onDelete, onComplete, completing }: { children: ReactNo
         </button>
       )}
       {onDelete && (
-        <button onClick={onDelete} title="Usuń" style={smallBtn("var(--accent-red)")}><Trash2 size={13} /></button>
+        <button onClick={onDelete} title={t("usun")} style={smallBtn("var(--accent-red)")}><Trash2 size={13} /></button>
       )}
     </div>
   );
@@ -134,6 +136,7 @@ export function ProfileSection({ pet }: { pet: PetWithRelations }) {
 // ─── Measurements ───────────────────────────────────────────────────────────
 
 export function MeasurementsSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -203,7 +206,7 @@ export function MeasurementsSection({ pet }: { pet: PetWithRelations }) {
         <Modal title="Nowy pomiar" onClose={() => setOpen(false)} footer={<><GhostButton onClick={() => setOpen(false)}>Anuluj</GhostButton><PrimaryButton onClick={add} disabled={isPending}>Dodaj</PrimaryButton></>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <Field label="Waga (kg)"><input style={inputStyle} inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="np. 12.5" /></Field>
-            <Field label="Długość (cm)"><input style={inputStyle} inputMode="decimal" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} /></Field>
+            <Field label={t("dlugoscCm")}><input style={inputStyle} inputMode="decimal" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} /></Field>
           </div>
           <Field label="Data"><input type="date" style={inputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label="Notatka"><input style={inputStyle} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
@@ -216,6 +219,7 @@ export function MeasurementsSection({ pet }: { pet: PetWithRelations }) {
 // ─── Treatments ─────────────────────────────────────────────────────────────
 
 export function TreatmentsSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -277,10 +281,10 @@ export function TreatmentsSection({ pet }: { pet: PetWithRelations }) {
               {(Object.keys(TREATMENT_KIND_LABELS) as PetTreatmentKind[]).map((k) => <option key={k} value={k}>{TREATMENT_KIND_LABELS[k]}</option>)}
             </select>
           </Field>
-          <Field label="Nazwa *"><input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Drontal, szczepienie wścieklizna" /></Field>
+          <Field label="Nazwa *"><input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("npDrontalSzczepienieWscieklizna")} /></Field>
           <Field label="Dawka"><input style={inputStyle} value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="np. 1 tabletka" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Następny termin"><input type="date" style={inputStyle} value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>
+            <Field label={t("nastepnyTermin")}><input type="date" style={inputStyle} value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>
             <Field label="Powtarzaj co (dni)"><input style={inputStyle} inputMode="numeric" value={everyDays} onChange={(e) => setEveryDays(e.target.value)} placeholder="np. 90" /></Field>
           </div>
         </Modal>
@@ -292,6 +296,7 @@ export function TreatmentsSection({ pet }: { pet: PetWithRelations }) {
 // ─── Vet visits ─────────────────────────────────────────────────────────────
 
 export function VetSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -333,7 +338,7 @@ export function VetSection({ pet }: { pet: PetWithRelations }) {
               {v.diagnosis && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{v.diagnosis}</div>}
               {v.attachmentUrl && (
                 <a href={v.attachmentUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", textDecoration: "none", marginTop: 2 }}>
-                  <ExternalLink size={11} /> załącznik
+                  <ExternalLink size={11} /> {t("zalacznik")}
                 </a>
               )}
             </Row>
@@ -347,13 +352,13 @@ export function VetSection({ pet }: { pet: PetWithRelations }) {
             <Field label="Data"><input type="date" style={inputStyle} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
             <Field label="Lekarz / klinika"><input style={inputStyle} value={vetName} onChange={(e) => setVetName(e.target.value)} /></Field>
           </div>
-          <Field label="Powód"><input style={inputStyle} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+          <Field label={t("powod")}><input style={inputStyle} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
           <Field label="Diagnoza"><textarea style={{ ...inputStyle, minHeight: 50, resize: "vertical" }} value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Koszt (zł)"><input style={inputStyle} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} /></Field>
-            <Field label="Następna wizyta"><input type="date" style={inputStyle} value={nextVisit} onChange={(e) => setNextVisit(e.target.value)} /></Field>
+            <Field label={t("kosztZl")}><input style={inputStyle} inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} /></Field>
+            <Field label={t("nastepnaWizyta")}><input type="date" style={inputStyle} value={nextVisit} onChange={(e) => setNextVisit(e.target.value)} /></Field>
           </div>
-          <Field label="URL załącznika (skan, wynik)"><input style={inputStyle} value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)} placeholder="https://…" /></Field>
+          <Field label={t("urlZalacznikaSkanWynik")}><input style={inputStyle} value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)} placeholder="https://…" /></Field>
         </Modal>
       )}
     </SectionShell>
@@ -363,6 +368,7 @@ export function VetSection({ pet }: { pet: PetWithRelations }) {
 // ─── Health journal ─────────────────────────────────────────────────────────
 
 export function HealthSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -412,7 +418,7 @@ export function HealthSection({ pet }: { pet: PetWithRelations }) {
               {(Object.keys(HEALTH_TYPE_LABELS) as PetHealthType[]).map((t) => <option key={t} value={t}>{HEALTH_TYPE_LABELS[t]}</option>)}
             </select>
           </Field>
-          <Field label="Tytuł *"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label={t("tytul")}><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
           <Field label="Opis"><textarea style={{ ...inputStyle, minHeight: 60, resize: "vertical" }} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
         </Modal>
       )}
@@ -423,6 +429,7 @@ export function HealthSection({ pet }: { pet: PetWithRelations }) {
 // ─── Feeding ────────────────────────────────────────────────────────────────
 
 export function FeedingSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -469,7 +476,7 @@ export function FeedingSection({ pet }: { pet: PetWithRelations }) {
             <select style={inputStyle} value={outcome} onChange={(e) => setOutcome(e.target.value as typeof outcome)}>
               <option value="FED">Zjedzone</option>
               <option value="REFUSED">Odrzucone</option>
-              <option value="REGURGITATED">Zwrócone</option>
+              <option value="REGURGITATED">{t("zwrocone")}</option>
             </select>
           </Field>
           <PrimaryButton onClick={quickLog} disabled={isPending}>Zapisz karmienie</PrimaryButton>
@@ -521,6 +528,7 @@ export function FeedingSection({ pet }: { pet: PetWithRelations }) {
 const ROUTINE_CATEGORIES: PetCareCategory[] = ["CLEANING", "GROOMING", "WALK", "WATER_CHANGE", "UVB_REPLACEMENT", "WEIGHING", "CUSTOM"];
 
 export function RoutinesSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -577,7 +585,7 @@ export function RoutinesSection({ pet }: { pet: PetWithRelations }) {
           </Field>
           <Field label="Nazwa *"><input style={inputStyle} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="np. Czyszczenie terrarium" /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Następny termin"><input type="date" style={inputStyle} value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>
+            <Field label={t("nastepnyTermin")}><input type="date" style={inputStyle} value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>
             <Field label="Powtarzaj co (dni)"><input style={inputStyle} inputMode="numeric" value={everyDays} onChange={(e) => setEveryDays(e.target.value)} /></Field>
           </div>
         </Modal>
@@ -589,6 +597,7 @@ export function RoutinesSection({ pet }: { pet: PetWithRelations }) {
 // ─── Finance ─────────────────────────────────────────────────────────────
 
 export function FinanceSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const withCost = pet.vetVisits.filter((v) => v.cost != null);
   const total = withCost.reduce((sum, v) => sum + (v.cost ?? 0), 0);
 
@@ -596,7 +605,7 @@ export function FinanceSection({ pet }: { pet: PetWithRelations }) {
     <SectionShell title="Finanse">
       <div style={{ padding: "14px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>{total.toFixed(2)} zł</div>
-        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>suma kosztów wizyt weterynaryjnych</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("sumaKosztowWizytWeterynaryjnych")}</div>
       </div>
       {withCost.length === 0 ? <Empty text="Brak zarejestrowanych kosztów. Dodawaj koszty przy wizytach weterynaryjnych." /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -615,6 +624,7 @@ export function FinanceSection({ pet }: { pet: PetWithRelations }) {
 // ─── Documents (URL-based + GDrive coming soon) ─────────────────────────────
 
 export function DocumentsSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -630,8 +640,8 @@ export function DocumentsSection({ pet }: { pet: PetWithRelations }) {
   }
 
   return (
-    <SectionShell title="Dokumenty i zdjęcia">
-      <Field label="URL zdjęcia profilowego">
+    <SectionShell title={t("dokumentyIZdjecia")}>
+      <Field label={t("urlZdjeciaProfilowego")}>
         <div style={{ display: "flex", gap: 8 }}>
           <input style={inputStyle} value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://…" />
           <PrimaryButton onClick={savePhoto} disabled={isPending}>Zapisz</PrimaryButton>
@@ -639,7 +649,7 @@ export function DocumentsSection({ pet }: { pet: PetWithRelations }) {
       </Field>
 
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Załączniki z wizyt</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>{t("zalacznikiZWizyt")}</div>
         {attachments.length === 0 ? <Empty text="Brak załączników. Dodawaj linki przy wizytach weterynaryjnych." /> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {attachments.map((v) => (
@@ -654,9 +664,9 @@ export function DocumentsSection({ pet }: { pet: PetWithRelations }) {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", borderRadius: 8, border: "1px dashed var(--border)", background: "var(--bg-surface)", opacity: 0.85 }}>
         <HardDrive size={16} style={{ color: "var(--accent-blue)", flexShrink: 0, marginTop: 1 }} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Integracja Google Drive — wkrótce</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t("integracjaGoogleDriveWkrotce")}</div>
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-            Wkrótce będzie można wskazać własny folder na Google Drive i przechowywać tam zdjęcia oraz dokumenty (rodowody, wyniki badań). Na razie wklejaj linki URL.
+            {t("wkrotceBedzieMoznaWskazac")}
           </div>
         </div>
       </div>
@@ -667,6 +677,7 @@ export function DocumentsSection({ pet }: { pet: PetWithRelations }) {
 // ─── Sharing ─────────────────────────────────────────────────────────────
 
 export function SharingSection({ pet, teams }: { pet: PetWithRelations; teams: Array<{ id: string; name: string }> }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -674,7 +685,7 @@ export function SharingSection({ pet, teams }: { pet: PetWithRelations; teams: A
   function remove(id: string) { startTransition(async () => { await removePetShare(id); refresh(); }); }
 
   return (
-    <SectionShell title="Udostępnianie">
+    <SectionShell title={t("udostepnianie")}>
       {/* Z-193 (T-10): ujednolicony ShareControl pod nagłówkiem sekcji (hideHeader). */}
       <ShareControl
         module="pets"
@@ -695,7 +706,7 @@ export function SharingSection({ pet, teams }: { pet: PetWithRelations; teams: A
       />
       {teams.length > 0 && (
         <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
-          Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.
+          {t("abyUdostepnicCalemuZespolowi")}
         </p>
       )}
     </SectionShell>
@@ -705,6 +716,7 @@ export function SharingSection({ pet, teams }: { pet: PetWithRelations; teams: A
 // ─── Feature visibility settings ─────────────────────────────────────────────
 
 export function FeatureSettingsSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetSections");
   const { showToast } = useToast();
   const refresh = useRefresh();
   const [isPending, startTransition] = useTransition();
@@ -727,7 +739,7 @@ export function FeatureSettingsSection({ pet }: { pet: PetWithRelations }) {
   }
 
   return (
-    <SectionShell title="Widoczność funkcji">
+    <SectionShell title={t("widocznoscFunkcji")}>
       <Field label="Pakiet (preset)">
         <select style={inputStyle} value={presetKey} onChange={(e) => applyPreset(e.target.value)}>
           {PET_PRESETS.map((p) => <option key={p.key} value={p.key}>{p.emoji} {p.label}</option>)}
@@ -747,7 +759,7 @@ export function FeatureSettingsSection({ pet }: { pet: PetWithRelations }) {
         })}
       </div>
 
-      <PrimaryButton onClick={save} disabled={isPending}>Zapisz widoczność</PrimaryButton>
+      <PrimaryButton onClick={save} disabled={isPending}>{t("zapiszWidocznosc")}</PrimaryButton>
     </SectionShell>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Plus, Trash2, Loader2, RefreshCw, Pencil } from "lucide-react";
@@ -59,6 +60,7 @@ export function WatchersPanel({
   coords: { lat: number; lon: number; label: string } | null;
   usdPlnRate?: number;
 }) {
+  const t = useTranslations("modules.weather.WatchersPanel");
   const router = useRouter();
   const { showToast } = useToast();
   const [verdicts, setVerdicts] = useState<WatcherVerdict[] | null>(null);
@@ -153,8 +155,7 @@ export function WatchersPanel({
 
       {watchers.length === 0 ? (
         <p className="text-sm text-[var(--text-muted)]">
-          Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu”, „Bieganie”) albo własny
-          opisany naturalnym językiem — AI oceni je względem prognozy.
+          {t("brakObserwatorowDodajGotowy")}
         </p>
       ) : loading && verdicts === null ? (
         <div className="flex justify-center py-6">
@@ -213,7 +214,7 @@ export function WatchersPanel({
                     <button
                       onClick={() => run(() => deleteWatcher(w.id))}
                       className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-                      title="Usuń obserwator"
+                      title={t("usunObserwator")}
                       aria-label={`Usuń obserwator ${w.title}`}
                     >
                       <Trash2 size={14} />
@@ -286,6 +287,7 @@ function WatcherFormModal({
   onAddPreset?: (key: string) => void;
   onSubmit: (d: { title: string; query: string; horizon: Horizon }) => void;
 }) {
+  const t = useTranslations("modules.weather.WatchersPanel");
   const isEdit = !!initial;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [query, setQuery] = useState(initial?.query ?? "");
@@ -349,14 +351,14 @@ function WatcherFormModal({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Nazwa (np. Wypad w góry)"
+          placeholder={t("nazwaNpWypadW")}
           className="mb-2 w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           rows={2}
-          placeholder="Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr"
+          placeholder={t("coObserwowacNpWeekend")}
           className="mb-2 w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
         <div className="flex items-center gap-2">

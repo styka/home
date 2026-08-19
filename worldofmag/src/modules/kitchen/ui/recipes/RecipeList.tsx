@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -34,6 +35,7 @@ const EMPTY_FILTERS: RecipeFilterState = {
 };
 
 export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }: RecipeListProps) {
+  const t = useTranslations("modules.kitchen.RecipeList");
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
   // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
   const viewSpec = useMemo(() => ({ q: text("") }), []);
@@ -119,7 +121,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Szukaj przepisów… ( / )"
+            placeholder={t("szukajPrzepisow")}
             className="flex-1 bg-transparent border-none outline-none text-sm"
             style={{ color: "var(--text-primary)" }}
           />
@@ -169,7 +171,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left"
                     style={{ color: "var(--text-primary)" }}
                   >
-                    <Camera size={14} style={{ color: "var(--accent-purple)" }} /> Import ze zdjęcia (OCR)
+                    <Camera size={14} style={{ color: "var(--accent-purple)" }} /> {t("importZeZdjeciaOcr")}
                   </button>
                   <button
                     type="button"
@@ -209,7 +211,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
 
       {filtered.length === 0 ? (
         <div className="text-center py-10 text-sm" style={{ color: "var(--text-muted)" }}>
-          Brak przepisów spełniających filtry.
+          {t("brakPrzepisowSpelniajacychFiltry")}
         </div>
       ) : (
         <div
@@ -238,14 +240,15 @@ function EmptyState({
   onImportUrl: () => void;
   onGenerateAI: () => void;
 }) {
+  const t = useTranslations("modules.kitchen.RecipeList");
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
       <ChefHat size={48} style={{ color: "var(--text-muted)" }} />
       <h2 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-        Brak przepisów
+        {t("brakPrzepisow")}
       </h2>
       <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-        Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów.
+        {t("zacznijOdStworzeniaSwojego")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Link

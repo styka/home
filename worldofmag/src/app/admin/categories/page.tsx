@@ -5,8 +5,10 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getSystemCategories } from "@/actions/adminCategories";
 import { SystemCategoryManager } from "@/components/admin/SystemCategoryManager";
 import { ChevronLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminCategoriesPage() {
+  const t = await getTranslations("app.admin.categories.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 

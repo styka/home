@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Check, X, Bell } from "lucide-react";
 import { parseDays } from "@/lib/habitStats";
@@ -70,6 +71,7 @@ export function HabitFormModal({
   onSave: (v: HabitFormValue) => Promise<void>;
   onClose: () => void;
 }) {
+  const t = useTranslations("modules.habits.HabitFormModal");
   const [form, setForm] = useState<HabitFormValue>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +175,7 @@ export function HabitFormModal({
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Nazwa</label>
-            <input style={inputStyle} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="np. Pij wodę rano" autoFocus />
+            <input style={inputStyle} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={t("npPijWodeRano")} autoFocus />
           </div>
         </div>
 
@@ -308,7 +310,7 @@ export function HabitFormModal({
             />
             {form.reminderTime && (
               <button onClick={() => set("reminderTime", null)} className="text-xs px-2 py-1 rounded" style={{ color: "var(--text-muted)", background: "var(--bg-hover)", border: "none" }}>
-                Wyłącz
+                {t("wylacz")}
               </button>
             )}
           </div>

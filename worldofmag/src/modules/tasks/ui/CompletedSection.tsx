@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TaskGroup } from "./TaskGroup";
 import type { Task } from "@/types";
 
@@ -13,6 +14,7 @@ interface CompletedSectionProps {
 // zadania nie zaśmiecają widoku. Kolejność domyślna (znacznik „✓ <data>" na
 // wierszach pokazuje datę wykonania — patrz TaskRow).
 export function CompletedSection({ tasks, renderTask }: CompletedSectionProps) {
+  const t = useTranslations("modules.tasks.CompletedSection");
   if (tasks.length === 0) return null;
 
   return (

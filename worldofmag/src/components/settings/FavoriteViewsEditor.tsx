@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, Trash2, Check, Pencil, Star } from "lucide-react";
@@ -21,6 +22,7 @@ const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "�
  * skróty `Alt+1..9`, więc przestawienie listy to zarazem przypisanie skrótów.
  */
 export function FavoriteViewsEditor({ favorites }: { favorites: FavoriteViewDTO[] }) {
+  const t = useTranslations("components.settings.FavoriteViewsEditor");
   const [rows, setRows] = useState<FavoriteViewDTO[]>(favorites);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftLabel, setDraftLabel] = useState("");
@@ -72,8 +74,7 @@ export function FavoriteViewsEditor({ favorites }: { favorites: FavoriteViewDTO[
         Ulubione widoki
       </h2>
       <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
-        Miejsca zapisane gwiazdką w pasku. Kolejność decyduje o skrótach — pierwsze dziewięć
-        pozycji otwierasz skrótami <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd>, a całą listę przez{" "}
+        {t("miejscaZapisaneGwiazdkaW")} <kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd>, a całą listę przez{" "}
         <kbd>Alt</kbd>+<kbd>0</kbd>. Limit: {MAX_FAVORITE_VIEWS}.
       </p>
 
@@ -84,8 +85,7 @@ export function FavoriteViewsEditor({ favorites }: { favorites: FavoriteViewDTO[
             border: "1px dashed var(--border)", borderRadius: "var(--radius, 8px)", background: "var(--bg-surface)",
           }}
         >
-          Nie masz jeszcze ulubionych widoków. Wejdź w dowolne miejsce aplikacji — także z ustawionymi
-          filtrami — i kliknij gwiazdkę w pasku, żeby je tu zapisać.
+          {t("nieMaszJeszczeUlubionych")}
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -163,21 +163,21 @@ export function FavoriteViewsEditor({ favorites }: { favorites: FavoriteViewDTO[
 
               <button
                 onClick={() => { setEditingId(f.id); setDraftLabel(f.label); }}
-                title="Zmień nazwę"
+                title={t("zmienNazwe")}
                 aria-label={`Zmień nazwę „${f.label}"`}
                 style={ctlBtn()}
               >
                 {editingId === f.id ? <Check size={13} /> : <Pencil size={13} />}
               </button>
-              <button onClick={() => move(idx, -1)} disabled={idx === 0} title="W górę" aria-label="W górę" style={ctlBtn(idx === 0)}>
+              <button onClick={() => move(idx, -1)} disabled={idx === 0} title={t("wGore")} aria-label={t("wGore")} style={ctlBtn(idx === 0)}>
                 <ChevronUp size={13} />
               </button>
-              <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} title="W dół" aria-label="W dół" style={ctlBtn(idx === rows.length - 1)}>
+              <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} title={t("wDol")} aria-label={t("wDol")} style={ctlBtn(idx === rows.length - 1)}>
                 <ChevronDown size={13} />
               </button>
               <button
                 onClick={() => remove(f.id)}
-                title="Usuń z ulubionych"
+                title={t("usunZUlubionych")}
                 aria-label={`Usuń „${f.label}" z ulubionych`}
                 style={{ ...ctlBtn(), color: "var(--accent-red)" }}
               >

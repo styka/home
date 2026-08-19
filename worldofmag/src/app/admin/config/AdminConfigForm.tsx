@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { setConfigValue } from "@/actions/config";
@@ -14,6 +15,7 @@ interface AdminConfigFormProps {
 }
 
 export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminConfigFormProps) {
+  const t = useTranslations("app.admin.config.AdminConfigForm");
   return (
     <>
       <ApiKeyCard
@@ -25,8 +27,7 @@ export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminC
         help={
           <>
             Uzyskaj bezpłatny klucz na{" "}
-            <span style={{ color: "var(--accent-blue)" }}>console.groq.com/keys</span>. Używany do
-            rozpoznawania listy zakupów z głosu i tekstu.
+            <span style={{ color: "var(--accent-blue)" }}>console.groq.com/keys</span>{t("uzywanyDoRozpoznawaniaListy")}
           </>
         }
       />
@@ -42,13 +43,10 @@ export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminC
         help={
           <>
             Opcjonalny, ale <strong>zalecany</strong>. Z tego klucza korzysta narzędzie{" "}
-            <code>web_search</code> <strong>asystenta AI</strong> (gdy potrzebuje informacji spoza
-            Twoich danych — ceny, fakty, definicje) oraz moduł <strong>Wiadomości</strong> przy
-            budowaniu bazowej bazy wiedzy. Bez klucza działa darmowy fallback DuckDuckGo, ale bywa
-            ograniczany dla IP serwerowni (Render), więc wyniki potrafią być puste.
+            <code>web_search</code> <strong>asystenta AI</strong> {t("gdyPotrzebujeInformacjiSpoza")} <strong>{t("wiadomosci")}</strong> {t("przyBudowaniuBazowejBazy")}
             <br />
             <br />
-            <strong>Jak zdobyć darmowy klucz (≈2&nbsp;000 zapytań/mc):</strong>
+            <strong>{t("jakZdobycDarmowyKlucz")}</strong>
             <ol style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
               <li>
                 Wejdź na{" "}
@@ -62,17 +60,15 @@ export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminC
                 </a>{" "}
                 i kliknij „Get started”.
               </li>
-              <li>Załóż konto (Brave Search API) i potwierdź e-mail.</li>
+              <li>{t("zalozKontoBraveSearch")}</li>
               <li>
-                W panelu wybierz plan <strong>„Free”</strong> (Data for Search / Free) — do ~2&nbsp;000
-                zapytań miesięcznie, 1&nbsp;zapytanie/s. Brave może poprosić o kartę do weryfikacji,
-                ale plan Free pozostaje bezpłatny.
+                W panelu wybierz plan <strong>„Free”</strong> {t("dataForSearchFree")}
               </li>
               <li>
-                Przejdź do <strong>API Keys</strong> → „Add API key”, skopiuj token (zaczyna się od{" "}
+                {t("przejdzDo")} <strong>API Keys</strong> → „Add API key”, skopiuj token (zaczyna się od{" "}
                 <code>BSA…</code>).
               </li>
-              <li>Wklej token poniżej i kliknij „Zapisz”.</li>
+              <li>{t("wklejTokenPonizejI")}</li>
             </ol>
           </>
         }
@@ -82,21 +78,18 @@ export function AdminConfigForm({ groqKey, braveKey, feedbackProjectId }: AdminC
 
       <PlainValueCard
         sectionTitle="Skrzynka zgłoszeń od użytkowników"
-        label="Projekt-skrzynka (identyfikator projektu zadań)"
+        label={t("projektSkrzynkaIdentyfikatorProjektu")}
         configKey="feedback_project_id"
         current={feedbackProjectId}
         placeholder="np. cmpq1l67f000gyt0vvfnfifob"
         help={
           <>
             Do tego projektu trafiają zgłoszenia błędów i sugestii wysyłane przez{" "}
-            <strong>wszystkich</strong> użytkowników (robaczek w asystencie AI oraz tryb wskazywania
-            elementu). Zgłaszający <strong>nie zyskuje</strong> prawa do odczytu tego projektu — może
-            tam wyłącznie wrzucić zgłoszenie.
+            <strong>wszystkich</strong> {t("uzytkownikowRobaczekWAsystencie")} <strong>nie zyskuje</strong> {t("prawaDoOdczytuTego")}
             <br />
             <br />
             Identyfikator znajdziesz w adresie projektu: <code>/tasks/&lt;identyfikator&gt;</code>.{" "}
-            <strong>Puste pole</strong> = zachowanie domyślne, czyli projekt o nazwie „Omnia”
-            należący do administratora.
+            <strong>Puste pole</strong> {t("zachowanieDomyslneCzyliProjekt")}
           </>
         }
       />
@@ -189,6 +182,7 @@ function ApiKeyCard({
   placeholder: string;
   help: React.ReactNode;
 }) {
+  const t = useTranslations("app.admin.config.AdminConfigForm");
   // A2: nie mamy surowego klucza po stronie klienta — pole służy tylko do wpisania NOWEGO.
   const [key, setKey] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -247,7 +241,7 @@ function ApiKeyCard({
                 color: "var(--text-muted)",
                 border: "1px solid var(--border)",
               }}
-              title="Klucz jest zaszyfrowany — pokazujemy tylko maskę. Wpisz nowy, aby nadpisać."
+              title={t("kluczJestZaszyfrowanyPokazujemy")}
             >
               <span className="flex-1">Ustawiony: {maskedDisplay}</span>
             </div>

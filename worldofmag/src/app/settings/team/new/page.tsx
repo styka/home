@@ -1,9 +1,11 @@
+import { useTranslations } from "next-intl";
 import { createTeam } from "@/actions/teams"
 import { redirect } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 
 export default function NewTeamPage() {
+  const t = useTranslations("app.settings.team.new.page");
   return (
     <div style={{ padding: "32px", maxWidth: 480 }}>
       <Link href="/settings" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 20 }}>
@@ -11,7 +13,7 @@ export default function NewTeamPage() {
         Ustawienia
       </Link>
       <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 600, marginBottom: 24 }}>
-        Nowy zespół / rodzina
+        {t("nowyZespolRodzina")}
       </h1>
       <form
         action={async (formData: FormData) => {
@@ -38,8 +40,8 @@ export default function NewTeamPage() {
               outline: "none", boxSizing: "border-box",
             }}
           >
-            <option value="team">Zespół (współpraca)</option>
-            <option value="household">Gospodarstwo domowe (rodzina) — od razu wspólne: zakupy, zadania, budżet</option>
+            <option value="team">{t("zespolWspolpraca")}</option>
+            <option value="household">{t("gospodarstwoDomoweRodzinaOd")}</option>
           </select>
         </div>
         <div>
@@ -96,7 +98,7 @@ export default function NewTeamPage() {
             cursor: "pointer",
           }}
         >
-          Utwórz team
+          {t("utworzTeam")}
         </button>
       </form>
     </div>

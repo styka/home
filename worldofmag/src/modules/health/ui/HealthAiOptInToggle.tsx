@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Bot, Loader2 } from "lucide-react";
 import { getHealthSettings, setHealthAiOptIn } from "../actions/health";
@@ -7,6 +8,7 @@ import { getHealthSettings, setHealthAiOptIn } from "../actions/health";
 // Z-270: przełącznik zgody na dostęp asystenta AI do danych zdrowotnych.
 // Samowystarczalny (sam pobiera stan). Domyślnie wyłączone (privacy-by-default).
 export function HealthAiOptInToggle() {
+  const t = useTranslations("modules.health.HealthAiOptInToggle");
   const [optIn, setOptIn] = useState<boolean | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -34,9 +36,9 @@ export function HealthAiOptInToggle() {
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
       <Bot size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: "var(--text-primary)" }}>Dostęp asystenta AI do danych zdrowotnych</div>
+        <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{t("dostepAsystentaAiDo")}</div>
         <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-          Domyślnie wyłączone. Po włączeniu asystent może czytać Twoje wizyty, badania i leki.
+          {t("domyslnieWylaczonePoWlaczeniu")}
         </div>
       </div>
       <button
@@ -45,7 +47,7 @@ export function HealthAiOptInToggle() {
         disabled={pending}
         role="switch"
         aria-checked={optIn}
-        aria-label="Dostęp AI do danych zdrowotnych"
+        aria-label={t("dostepAiDoDanych")}
         style={{
           position: "relative", width: 42, height: 24, flexShrink: 0, borderRadius: 999,
           border: "1px solid var(--border)", cursor: pending ? "default" : "pointer",

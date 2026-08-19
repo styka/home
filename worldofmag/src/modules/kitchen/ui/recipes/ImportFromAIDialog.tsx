@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
@@ -18,6 +19,7 @@ interface ImportFromAIDialogProps {
 const VALID_MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack", "dessert"];
 
 export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
+  const t = useTranslations("modules.kitchen.ImportFromAIDialog");
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [pending, setPending] = useState(false);
@@ -104,14 +106,14 @@ export function ImportFromAIDialog({ open, onClose }: ImportFromAIDialogProps) {
       }
     >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Opisz danie jednym zdaniem — AI ułoży pełen przepis (składniki + kroki).
+        {t("opiszDanieJednymZdaniem")}
       </p>
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         rows={3}
         maxLength={500}
-        placeholder="np. pierogi ruskie dla 4 osób; szybki obiad z kurczakiem na 30 min; wegański deser bez piekarnika"
+        placeholder={t("npPierogiRuskieDla")}
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate();

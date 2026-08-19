@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 /**
  * Lekki wykres liniowy (SVG, bez zależności) w ciemnym motywie.
  * Używany w Portfelu (saldo w czasie) i Flocie (zużycie paliwa).
@@ -26,6 +27,7 @@ export function LineChart({
   fill = true,
   formatY = (y) => String(Math.round(y)),
 }: LineChartProps) {
+  const t = useTranslations("components.ui.LineChart");
   if (points.length === 0) {
     return (
       <div

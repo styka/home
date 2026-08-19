@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, Image as ImageIcon, Users } from "lucide-react";
 import type { CategoryWithUsage } from "../actions/categories";
@@ -47,6 +48,7 @@ function SectionHeader({ label, action }: { label: React.ReactNode; action?: Rea
 type AddingFor = "user" | { teamId: string; teamName: string } | null;
 
 export function CategoryManager({ categories, activeIconMap = {}, userTeams = [] }: CategoryManagerProps) {
+  const t = useTranslations("modules.shopping.CategoryManager");
   const [adding, setAdding] = useState<AddingFor>(null);
   const [newName, setNewName] = useState("");
   const [newEmoji, setNewEmoji] = useState("📦");
@@ -148,7 +150,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
                 style={{ color: "var(--text-muted)" }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-                title="Zarządzaj ikonami SVG"
+                title={t("zarzadzajIkonamiSvg")}
               >
                 <ImageIcon size={12} />
               </button>
@@ -206,7 +208,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
     <div>
       {/* Own categories */}
       <SectionHeader
-        label="Własne kategorie"
+        label={t("wlasneKategorie")}
         action={
           <button
             onClick={() => setAdding("user")}
@@ -225,7 +227,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
       <div className="mb-8" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {own.length === 0 ? (
           <p className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-            Brak własnych kategorii. Kliknij „Nowa kategoria” by dodać.
+            {t("brakWlasnychKategoriiKliknij")}
           </p>
         ) : own.map((c, i) => (
           <div key={c.id ?? c.name} style={rowStyle(i, own.length)}>
@@ -278,7 +280,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
       {/* System/base categories */}
       <SectionHeader label="Kategorie podstawowe" />
       <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-        Wbudowane kategorie z automatycznym rozpoznawaniem słów kluczowych — tylko do odczytu.
+        {t("wbudowaneKategorieZAutomatycznym")}
       </p>
       <div className="mb-8" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {base.map((c, i) => (
@@ -289,7 +291,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
       </div>
 
       <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
-        Zmiana nazwy własnej kategorii aktualizuje produkty w Twoim katalogu, ale nie produkty już dodane do list zakupów.
+        {t("zmianaNazwyWlasnejKategorii")}
       </p>
 
       {iconPickerCategory && (
@@ -306,6 +308,7 @@ export function CategoryManager({ categories, activeIconMap = {}, userTeams = []
 }
 
 function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations("modules.shopping.CategoryManager");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [custom, setCustom] = useState("");
@@ -371,7 +374,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
 
           <div style={{ maxHeight: 240, overflowY: "auto", padding: 6 }}>
             {filtered.length === 0 ? (
-              <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>Brak wyników</p>
+              <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>{t("brakWynikow")}</p>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
                 {filtered.map((e) => (
@@ -401,7 +404,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 maxLength={2}
-                placeholder="Wpisz własne…"
+                placeholder={t("wpiszWlasne")}
                 className="flex-1 text-sm text-center focus:outline-none mono rounded"
                 style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", padding: "2px 6px", color: "var(--text-primary)" }}
               />

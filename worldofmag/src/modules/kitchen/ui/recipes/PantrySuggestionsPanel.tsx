@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X, ChefHat } from "lucide-react";
@@ -18,6 +19,7 @@ const DISMISS_KEY = "kitchen.pantrySuggestions.dismissedAt";
 const DISMISS_HOURS = 4;
 
 export function PantrySuggestionsPanel() {
+  const t = useTranslations("modules.kitchen.PantrySuggestionsPanel");
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [dismissed, setDismissed] = useState(false);
@@ -69,7 +71,7 @@ export function PantrySuggestionsPanel() {
           className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
           style={{ color: "var(--accent-purple)" }}
         >
-          <Sparkles size={12} /> Z tego co masz w spiżarni
+          <Sparkles size={12} /> {t("zTegoCoMasz")}
         </h2>
         <button
           type="button"

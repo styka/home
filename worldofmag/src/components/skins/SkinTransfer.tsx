@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Download, Upload } from "lucide-react";
 import { exportSkin } from "@/actions/skins";
@@ -26,6 +27,7 @@ export function SkinTransfer({
   tokens: SkinTokens;
   onImported: (tokens: SkinTokens) => void;
 }) {
+  const t = useTranslations("components.skins.SkinTransfer");
   const fileRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState<string | null>(null);
 

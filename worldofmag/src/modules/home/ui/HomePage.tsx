@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { BookOpen, SlidersHorizontal, Eye, EyeOff, ChevronUp, ChevronDown, Check } from "lucide-react";
@@ -185,6 +186,7 @@ export function HomePage({
   dashboardPrefs,
   favoriteViews = [],
 }: HomePageProps) {
+  const t = useTranslations("modules.home.HomePage");
   const has = (slug: string) => userPermissions.includes(slug);
   const hasAnyModule =
     has("module.shopping") ||
@@ -251,11 +253,9 @@ export function HomePage({
         <FavoriteCards favorites={favoriteViews} permissions={userPermissions} />
       </div>
     ),
-    recently: <RecentlyUsed activities={recentActivity} permissions={userPermissions} />,
-    briefing: hasAnyModule ? <DailyBriefingCard /> : null,
-    modules: hasAnyModule ? (
+    recently: <RecentlyUsed activities={recentActivity} permissions={userPermissions} />, briefing: hasAnyModule ? <DailyBriefingCard /> : null, modules: hasAnyModule ? (
       <div>
-        <SectionHeading>Twoje moduły</SectionHeading>
+        <SectionHeading>{t("twojeModuly")}</SectionHeading>
         <ModuleSnapshotGrid
           permissions={userPermissions}
           pendingItems={pendingItems}
@@ -296,7 +296,7 @@ export function HomePage({
     ),
     today: hasTodayContent ? (
       <div>
-        <SectionHeading>Dziś i nadchodzące</SectionHeading>
+        <SectionHeading>{t("dzisINadchodzace")}</SectionHeading>
         <TodaySnapshot
           tasks={todayTaskPreview}
           meals={todayMeals}
@@ -445,8 +445,8 @@ export function HomePage({
                 {editing && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                     <span style={{ fontSize: 11, color: "var(--text-muted)", flex: 1 }}>{SECTION_LABELS[key] ?? key}</span>
-                    <button onClick={() => moveSection(key, -1)} disabled={idx === 0} title="W górę" style={ctlBtn(idx === 0)}><ChevronUp size={13} /></button>
-                    <button onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1} title="W dół" style={ctlBtn(idx === order.length - 1)}><ChevronDown size={13} /></button>
+                    <button onClick={() => moveSection(key, -1)} disabled={idx === 0} title={t("wGore")} style={ctlBtn(idx === 0)}><ChevronUp size={13} /></button>
+                    <button onClick={() => moveSection(key, 1)} disabled={idx === order.length - 1} title={t("wDol")} style={ctlBtn(idx === order.length - 1)}><ChevronDown size={13} /></button>
                     <button onClick={() => toggleHidden(key)} title={isHidden ? "Pokaż" : "Ukryj"} style={ctlBtn(false)}>{isHidden ? <EyeOff size={13} /> : <Eye size={13} />}</button>
                   </div>
                 )}
@@ -487,7 +487,7 @@ export function HomePage({
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/notes" label="Notatki" locked={!has("module.notes")} />
           <span style={{ color: "var(--border)" }}>·</span>
-          <FooterLink href="/pets" label="Zwierzęta" locked={!has("module.pets")} />
+          <FooterLink href="/pets" label={t("zwierzeta")} locked={!has("module.pets")} />
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/kitchen" label="Kuchnia" locked={!has("module.kitchen")} />
           <span style={{ color: "var(--border)" }}>·</span>
@@ -495,7 +495,7 @@ export function HomePage({
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/portfel" label="Portfel" locked={!has("module.portfel")} />
           <span style={{ color: "var(--border)" }}>·</span>
-          <FooterLink href="/languages" label="Nauka języków" locked={!has("module.languages")} />
+          <FooterLink href="/languages" label={t("naukaJezykow")} locked={!has("module.languages")} />
           <span style={{ color: "var(--border)" }}>·</span>
           <FooterLink href="/health" label="Zdrowie" locked={!has("module.health")} />
           <span style={{ color: "var(--border)" }}>·</span>

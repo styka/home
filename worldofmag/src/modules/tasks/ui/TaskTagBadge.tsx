@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { TaskTagDef } from "@/types";
 
 interface TaskTagBadgeProps {
@@ -9,6 +10,7 @@ interface TaskTagBadgeProps {
 }
 
 export function TaskTagBadge({ tag, onRemove, size = "sm" }: TaskTagBadgeProps) {
+  const t = useTranslations("modules.tasks.TaskTagBadge");
   const hex = tag.color ?? "#6b7280";
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);

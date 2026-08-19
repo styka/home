@@ -6,8 +6,10 @@ import { auth } from "@/platform/auth/session";
 import { LEGAL_DOCUMENTS } from "@/lib/legal/documents";
 import { getMyConsents } from "@/actions/legal";
 import { ScrollText, Check, ChevronRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function LegalIndexPage() {
+  const t = await getTranslations("app.legal.page");
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
@@ -52,9 +54,7 @@ export default async function LegalIndexPage() {
         </div>
 
         <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-          Polityka prywatności i regulamin to obecnie wersje robocze przygotowane technicznie —
-          wymagają weryfikacji prawnej przed publicznym startem. Eksport i usunięcie danych dostępne
-          są w <Link href="/settings" style={{ color: "var(--accent-blue)" }}>Ustawienia → Prywatność i dane</Link>.
+          {t("politykaPrywatnosciIRegulamin")} <Link href="/settings" style={{ color: "var(--accent-blue)" }}>{t("ustawieniaPrywatnoscIDane")}</Link>.
         </p>
       </div>
     </div>

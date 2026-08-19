@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Compass } from "lucide-react";
 
@@ -6,6 +7,7 @@ import { Compass } from "lucide-react";
  * layoutu (AppShell), więc nawigacja jest dostępna.
  */
 export default function NotFound() {
+  const t = useTranslations("app.not-found");
   return (
     <div
       style={{
@@ -24,7 +26,7 @@ export default function NotFound() {
       </div>
       <div style={{ fontSize: 17, fontWeight: 600 }}>Nie znaleziono strony</div>
       <div style={{ fontSize: 14, color: "var(--text-secondary)", maxWidth: 380, lineHeight: 1.5 }}>
-        Strona, której szukasz, nie istnieje lub została przeniesiona.
+        {t("stronaKtorejSzukaszNie")}
       </div>
       <Link
         href="/"
@@ -33,7 +35,7 @@ export default function NotFound() {
           borderRadius: 6, color: "var(--on-accent)", fontSize: 14, textDecoration: "none",
         }}
       >
-        Wróć do pulpitu
+        {t("wrocDoPulpitu")}
       </Link>
     </div>
   );

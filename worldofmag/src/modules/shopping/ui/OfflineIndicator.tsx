@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CloudOff, RefreshCw } from "lucide-react";
 
 // 009-shopping-offline-sync — dyskretny wskaźnik trybu offline + licznik zmian oczekujących
@@ -14,6 +15,7 @@ interface OfflineIndicatorProps {
 }
 
 export function OfflineIndicator({ online, pending, syncing }: OfflineIndicatorProps) {
+  const t = useTranslations("modules.shopping.OfflineIndicator");
   // Pokazujemy tylko gdy jest co komunikować: offline, trwa sync, albo są zmiany w kolejce.
   const visible = !online || syncing || pending > 0;
   if (!visible) return null;
@@ -21,15 +23,15 @@ export function OfflineIndicator({ online, pending, syncing }: OfflineIndicatorP
   const showSyncing = online && syncing;
   const accent = online ? "var(--accent-blue)" : "var(--accent-amber)";
 
+  // 097: liczba mnoga idzie przez ICU (`plural` w słowniku), a nie przez `? :` w kodzie —
+  // inaczej tłumacz nie ma jak wyrazić języka o innej liczbie form niż polski.
   let label: string;
   if (!online) {
-    label = pending > 0
-      ? `Offline — ${pending} ${pending === 1 ? "zmiana czeka" : "zmian czeka"} na wysłanie`
-      : "Offline — pracujesz lokalnie";
+    label = pending > 0 ? t("offlineCzeka", { n: pending }) : t("offlineLokalnie");
   } else if (showSyncing) {
-    label = "Synchronizuję zmiany…";
+    label = t("synchronizuje");
   } else {
-    label = `${pending} ${pending === 1 ? "zmiana do wysłania" : "zmian do wysłania"}`;
+    label = t("doWyslania", { n: pending });
   }
 
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 type Unit = "min" | "h";
@@ -17,6 +18,7 @@ interface DurationInputProps {
  * wybiera domyślnie jednostkę "h"; w innych przypadkach "min".
  */
 export function DurationInput({ value, onChange, placeholder, ariaLabel }: DurationInputProps) {
+  const t = useTranslations("modules.kitchen.DurationInput");
   const [unit, setUnit] = useState<Unit>(() => initialUnit(value));
   const [local, setLocal] = useState<string>(() => initialLocal(value, initialUnit(value)));
 

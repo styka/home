@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useEffect, useTransition, forwardRef, useImperativeHandle, useId } from "react";
 import { Plus, Loader2, PenLine } from "lucide-react";
 import type { Product } from "@/types";
@@ -19,6 +20,7 @@ export interface QuickAddBarHandle {
 
 export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
   function QuickAddBar({ listId, categoryNames }, ref) {
+    const t = useTranslations("modules.shopping.QuickAddBar");
     const [name, setName] = useState("");
     const [qty, setQty] = useState("");
     const [unit, setUnit] = useState("");
@@ -138,7 +140,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
         >
           <PenLine size={11} />
           <span className="text-xs font-semibold tracking-wide" style={{ letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Dodaj ręcznie
+            {t("dodajRecznie")}
           </span>
         </div>
 
@@ -154,7 +156,7 @@ export const QuickAddBar = forwardRef<QuickAddBarHandle, QuickAddBarProps>(
               onChange={(e) => setQty(e.target.value)}
               onKeyDown={handleFieldKeyDown}
               disabled={isPending}
-              placeholder="Ilość"
+              placeholder={t("ilosc")}
               type="number"
               min="0"
               step="any"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useRef, useLayoutEffect, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -20,6 +21,7 @@ const primaryBtn: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, 
 const secondaryBtn: React.CSSProperties = { padding: "7px 12px", borderRadius: 8, background: "var(--bg-elevated)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 500, border: "1px solid var(--border)", cursor: "pointer" };
 
 export function ContactsPage({ initialContacts, viewParams = {} }: { initialContacts: ContactDTO[]; viewParams?: RawParams }) {
+  const t = useTranslations("modules.contacts.ContactsPage");
   const confirmDialog = useConfirm();
   const [contacts, setContacts] = useState<ContactDTO[]>(initialContacts);
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
@@ -199,6 +201,7 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
   selected?: boolean;
   onSelect?: () => void;
 }) {
+  const t = useTranslations("modules.contacts.ContactsPage");
   const confirmDialog = useConfirm();
   return (
     <div
@@ -236,13 +239,14 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
         <button onClick={onEdit} style={secondaryBtn} aria-label="Edytuj"><Pencil size={14} /></button>
-        <button onClick={async () => { if (await confirmDialog(`Usunąć kontakt „${contact.name}"?`)) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label="Usuń"><Trash2 size={14} /></button>
+        <button onClick={async () => { if (await confirmDialog(`Usunąć kontakt „${contact.name}"?`)) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label={t("usun")}><Trash2 size={14} /></button>
       </div>
     </div>
   );
 }
 
 function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDone: () => void; onCancel: () => void }) {
+  const t = useTranslations("modules.contacts.ContactsPage");
   const [name, setName] = useState(contact?.name ?? "");
   const [phone, setPhone] = useState(contact?.phone ?? "");
   const [email, setEmail] = useState(contact?.email ?? "");
@@ -268,7 +272,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
 
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 10, border: "1px solid var(--border-focus, var(--accent-blue))", background: "var(--bg-surface)" }}>
-      <div><label style={labelStyle}>Imię / nazwa *</label><input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder="np. Anna Nowak" /></div>
+      <div><label style={labelStyle}>{t("imieNazwa")}</label><input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder="np. Anna Nowak" /></div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Telefon</label><input value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} /></div>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>E-mail</label><input value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} /></div>

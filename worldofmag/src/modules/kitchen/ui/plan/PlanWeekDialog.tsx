@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -43,6 +44,7 @@ const SLOT_EMOJI: Record<MealSlot, string> = {
 type Step = "prefs" | "loading" | "review";
 
 export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWeekDialogProps) {
+  const t = useTranslations("modules.kitchen.PlanWeekDialog");
   const router = useRouter();
   const { showToast } = useToast();
   const [step, setStep] = useState<Step>("prefs");
@@ -232,10 +234,10 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
           <div className="flex flex-col items-center justify-center px-6 py-10 text-center gap-3">
             <ChefHat size={36} style={{ color: "var(--text-muted)" }} />
             <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Brak przepisów w bibliotece
+              {t("brakPrzepisowWBibliotece")}
             </h4>
             <p className="text-xs max-w-xs" style={{ color: "var(--text-secondary)" }}>
-              AI losuje plan tylko z Twoich własnych przepisów. Dodaj kilka, a potem wróć tutaj.
+              {t("aiLosujePlanTylko")}
             </p>
             <Link
               href="/kitchen/recipes/new"
@@ -251,13 +253,13 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
         {step === "prefs" && recipeCount > 0 ? (
           <div className="flex flex-col gap-3">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              AI wybierze przepisy z Twojej biblioteki dla każdego slotu w tygodniu na podstawie preferencji.
+              {t("aiWybierzePrzepisyZ")}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  Liczba osób
+                  {t("liczbaOsob")}
                 </span>
                 <input
                   type="number"
@@ -271,7 +273,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                  Max czas/posiłek (min)
+                  {t("maxCzasPosilekMin")}
                 </span>
                 <input
                   type="number"
@@ -287,7 +289,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
 
             <div className="flex flex-col gap-1">
               <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Posiłki dziennie
+                {t("posilkiDziennie")}
               </span>
               <div className="flex gap-1 flex-wrap">
                 {MEAL_SLOTS.map((slot) => {
@@ -332,7 +334,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
                 type="text"
                 value={cuisines}
                 onChange={(e) => setCuisines(e.target.value)}
-                placeholder="polska, włoska"
+                placeholder={t("polskaWloska")}
                 className="px-2 py-1.5 rounded border text-sm"
                 style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
               />
@@ -341,15 +343,15 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
             <div className="flex flex-col gap-1">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={mustUsePantry} onChange={(e) => setMustUsePantry(e.target.checked)} />
-                <span style={{ color: "var(--text-primary)" }}>Priorytet: użyj produktów ze spiżarni</span>
+                <span style={{ color: "var(--text-primary)" }}>{t("priorytetUzyjProduktowZe")}</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={noRepeats} onChange={(e) => setNoRepeats(e.target.checked)} />
-                <span style={{ color: "var(--text-primary)" }}>Nie powtarzaj przepisów w tygodniu</span>
+                <span style={{ color: "var(--text-primary)" }}>{t("niePowtarzajPrzepisowW")}</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
-                <span style={{ color: "var(--text-primary)" }}>Nadpisz istniejące wpisy w planie</span>
+                <span style={{ color: "var(--text-primary)" }}>{t("nadpiszIstniejaceWpisyW")}</span>
               </label>
             </div>
           </div>
@@ -359,7 +361,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
           <div className="flex flex-col items-center justify-center px-6 py-12 gap-3">
             <Loader2 size={28} className="animate-spin" style={{ color: "var(--accent-purple)" }} />
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              AI tworzy plan na podstawie Twoich przepisów…
+              {t("aiTworzyPlanNa")}
             </p>
           </div>
         ) : null}

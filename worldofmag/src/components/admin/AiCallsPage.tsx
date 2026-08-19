@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Bug, RefreshCw, Copy, Check } from "lucide-react";
@@ -13,6 +14,7 @@ import { aiCallsToText, fmtAiCallTime as fmtTime } from "@/platform/ai/aiCallLog
 // Format logu jest współdzielony z zgłoszeniem błędu z czatu → `@/lib/ai/aiCallLog`.
 
 export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
+  const t = useTranslations("components.admin.AiCallsPage");
   const [rows, setRows] = useState<AiCallLogRow[]>(initial);
   const [convId, setConvId] = useState("");
   const [copied, setCopied] = useState(false);
@@ -48,9 +50,9 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Diagnostyka asystenta AI</h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18, lineHeight: 1.5 }}>
-          Surowy log wywołań modelu (tabela <code>AiCall</code>) — łącznie z <strong>nieudanymi</strong>{" "}
+          {t("surowyLogWywolanModelu")} <code>AiCall</code>{t("lacznieZ")} <strong>nieudanymi</strong>{" "}
           (status dostawcy, treść błędu, liczba prób). Wklej <code>conversationId</code> z rozmowy, kliknij{" "}
-          <strong>Odśwież</strong>, a potem <strong>Kopiuj</strong> — i wklej mi tu przebieg.
+          <strong>{t("odswiez")}</strong>, a potem <strong>Kopiuj</strong> — i wklej mi tu przebieg.
         </p>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
@@ -58,7 +60,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
             value={convId}
             onChange={(e) => setConvId(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") refresh(); }}
-            placeholder="conversationId (puste = ostatnie wywołania)"
+            placeholder={t("conversationidPusteOstatnieWywolania")}
             style={{ flex: "1 1 320px", minWidth: 220, padding: "8px 10px", fontSize: 13, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)" }}
           />
           <button
@@ -66,7 +68,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
             disabled={pending}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-primary)", cursor: "pointer" }}
           >
-            <RefreshCw size={14} className={pending ? "animate-spin" : undefined} /> Odśwież
+            <RefreshCw size={14} className={pending ? "animate-spin" : undefined} /> {t("odswiez")}
           </button>
           <button
             onClick={copyAll}
@@ -78,7 +80,7 @@ export function AiCallsPage({ initial }: { initial: AiCallLogRow[] }) {
         </div>
 
         {rows.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak wpisów (dla tego filtra).</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("brakWpisowDlaTego")}</p>
         ) : (
           <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: 10 }}>
             <table style={{ borderCollapse: "collapse", width: "100%" }}>

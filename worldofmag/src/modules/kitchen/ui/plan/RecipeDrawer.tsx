@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Search, BookMarked, GripVertical } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
@@ -10,6 +11,7 @@ interface RecipeDrawerProps {
 }
 
 export function RecipeDrawer({ recipes }: RecipeDrawerProps) {
+  const t = useTranslations("modules.kitchen.RecipeDrawer");
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -62,7 +64,7 @@ export function RecipeDrawer({ recipes }: RecipeDrawerProps) {
         className="px-3 py-1.5 border-t text-[10px]"
         style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
       >
-        Przeciągnij przepis na slot w planie
+        {t("przeciagnijPrzepisNaSlot")}
       </div>
     </aside>
   );

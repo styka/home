@@ -76,6 +76,7 @@ function decodeSortMode(raw: string, stores: StoreWithGraph[]): SortMode {
 }
 
 export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false, viewParams = {} }: ShoppingPageProps) {
+  const t = useTranslations("modules.shopping.ShoppingPage");
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
   const online = useOnlineStatus();
@@ -273,14 +274,14 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             }}
             className="bg-transparent text-sm font-semibold focus:outline-none w-full truncate"
             style={{ color: "var(--text-primary)" }}
-            aria-label="Wybierz listę zakupów"
+            aria-label={t("wybierzListeZakupow")}
           >
             {switcherLists.map((l) => (
               <option key={l.id} value={l.id}>
                 🛒 {l.name}{l.workspace?.team ? ` · ${l.workspace.team.name}` : ""}
               </option>
             ))}
-            {online && <option value="__catalog__">+ Zarządzaj listami…</option>}
+            {online && <option value="__catalog__">{t("zarzadzajListami")}</option>}
           </select>
         </div>
 
@@ -308,7 +309,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             title={online ? "Zakończ zakupy — podsumowanie i archiwizacja listy" : "Niedostępne offline"}
           >
             <CheckCircle2 size={11} />
-            <span>Zakończ zakupy</span>
+            <span>{t("zakonczZakupy")}</span>
           </button>
         )}
         {/* 095: to samo okno, co dla projektu zadań i notatki. Zakupy miały deklarację zasobu od
@@ -376,7 +377,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           title={
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Trash2 size={18} style={{ color: "var(--accent-red)" }} />
-              Usunąć kupione pozycje?
+              {t("usunacKupionePozycje")}
             </span>
           }
           footer={
@@ -407,7 +408,7 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
             .
           </p>
           <p style={{ fontSize: 12, color: "var(--accent-amber)", margin: 0 }}>
-            Tej operacji nie da się cofnąć — usunięte pozycje nie trafiają do kosza.
+            {t("tejOperacjiNieDa")}
           </p>
         </Modal>
       )}
@@ -443,6 +444,7 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
   onConfirm: (bookToPortfel: boolean) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("modules.shopping.ShoppingPage");
   const total = items.length;
   const done = items.filter((i) => i.status === "DONE").length;
   const missing = items.filter((i) => i.status === "MISSING").length;
@@ -465,14 +467,14 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
       title={
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CheckCircle2 size={18} style={{ color: "var(--accent-green)" }} />
-          Zakończ zakupy
+          {t("zakonczZakupy")}
         </span>
       }
       footer={
         <>
           <button onClick={onCancel} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Anuluj</button>
           <button onClick={() => onConfirm(canBook && book)} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
-            Zarchiwizuj listę
+            {t("zarchiwizujListe")}
           </button>
         </>
       }
@@ -491,7 +493,7 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
         </div>
         {spend > 0 && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
-            <span style={{ color: "var(--text-secondary)" }}>Wydano (kupione z ceną)</span>
+            <span style={{ color: "var(--text-secondary)" }}>{t("wydanoKupioneZCena")}</span>
             <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{spend.toFixed(2)} zł</span>
           </div>
         )}
@@ -509,7 +511,7 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
       )}
       {!financeReady && spend > 0 && (
         <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-          Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.
+          {t("abyKsiegowacZakupyW")}
         </p>
       )}
     </Modal>

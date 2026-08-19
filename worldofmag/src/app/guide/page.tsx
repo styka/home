@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { BookOpen, Mic, Wand2, ShoppingCart, CheckSquare, FileText, ArrowLeft } from "lucide-react";
 
@@ -47,6 +48,7 @@ const EXAMPLES = [
 ];
 
 export default function GuidePage() {
+  const t = useTranslations("app.guide.page");
   return (
     <div
       style={{
@@ -72,7 +74,7 @@ export default function GuidePage() {
           }}
         >
           <ArrowLeft size={14} />
-          Strona główna
+          {t("stronaGlowna")}
         </Link>
 
         {/* Header */}
@@ -80,19 +82,18 @@ export default function GuidePage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <BookOpen size={20} style={{ color: "var(--accent-purple)" }} />
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-              Jak korzystać ze strony głównej?
+              {t("jakKorzystacZeStrony")}
             </h1>
           </div>
           <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
-            Strona główna pozwala zarządzać wszystkimi modułami aplikacji za pomocą języka naturalnego —
-            wpisując lub mówiąc polecenia.
+            {t("stronaGlownaPozwalaZarzadzac")}
           </p>
         </div>
 
         {/* Voice section */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>
-            Sterowanie głosem
+            {t("sterowanieGlosem")}
           </h2>
           <div
             style={{
@@ -142,7 +143,7 @@ export default function GuidePage() {
         {/* Examples */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>
-            Przykłady poleceń
+            {t("przykladyPolecen")}
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {EXAMPLES.map((ex) => (
@@ -188,7 +189,7 @@ export default function GuidePage() {
         {/* Tips */}
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>
-            Wskazówki
+            {t("wskazowki")}
           </h2>
           <div
             style={{
@@ -199,11 +200,11 @@ export default function GuidePage() {
             }}
           >
             {[
-              "Możesz wydać kilka poleceń naraz w jednym zdaniu.",
-              "Przed wykonaniem zawsze możesz sprawdzić i zmienić wykryte akcje w oknie potwierdzenia.",
-              "Użyj selektora kontekstu aby zawęzić zakres do konkretnego modułu.",
-              "Skrót Ctrl+Enter wysyła wiadomość bez klikania przycisku.",
-              "Po wykonaniu akcji możesz od razu wydać kolejne polecenie.",
+              t("mozeszWydacKilkaPolecen"),
+              t("przedWykonaniemZawszeMozesz"),
+              t("uzyjSelektoraKontekstuAby"),
+              t("skrotCtrlEnterWysyla"),
+              t("poWykonaniuAkcjiMozesz"),
             ].map((tip, i, arr) => (
               <div
                 key={tip}
@@ -237,7 +238,7 @@ export default function GuidePage() {
               fontWeight: 600,
             }}
           >
-            Wróć i spróbuj
+            {t("wrocISprobuj")}
           </Link>
         </div>
       </div>

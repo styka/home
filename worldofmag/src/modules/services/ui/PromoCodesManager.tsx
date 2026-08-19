@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Tag, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
@@ -8,6 +9,7 @@ import type { ServicePromoCodeDTO, PromoKind } from "../lib/services";
 import { fieldInputStyle, primaryButtonStyle } from "./serviceUi";
 
 export function PromoCodesManager() {
+  const t = useTranslations("modules.services.PromoCodesManager");
   const [codes, setCodes] = useState<ServicePromoCodeDTO[] | null>(null);
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -57,7 +59,7 @@ export function PromoCodesManager() {
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KOD" style={{ ...fieldInputStyle, width: 110, textTransform: "uppercase" }} />
           <select value={kind} onChange={(e) => setKind(e.target.value as PromoKind)} style={{ ...fieldInputStyle, width: 110 }}>
             <option value="percent">Procent (%)</option>
-            <option value="amount">Kwota (zł)</option>
+            <option value="amount">{t("kwotaZl")}</option>
           </select>
           <input value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" placeholder={kind === "percent" ? "1–100" : "zł"} style={{ ...fieldInputStyle, width: 80 }} />
           <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} inputMode="numeric" placeholder="limit (opc.)" style={{ ...fieldInputStyle, width: 100 }} />
@@ -72,7 +74,7 @@ export function PromoCodesManager() {
       {codes === null ? (
         <Loader2 size={14} className="animate-spin" style={{ color: "var(--text-muted)" }} />
       ) : codes.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak kodów. Dodaj kod, by oferować klientom zniżki.</p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakKodowDodajKod")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {codes.map((c) => {
@@ -91,7 +93,7 @@ export function PromoCodesManager() {
                 <button onClick={() => startTransition(async () => { await togglePromoCode(c.id); await reload(); })} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
                   {c.active ? "Wyłącz" : "Włącz"}
                 </button>
-                <button onClick={() => startTransition(async () => { await deletePromoCode(c.id); await reload(); })} title="Usuń" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+                <button onClick={() => startTransition(async () => { await deletePromoCode(c.id); await reload(); })} title={t("usun")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
                   <Trash2 size={13} />
                 </button>
               </div>

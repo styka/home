@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useId } from "react";
 import { Loader2, Plus, CheckSquare, Square, Sparkles } from "lucide-react";
 import { UNITS } from "@/types";
@@ -26,6 +27,7 @@ interface LLMInputSectionProps {
 
 
 export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps) {
+  const t = useTranslations("modules.shopping.LLMInputSection");
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -149,7 +151,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
             disabled={!text.trim() || loading}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40 mt-2"
             style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
-            title="Przetwórz przez AI (Ctrl+Enter)"
+            title={t("przetworzPrzezAiCtrl")}
           >
             {loading
               ? <Loader2 size={13} className="animate-spin" />
@@ -174,7 +176,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
         <>
           <div className="px-4 pb-1">
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Rozpoznane produkty — zaznacz które dodać
+              {t("rozpoznaneProduktyZaznaczKtore")}
             </p>
           </div>
 
@@ -238,7 +240,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
                   <button
                     onClick={() => updateRow(i, { addToCatalog: !row.addToCatalog })}
                     className="flex-shrink-0 px-1.5 py-0.5 rounded focus:outline-none"
-                    title="Dodaj do katalogu produktów"
+                    title={t("dodajDoKataloguProduktow")}
                     style={{
                       backgroundColor: row.addToCatalog ? "rgba(59,130,246,0.15)" : "var(--bg-surface)",
                       color: row.addToCatalog ? "var(--accent-blue)" : "var(--text-muted)",
@@ -270,7 +272,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
               className="text-xs focus:outline-none"
               style={{ color: "var(--text-muted)" }}
             >
-              ← Wróć
+              {t("wroc")}
             </button>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>

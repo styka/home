@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -43,6 +44,7 @@ export function WeatherPage({
   /** Czy pokazywać „Dodaj do zadań" — zależy od uprawnienia do modułu Zadania. */
   canAddToTasks: boolean;
 }) {
+  const t = useTranslations("modules.weather.WeatherPage");
   const router = useRouter();
   const { showToast } = useToast();
   const [coords, setCoords] = useState<Coords | null>(null);
@@ -209,6 +211,7 @@ function LocationsModal({
   onPick: (l: LocationDTO) => void;
   run: (fn: () => Promise<void>, ok?: string) => void;
 }) {
+  const t = useTranslations("modules.weather.WeatherPage");
   const { showToast } = useToast();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -247,7 +250,7 @@ function LocationsModal({
         onClick={onUseGeo}
         className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
       >
-        <LocateFixed size={15} className="text-[var(--accent-blue)]" /> Użyj mojej lokalizacji (GPS)
+        <LocateFixed size={15} className="text-[var(--accent-blue)]" /> {t("uzyjMojejLokalizacjiGps")}
       </button>
 
       {/* Trzecia droga obok nazwy i GPS: wskazanie punktu na mapie. Potrzebna, bo wyszukiwarka nazw
@@ -284,7 +287,7 @@ function LocationsModal({
               <button
                 onClick={() => run(() => setDefaultLocation(l.id), "Ustawiono domyślną")}
                 className="text-[var(--text-muted)] hover:text-[var(--accent-amber)]"
-                title="Ustaw jako domyślną"
+                title={t("ustawJakoDomyslna")}
               >
                 <Star size={13} />
               </button>
@@ -299,7 +302,7 @@ function LocationsModal({
         ))}
         {locations.length === 0 && (
           <p className="px-2 py-2 text-xs text-[var(--text-muted)]">
-            Brak zapisanych lokalizacji. Dodaj miasto poniżej lub użyj GPS.
+            {t("brakZapisanychLokalizacjiDodaj")}
           </p>
         )}
       </div>
@@ -309,7 +312,7 @@ function LocationsModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Dodaj miasto (np. Kraków)"
+          placeholder={t("dodajMiastoNpKrakow")}
           className="flex-1 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
         <Button size="sm" onClick={add} disabled={busy}>

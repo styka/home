@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { addDays, format } from "date-fns";
@@ -37,6 +38,7 @@ export function ShoppingFromPlanDialog({
   defaultTo,
   lists,
 }: ShoppingFromPlanDialogProps) {
+  const t = useTranslations("modules.kitchen.ShoppingFromPlanDialog");
   const [listId, setListId] = useState<string>(lists[0]?.id ?? "");
   const [rangeMode, setRangeMode] = useState<RangeMode>("week");
   const [customFrom, setCustomFrom] = useState<string>(toInputDate(defaultFrom));
@@ -138,7 +140,7 @@ export function ShoppingFromPlanDialog({
       title={
         <span className="flex items-center gap-2">
           <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
-          Lista zakupów z planu
+          {t("listaZakupowZPlanu")}
         </span>
       }
       footer={
@@ -169,7 +171,7 @@ export function ShoppingFromPlanDialog({
                 checked={rangeMode === "week"}
                 onChange={() => setRangeMode("week")}
               />
-              <span style={{ color: "var(--text-primary)" }}>Bieżący tydzień</span>
+              <span style={{ color: "var(--text-primary)" }}>{t("biezacyTydzien")}</span>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 ({format(defaultFrom, "d.MM")}–{format(defaultTo, "d.MM")})
               </span>
@@ -181,7 +183,7 @@ export function ShoppingFromPlanDialog({
                 checked={rangeMode === "next3"}
                 onChange={() => setRangeMode("next3")}
               />
-              <span style={{ color: "var(--text-primary)" }}>Najbliższe 3 dni</span>
+              <span style={{ color: "var(--text-primary)" }}>{t("najblizsze3Dni")}</span>
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -217,7 +219,7 @@ export function ShoppingFromPlanDialog({
 
           {lists.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--accent-amber)" }}>
-              Brak list zakupów. Utwórz najpierw listę w module Zakupy.
+              {t("brakListZakupowUtworz")}
             </p>
           ) : (
             <label className="flex flex-col gap-1 text-sm">
@@ -244,7 +246,7 @@ export function ShoppingFromPlanDialog({
           <div className="flex flex-col gap-1">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={skipPantry} onChange={(e) => setSkipPantry(e.target.checked)} />
-              <span style={{ color: "var(--text-primary)" }}>Pomiń to co jest w spiżarni</span>
+              <span style={{ color: "var(--text-primary)" }}>{t("pominToCoJest")}</span>
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={consolidate} onChange={(e) => setConsolidate(e.target.checked)} />
@@ -252,14 +254,14 @@ export function ShoppingFromPlanDialog({
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={skipOptional} onChange={(e) => setSkipOptional(e.target.checked)} />
-              <span style={{ color: "var(--text-primary)" }}>Pomiń składniki opcjonalne</span>
+              <span style={{ color: "var(--text-primary)" }}>{t("pominSkladnikiOpcjonalne")}</span>
             </label>
           </div>
 
           <section className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <h4 className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Podgląd
+                {t("podglad")}
               </h4>
               {previewLoading ? (
                 <Loader2 size={12} className="animate-spin" style={{ color: "var(--text-muted)" }} />
@@ -273,7 +275,7 @@ export function ShoppingFromPlanDialog({
             </div>
             {!previewLoading && previewItems.length === 0 ? (
               <p className="text-sm py-2" style={{ color: "var(--text-muted)" }}>
-                Brak zaplanowanych przepisów w tym zakresie.
+                {t("brakZaplanowanychPrzepisowW")}
               </p>
             ) : null}
             <ul

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TaskRow } from "./TaskRow";
 import { CompletedSection } from "./CompletedSection";
 import { TaskGroup } from "./TaskGroup";
@@ -54,6 +55,7 @@ function byDueDateAsc(a: Task, b: Task): number {
 }
 
 export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, focusedTaskId, onFocus, onOpen, rowRefs, statusConfig = DEFAULT_STATUS_CONFIG, selectionMode = false, selectedIds, lastSelectedId, onToggleOne, onSelectRange }: TaskListProps) {
+  const t = useTranslations("modules.tasks.TaskList");
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const isTerminal = (status: string) => statusMetaFor(status, statusConfig).isTerminal;
@@ -123,7 +125,7 @@ export function TaskList({ tasks, filter, viewMode, groupBy, selectedTagIds, foc
       <div className="flex flex-col items-center justify-center flex-1 py-16" style={{ color: "var(--text-muted)" }}>
         <div className="text-4xl mb-3">✓</div>
         <p className="text-sm">{emptyLabel[viewMode]}</p>
-        {filter !== "ALL" && <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Spróbuj zmienić filtr statusu</p>}
+        {filter !== "ALL" && <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("sprobujZmienicFiltrStatusu")}</p>}
       </div>
     );
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
@@ -14,6 +15,7 @@ function todayKey(): string {
 }
 
 export function DailyBriefingCard() {
+  const t = useTranslations("modules.home.DailyBriefingCard");
   const [briefing, setBriefing] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +61,10 @@ export function DailyBriefingCard() {
         {briefing && !loading && (
           <button
             onClick={generate}
-            title="Odśwież briefing"
+            title={t("odswiezBriefing")}
             style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >
-            <RefreshCw size={12} /> Odśwież
+            <RefreshCw size={12} /> {t("odswiez")}
           </button>
         )}
       </div>
@@ -75,7 +77,7 @@ export function DailyBriefingCard() {
       ) : (
         <div style={{ marginTop: 10 }}>
           <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
-            Krótkie podsumowanie dnia — zaległości, dzisiejsze terminy i najbliższe wydarzenia w jednym miejscu.
+            {t("krotkiePodsumowanieDniaZaleglosci")}
           </p>
           <button
             onClick={generate}

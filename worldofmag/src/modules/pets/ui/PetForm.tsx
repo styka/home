@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal, Field, inputStyle, PrimaryButton, GhostButton } from "./Modal";
@@ -24,6 +25,7 @@ function toDateInput(d: Date | string | null | undefined): string {
 }
 
 export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
+  const t = useTranslations("modules.pets.PetForm");
   const isEdit = !!pet;
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -93,7 +95,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
         </>
       }
     >
-      <Field label="Imię *">
+      <Field label={t("imie")}>
         <input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Reksio" />
       </Field>
 
@@ -105,7 +107,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
             ))}
           </select>
         </Field>
-        <Field label="Płeć">
+        <Field label={t("plec")}>
           <select style={inputStyle} value={sex} onChange={(e) => setSex(e.target.value)}>
             <option value="unknown">Nieznana</option>
             <option value="male">Samiec</option>
@@ -123,7 +125,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
         </Field>
       </div>
 
-      <Field label="URL zdjęcia">
+      <Field label={t("urlZdjecia")}>
         <ImageUrlInput value={photoUrl} onChange={setPhotoUrl} module="pets" inputStyle={inputStyle} placeholder="https://… (wklej link lub wgraj z Dysku)" />
       </Field>
 
@@ -157,7 +159,7 @@ export function PetForm({ pet, teams = [], onClose, onSaved }: PetFormProps) {
           </Field>
 
           {teams.length > 0 && (
-            <Field label="Właściciel">
+            <Field label={t("wlasciciel")}>
               <select style={inputStyle} value={ownerTeamId} onChange={(e) => setOwnerTeamId(e.target.value)}>
                 <option value="">Ja (prywatne)</option>
                 {teams.map((t) => (

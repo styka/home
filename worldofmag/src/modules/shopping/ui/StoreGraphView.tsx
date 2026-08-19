@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";
 
@@ -62,6 +63,7 @@ interface StoreGraphViewProps {
 }
 
 export function StoreGraphView({ store, onRebuild, canvasW = 900, canvasH = 550 }: StoreGraphViewProps) {
+  const t = useTranslations("modules.shopping.StoreGraphView");
   const [editingEdge, setEditingEdge] = useState<{ id: string; weight: number } | null>(null);
 
   const nodeById = new Map<string, StoreNodeData>(
@@ -191,7 +193,7 @@ export function StoreGraphView({ store, onRebuild, canvasW = 900, canvasH = 550 
               gap: 6,
             }}
           >
-            🔄 Przebuduj mapę
+            {t("przebudujMape")}
           </button>
         </div>
       )}

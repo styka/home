@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Sparkles, Loader2, Plus, Check } from "lucide-react";
 import { TagChip, getTagStyle } from "./TagChip";
@@ -16,6 +17,7 @@ interface TagSuggestionsProps {
 }
 
 export function TagSuggestions({ noteId, noteContent, allTags, currentTagIds, onTagsChanged }: TagSuggestionsProps) {
+  const t = useTranslations("modules.notes.TagSuggestions");
   const [loading, setLoading] = useState(false);
   const [suggested, setSuggested] = useState<Tag[]>([]);
   const [newSuggested, setNewSuggested] = useState<string[]>([]);
@@ -80,7 +82,7 @@ export function TagSuggestions({ noteId, noteContent, allTags, currentTagIds, on
       {loading && (
         <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
           <Loader2 size={11} className="animate-spin" />
-          Analizuję treść...
+          {t("analizujeTresc")}
         </div>
       )}
       {done && suggested.length === 0 && newSuggested.length === 0 && (
@@ -135,7 +137,7 @@ export function TagSuggestions({ noteId, noteContent, allTags, currentTagIds, on
             onClick={suggest}
             className="text-[10px] px-1.5 rounded"
             style={{ color: "var(--text-muted)" }}
-            title="Odśwież sugestie"
+            title={t("odswiezSugestie")}
           >
             ↺
           </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 // Z-131 (T-17) — panel obserwowalności kolejki zadań. Podgląd stanu (liczniki, typy,
 // najwięksi „konsumenci"), lista ostatnich zadań, ręczny retry/anulowanie i sprzątanie.
 
@@ -34,6 +35,7 @@ function fmt(iso: string) {
 }
 
 export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
+  const t = useTranslations("components.admin.AdminJobsPage");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [data, setData] = useState<JobsOverview>(initial);
@@ -97,19 +99,19 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
         <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <ListChecks size={20} style={{ color: "var(--accent-blue)" }} />
-            <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Kolejka zadań</h1>
+            <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{t("kolejkaZadan")}</h1>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => reload()} disabled={refreshing} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
               {refreshing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Odśwież
             </button>
             <button type="button" onClick={cleanup} disabled={pending} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
-              <Trash2 size={13} /> Sprzątnij 24h+
+              <Trash2 size={13} /> {t("sprzatnij24h")}
             </button>
           </div>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>
-          Zadania w tle (OCR, generowanie, wnioski AI). Zawieszone „W toku” po ~2 min są automatycznie odzyskiwane; tu możesz też ręcznie ponowić błędne.
+          {t("zadaniaWTleOcr")}
         </p>
 
         {/* Liczniki wg statusu */}
@@ -143,7 +145,7 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
             )}
             {data.topOwners.length > 0 && (
               <section>
-                <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>Najwięcej aktywnych (per user)</h2>
+                <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>{t("najwiecejAktywnychPerUser")}</h2>
                 <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
                   {data.topOwners.map((o, i) => (
                     <div key={o.email} className="flex items-center justify-between gap-2" style={{ padding: "8px 12px", borderBottom: i < data.topOwners.length - 1 ? "1px solid var(--border)" : undefined }}>
@@ -168,7 +170,7 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
 
         {/* Lista ostatnich zadań */}
         {data.recent.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "24px 0", textAlign: "center" }}>Brak zadań.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "24px 0", textAlign: "center" }}>{t("brakZadan")}</p>
         ) : (
           <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
             {data.recent.map((j, i) => (
@@ -182,6 +184,7 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
 }
 
 function JobRowView({ job, last, pending, onRetry, onCancel }: { job: JobRow; last: boolean; pending: boolean; onRetry: (id: string) => void; onCancel: (id: string) => void }) {
+  const t = useTranslations("components.admin.AdminJobsPage");
   const meta = STATUS_META[job.status];
   const canRetry = job.status === "FAILED" || job.status === "CANCELLED" || job.status === "DONE";
   const canCancel = job.status === "QUEUED" || job.status === "FAILED";
@@ -203,8 +206,8 @@ function JobRowView({ job, last, pending, onRetry, onCancel }: { job: JobRow; la
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         {canRetry && (
-          <button type="button" onClick={() => onRetry(job.id)} disabled={pending} title="Ponów" className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--accent-blue)" }}>
-            <RotateCcw size={12} /> Ponów
+          <button type="button" onClick={() => onRetry(job.id)} disabled={pending} title={t("ponow")} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--accent-blue)" }}>
+            <RotateCcw size={12} /> {t("ponow")}
           </button>
         )}
         {canCancel && (

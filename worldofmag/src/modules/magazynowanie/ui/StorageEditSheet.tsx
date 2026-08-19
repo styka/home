@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Trash2, Plus, Minus, ImagePlus, Loader2, ArrowLeftRight } from "lucide-react";
 import {
@@ -40,6 +41,7 @@ function toDateInput(d: Date | string | null | undefined): string {
 }
 
 export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppliers = [], currency = "PLN", pro = false }: StorageEditSheetProps) {
+  const t = useTranslations("modules.magazynowanie.StorageEditSheet");
   const confirmDialog = useConfirm();
   const [name, setName] = useState(item?.name ?? "");
   const [sku, setSku] = useState(item?.sku ?? "");
@@ -213,7 +215,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
                 style={{ color: "var(--accent-red)" }}
               >
-                <Trash2 size={14} /> Usuń
+                <Trash2 size={14} /> {t("usun")}
               </button>
             ) : null}
           </div>
@@ -250,7 +252,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 type="text"
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
-                placeholder="garaż, magazyn główny…"
+                placeholder={t("garazMagazynGlowny")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -260,7 +262,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="regał A3, strych, szafa…"
+                placeholder={t("regalA3StrychSzafa")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -268,7 +270,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Ilość">
+            <Field label={t("ilosc")}>
               <div className="flex items-center gap-1">
                 {item ? (
                   <button
@@ -295,7 +297,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                     type="button"
                     onClick={() => handleAdjust(1)}
                     disabled={pending}
-                    aria-label="Przyjęcie"
+                    aria-label={t("przyjecie")}
                     className="p-1.5 rounded border disabled:opacity-50"
                     style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
                   >
@@ -322,7 +324,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="narzędzia, chemia…"
+                placeholder={t("narzedziaChemia")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -332,7 +334,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 type="text"
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="kod wewnętrzny"
+                placeholder={t("kodWewnetrzny")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -365,7 +367,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Termin ważności">
+            <Field label={t("terminWaznosci")}>
               <input
                 type="date"
                 value={expiresAt}
@@ -401,7 +403,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
             </Field>
           ) : null}
 
-          <Field label="Zdjęcie">
+          <Field label={t("zdjecie")}>
             <div className="flex items-center gap-3">
               {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -420,13 +422,13 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
               </button>
               {photoUrl ? (
                 <button type="button" onClick={() => setPhotoUrl("")} className="text-xs" style={{ color: "var(--accent-red)" }}>
-                  Usuń
+                  {t("usun")}
                 </button>
               ) : null}
             </div>
           </Field>
 
-          <Field label="Stan minimalny (uzupełnianie)">
+          <Field label={t("stanMinimalnyUzupelnianie")}>
             <input
               type="number"
               step="any"
@@ -456,7 +458,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                 className="mt-2 inline-flex items-center gap-1.5 text-xs"
                 style={{ color: "var(--accent-blue)" }}
               >
-                <ArrowLeftRight size={13} /> Przenieś do innego magazynu
+                <ArrowLeftRight size={13} /> {t("przeniesDoInnegoMagazynu")}
               </button>
               {transferOpen ? (
                 <div className="mt-2 flex flex-col gap-1.5">
@@ -482,7 +484,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                       onChange={(e) => setTransferQty(e.target.value)}
                       type="number"
                       step="any"
-                      placeholder="Ilość"
+                      placeholder={t("ilosc")}
                       className="w-24 px-2 py-1.5 rounded border text-sm text-right tabular-nums"
                       style={inputStyle}
                     />
@@ -493,7 +495,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-sm disabled:opacity-50"
                       style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
                     >
-                      <ArrowLeftRight size={13} /> Przenieś
+                      <ArrowLeftRight size={13} /> {t("przenies")}
                     </button>
                   </div>
                 </div>
@@ -512,7 +514,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
           {item && item.movements.length > 0 ? (
             <div>
               <span className="text-xs uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                Historia ruchów
+                {t("historiaRuchow")}
               </span>
               <ul className="mt-1 flex flex-col gap-0.5 max-h-32 overflow-y-auto">
                 {item.movements.map((m) => (

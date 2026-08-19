@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { Bug, X } from "lucide-react";
@@ -64,6 +65,7 @@ function domPath(el: HTMLElement): string {
 }
 
 export function FeedbackInspector() {
+  const t = useTranslations("components.shell.FeedbackInspector");
   const pathname = usePathname();
   const [active, setActive] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -147,8 +149,8 @@ export function FeedbackInspector() {
         <button
           {...{ [FEEDBACK_UI_ATTR]: "" }}
           onClick={() => setActive(true)}
-          title="Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B"
-          aria-label="Tryb zgłaszania błędu lub sugestii"
+          title={t("zglosBladSugestieWskaz")}
+          aria-label={t("trybZglaszaniaBleduLub")}
           className={
             modalOpen
               ? "fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
@@ -184,11 +186,11 @@ export function FeedbackInspector() {
             style={{ pointerEvents: "none", padding: "8px 14px", borderRadius: 999, background: "var(--bg-surface)", border: "1px solid var(--accent-purple)", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}
           >
             <Bug size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
-            <span style={{ fontSize: 13, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Wskaż element zgłoszenia</span>
+            <span style={{ fontSize: 13, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t("wskazElementZgloszenia")}</span>
             <button
               onClick={() => { setActive(false); setRect(null); }}
               title="Anuluj (Esc)"
-              aria-label="Anuluj tryb zgłaszania"
+              aria-label={t("anulujTrybZglaszania")}
               style={{ pointerEvents: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 999, padding: "3px 9px", cursor: "pointer" }}
             >
               <X size={12} /> Anuluj

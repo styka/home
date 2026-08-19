@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle, useTransition } from "react";
 import { ChevronDown, ChevronUp, Sparkles, Mic, MicOff, Loader2 } from "lucide-react";
 import { createNote } from "../actions/notes";
@@ -18,6 +19,7 @@ interface QuickNoteBarProps {
 
 export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
   function QuickNoteBar({ groups, allTags }, ref) {
+    const t = useTranslations("modules.notes.QuickNoteBar");
     const titleRef = useRef<HTMLInputElement>(null);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
@@ -196,7 +198,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                 if (e.key === "Escape") { reset(); titleRef.current?.blur(); }
               }}
               onFocus={() => setExpanded(true)}
-              placeholder="Nowa notatka... (Enter aby rozwinąć)"
+              placeholder={t("nowaNotatkaEnterAby")}
               className="flex-1 bg-transparent text-sm focus:outline-none min-w-0"
               style={{ color: "var(--text-primary)" }}
             />
@@ -224,7 +226,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Treść notatki..."
+              placeholder={t("trescNotatki")}
               rows={3}
               className="w-full bg-transparent text-sm focus:outline-none resize-none"
               style={{ color: "var(--text-primary)" }}
@@ -385,7 +387,7 @@ export const QuickNoteBar = forwardRef<QuickNoteBarHandle, QuickNoteBarProps>(
                   color: title.trim() ? "#fff" : "var(--text-muted)",
                 }}
               >
-                Dodaj notatkę
+                {t("dodajNotatke")}
               </button>
               <button
                 onClick={reset}

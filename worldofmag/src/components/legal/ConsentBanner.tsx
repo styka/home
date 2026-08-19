@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { ScrollText, Loader2 } from "lucide-react";
@@ -9,6 +10,7 @@ import { getOutstandingConsents, acceptAllCurrentConsents } from "@/actions/lega
 // bieżące wersje dokumentów (bez przeciągania propsów przez AppShell). Gdy nie ma
 // zaległości — nie renderuje nic.
 export function ConsentBanner() {
+  const t = useTranslations("components.legal.ConsentBanner");
   const [need, setNeed] = useState<string[] | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -40,9 +42,8 @@ export function ConsentBanner() {
         <ScrollText size={18} style={{ color: "var(--text-secondary)", flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
           Zaktualizowaliśmy dokumenty. Zapoznaj się z{" "}
-          <Link href="/legal/privacy" style={{ color: "var(--accent-blue)" }}>polityką prywatności</Link>{" "}
-          i <Link href="/legal/terms" style={{ color: "var(--accent-blue)" }}>regulaminem</Link>, aby
-          dalej korzystać z aplikacji.
+          <Link href="/legal/privacy" style={{ color: "var(--accent-blue)" }}>{t("politykaPrywatnosci")}</Link>{" "}
+          i <Link href="/legal/terms" style={{ color: "var(--accent-blue)" }}>regulaminem</Link>{t("abyDalejKorzystacZ")}
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Brain, Loader2, Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -27,6 +28,7 @@ import {
  * inaczej korekta żyłaby do najbliższego przebiegu w tle i po cichu znikała.
  */
 export function UserFactsPanel({ users }: { users: Array<{ id: string; email: string | null; name: string | null }> }) {
+  const t = useTranslations("components.admin.UserFactsPanel");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [userId, setUserId] = useState<string>(users[0]?.id ?? "");
@@ -66,7 +68,7 @@ export function UserFactsPanel({ users }: { users: Array<{ id: string; email: st
     <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
-          <Brain size={16} className="text-[var(--accent-purple)]" /> Wiedza o użytkowniku
+          <Brain size={16} className="text-[var(--accent-purple)]" /> {t("wiedzaOUzytkowniku")}
         </span>
         <div className="flex flex-wrap items-center gap-2">
           <select
@@ -92,7 +94,7 @@ export function UserFactsPanel({ users }: { users: Array<{ id: string; email: st
         </div>
       ) : facts.length === 0 ? (
         <p className="py-4 text-center text-xs text-[var(--text-muted)]">
-          Ten użytkownik nie ma jeszcze żadnych faktów.
+          {t("tenUzytkownikNieMa")}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -113,7 +115,7 @@ export function UserFactsPanel({ users }: { users: Array<{ id: string; email: st
                   <Pencil size={13} /> Popraw
                 </Button>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => remove(f)}>
-                  <Trash2 size={13} /> Usuń
+                  <Trash2 size={13} /> {t("usun")}
                 </Button>
               </div>
             </li>
@@ -151,6 +153,7 @@ function AdminFactModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const t = useTranslations("components.admin.UserFactsPanel");
   const { showToast } = useToast();
   const [text, setText] = useState(fact?.text ?? "");
   const [category, setCategory] = useState<UserFactCategory>(fact?.category ?? "interests");
@@ -201,7 +204,7 @@ function AdminFactModal({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-[var(--text-secondary)]">Treść</label>
+        <label className="mb-1 block text-xs text-[var(--text-secondary)]">{t("tresc")}</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

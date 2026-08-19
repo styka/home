@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { HardDrive, Check, Loader2 } from "lucide-react";
 import { disconnectDrive, type DriveStatus } from "@/actions/drive";
@@ -8,6 +9,7 @@ import { disconnectDrive, type DriveStatus } from "@/actions/drive";
 // through Google's consent (the /api/drive/connect route); disconnecting is a
 // plain server action.
 export function DriveSettings({ status, notice }: { status: DriveStatus; notice?: string }) {
+  const t = useTranslations("components.settings.DriveSettings");
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
 
@@ -29,7 +31,7 @@ export function DriveSettings({ status, notice }: { status: DriveStatus; notice?
           {status.connected ? (
             <>
               <div style={{ color: "var(--text-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
-                <Check size={15} style={{ color: "var(--accent-green)" }} /> Połączono
+                <Check size={15} style={{ color: "var(--accent-green)" }} /> {t("polaczono")}
               </div>
               <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
                 {status.email ?? "Twój Dysk Google"}
@@ -38,9 +40,9 @@ export function DriveSettings({ status, notice }: { status: DriveStatus; notice?
             </>
           ) : (
             <>
-              <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>Dysk Google nie jest połączony</div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>{t("dyskGoogleNieJest")}</div>
               <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                Połącz, aby wgrywać pliki (zdjęcia) do własnego Dysku.
+                {t("polaczAbyWgrywacPliki")}
               </div>
             </>
           )}
@@ -67,19 +69,17 @@ export function DriveSettings({ status, notice }: { status: DriveStatus; notice?
       </div>
 
       <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-        Aplikacja używa uprawnienia <code>drive.file</code> — widzi i zarządza wyłącznie plikami,
-        które sama utworzy w folderze <strong>„Omnia”</strong> na Twoim Dysku. Nie ma dostępu do
-        reszty Twoich plików.
+        {t("aplikacjaUzywaUprawnienia")} <code>drive.file</code> {t("widziIZarzadzaWylacznie")} <strong>„Omnia”</strong> {t("naTwoimDyskuNie")}
       </p>
 
       {notice === "connected" ? (
-        <p style={{ color: "var(--accent-green)", fontSize: 12, margin: 0 }}>Połączono pomyślnie.</p>
+        <p style={{ color: "var(--accent-green)", fontSize: 12, margin: 0 }}>{t("polaczonoPomyslnie")}</p>
       ) : notice === "error" ? (
         <p style={{ color: "var(--accent-red)", fontSize: 12, margin: 0 }}>
-          Nie udało się połączyć. Spróbuj ponownie.
+          {t("nieUdaloSiePolaczyc")}
         </p>
       ) : notice === "denied" ? (
-        <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>Anulowano połączenie.</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>{t("anulowanoPolaczenie")}</p>
       ) : null}
     </div>
   );

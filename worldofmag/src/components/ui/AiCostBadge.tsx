@@ -188,7 +188,7 @@ export function AiCostBadge({
             fontSize: 11, color: "var(--text-secondary)",
           }}
         >
-          <p style={{ margin: "0 0 6px", fontWeight: 600, color: "var(--text-primary)" }}>Rozbicie kosztu</p>
+          <p style={{ margin: "0 0 6px", fontWeight: 600, color: "var(--text-primary)" }}>{t("rozbicieKosztu")}</p>
           {/* 035: przewijanie w poziomie należy do LISTY WYWOŁAŃ, a nie do całego panelu. Wcześniej
               `overflow-x` siedział na panelu, ale wiersze miały `white-space: nowrap` przy
               `justify-content: space-between`, więc rozpychały go zamiast się przewijać. */}

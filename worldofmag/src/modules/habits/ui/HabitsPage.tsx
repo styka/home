@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect, useMemo, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange, CheckSquare } from "lucide-react";
@@ -32,6 +33,7 @@ function encouragement(doneToday: number, scheduledToday: number): string {
 }
 
 export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
+  const t = useTranslations("modules.habits.HabitsPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [habits, setHabits] = useState<HabitWithStats[]>(initial);
@@ -210,9 +212,9 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
 
       {habits.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
-          <StatTile value={`${doneToday}/${scheduled.length}`} label="Na dziś" color="var(--accent-orange)" />
+          <StatTile value={`${doneToday}/${scheduled.length}`} label={t("naDzis")} color="var(--accent-orange)" />
           <StatTile value={bestStreak} label="Najlepsza seria" color="var(--accent-red)" icon={<Flame size={14} />} />
-          <StatTile value={`${pct}%`} label="Ukończono dziś" color="var(--accent-green)" />
+          <StatTile value={`${pct}%`} label={t("ukonczonoDzis")} color="var(--accent-green)" />
           <StatTile value={habits.length} label="Aktywne nawyki" color="var(--accent-blue)" />
         </div>
       )}
@@ -228,7 +230,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
         <>
           {scheduled.length > 0 && (
             <section>
-              <SectionHeading>Na dziś</SectionHeading>
+              <SectionHeading>{t("naDzis")}</SectionHeading>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {scheduled.map((h, i) => renderCard(h, i))}
               </div>
@@ -236,7 +238,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
           )}
           {others.length > 0 && (
             <section>
-              <SectionHeading>Poza planem na dziś</SectionHeading>
+              <SectionHeading>{t("pozaPlanemNaDzis")}</SectionHeading>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {others.map((h, i) => renderCard(h, scheduled.length + i))}
               </div>
@@ -277,6 +279,7 @@ function HabitCard({
   onToTask: () => void;
   onFocus: () => void;
 }) {
+  const t = useTranslations("modules.habits.HabitsPage");
   const [heatmapWeeks, setHeatmapWeeks] = useState(26);
   const dots = Math.min(7, h.weekTarget);
   return (
@@ -339,7 +342,7 @@ function HabitCard({
           </div>
         </div>
 
-        <button onClick={onExpand} className="p-1.5 rounded" style={{ background: "none", border: "none", color: "var(--text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} aria-label="Szczegóły">
+        <button onClick={onExpand} className="p-1.5 rounded" style={{ background: "none", border: "none", color: "var(--text-muted)", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} aria-label={t("szczegoly")}>
           <ChevronDown size={18} />
         </button>
       </div>
@@ -349,11 +352,11 @@ function HabitCard({
           {h.description && <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "10px 0" }}>{h.description}</p>}
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", margin: "10px 0" }}>
             <MiniStat label="Aktualna seria" value={`${h.currentStreak}`} />
-            <MiniStat label="Najdłuższa seria" value={`${h.longestStreak}`} />
-            <MiniStat label="Ten tydzień" value={`${h.weekDone}/${h.weekTarget}`} />
+            <MiniStat label={t("najdluzszaSeria")} value={`${h.longestStreak}`} />
+            <MiniStat label={t("tenTydzien")} value={`${h.weekDone}/${h.weekTarget}`} />
             {(() => {
               const rate = completionRate(h.entryDates, h.daysOfWeek, heatmapWeeks * 7);
-              return rate !== null ? <MiniStat label="Ukończenie" value={`${rate}%`} /> : null;
+              return rate !== null ? <MiniStat label={t("ukonczenie")} value={`${rate}%`} /> : null;
             })()}
           </div>
           <div style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -382,14 +385,14 @@ function HabitCard({
             <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
               <Pencil size={13} /> Edytuj
             </button>
-            <button onClick={onToTask} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }} title="Utwórz zadanie z tego nawyku">
+            <button onClick={onToTask} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }} title={t("utworzZadanieZTego")}>
               <CheckSquare size={13} /> → Zadanie
             </button>
             <button onClick={onArchive} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
               <Archive size={13} /> Archiwizuj
             </button>
             <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs" style={{ background: "none", color: "var(--accent-red)", border: "1px solid var(--border)" }}>
-              <Trash2 size={13} /> Usuń
+              <Trash2 size={13} /> {t("usun")}
             </button>
           </div>
         </div>

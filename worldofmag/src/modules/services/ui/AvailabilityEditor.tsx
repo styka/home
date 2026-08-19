@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
@@ -14,6 +15,7 @@ type DayState = { enabled: boolean; start: string; end: string };
 
 /** Edytor dostępności wykonawcy (M2) — M14: per-firma lub per-pracownik. */
 export function AvailabilityEditor() {
+  const t = useTranslations("modules.services.AvailabilityEditor");
   const emptyDays = () => {
     const init: Record<number, DayState> = {};
     for (let w = 0; w <= 6; w++) init[w] = { enabled: false, start: "09:00", end: "17:00" };
@@ -68,15 +70,15 @@ export function AvailabilityEditor() {
 
   return (
     <div>
-      <SectionHeading>Dostępność do rezerwacji</SectionHeading>
+      <SectionHeading>{t("dostepnoscDoRezerwacji")}</SectionHeading>
       <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-        Klienci zarezerwują wolne sloty w tych godzinach dla ofert z włączoną rezerwacją.
+        {t("klienciZarezerwujaWolneSloty")}
       </div>
       {staff.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Harmonogram dla:</span>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} style={{ ...fieldInputStyle, width: 200 }}>
-            <option value="">Cała firma (solo)</option>
+            <option value="">{t("calaFirmaSolo")}</option>
             {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
@@ -100,7 +102,7 @@ export function AvailabilityEditor() {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
         <button onClick={save} disabled={busy} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, opacity: busy ? 0.6 : 1 }}>
-          <Check size={15} /> Zapisz dostępność
+          <Check size={15} /> {t("zapiszDostepnosc")}
         </button>
         {msg && <span style={{ fontSize: 12, color: msg.startsWith("Zapisano") ? "var(--accent-green)" : "var(--accent-red)" }}>{msg}</span>}
       </div>

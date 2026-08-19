@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 
 // ─── Section definitions ───────────────────────────────────────────────────
@@ -84,9 +85,10 @@ function Ul({ items }: { items: string[] }) {
 // ─── SVG Illustrations ─────────────────────────────────────────────────────
 
 function AppLayoutSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 700 330" width="100%" style={{ maxWidth: 700, display: "block" }} aria-label="Schemat trójpanelowego interfejsu">
+      <svg viewBox="0 0 700 330" width="100%" style={{ maxWidth: 700, display: "block" }} aria-label={t("schematTrojpanelowegoInterfejsu")}>
         <defs>
           <clipPath id="cl-layout"><rect width="700" height="330" rx="8"/></clipPath>
         </defs>
@@ -98,24 +100,24 @@ function AppLayoutSVG() {
         <text x="12" y="27" fill="#a855f7" fontSize="13" fontFamily="system-ui">✦</text>
         <text x="26" y="27" fill="#fff" fontSize="10" fontFamily="system-ui" fontWeight="700">WorldOfMag</text>
         <line x1="0" y1="44" x2="135" y2="44" stroke="#2a2a2a" strokeWidth="1"/>
-        <text x="14" y="66" fill="#6b7280" fontSize="9.5" fontFamily="system-ui">🛒  Zakupy</text>
+        <text x="14" y="66" fill="#6b7280" fontSize="9.5" fontFamily="system-ui">🛒 Zakupy</text>
         <rect x="5" y="72" width="125" height="24" rx="4" fill="#242424"/>
-        <text x="14" y="89" fill="#fff" fontSize="9.5" fontFamily="system-ui" fontWeight="600">✅  Zadania</text>
+        <text x="14" y="89" fill="#fff" fontSize="9.5" fontFamily="system-ui" fontWeight="600">✅ Zadania</text>
         <rect x="5" y="72" width="2" height="24" rx="1" fill="#3b82f6"/>
-        <text x="28" y="112" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📅  Dziś</text>
+        <text x="28" y="112" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">{t("dzis")}</text>
         <rect x="22" y="116" width="100" height="14" rx="3" fill="#1e293b"/>
-        <text x="28" y="127" fill="#60a5fa" fontSize="8.5" fontFamily="system-ui">📅  Dziś</text>
-        <text x="28" y="144" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📆  Nadchodzące</text>
-        <text x="28" y="159" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">⚠️  Zaległe</text>
-        <text x="28" y="174" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">◎  Wszystkie</text>
+        <text x="28" y="127" fill="#60a5fa" fontSize="8.5" fontFamily="system-ui">{t("dzis")}</text>
+        <text x="28" y="144" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">{t("nadchodzace")}</text>
+        <text x="28" y="159" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">{t("zalegle")}</text>
+        <text x="28" y="174" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">◎ Wszystkie</text>
         <line x1="18" y1="181" x2="122" y2="181" stroke="#2a2a2a" strokeWidth="0.5"/>
-        <text x="28" y="194" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📥  Skrzynka</text>
-        <text x="28" y="209" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📋  Projekt Dev</text>
-        <text x="28" y="224" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">✏  Projekt Blog</text>
+        <text x="28" y="194" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📥 Skrzynka</text>
+        <text x="28" y="209" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">📋 Projekt Dev</text>
+        <text x="28" y="224" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">✏ Projekt Blog</text>
         <line x1="18" y1="231" x2="122" y2="231" stroke="#2a2a2a" strokeWidth="0.5"/>
-        <text x="28" y="244" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">🏷️  Tagi</text>
-        <text x="28" y="259" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">❓  Pomoc</text>
-        <text x="14" y="285" fill="#555" fontSize="9.5" fontFamily="system-ui">📓  Notes</text>
+        <text x="28" y="244" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">🏷️ Tagi</text>
+        <text x="28" y="259" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">❓ Pomoc</text>
+        <text x="14" y="285" fill="#555" fontSize="9.5" fontFamily="system-ui">📓 Notes</text>
         <rect x="10" y="307" width="114" height="16" rx="3" fill="rgba(59,130,246,0.12)"/>
         <text x="67" y="319" fill="#3b82f6" fontSize="8" fontFamily="system-ui" textAnchor="middle">① Panel nawigacji</text>
 
@@ -123,13 +125,13 @@ function AppLayoutSVG() {
         <rect x="135" y="0" width="325" height="330" fill="#0d0d0d"/>
         <line x1="135" y1="0" x2="135" y2="330" stroke="#2a2a2a" strokeWidth="1"/>
         <rect x="135" y="0" width="325" height="44" fill="#111"/>
-        <text x="150" y="26" fill="#fff" fontSize="12" fontFamily="system-ui" fontWeight="700">📅 Dziś</text>
+        <text x="150" y="26" fill="#fff" fontSize="12" fontFamily="system-ui" fontWeight="700">{t("dzis2")}</text>
         <text x="405" y="26" fill="#6b7280" fontSize="9" fontFamily="system-ui">3 aktywne</text>
         <line x1="135" y1="44" x2="460" y2="44" stroke="#2a2a2a" strokeWidth="1"/>
         <rect x="135" y="44" width="325" height="28" fill="#111"/>
         <text x="150" y="62" fill="#3b82f6" fontSize="9" fontFamily="system-ui" fontWeight="600">✦ AI</text>
         <line x1="150" y1="70" x2="173" y2="70" stroke="#3b82f6" strokeWidth="1.5"/>
-        <text x="188" y="62" fill="#6b7280" fontSize="9" fontFamily="system-ui">✏ Ręcznie</text>
+        <text x="188" y="62" fill="#6b7280" fontSize="9" fontFamily="system-ui">{t("recznie")}</text>
         <line x1="135" y1="72" x2="460" y2="72" stroke="#2a2a2a" strokeWidth="1"/>
         <rect x="135" y="72" width="325" height="26" fill="#111"/>
         <text x="148" y="89" fill="#3b82f6" fontSize="8" fontFamily="system-ui" fontWeight="600">Wszystkie</text>
@@ -139,34 +141,34 @@ function AppLayoutSVG() {
         <text x="326" y="89" fill="#6b7280" fontSize="8" fontFamily="system-ui">Zrobione</text>
         <line x1="135" y1="98" x2="460" y2="98" stroke="#2a2a2a" strokeWidth="1"/>
         <rect x="135" y="98" width="325" height="20" fill="#0a0a0a"/>
-        <text x="148" y="112" fill="#6b7280" fontSize="8" fontFamily="system-ui">🔴 Pilne  (1)</text>
+        <text x="148" y="112" fill="#6b7280" fontSize="8" fontFamily="system-ui">🔴 Pilne (1)</text>
         <line x1="135" y1="118" x2="460" y2="118" stroke="#2a2a2a" strokeWidth="0.5"/>
         <rect x="135" y="118" width="325" height="34" fill="#1a1a1a"/>
         <rect x="135" y="118" width="2" height="34" fill="#3b82f6"/>
         <rect x="141" y="128" width="3" height="14" rx="1.5" fill="#ef4444"/>
         <circle cx="155" cy="135" r="7" fill="none" stroke="#3b82f6" strokeWidth="1.5"/>
         <text x="167" y="133" fill="#fff" fontSize="9.5" fontFamily="system-ui" fontWeight="500">Raport kwartalny</text>
-        <text x="167" y="145" fill="#f59e0b" fontSize="7.5" fontFamily="system-ui">Dziś 14:00</text>
+        <text x="167" y="145" fill="#f59e0b" fontSize="7.5" fontFamily="system-ui">{t("dzis1400")}</text>
         <rect x="315" y="126" width="28" height="12" rx="5" fill="rgba(59,130,246,0.2)"/>
         <text x="320" y="135" fill="#60a5fa" fontSize="7" fontFamily="system-ui">Praca</text>
         <rect x="135" y="152" width="325" height="20" fill="#0a0a0a"/>
-        <text x="148" y="166" fill="#6b7280" fontSize="8" fontFamily="system-ui">🟠 Wysoki  (2)</text>
+        <text x="148" y="166" fill="#6b7280" fontSize="8" fontFamily="system-ui">🟠 Wysoki (2)</text>
         <line x1="135" y1="172" x2="460" y2="172" stroke="#2a2a2a" strokeWidth="0.5"/>
         <rect x="141" y="182" width="3" height="14" rx="1.5" fill="#f59e0b"/>
         <circle cx="155" cy="189" r="7" fill="none" stroke="#555" strokeWidth="1.5"/>
-        <text x="167" y="187" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui">Przegląd kodu PR #47</text>
-        <text x="167" y="199" fill="#6b7280" fontSize="7.5" fontFamily="system-ui">Dziś  ⏱ 15m</text>
+        <text x="167" y="187" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui">{t("przegladKoduPr47")}</text>
+        <text x="167" y="199" fill="#6b7280" fontSize="7.5" fontFamily="system-ui">{t("dzis15m")}</text>
         <rect x="141" y="216" width="3" height="14" rx="1.5" fill="#f59e0b"/>
         <circle cx="155" cy="223" r="7" fill="none" stroke="#555" strokeWidth="1.5"/>
-        <text x="167" y="221" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui">Spotkanie z zespołem</text>
-        <text x="167" y="233" fill="#6b7280" fontSize="7.5" fontFamily="system-ui">Dziś</text>
+        <text x="167" y="221" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui">{t("spotkanieZZespolem")}</text>
+        <text x="167" y="233" fill="#6b7280" fontSize="7.5" fontFamily="system-ui">{t("dzis3")}</text>
         <rect x="175" y="307" width="120" height="16" rx="3" fill="rgba(59,130,246,0.12)"/>
-        <text x="235" y="319" fill="#3b82f6" fontSize="8" fontFamily="system-ui" textAnchor="middle">② Lista zadań</text>
+        <text x="235" y="319" fill="#3b82f6" fontSize="8" fontFamily="system-ui" textAnchor="middle">{t("listaZadan")}</text>
 
         {/* === PRAWA KOLUMNA: SZCZEGÓŁY === */}
         <rect x="460" y="0" width="240" height="330" fill="#1a1a1a"/>
         <line x1="460" y1="0" x2="460" y2="330" stroke="#2a2a2a" strokeWidth="1"/>
-        <text x="474" y="26" fill="#6b7280" fontSize="9" fontFamily="system-ui">Szczegóły zadania</text>
+        <text x="474" y="26" fill="#6b7280" fontSize="9" fontFamily="system-ui">{t("szczegolyZadania")}</text>
         <text x="680" y="26" fill="#6b7280" fontSize="14" fontFamily="system-ui">×</text>
         <line x1="460" y1="44" x2="700" y2="44" stroke="#2a2a2a" strokeWidth="1"/>
         <rect x="474" y="52" width="82" height="18" rx="3" fill="#1e293b" stroke="#3b82f6" strokeWidth="0.5"/>
@@ -189,26 +191,27 @@ function AppLayoutSVG() {
         <rect x="510" y="190" width="22" height="12" rx="5" fill="rgba(16,185,129,0.2)"/>
         <text x="515" y="199" fill="#34d399" fontSize="7" fontFamily="system-ui">Q1</text>
         <line x1="460" y1="208" x2="700" y2="208" stroke="#2a2a2a" strokeWidth="0.5"/>
-        <text x="474" y="221" fill="#6b7280" fontSize="8" fontFamily="system-ui">Podzadania  (1/3)</text>
+        <text x="474" y="221" fill="#6b7280" fontSize="8" fontFamily="system-ui">Podzadania (1/3)</text>
         <text x="474" y="235" fill="#34d399" fontSize="8" fontFamily="system-ui">✓ Zbierz dane</text>
         <text x="474" y="248" fill="#6b7280" fontSize="8" fontFamily="system-ui">○ Analiza danych</text>
-        <text x="474" y="261" fill="#6b7280" fontSize="8" fontFamily="system-ui">○ Prezentacja wyników</text>
+        <text x="474" y="261" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("prezentacjaWynikow")}</text>
         <line x1="460" y1="270" x2="700" y2="270" stroke="#2a2a2a" strokeWidth="0.5"/>
-        <text x="474" y="283" fill="#6b7280" fontSize="8" fontFamily="system-ui">💬 Komentarze  (2)</text>
+        <text x="474" y="283" fill="#6b7280" fontSize="8" fontFamily="system-ui">💬 Komentarze (2)</text>
         <text x="474" y="296" fill="#555" fontSize="7.5" fontFamily="system-ui">Jan K.: Dane gotowe</text>
         <line x1="460" y1="305" x2="700" y2="305" stroke="#2a2a2a" strokeWidth="0.5"/>
-        <text x="474" y="318" fill="#6b7280" fontSize="8" fontFamily="system-ui">🤝 Udostępnianie</text>
+        <text x="474" y="318" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("udostepnianie")}</text>
         <rect x="505" y="307" width="130" height="16" rx="3" fill="rgba(59,130,246,0.12)"/>
-        <text x="570" y="319" fill="#3b82f6" fontSize="8" fontFamily="system-ui" textAnchor="middle">③ Panel szczegółów</text>
+        <text x="570" y="319" fill="#3b82f6" fontSize="8" fontFamily="system-ui" textAnchor="middle">{t("panelSzczegolow")}</text>
       </svg>
     </div>
   );
 }
 
 function StatusFlowSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 600 210" width="100%" style={{ maxWidth: 600, display: "block" }} aria-label="Cykl życia statusów zadania">
+      <svg viewBox="0 0 600 210" width="100%" style={{ maxWidth: 600, display: "block" }} aria-label={t("cyklZyciaStatusowZadania")}>
         <defs>
           <marker id="sf-a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#555"/></marker>
           <marker id="sf-a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/></marker>
@@ -243,11 +246,11 @@ function StatusFlowSVG() {
 
         {/* Cycle arc */}
         <path d="M490,55 L490,28 L84,28 L84,55" fill="none" stroke="#2a2a2a" strokeWidth="1.5" strokeDasharray="5,3" markerEnd="url(#sf-a4)"/>
-        <text x="220" y="20" fill="#555" fontSize="7.5" fontFamily="system-ui" textAnchor="middle">↻ cykl (dla zadań powtarzających się)</text>
+        <text x="220" y="20" fill="#555" fontSize="7.5" fontFamily="system-ui" textAnchor="middle">{t("cyklDlaZadanPowtarzajacych")}</text>
 
         {/* DEFERRED */}
         <rect x="196" y="145" width="108" height="40" rx="7" fill="#1c1205" stroke="#f59e0b" strokeWidth="1"/>
-        <text x="206" y="162" fill="#fbbf24" fontSize="10" fontFamily="system-ui" fontWeight="600">ODŁOŻONE</text>
+        <text x="206" y="162" fill="#fbbf24" fontSize="10" fontFamily="system-ui" fontWeight="600">{t("odlozone")}</text>
         <text x="206" y="176" fill="#92400e" fontSize="8" fontFamily="system-ui">Deferred</text>
         <line x1="260" y1="113" x2="250" y2="145" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3,2" markerEnd="url(#sf-a3)"/>
 
@@ -258,13 +261,14 @@ function StatusFlowSVG() {
         <line x1="436" y1="113" x2="436" y2="145" stroke="#6b7280" strokeWidth="1" strokeDasharray="3,2" markerEnd="url(#sf-a4)"/>
 
         {/* Labels */}
-        <text x="300" y="198" fill="#555" fontSize="8" fontFamily="system-ui" textAnchor="middle">Statusy ODŁOŻONE i ANULOWANE ustawia się ręcznie w panelu szczegółów</text>
+        <text x="300" y="198" fill="#555" fontSize="8" fontFamily="system-ui" textAnchor="middle">{t("statusyOdlozoneIAnulowane")}</text>
       </svg>
     </div>
   );
 }
 
 function PrioritySVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   const rows = [
     { label: "Brak",   code: "NONE",   color: "#6b7280", bg: "#1a1a1a", bord: "#333",    desc: "Zadania bez określonego priorytetu"        },
     { label: "Niski",  code: "LOW",    color: "var(--accent-blue)", bg: "#0f172a", bord: "#1d4ed8",  desc: "Mało pilne — zrób kiedy masz czas"          },
@@ -274,7 +278,7 @@ function PrioritySVG() {
   ];
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 560 200" width="100%" style={{ maxWidth: 560, display: "block" }} aria-label="Skala priorytetów zadań">
+      <svg viewBox="0 0 560 200" width="100%" style={{ maxWidth: 560, display: "block" }} aria-label={t("skalaPriorytetowZadan")}>
         <rect width="560" height="200" fill="#0d0d0d" rx="8"/>
         <text x="20" y="24" fill="#6b7280" fontSize="9" fontFamily="system-ui" fontWeight="600" letterSpacing="1">PRIORYTET</text>
         <text x="140" y="24" fill="#6b7280" fontSize="9" fontFamily="system-ui" fontWeight="600" letterSpacing="1">KOD</text>
@@ -299,6 +303,7 @@ function PrioritySVG() {
 }
 
 function RecurringSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   const days = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
   const nums = [
     [null, null, 1, 2, 3, 4, 5],
@@ -311,9 +316,9 @@ function RecurringSVG() {
   const dailyFirst = [1, 2, 3, 4, 5];
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 600 240" width="100%" style={{ maxWidth: 600, display: "block" }} aria-label="Wizualizacja zadań cyklicznych">
+      <svg viewBox="0 0 600 240" width="100%" style={{ maxWidth: 600, display: "block" }} aria-label={t("wizualizacjaZadanCyklicznych")}>
         <rect width="600" height="240" fill="#0d0d0d" rx="8"/>
-        <text x="22" y="24" fill="#b0b0b0" fontSize="10.5" fontFamily="system-ui" fontWeight="700">Przykładowy miesiąc — typy powtarzania</text>
+        <text x="22" y="24" fill="#b0b0b0" fontSize="10.5" fontFamily="system-ui" fontWeight="700">{t("przykladowyMiesiacTypyPowtarzania")}</text>
 
         {/* Calendar */}
         {days.map((d, i) => (
@@ -355,7 +360,7 @@ function RecurringSVG() {
             <text x="346" y={107 + i * 24} fill="#6b7280" fontSize="7.5" fontFamily="system-ui">{t.ex}</text>
           </g>
         ))}
-        <text x="330" y="188" fill="#555" fontSize="8" fontFamily="system-ui">Każdy typ ma opcję</text>
+        <text x="330" y="188" fill="#555" fontSize="8" fontFamily="system-ui">{t("kazdyTypMaOpcje")}</text>
         <text x="330" y="200" fill="#555" fontSize="8" fontFamily="system-ui">„Koniec powtarzania” (data)</text>
       </svg>
     </div>
@@ -363,6 +368,7 @@ function RecurringSVG() {
 }
 
 function AIFlowSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
       <svg viewBox="0 0 620 195" width="100%" style={{ maxWidth: 620, display: "block" }} aria-label="Schemat funkcji AI w module Zadania">
@@ -375,13 +381,13 @@ function AIFlowSVG() {
         <rect x="18" y="28" width="115" height="54" rx="8" fill="#0f172a" stroke="#3b82f6" strokeWidth="1.5"/>
         <text x="28" y="50" fill="#3b82f6" fontSize="22" fontFamily="system-ui">✍</text>
         <text x="56" y="50" fill="#b0b0b0" fontSize="10" fontFamily="system-ui" fontWeight="600">Opis tekstem</text>
-        <text x="56" y="64" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">„Zrób raport</text>
-        <text x="56" y="74" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">do piątku pilne”</text>
+        <text x="56" y="64" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">{t("zrobRaport")}</text>
+        <text x="56" y="74" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">{t("doPiatkuPilne")}</text>
 
         {/* Input B: Voice */}
         <rect x="18" y="100" width="115" height="54" rx="8" fill="#1c0808" stroke="#ef4444" strokeWidth="1.5"/>
         <text x="28" y="122" fill="#ef4444" fontSize="22" fontFamily="system-ui">🎤</text>
-        <text x="56" y="122" fill="#b0b0b0" fontSize="10" fontFamily="system-ui" fontWeight="600">Głos (PL)</text>
+        <text x="56" y="122" fill="#b0b0b0" fontSize="10" fontFamily="system-ui" fontWeight="600">{t("glosPl")}</text>
         <text x="56" y="136" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">Nagrywasz po</text>
         <text x="56" y="146" fill="#6b7280" fontSize="8.5" fontFamily="system-ui">polsku</text>
 
@@ -404,13 +410,13 @@ function AIFlowSVG() {
         {/* Output 1: Parsed tasks */}
         <rect x="390" y="22" width="210" height="48" rx="7" fill="#052e16" stroke="#10b981" strokeWidth="1"/>
         <text x="400" y="40" fill="#34d399" fontSize="10" fontFamily="system-ui" fontWeight="700">✓ Zadania z danymi</text>
-        <text x="400" y="54" fill="#6b7280" fontSize="8" fontFamily="system-ui">tytuł, priorytet, data, powtarzanie</text>
-        <text x="400" y="63" fill="#555" fontSize="7.5" fontFamily="system-ui">Możesz edytować przed zapisem</text>
+        <text x="400" y="54" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("tytulPriorytetDataPowtarzanie")}</text>
+        <text x="400" y="63" fill="#555" fontSize="7.5" fontFamily="system-ui">{t("mozeszEdytowacPrzedZapisem")}</text>
 
         {/* Output 2: Subtasks */}
         <rect x="390" y="75" width="210" height="42" rx="7" fill="#150d2e" stroke="#8b5cf6" strokeWidth="1"/>
-        <text x="400" y="92" fill="#a855f7" fontSize="10" fontFamily="system-ui" fontWeight="700">✦ Sugestie podzadań</text>
-        <text x="400" y="107" fill="#6b7280" fontSize="8" fontFamily="system-ui">AI proponuje listę kroków</text>
+        <text x="400" y="92" fill="#a855f7" fontSize="10" fontFamily="system-ui" fontWeight="700">{t("sugestiePodzadan")}</text>
+        <text x="400" y="107" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("aiProponujeListeKrokow")}</text>
 
         {/* Output 3: Estimate */}
         <rect x="390" y="122" width="210" height="42" rx="7" fill="#1c1400" stroke="#f59e0b" strokeWidth="1"/>
@@ -419,13 +425,14 @@ function AIFlowSVG() {
 
         {/* Output 4: Semantic search */}
         <rect x="390" y="169" width="210" height="20" rx="5" fill="#111" stroke="#333" strokeWidth="0.5"/>
-        <text x="400" y="182" fill="#555" fontSize="8" fontFamily="system-ui">🔍  Semantyczne wyszukiwanie</text>
+        <text x="400" y="182" fill="#555" fontSize="8" fontFamily="system-ui">🔍 Semantyczne wyszukiwanie</text>
       </svg>
     </div>
   );
 }
 
 function KeyboardSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   type KeyDef = { key: string; w: number; active?: boolean; label?: string };
   const rows: KeyDef[][] = [
     [
@@ -472,7 +479,7 @@ function KeyboardSVG() {
 
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 700 215" width="100%" style={{ maxWidth: 700, display: "block" }} aria-label="Skróty klawiszowe">
+      <svg viewBox="0 0 700 215" width="100%" style={{ maxWidth: 700, display: "block" }} aria-label={t("skrotyKlawiszowe")}>
         <rect width="700" height="215" fill="#0d0d0d" rx="8"/>
         {rows.map((row, ri) => {
           let x = 12;
@@ -505,7 +512,7 @@ function KeyboardSVG() {
         })}
         {/* Legend */}
         <rect x="430" y="12" width="255" height="150" rx="7" fill="#1a1a1a" stroke="#2a2a2a" strokeWidth="1"/>
-        <text x="443" y="28" fill="#d8b4fe" fontSize="9.5" fontFamily="system-ui" fontWeight="700">Pełna lista skrótów</text>
+        <text x="443" y="28" fill="#d8b4fe" fontSize="9.5" fontFamily="system-ui" fontWeight="700">{t("pelnaListaSkrotow")}</text>
         {[
           ["a / n",       "Dodaj zadanie (focus)"],
           ["j / ↓",       "Następne zadanie"],
@@ -530,9 +537,10 @@ function KeyboardSVG() {
 }
 
 function SharingSVG() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   return (
     <div className="my-5 overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
-      <svg viewBox="0 0 560 160" width="100%" style={{ maxWidth: 560, display: "block" }} aria-label="Schemat udostępniania zadania">
+      <svg viewBox="0 0 560 160" width="100%" style={{ maxWidth: 560, display: "block" }} aria-label={t("schematUdostepnianiaZadania")}>
         <defs>
           <marker id="sh-arr" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#444"/></marker>
         </defs>
@@ -568,10 +576,10 @@ function SharingSVG() {
 
         {/* Role description */}
         <rect x="360" y="30" width="182" height="100" rx="8" fill="#1a1a1a" stroke="#2a2a2a" strokeWidth="1"/>
-        <text x="372" y="48" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui" fontWeight="700">Role dostępu</text>
+        <text x="372" y="48" fill="#b0b0b0" fontSize="9.5" fontFamily="system-ui" fontWeight="700">{t("roleDostepu")}</text>
         <text x="372" y="66" fill="#60a5fa" fontSize="9" fontFamily="system-ui" fontWeight="600">Edytor</text>
-        <text x="372" y="78" fill="#6b7280" fontSize="8" fontFamily="system-ui">Może edytować zadanie,</text>
-        <text x="372" y="89" fill="#6b7280" fontSize="8" fontFamily="system-ui">dodawać komentarze</text>
+        <text x="372" y="78" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("mozeEdytowacZadanie")}</text>
+        <text x="372" y="89" fill="#6b7280" fontSize="8" fontFamily="system-ui">{t("dodawacKomentarze")}</text>
         <text x="372" y="107" fill="#34d399" fontSize="9" fontFamily="system-ui" fontWeight="600">Widz</text>
         <text x="372" y="119" fill="#6b7280" fontSize="8" fontFamily="system-ui">Tylko odczyt i</text>
         <text x="372" y="130" fill="#6b7280" fontSize="8" fontFamily="system-ui">komentarze</text>
@@ -583,6 +591,7 @@ function SharingSVG() {
 // ─── Main Guide Component ──────────────────────────────────────────────────
 
 export function TasksGuide() {
+  const t = useTranslations("modules.tasks.TasksGuide");
   const [activeId, setActiveId] = useState("overview");
 
   useEffect(() => {
@@ -611,7 +620,7 @@ export function TasksGuide() {
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
       >
         <p className="px-4 mb-2 text-xs font-semibold tracking-widest" style={{ color: "var(--text-muted)" }}>
-          SPIS TREŚCI
+          {t("spisTresci")}
         </p>
         {SECTIONS.map((s) => {
           const isActive = activeId === s.id;
@@ -645,16 +654,13 @@ export function TasksGuide() {
               <span className="text-4xl">✅</span>
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-                  Przewodnik użytkownika
+                  {t("przewodnikUzytkownika")}
                 </h1>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Moduł Zadania — WorldOfMag</p>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{t("modulZadaniaWorldofmag")}</p>
               </div>
             </div>
             <P>
-              Moduł <strong style={{ color: "var(--text-primary)" }}>Zadania</strong> to zaawansowany menadżer zadań
-              zintegrowany z resztą aplikacji WorldOfMag. Obsługuje projekty, priorytety, powtarzanie, podzadania,
-              tagi, udostępnianie oraz funkcje sztucznej inteligencji — w tym wprowadzanie głosowe i semantyczne
-              wyszukiwanie. Ten przewodnik przeprowadzi Cię przez każdą funkcję krok po kroku.
+              {t("modul")} <strong style={{ color: "var(--text-primary)" }}>Zadania</strong> {t("toZaawansowanyMenadzerZadan")}
             </P>
             <div className="flex flex-wrap gap-2 mt-4">
               {["Projekty", "5 priorytetów", "Powtarzanie", "AI + głos", "Tagi", "Udostępnianie", "Skróty vim"].map((t) => (
@@ -667,20 +673,18 @@ export function TasksGuide() {
           </div>
 
           {/* ─────────────────── 1. PRZEGLĄD ─────────────────── */}
-          <Block id="overview" icon="🗂️" title="Przegląd interfejsu">
+          <Block id="overview" icon="🗂️" title={t("przegladInterfejsu")}>
             <P>
-              Interfejs Zadań podzielony jest na <strong style={{ color: "var(--text-primary)" }}>trzy obszary</strong>,
-              widoczne jednocześnie na szerokim ekranie:
+              {t("interfejsZadanPodzielonyJest")} <strong style={{ color: "var(--text-primary)" }}>trzy obszary</strong>{t("widoczneJednoczesnieNaSzerokim")}
             </P>
             <AppLayoutSVG />
             <Ul items={[
-              "<strong>① Panel nawigacji</strong> (lewy sidebar) — przełączaj widoki i projekty. Dostępny globalnie w aplikacji.",
-              "<strong>② Lista zadań</strong> (środek) — wyświetla zadania aktywnego widoku z filtrem statusu i tagów. Tu dodajesz nowe zadania.",
-              "<strong>③ Panel szczegółów</strong> (prawy panel) — otwiera się po kliknięciu zadania. Edytujesz tu wszystkie pola, podzadania i komentarze.",
+              t("panelNawigacjiLewySidebar"),
+              t("listaZadanSrodekWyswietla"),
+              t("panelSzczegolowPrawyPanel"),
             ]}/>
             <Tip>
-              Na małych ekranach (mobile) panel szczegółów otwiera się jako pełnoekranowy modal. Wróć do listy
-              przyciskiem <strong>×</strong> lub skrótem <Kbd>Esc</Kbd>.
+              {t("naMalychEkranachMobile")} <strong>×</strong> {t("lubSkrotem")} <Kbd>Esc</Kbd>.
             </Tip>
           </Block>
 
@@ -689,122 +693,109 @@ export function TasksGuide() {
             <P>
               Lewy sidebar zawiera dwa rodzaje pozycji nawigacyjnych: <strong style={{ color: "var(--text-primary)" }}>widoki wirtualne</strong>
               &nbsp;(predefiniowane filtry) oraz <strong style={{ color: "var(--text-primary)" }}>projekty</strong>
-              &nbsp;(Twoje kolekcje zadań).
+              {t("nbspTwojeKolekcjeZadan")}
             </P>
             <H3>Widoki wirtualne</H3>
             <Ul items={[
-              "<strong>📅 Dziś</strong> — zadania z terminem na bieżący dzień, posortowane wg priorytetu.",
-              "<strong>📆 Nadchodzące</strong> — zadania z terminem od jutra do ~30 dni, grupowane wg dnia tygodnia.",
-              "<strong>⚠️ Zaległe</strong> — zadania po terminie (niezrobione), posortowane od najstarszego.",
-              "<strong>◎ Wszystkie</strong> — wszystkie Twoje zadania ze wszystkich projektów.",
+              t("dzisZadaniaZTerminem"),
+              t("nadchodzaceZadaniaZTerminem"),
+              t("zalegleZadaniaPoTerminie"),
+              t("wszystkieWszystkieTwojeZadania"),
             ]}/>
             <H3>Projekty</H3>
             <Ul items={[
-              "<strong>📥 Skrzynka (Inbox)</strong> — projekt tworzony automatycznie. Nowe zadania dodane z widoków wirtualnych trafiają tu domyślnie.",
-              "<strong>Własne projekty</strong> — możesz tworzyć nieograniczoną liczbę projektów (emoji + nazwa). Ikona ołówka pojawia się po najechaniu — kliknij by zmienić nazwę.",
-              "<strong>+ Nowy projekt</strong> — kliknij na dole listy projektów i wpisz nazwę.",
-              "<strong>🏷️ Tagi</strong> — link do strony zarządzania tagami.",
+              t("skrzynkaInboxProjektTworzony"),
+              t("wlasneProjektyMozeszTworzyc"),
+              t("nowyProjektKliknijNa"),
+              t("tagiLinkDoStrony"),
               "<strong>❓ Pomoc</strong> — ten przewodnik.",
             ]}/>
             <Tip>
-              Kliknij ikonę kosza 🗑️ (pojawia się przy projekcie po najechaniu), aby usunąć projekt.
-              <strong> Uwaga: usunięcie projektu usuwa wszystkie zadania w nim!</strong>
+              {t("kliknijIkoneKoszaPojawia")}
+              <strong> {t("uwagaUsuniecieProjektuUsuwa")}</strong>
             </Tip>
           </Block>
 
           {/* ─────────────────── 3. DODAWANIE ─────────────────── */}
-          <Block id="adding" icon="➕" title="Dodawanie zadań">
+          <Block id="adding" icon="➕" title={t("dodawanieZadan")}>
             <P>
-              Na górze listy zadań widoczne są dwa tryby dodawania. Przełączasz je zakładkami
-              &nbsp;<strong style={{ color: "var(--text-primary)" }}>AI</strong> oraz
-              &nbsp;<strong style={{ color: "var(--text-primary)" }}>Ręcznie</strong>.
+              {t("naGorzeListyZadan")}<strong style={{ color: "var(--text-primary)" }}>AI</strong> oraz
+              &nbsp;<strong style={{ color: "var(--text-primary)" }}>{t("recznie2")}</strong>.
             </P>
-            <H3>Ręczne dodawanie</H3>
+            <H3>{t("reczneDodawanie")}</H3>
             <P>
-              Szybki formularz w jednej linii. Wpisz tytuł zadania i opcjonalnie ustaw datę.
-              Priorytet ustawia się przyciskiem po lewej (klikaj aby cyklować: — → ↓ → ◆ → ↑ → ‼).
-              Zatwierdź Enterem lub przyciskiem <strong>+</strong>.
+              {t("szybkiFormularzWJednej")} <strong>+</strong>.
             </P>
             <Tip>
-              Naciśnij <Kbd>a</Kbd> lub <Kbd>n</Kbd> z dowolnego miejsca na liście, aby natychmiast
-              przenieść kursor do pola dodawania w trybie Ręcznie.
+              {t("nacisnij")} <Kbd>a</Kbd> lub <Kbd>n</Kbd> {t("zDowolnegoMiejscaNa")}
             </Tip>
             <H3>Dodawanie przez AI</H3>
             <P>
-              Opisz jedno lub więcej zadań naturalnym językiem, np.:
+              {t("opiszJednoLubWiecej")}
               <em style={{ color: "var(--text-muted)", display: "block", marginTop: 6, paddingLeft: 12, borderLeft: "3px solid var(--border)" }}>
-                „Przygotuj prezentację na piątek, priorytet wysoki. Kup mleko i chleb jutro. Zadzwoń do klienta Kowalski — pilne.”
+                {t("przygotujPrezentacjeNaPiatek")}
               </em>
             </P>
             <P>
-              AI wyciągnie kilka zadań jednocześnie z priorytetami, datami i tagami. Przed dodaniem możesz
-              każde z nich przejrzeć i edytować w podglądzie.
+              {t("aiWyciagnieKilkaZadan")}
             </P>
-            <H3>Wprowadzanie głosowe 🎤</H3>
+            <H3>{t("wprowadzanieGlosowe")}</H3>
             <P>
-              W trybie AI kliknij ikonę mikrofonu. Mów po polsku — transkrypcja pojawi się automatycznie
-              w polu tekstowym, gotowa do analizy przez AI. Wymaga zgody przeglądarki na mikrofon
-              (jednorazowy popup).
+              {t("wTrybieAiKliknij")}
             </P>
             <AIFlowSVG />
             <Note>
-              Funkcje AI wymagają aktywnego połączenia z internetem — używają modelu Groq LLM (llama-3.1-8b).
-              W razie problemu z siecią spróbuj ponownie lub skorzystaj z trybu Ręcznie.
+              {t("funkcjeAiWymagajaAktywnego")}
             </Note>
           </Block>
 
           {/* ─────────────────── 4. SZCZEGÓŁY ─────────────────── */}
-          <Block id="details" icon="📋" title="Szczegóły zadania">
+          <Block id="details" icon="📋" title={t("szczegolyZadania")}>
             <P>
-              Kliknij dowolne zadanie na liście, aby otworzyć panel szczegółów po prawej stronie.
-              Wszystkie pola zapisują się <strong style={{ color: "var(--text-primary)" }}>automatycznie</strong>
-              &nbsp;przy opuszczeniu pola (blur) lub po chwili bezczynności (600 ms debounce).
+              {t("kliknijDowolneZadanieNa")} <strong style={{ color: "var(--text-primary)" }}>automatycznie</strong>
+              {t("nbspPrzyOpuszczeniuPola")}
             </P>
-            <H3>Dostępne pola</H3>
+            <H3>{t("dostepnePola")}</H3>
             <Ul items={[
-              "<strong>Status</strong> — rozwijane: Do zrobienia / W trakcie / Zrobione / Odłożone / Anulowane.",
-              "<strong>Priorytet</strong> — rozwijane: Brak / Niski / Średni / Wysoki / Pilne.",
-              "<strong>Tytuł</strong> — edytowalny, zapisuje się po kliknięciu poza pole.",
-              "<strong>Opis</strong> — wieloliniowe pole tekstowe. Obsługuje Markdown (podgląd w przyszłych wersjach).",
-              "<strong>Termin (due date)</strong> — data i godzina końca zadania. Wpływa na widoki Dziś / Zaległe / Nadchodzące.",
-              "<strong>Start</strong> — opcjonalna data rozpoczęcia.",
+              t("statusRozwijaneDoZrobienia"),
+              t("priorytetRozwijaneBrakNiski"),
+              t("tytulEdytowalnyZapisujeSie"),
+              t("opisWieloliniowePoleTekstowe"),
+              t("terminDueDateData"),
+              t("startOpcjonalnaDataRozpoczecia"),
               "<strong>Szacowany czas</strong> — czas w minutach + przycisk ✦ AI do automatycznej estymacji.",
-              "<strong>Tagi</strong> — kliknij tag aby przypisać/odpiąć. Możesz też wpisać nową nazwę i ją dodać.",
-              "<strong>Powtarzanie</strong> — kliknij sekcję aby rozwinąć konfigurację (patrz sekcja 6).",
-              "<strong>Podzadania</strong> — lista kroków z postępem (np. 2/5).",
+              t("tagiKliknijTagAby"),
+              t("powtarzanieKliknijSekcjeAby"),
+              t("podzadaniaListaKrokowZ"),
               "<strong>Komentarze</strong> — dyskusja pod zadaniem z timestampami.",
-              "<strong>Udostępnianie</strong> — zarządzaj dostępem innych użytkowników.",
+              t("udostepnianieZarzadzajDostepemInnych"),
             ]}/>
             <Tip>
-              Przycisk kosza 🗑️ w nagłówku panelu usuwa zadanie po potwierdzeniu.
-              Operacja jest <strong>nieodwracalna</strong>.
+              {t("przyciskKoszaWNaglowku")} <strong>nieodwracalna</strong>.
             </Tip>
           </Block>
 
           {/* ─────────────────── 5. STATUSY ─────────────────── */}
           <Block id="status" icon="🎯" title="Statusy i priorytety">
-            <H3>Cykl statusów</H3>
+            <H3>{t("cyklStatusow")}</H3>
             <P>
-              Każde zadanie przechodzi przez cykl statusów. Możesz zmieniać status klikając ikonę
-              przy zadaniu na liście, skrótem <Kbd>spacja</Kbd> / <Kbd>x</Kbd>, lub z dropdownu
-              w panelu szczegółów.
+              {t("kazdeZadaniePrzechodziPrzez")} <Kbd>spacja</Kbd> / <Kbd>x</Kbd>{t("lubZDropdownuW")}
             </P>
             <StatusFlowSVG />
             <Ul items={[
-              "<strong>TODO</strong> — zadanie do zrobienia. Stan domyślny.",
+              t("todoZadanieDoZrobienia"),
               '<strong>IN_PROGRESS</strong> — w toku. Widoczne w filtrze "W trakcie".',
-              "<strong>DONE</strong> — zakończone. Dla zadań cyklicznych tworzy automatycznie następne wystąpienie.",
-              "<strong>DEFERRED</strong> — odłożone na później. Nie pojawia się w widoku Dziś.",
+              t("doneZakonczoneDlaZadan"),
+              t("deferredOdlozoneNaPozniej"),
               '<strong>CANCELLED</strong> — anulowane. Widoczne tylko w filtrze "Anulowane".',
             ]}/>
-            <H3>Skala priorytetów</H3>
+            <H3>{t("skalaPriorytetow")}</H3>
             <P>
-              Priorytet wpływa na kolejność grupowania zadań w widokach ALL, Dziś i Projekt — od Pilne na górze.
+              {t("priorytetWplywaNaKolejnosc")}
             </P>
             <PrioritySVG />
             <Tip>
-              Kolor paska po lewej stronie każdego wiersza na liście zadań odpowiada priorytetowi —
-              dzięki temu od razu widzisz co jest najważniejsze.
+              {t("kolorPaskaPoLewej")}
             </Tip>
           </Block>
 
@@ -812,63 +803,54 @@ export function TasksGuide() {
           <Block id="dates" icon="📅" title="Daty i powtarzanie">
             <H3>Termin (Due date)</H3>
             <P>
-              Ustaw datę i godzinę ukończenia zadania. System koloruje terminy na liście:
-              czerwony = po terminie, pomarańczowy = dziś.
+              {t("ustawDateIGodzine")}
             </P>
             <H3>Szacowany czas</H3>
             <P>
-              Wpisz czas w minutach lub kliknij przycisk <strong style={{ color: "var(--accent-purple)" }}>✦ AI</strong>,
-              aby AI oszacowało na podstawie tytułu i opisu. Czas wyświetla się też na wierszu listy (np. <em>⏱ 45m</em>).
+              Wpisz czas w minutach lub kliknij przycisk <strong style={{ color: "var(--accent-purple)" }}>✦ AI</strong>{t("abyAiOszacowaloNa")} <em>⏱ 45m</em>).
             </P>
             <H3>Powtarzanie</H3>
             <P>
-              Kliknij „Ustaw powtarzanie” w panelu szczegółów. Dostępne typy:
+              {t("kliknijUstawPowtarzanieW")}
             </P>
             <RecurringSVG />
             <Ul items={[
               "<strong>Codziennie (DAILY)</strong> — co N dni, np. co 1, co 2 dni.",
-              "<strong>Co tydzień (WEEKLY)</strong> — wybrane dni tygodnia (Pn/Wt/Śr...) co N tygodni.",
-              "<strong>Co miesiąc (MONTHLY)</strong> — ten sam dzień miesiąca, co N miesięcy.",
+              t("coTydzienWeeklyWybrane"),
+              t("coMiesiacMonthlyTen"),
               "<strong>Co rok (YEARLY)</strong> — ta sama data roku, co N lat.",
-              "<strong>Koniec powtarzania</strong> — opcjonalna data, po której zadanie nie pojawi się ponownie.",
+              t("koniecPowtarzaniaOpcjonalnaData"),
             ]}/>
             <P>
               Kiedy oznaczysz cykliczne zadanie jako DONE, system automatycznie tworzy
-              <strong style={{ color: "var(--text-primary)" }}> nowe zadanie</strong> z kolejnym terminem
-              zgodnym z regułą powtarzania.
+              <strong style={{ color: "var(--text-primary)" }}> nowe zadanie</strong> {t("zKolejnymTerminemZgodnym")}
             </P>
             <Note>
-              Kliknij „Zapisz” po skonfigurowaniu reguły — zmiany nie zapisują się automatycznie dla
-              sekcji powtarzania. Kliknij „Usuń powtarzanie”, aby wyłączyć cykl.
+              {t("kliknijZapiszPoSkonfigurowaniu")}
             </Note>
           </Block>
 
           {/* ─────────────────── 7. TAGI ─────────────────── */}
           <Block id="tagsection" icon="🏷️" title="Tagi">
             <P>
-              Tagi to kolorowe etykiety przypisywane do zadań. Możesz je tworzyć globalnie i używać
-              w dowolnych projektach. Każdy tag ma unikalną nazwę i kolor.
+              {t("tagiToKoloroweEtykiety")}
             </P>
-            <H3>Zarządzanie tagami</H3>
+            <H3>{t("zarzadzanieTagami")}</H3>
             <P>
-              Przejdź do <strong style={{ color: "var(--text-primary)" }}>🏷️ Tagi</strong> w sidebarsie
-              (pod listą projektów). Znajdziesz tam stronę zarządzania gdzie możesz:
+              {t("przejdzDo")} <strong style={{ color: "var(--text-primary)" }}>🏷️ Tagi</strong> {t("wSidebarsiePodLista")}
             </P>
             <Ul items={[
-              "Tworzyć nowe tagi (nazwa + wybór koloru z palety 8 kolorów).",
-              "Edytować istniejące tagi (kliknij ikonę ołówka).",
-              "Usuwać tagi (kliknij kosz — tag znika ze wszystkich zadań!).",
+              t("tworzycNoweTagiNazwa"),
+              t("edytowacIstniejaceTagiKliknij"),
+              t("usuwacTagiKliknijKosz"),
             ]}/>
             <H3>Filtrowanie po tagach</H3>
             <P>
-              W górnej części listy zadań widoczne są wszystkie Twoje tagi. Kliknij tag aby go wybrać —
-              lista przefiltruje się do zadań posiadających <strong style={{ color: "var(--text-primary)" }}>wszystkie</strong>
-              &nbsp;wybrane tagi jednocześnie (logika AND). Kliknij tag ponownie aby odznaczyć.
+              {t("wGornejCzesciListy")} <strong style={{ color: "var(--text-primary)" }}>wszystkie</strong>
+              {t("nbspWybraneTagiJednoczesnie")}
             </P>
             <Tip>
-              Przypisywanie tagów do zadania odbywa się w panelu szczegółów — kliknij na tag aby
-              go aktywować (pełna jasność) lub dezaktywować (szary, 35% opacity).
-              Możesz też wpisać nową nazwę tagu i nacisnąć Enter aby go stworzyć i od razu przypisać.
+              {t("przypisywanieTagowDoZadania")}
             </Tip>
           </Block>
 
@@ -876,28 +858,25 @@ export function TasksGuide() {
           <Block id="subtasks" icon="📎" title="Podzadania i komentarze">
             <H3>Podzadania</H3>
             <P>
-              Każde zadanie może mieć nieograniczoną liczbę podzadań. W nagłówku sekcji widoczny
-              jest postęp, np. <em>Podzadania (2/5)</em>.
+              {t("kazdeZadanieMozeMiec")} <em>Podzadania (2/5)</em>.
             </P>
             <Ul items={[
-              "Wpisz tytuł podzadania w polu na dole sekcji i naciśnij <strong>Enter</strong> lub ikonę <strong>+</strong>.",
-              "Zaznacz checkbox przy podzadaniu aby oznaczyć je jako ukończone (zmienia status na DONE).",
-              "Kliknij przycisk <strong>✦ AI</strong> obok nagłówka — AI zaproponuje do 6 podzadań na podstawie tytułu i opisu zadania.",
-              "Podzadania sugerowane przez AI pojawiają się listą — kliknij <strong>+</strong> przy każdym aby je dodać.",
+              t("wpiszTytulPodzadaniaW"),
+              t("zaznaczCheckboxPrzyPodzadaniu"),
+              t("kliknijPrzyciskAiObok"),
+              t("podzadaniaSugerowanePrzezAi"),
             ]}/>
             <H3>Komentarze</H3>
             <P>
-              Sekcja komentarzy służy do dyskusji i notatek związanych z zadaniem. Widoczna jest nazwa
-              użytkownika i timestamp każdego komentarza.
+              {t("sekcjaKomentarzySluzyDo")}
             </P>
             <Ul items={[
-              "Wpisz komentarz w polu tekstowym i naciśnij <Kbd>Enter</Kbd> lub ikonę wysłania.",
-              "Możesz usunąć swoje komentarze (ikona kosza przy własnym komentarzu).",
-              "Komentarze są widoczne dla wszystkich użytkowników mających dostęp do zadania.",
+              t("wpiszKomentarzWPolu"),
+              t("mozeszUsunacSwojeKomentarze"),
+              t("komentarzeSaWidoczneDla"),
             ]}/>
             <Tip>
-              Liczba komentarzy widoczna jest jako ikonka 📎 na wierszu zadania na liście — szybka
-              informacja że zadanie ma dyskusję bez otwierania panelu.
+              {t("liczbaKomentarzyWidocznaJest")}
             </Tip>
           </Block>
 
@@ -905,87 +884,77 @@ export function TasksGuide() {
           <Block id="search" icon="🔍" title="Wyszukiwanie i AI">
             <H3>Wyszukiwanie tekstowe</H3>
             <P>
-              Naciśnij <Kbd>/</Kbd>, <Kbd>f</Kbd> lub ikonę lupy w nagłówku. Wyszukiwanie filtruje
-              zadania w czasie rzeczywistym po: tytule, opisie i nazwach tagów.
+              {t("nacisnij")} <Kbd>/</Kbd>, <Kbd>f</Kbd> {t("lubIkoneLupyW")}
             </P>
             <H3>Semantyczne wyszukiwanie AI</H3>
             <P>
-              Po wpisaniu frazy naciśnij <Kbd>Enter</Kbd> lub kliknij przycisk
-              <strong style={{ color: "var(--accent-purple)" }}> ✦ AI</strong>. Model językowy
-              przeszuka do 100 zadań i zwróci wyniki dopasowane znaczeniowo — nawet jeśli słowa
-              się nie pokrywają. Np. zapytanie „zadania związane z klientami” znajdzie
-              „Raport kwartalny”, „Prezentacja dla Kowalskiego” itp.
+              {t("poWpisaniuFrazyNacisnij")} <Kbd>Enter</Kbd> lub kliknij przycisk
+              <strong style={{ color: "var(--accent-purple)" }}> ✦ AI</strong>{t("modelJezykowyPrzeszukaDo")}
             </P>
             <P>
-              Aktywne wyniki AI oznaczone są banerem w kolorze fioletowym. Kliknij <strong>×</strong>
-              w banerze aby wrócić do normalnego widoku.
+              {t("aktywneWynikiAiOznaczone")} <strong>×</strong>
+              {t("wBanerzeAbyWrocic")}
             </P>
             <H3>Podsumowanie funkcji AI</H3>
             <AIFlowSVG />
             <Ul items={[
-              "<strong>Parsowanie tekstu / głosu</strong> — opisujesz zadania, AI wyciąga tytuły, priorytety, daty, tagi i reguły powtarzania.",
-              "<strong>Wyszukiwanie semantyczne</strong> — znajdź zadania po znaczeniu, nie tylko po słowach kluczowych.",
-              "<strong>Sugestie podzadań</strong> — AI proponuje kroki do wykonania dla danego zadania.",
+              t("parsowanieTekstuGlosuOpisujesz"),
+              t("wyszukiwanieSemantyczneZnajdzZadania"),
+              t("sugestiePodzadanAiProponuje"),
               "<strong>Szacowanie czasu</strong> — AI szacuje czas realizacji na podstawie opisu zadania.",
             ]}/>
           </Block>
 
           {/* ─────────────────── 10. UDOSTĘPNIANIE ─────────────────── */}
-          <Block id="sharing" icon="🤝" title="Udostępnianie">
+          <Block id="sharing" icon="🤝" title={t("udostepnianie2")}>
             <P>
-              Możesz udostępnić dowolne zadanie innym użytkownikom systemu. Otwórz panel szczegółów
-              i znajdź sekcję <strong style={{ color: "var(--text-primary)" }}>Udostępnianie</strong>.
+              {t("mozeszUdostepnicDowolneZadanie")} <strong style={{ color: "var(--text-primary)" }}>{t("udostepnianie2")}</strong>.
             </P>
             <SharingSVG />
-            <H3>Jak udostępnić zadanie</H3>
+            <H3>{t("jakUdostepnicZadanie")}</H3>
             <Ul items={[
-              "Wpisz adres e-mail użytkownika w polu wyszukiwania.",
-              "Wybierz rolę: <strong>Widz</strong> (tylko odczyt) lub <strong>Edytor</strong> (pełna edycja).",
-              "Kliknij przycisk <strong>+</strong> — jeśli użytkownik istnieje w systemie, otrzyma dostęp natychmiast.",
-              "Lista aktywnych udziałowców pojawia się powyżej pola. Kliknij ikonę usunięcia aby cofnąć dostęp.",
+              t("wpiszAdresEMail"),
+              t("wybierzRoleWidzTylko"),
+              t("kliknijPrzyciskJesliUzytkownik"),
+              t("listaAktywnychUdzialowcowPojawia"),
             ]}/>
             <Note>
-              Udostępnianie działa na poziomie pojedynczego zadania. Aby udostępnić cały projekt,
-              poproś administratora o dodanie użytkownika jako członka projektu.
+              {t("udostepnianieDzialaNaPoziomie")}
             </Note>
           </Block>
 
           {/* ─────────────────── 11. POWIADOMIENIA ─────────────────── */}
           <Block id="notifications" icon="🔔" title="Powiadomienia">
             <P>
-              Aplikacja może wysyłać powiadomienia przeglądarkowe o zbliżających się terminach zadań.
+              {t("aplikacjaMozeWysylacPowiadomienia")}
             </P>
-            <H3>Włączanie powiadomień</H3>
+            <H3>{t("wlaczaniePowiadomien")}</H3>
             <P>
-              Kliknij ikonę dzwonka 🔔 w prawym górnym rogu listy zadań. Przeglądarka wyświetli
-              popup z prośbą o zezwolenie — kliknij <strong>Zezwól</strong>. Ikona zmieni kolor
-              na pomarańczowy.
+              {t("kliknijIkoneDzwonkaW")} <strong>{t("zezwol")}</strong>{t("ikonaZmieniKolorNa")}
             </P>
-            <H3>Kiedy pojawia się powiadomienie</H3>
+            <H3>{t("kiedyPojawiaSiePowiadomienie")}</H3>
             <Ul items={[
-              "System sprawdza zadania przy każdym załadowaniu strony z modułem Zadania.",
-              "Powiadomienie pojawia się dla zadań, których termin (due date) wypada <strong>w ciągu najbliższych 30 minut</strong>.",
-              "Powiadomienia dotyczą tylko zadań niezakończonych (status inny niż DONE i CANCELLED).",
+              t("systemSprawdzaZadaniaPrzy"),
+              t("powiadomieniePojawiaSieDla"),
+              t("powiadomieniaDotyczaTylkoZadan"),
             ]}/>
             <Note>
-              Powiadomienia przeglądarkowe działają tylko jeśli aplikacja jest otwarta w przeglądarce.
-              Na iOS (iPhone / iPad) wymagają zainstalowania aplikacji jako PWA (Dodaj do ekranu głównego).
+              {t("powiadomieniaPrzegladarkoweDzialajaTylko")}
             </Note>
           </Block>
 
           {/* ─────────────────── 12. SKRÓTY ─────────────────── */}
-          <Block id="shortcuts" icon="⌨️" title="Skróty klawiszowe">
+          <Block id="shortcuts" icon="⌨️" title={t("skrotyKlawiszowe")}>
             <P>
-              Interfejs jest zaprojektowany z myślą o pracy z klawiatury. Większość akcji dostępna
-              jest bez sięgania po myszkę — styl podobny do Vim / Linear.
+              {t("interfejsJestZaprojektowanyZ")}
             </P>
             <KeyboardSVG />
-            <H3>Pełna tabela skrótów</H3>
+            <H3>{t("pelnaTabelaSkrotow")}</H3>
             <div className="overflow-x-auto mt-2 rounded-lg" style={{ border: "1px solid var(--border)" }}>
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold" style={{ color: "var(--text-muted)", width: 160 }}>Skrót</th>
+                    <th className="text-left px-4 py-2.5 text-xs font-semibold" style={{ color: "var(--text-muted)", width: 160 }}>{t("skrot")}</th>
                     <th className="text-left px-4 py-2.5 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Akcja</th>
                   </tr>
                 </thead>
@@ -1017,8 +986,7 @@ export function TasksGuide() {
               </table>
             </div>
             <Tip>
-              Skróty działają tylko gdy kursor <strong>nie jest</strong> w polu tekstowym.
-              Naciśnij <Kbd>Esc</Kbd> aby opuścić pole i wrócić do nawigacji klawiaturą.
+              {t("skrotyDzialajaTylkoGdy")} <strong>nie jest</strong> {t("wPoluTekstowymNacisnij")} <Kbd>Esc</Kbd> {t("abyOpuscicPoleI")}
             </Tip>
           </Block>
 
@@ -1026,7 +994,7 @@ export function TasksGuide() {
           <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid var(--border)" }}>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               WorldOfMag — Moduł Zadania &nbsp;·&nbsp; Wróć do{" "}
-              <a href="/tasks/today" style={{ color: "var(--accent-blue)", textDecoration: "none" }}>listy zadań</a>
+              <a href="/tasks/today" style={{ color: "var(--accent-blue)", textDecoration: "none" }}>{t("listyZadan")}</a>
             </p>
           </div>
         </div>

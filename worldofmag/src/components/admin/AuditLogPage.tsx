@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, Shield, KeyRound, Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ const CAT_META: Record<string, { label: string; icon: React.ReactNode; color: st
 type Tab = "all" | "rbac" | "config";
 
 export function AuditLogPage({ page: initial }: { page: Strona<AuditEntry> }) {
+  const t = useTranslations("components.admin.AuditLogPage");
   const [entries, setEntries] = useState(initial.pozycje);
   const [cursor, setCursor] = useState(initial.nastepnyKursor);
   const [hasMore, setHasMore] = useState(initial.jestWiecej);
@@ -50,7 +52,7 @@ export function AuditLogPage({ page: initial }: { page: Strona<AuditEntry> }) {
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Dziennik audytu</h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
-          Zmiany uprawnień (RBAC) i konfiguracji systemu — kto, co i kiedy.
+          {t("zmianyUprawnienRbacI")}
         </p>
 
         <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
@@ -72,7 +74,7 @@ export function AuditLogPage({ page: initial }: { page: Strona<AuditEntry> }) {
         </div>
 
         {entries.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "24px 0", textAlign: "center" }}>Brak wpisów audytu.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", padding: "24px 0", textAlign: "center" }}>{t("brakWpisowAudytu")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {entries.map((e) => {

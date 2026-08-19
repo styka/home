@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import { RefreshCw, RotateCcw, Trash2, ChevronDown, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -41,6 +42,7 @@ function SvgTile({
   onDelete?: () => void;
   label?: string;
 }) {
+  const t = useTranslations("modules.shopping.CategoryIconPicker");
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -56,7 +58,7 @@ function SvgTile({
           backgroundColor: hovered || isActive ? "var(--bg-hover)" : "var(--bg-surface)",
           border: `1.5px solid ${isActive ? "var(--accent-blue)" : hovered ? "var(--text-secondary)" : "var(--border)"}`,
         }}
-        aria-label="Wybierz ikonę"
+        aria-label={t("wybierzIkone")}
       >
         <IconDisplay content={svgContent} size={52} />
       </button>
@@ -72,7 +74,7 @@ function SvgTile({
           style={{ width: 18, height: 18, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
           onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-          aria-label="Usuń"
+          aria-label={t("usun")}
         >
           <Trash2 size={10} />
         </button>
@@ -98,6 +100,7 @@ function SectionLabel({ label }: { label: string }) {
 
 
 export function CategoryIconPicker({ category, open, onClose, onSelect, onReset }: CategoryIconPickerProps) {
+  const t = useTranslations("modules.shopping.CategoryIconPicker");
   const [allUserIcons, setAllUserIcons] = useState<CategoryIconVariantData[]>([]);
   const [newlyGenerated, setNewlyGenerated] = useState<string[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
@@ -249,7 +252,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
           {/* Additional text hint */}
           <div>
             <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>
-              Dodatkowe wskazówki dla generatora (opcjonalnie)
+              {t("dodatkoweWskazowkiDlaGeneratora")}
             </label>
             <div className="flex gap-1.5">
               <input
@@ -287,7 +290,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
             >
               <RefreshCw size={14} className={loadingNew ? "animate-spin" : ""} />
-              Losuj więcej
+              {t("losujWiecej")}
             </button>
             <button
               onClick={handleReset}
@@ -295,7 +298,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-              title="Przywróć domyślną ikonę"
+              title={t("przywrocDomyslnaIkone")}
             >
               <RotateCcw size={14} />
               <span className="hidden sm:inline text-xs">Reset</span>
@@ -366,7 +369,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
             <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{error}</p>
             <button onClick={generateNew} className="text-xs px-3 py-1.5 rounded-lg"
               style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
-              Spróbuj ponownie
+              {t("sprobujPonownie")}
             </button>
           </div>
         ) : (
@@ -379,7 +382,7 @@ export function CategoryIconPicker({ category, open, onClose, onSelect, onReset 
             {loadingNew && newlyGenerated.length > 0 && Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={`sk-${i}`} />)}
             {!loadingNew && newlyGenerated.length === 0 && !error && (
               <p className="col-span-3 text-xs py-3 text-center" style={{ color: "var(--text-muted)" }}>
-                Kliknij „Losuj więcej” by wygenerować ikony
+                {t("kliknijLosujWiecejBy")}
               </p>
             )}
           </div>

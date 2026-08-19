@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl";
 import { useState } from "react"
 import { getMyIcalFeedUrl, regenerateIcalFeed } from "../actions/calendar"
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -10,6 +11,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
  * Link generowany leniwie na żądanie (token zakładany przy pierwszym „Pokaż").
  */
 export function IcalFeedCard() {
+  const t = useTranslations("modules.calendar.IcalFeedCard");
   const confirmDialog = useConfirm();
   const [url, setUrl] = useState<string | null>(null)
   const [shown, setShown] = useState(false)
@@ -50,10 +52,10 @@ export function IcalFeedCard() {
   return (
     <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "16px 20px" }}>
       <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 4 }}>
-        Subskrybuj agendę Omnia w Google/Apple Calendar (tylko do odczytu).
+        {t("subskrybujAgendeOmniaW")}
       </p>
       <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
-        Link zawiera prywatny token — nie udostępniaj go. Możesz go w każdej chwili unieważnić.
+        {t("linkZawieraPrywatnyToken")}
       </p>
 
       {!shown ? (
@@ -62,7 +64,7 @@ export function IcalFeedCard() {
         </button>
       ) : noBase ? (
         <p style={{ color: "var(--accent-amber)", fontSize: 13 }}>
-          Brak skonfigurowanego adresu aplikacji (AUTH_URL) — link wygeneruje się po ustawieniu go w środowisku.
+          {t("brakSkonfigurowanegoAdresuAplikacji")}
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -81,7 +83,7 @@ export function IcalFeedCard() {
               {copied ? "Skopiowano ✓" : "Kopiuj link"}
             </button>
             <button type="button" onClick={regen} disabled={loading} style={btn}>
-              Wygeneruj nowy (unieważnij stary)
+              {t("wygenerujNowyUniewaznijStary")}
             </button>
           </div>
         </div>

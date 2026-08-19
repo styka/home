@@ -1,4 +1,5 @@
-import { auth } from "@/platform/auth/session"
+
+import { getTranslations } from "next-intl/server";import { auth } from "@/platform/auth/session"
 import { getTeam, deleteTeam, getHouseholdOnboarding } from "@/actions/teams"
 import { getPendingInvitations } from "@/actions/invitations"
 import MemberList from "@/components/teams/MemberList"
@@ -12,6 +13,7 @@ export default async function TeamSettingsPage({
 }: {
   params: { teamId: string }
 }) {
+  const t = await getTranslations("app.settings.team.teamId.page");
   const session = await auth()
   if (!session?.user?.id) redirect("/auth/signin")
 
@@ -85,11 +87,11 @@ export default async function TeamSettingsPage({
       {isAdmin && (
         <section style={{ marginBottom: 40 }}>
           <h2 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-            Zaproś użytkownika
+            {t("zaprosUzytkownika")}
           </h2>
           <InviteMemberForm teamId={team.id} />
           <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 8 }}>
-            Użytkownik musi wcześniej zalogować się do WorldOfMag.
+            {t("uzytkownikMusiWczesniejZalogowac")}
           </p>
         </section>
       )}
@@ -157,10 +159,10 @@ export default async function TeamSettingsPage({
                   cursor: "pointer",
                 }}
               >
-                Usuń team
+                {t("usunTeam")}
               </button>
               <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 8 }}>
-                Możliwe tylko gdy team nie posiada żadnych list zakupów.
+                {t("mozliweTylkoGdyTeam")}
               </p>
             </form>
           </div>

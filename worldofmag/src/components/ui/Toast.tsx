@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { X, CheckCircle2, AlertCircle, Info } from "lucide-react";
 
@@ -50,14 +51,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  const t = useTranslations("components.ui.Toast");
   useEffect(() => {
     return () => {};
   }, []);
 
   const icon = {
-    success: <CheckCircle2 size={14} style={{ color: "var(--accent-green)", flexShrink: 0 }} />,
-    error: <AlertCircle size={14} style={{ color: "var(--accent-red)", flexShrink: 0 }} />,
-    info: <Info size={14} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />,
+    success: <CheckCircle2 size={14} style={{ color: "var(--accent-green)", flexShrink: 0 }} />, error: <AlertCircle size={14} style={{ color: "var(--accent-red)", flexShrink: 0 }} />, info: <Info size={14} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />,
   }[toast.type];
 
   const bg = {

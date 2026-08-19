@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Wallet, Plus, Loader2, Target, Trash2, ChevronLeft, PiggyBank, Check } from "lucide-react";
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
+  const t = useTranslations("modules.portfel.BudgetsPage");
   const [isPending, startTransition] = useTransition();
 
   // budżet form
@@ -69,7 +71,7 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
       }
       icon={<Target size={22} />}
       iconColor="var(--accent-amber)"
-      title="Budżety i cele"
+      title={t("budzetyICele")}
       href="/portfel/budzety"
       subtitle={`Limity wydatków (${periodLabel}) i cele oszczędnościowe`}
     >
@@ -77,9 +79,9 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
       {/* ── Budżety ── */}
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <SectionHeading>Budżety miesięczne</SectionHeading>
+          <SectionHeading>{t("budzetyMiesieczne")}</SectionHeading>
           <button onClick={() => setBOpen((v) => !v)} style={smallBtn}>
-            <Plus size={13} /> Budżet
+            <Plus size={13} /> {t("budzet")}
           </button>
         </div>
 
@@ -89,7 +91,7 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
             <input value={bLimit} onChange={(e) => setBLimit(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addBudget()} placeholder="Limit / mies." type="number" step="0.01" style={{ ...inputStyle, maxWidth: 150 }} />
             {teams.length > 0 && (
               <select value={bTeam} onChange={(e) => setBTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-                <option value="">Mój (prywatny)</option>
+                <option value="">{t("mojPrywatny")}</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             )}
@@ -115,7 +117,7 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
                     <span style={{ fontSize: 13, color: over ? "var(--accent-red)" : "var(--text-secondary)" }}>
                       {formatMoney(b.spent, b.currency)} / {formatMoney(b.limitAmount, b.currency)}
                     </span>
-                    <button onClick={() => startTransition(() => { deleteBudget(b.id); })} title="Usuń budżet" style={iconBtn}><Trash2 size={13} /></button>
+                    <button onClick={() => startTransition(() => { deleteBudget(b.id); })} title={t("usunBudzet")} style={iconBtn}><Trash2 size={13} /></button>
                   </div>
                   <div style={{ height: 7, borderRadius: 4, background: "var(--bg-base)", overflow: "hidden", marginTop: 6 }}>
                     <div style={{ width: `${Math.min(100, b.pct)}%`, height: "100%", background: barColor, transition: "width .2s" }} />
@@ -136,7 +138,7 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
       {/* ── Cele ── */}
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <SectionHeading>Cele oszczędnościowe</SectionHeading>
+          <SectionHeading>{t("celeOszczednosciowe")}</SectionHeading>
           <button onClick={() => setGOpen((v) => !v)} style={smallBtn}>
             <Plus size={13} /> Cel
           </button>
@@ -146,11 +148,11 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
           <div style={formRow}>
             <input autoFocus value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Nazwa (np. Wakacje)" style={inputStyle} />
             <input value={gTarget} onChange={(e) => setGTarget(e.target.value)} placeholder="Cel (kwota)" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 140 }} />
-            <input value={gCurrent} onChange={(e) => setGCurrent(e.target.value)} placeholder="Już mam" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 120 }} />
+            <input value={gCurrent} onChange={(e) => setGCurrent(e.target.value)} placeholder={t("juzMam")} type="number" step="0.01" style={{ ...inputStyle, maxWidth: 120 }} />
             <input value={gDeadline} onChange={(e) => setGDeadline(e.target.value)} type="date" title="Termin (opcjonalnie)" style={{ ...inputStyle, maxWidth: 160 }} />
             {teams.length > 0 && (
               <select value={gTeam} onChange={(e) => setGTeam(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-                <option value="">Mój (prywatny)</option>
+                <option value="">{t("mojPrywatny")}</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             )}
@@ -174,6 +176,7 @@ export function BudgetsPage({ budgets, periodLabel, goals, teams }: Props) {
 }
 
 function GoalCard({ goal, onChange, pending }: { goal: FinanceGoal; onChange: (cb: () => void) => void; pending: boolean }) {
+  const t = useTranslations("modules.portfel.BudgetsPage");
   const [add, setAdd] = useState("");
   const pct = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) : 0;
   const done = !!goal.achievedAt || goal.currentAmount >= goal.targetAmount;
@@ -194,7 +197,7 @@ function GoalCard({ goal, onChange, pending }: { goal: FinanceGoal; onChange: (c
         <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
           {formatMoney(goal.currentAmount, goal.currency)} / {formatMoney(goal.targetAmount, goal.currency)}
         </span>
-        <button onClick={() => onChange(() => { deleteGoal(goal.id); })} title="Usuń cel" style={iconBtn}><Trash2 size={13} /></button>
+        <button onClick={() => onChange(() => { deleteGoal(goal.id); })} title={t("usunCel")} style={iconBtn}><Trash2 size={13} /></button>
       </div>
       <div style={{ height: 7, borderRadius: 4, background: "var(--bg-base)", overflow: "hidden", marginTop: 6 }}>
         <div style={{ width: `${pct}%`, height: "100%", background: done ? "var(--accent-green)" : "var(--accent-amber)", transition: "width .2s" }} />
@@ -206,7 +209,7 @@ function GoalCard({ goal, onChange, pending }: { goal: FinanceGoal; onChange: (c
         {!done && (
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <input value={add} onChange={(e) => setAdd(e.target.value)} onKeyDown={(e) => e.key === "Enter" && contribute(1)} placeholder="kwota" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 90, padding: "5px 8px", fontSize: 12 }} />
-            <button onClick={() => contribute(1)} disabled={pending || !add} style={{ ...primaryBtn, padding: "5px 10px" }}>+ Wpłać</button>
+            <button onClick={() => contribute(1)} disabled={pending || !add} style={{ ...primaryBtn, padding: "5px 10px" }}>{t("wplac")}</button>
             <button onClick={() => contribute(-1)} disabled={pending || !add} title="Wycofaj" style={{ ...cancelBtn, padding: "5px 8px" }}>−</button>
           </div>
         )}

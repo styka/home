@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { NoteGroupSection } from "./NoteGroupSection";
 import type { Note, Tag, NoteGroup } from "@/types";
 
@@ -31,11 +32,12 @@ export function NoteList({
   onNoteFocus, onNoteStartEdit, onNoteStopEdit, onNavigateToNote, onTagsChanged, rowRefs,
   searchQuery = "", viewMode = "list",
 }: NoteListProps) {
+  const t = useTranslations("modules.notes.NoteList");
   if (notes.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Brak notatek. Naciśnij <kbd className="font-mono px-1 rounded" style={{ backgroundColor: "var(--bg-elevated)" }}>a</kbd> aby dodać.
+          {t("brakNotatekNacisnij")} <kbd className="font-mono px-1 rounded" style={{ backgroundColor: "var(--bg-elevated)" }}>a</kbd> {t("abyDodac")}
         </p>
       </div>
     );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
@@ -16,6 +17,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPaletteProps) {
+  const t = useTranslations("components.command-palette.CommandPalette");
   const { open, setOpen } = useCommandPalette();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -72,7 +74,7 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
             <span style={{ color: "var(--text-muted)" }}>⌘</span>
             <Command.Input
               ref={inputRef}
-              placeholder="Wpisz komendę lub znajdź listę…"
+              placeholder={t("wpiszKomendeLubZnajdz")}
               className="flex-1 py-3 bg-transparent text-sm focus:outline-none"
               style={{ color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
             />
@@ -103,17 +105,17 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
               />
               <PaletteItem
                 icon={<Trash2 size={14} />}
-                label="Wyczyść zakończone"
+                label={t("wyczyscZakonczone")}
                 onSelect={() => run(() => startTransition(() => clearDoneItems(listId)))}
               />
               <PaletteItem
                 icon={<Package size={14} />}
-                label="Katalog produktów"
+                label={t("katalogProduktow")}
                 onSelect={() => run(() => router.push("/shopping/products"))}
               />
               <PaletteItem
                 icon={<Plus size={14} />}
-                label="Nowa lista zakupów"
+                label={t("nowaListaZakupow")}
                 onSelect={() => setCreatingList(true)}
               />
             </Command.Group>
@@ -153,7 +155,7 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
                 if (e.key === "Enter") void handleCreateList();
                 if (e.key === "Escape") { setCreatingList(false); setNewListName(""); }
               }}
-              placeholder="Nazwa nowej listy zakupów…"
+              placeholder={t("nazwaNowejListyZakupow")}
               className="flex-1 bg-transparent text-sm focus:outline-none"
               style={{ color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
             />
@@ -176,7 +178,7 @@ export function CommandPalette({ listId, allLists, onFocusQuickAdd }: CommandPal
               }}
             >
               <ArrowRight size={12} />
-              Utwórz
+              {t("utworz")}
             </button>
             <button
               onClick={() => { setCreatingList(false); setNewListName(""); }}

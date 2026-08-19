@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 // Z-193 (T-10) — ujednolicony „Udostępnij". JEDEN reużywalny komponent czytający mapę
 // zdolności (`SHARE_CAPABILITIES`) i renderujący spójnie dostępne mechanizmy. Zastępuje
 // rozjechane, per-moduł wejścia (TaskShare/PetShare…). Prezentacyjny — logika dostępu
@@ -39,6 +40,7 @@ const DEFAULT_ROLES = [
 
 /** Spójny widżet „Udostępnianie" sterowany mapą zdolności modułu. */
 export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onShareByEmail, onRemoveShare, busy, hideHeader }: ShareControlProps) {
+  const t = useTranslations("components.sharing.ShareControl");
   const cap = getShareCapability(module);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(roleOptions[0]?.value ?? "VIEWER");
@@ -69,7 +71,7 @@ export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onSh
       {!hideHeader && (
         <div className="flex items-center gap-1.5 mb-2">
           <Share2 size={13} style={{ color: "var(--text-muted)" }} />
-          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Udostępnianie</span>
+          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{t("udostepnianie")}</span>
         </div>
       )}
 
@@ -87,7 +89,7 @@ export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onSh
                 disabled={busy}
                 className="focus:outline-none hover:opacity-70 disabled:opacity-40"
                 style={{ color: "var(--text-muted)" }}
-                title="Usuń dostęp"
+                title={t("usunDostep")}
               >
                 <UserMinus size={12} />
               </button>
@@ -103,7 +105,7 @@ export function ShareControl({ module, shares, roleOptions = DEFAULT_ROLES, onSh
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-            placeholder="Email użytkownika…"
+            placeholder={t("emailUzytkownika")}
             className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
             style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
           />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -59,6 +60,7 @@ export function SkinEditor({
   onClose: () => void;
   onSaved?: (id: string) => void;
 }) {
+  const t = useTranslations("components.skins.SkinEditor");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +199,7 @@ export function SkinEditor({
             style={inputStyle}
           >
             {presets.map((p) => <option key={p} value={p}>{p}</option>)}
-            <option value="__custom">własna (cubic-bezier)</option>
+            <option value="__custom">{t("wlasnaCubicBezier")}</option>
           </select>
           {!presets.includes(value) && (
             <input value={value} onChange={(e) => set(c.key, e.target.value)} style={inputStyle} placeholder="cubic-bezier(0.2, 0, 0, 1)" />
@@ -284,7 +286,7 @@ export function SkinEditor({
           {CURATED_CONTROLS.map(renderControl)}
         </div>
         <div style={{ position: "sticky", top: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={labelStyle}>Podgląd</span>
+          <span style={labelStyle}>{t("podglad")}</span>
           <SkinPreview tokens={previewTokens} />
         </div>
       </div>
@@ -341,11 +343,11 @@ export function SkinEditor({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>
             <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-            Udostępnij publicznie (każdy może użyć)
+            {t("udostepnijPublicznieKazdyMoze")}
           </label>
           {teams.length > 0 && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13 }}>
-              Zespół:
+              {t("zespol")}
               <select value={teamId} onChange={(e) => setTeamId(e.target.value)} style={{ ...inputStyle, width: "auto" }} disabled={!!existingId}>
                 <option value="">— moja prywatna —</option>
                 {teams.map((t) => (

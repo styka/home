@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Trash2, Plus, Tag as TagIcon } from "lucide-react";
 import { createTag, updateTag, deleteTag } from "@/actions/tags";
@@ -11,6 +12,7 @@ interface TagsManagerProps {
 }
 
 export function TagsManager({ tags }: TagsManagerProps) {
+  const t = useTranslations("modules.notes.TagsManager");
   const [, startTransition] = useTransition();
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -103,7 +105,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
               <button onClick={handleCreate} disabled={!newName.trim()}
                 className="text-xs px-3 py-1 rounded"
                 style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
-                Utwórz
+                {t("utworz")}
               </button>
               <button onClick={() => setCreating(false)}
                 className="text-xs px-2 py-1 rounded"
@@ -118,7 +120,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <TagIcon size={32} style={{ color: "var(--text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Brak tagów. Dodaj pierwszy lub pozwól AI je zaproponować.
+              {t("brakTagowDodajPierwszy")}
             </p>
           </div>
         )}
@@ -183,7 +185,7 @@ export function TagsManager({ tags }: TagsManagerProps) {
                   style={{ color: "var(--text-muted)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-                  title="Usuń tag"
+                  title={t("usunTag")}
                 >
                   <Trash2 size={13} />
                 </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { FlaskConical, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { getModuleInfo } from "@/lib/qaModules";
@@ -15,6 +16,7 @@ interface ScenarioPageProps {
 }
 
 export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
+  const t = useTranslations("modules.qa.ScenarioPage");
   const moduleInfo = getModuleInfo(scenario.story.epic.module);
   const typeColor = getScenarioTypeColor(scenario.type);
   const priorityColor = getPriorityColor(scenario.priority);
@@ -136,7 +138,7 @@ export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
             >
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Następny
+                  {t("nastepny")}
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {next.title}
@@ -161,7 +163,7 @@ export function ScenarioPage({ scenario, contentHtml }: ScenarioPageProps) {
             paddingBottom: 24,
           }}
         >
-          <ArrowLeft size={12} /> Wróć do listy modułu
+          <ArrowLeft size={12} /> {t("wrocDoListyModulu")}
         </Link>
     </ModuleView>
   );

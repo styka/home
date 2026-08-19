@@ -8,8 +8,10 @@ import { RetentionPanel } from "@/components/admin/RetentionPanel";
 import { AdminConfigForm } from "./AdminConfigForm";
 import { ChevronLeft, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminConfigPage() {
+  const t = await getTranslations("app.admin.config.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -56,7 +58,7 @@ export default async function AdminConfigPage() {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, color: "var(--text-primary)" }}>Modele LLM</div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              Dostawcy i przypisanie modeli do typów operacji (dispatch, myślenie, obrazy, generowanie)
+              {t("dostawcyIPrzypisanieModeli")}
             </div>
           </div>
           <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />

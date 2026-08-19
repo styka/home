@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Users, Plus, Trash2, Loader2 } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
@@ -10,6 +11,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 type Staff = { id: string; name: string; role: string | null; active: boolean };
 
 export function StaffManager({ onChange }: { onChange?: () => void }) {
+  const t = useTranslations("modules.services.StaffManager");
   const confirmDialog = useConfirm();
   const [staff, setStaff] = useState<Staff[] | null>(null);
   const [open, setOpen] = useState(false);
@@ -39,12 +41,12 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
         </button>
       </div>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 8px" }}>
-        Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność”).
+        {t("dodajPracownikowByKlienci")}
       </p>
 
       {open && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", marginBottom: 8 }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Imię" style={{ ...fieldInputStyle, width: 150 }} />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("imie")} style={{ ...fieldInputStyle, width: 150 }} />
           <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Rola (opc.)" style={{ ...fieldInputStyle, width: 150 }} />
           <button onClick={add} disabled={pending || !name.trim()} style={primaryButtonStyle}>{pending ? <Loader2 size={13} className="animate-spin" /> : "Dodaj"}</button>
           {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
@@ -54,7 +56,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
       {staff === null ? (
         <Loader2 size={14} className="animate-spin" style={{ color: "var(--text-muted)" }} />
       ) : staff.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak pracowników — firma jednoosobowa (rezerwacje na cały profil).</p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakPracownikowFirmaJednoosobowa")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {staff.map((s) => (
@@ -66,7 +68,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
               <button onClick={() => startTransition(async () => { await updateStaff(s.id, { active: !s.active }); await reload(); onChange?.(); })} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
                 {s.active ? "Wyłącz" : "Włącz"}
               </button>
-              <button onClick={async () => { if (await confirmDialog(`Usunąć pracownika „${s.name}"?`)) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title="Usuń" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+              <button onClick={async () => { if (await confirmDialog(`Usunąć pracownika „${s.name}"?`)) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title={t("usun")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
                 <Trash2 size={13} />
               </button>
             </div>

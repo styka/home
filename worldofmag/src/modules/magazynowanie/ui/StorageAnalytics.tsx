@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Sparkles, Loader2, Download, TrendingUp, PackageX, Boxes, Wallet, AlertTriangle } from "lucide-react";
 import { runJob } from "@/platform/jobs/client";
@@ -18,6 +19,7 @@ function fmt(n: number, currency: string) {
 }
 
 export function StorageAnalytics({ analytics, exportRows }: Props) {
+  const t = useTranslations("modules.magazynowanie.StorageAnalytics");
   const a = analytics;
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
@@ -89,9 +91,9 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
     <div className="px-4 md:px-6 py-4 max-w-3xl mx-auto flex flex-col gap-5">
       {/* KPI */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Kpi icon={Wallet} label="Wartość magazynu" value={fmt(a.totalValue, a.currency)} color="var(--accent-green)" />
+        <Kpi icon={Wallet} label={t("wartoscMagazynu")} value={fmt(a.totalValue, a.currency)} color="var(--accent-green)" />
         <Kpi icon={Boxes} label="Pozycji" value={String(a.itemCount)} color="var(--accent-blue)" />
-        <Kpi icon={AlertTriangle} label="Poniżej min." value={String(a.lowStockCount)} color="var(--accent-amber)" />
+        <Kpi icon={AlertTriangle} label={t("ponizejMin")} value={String(a.lowStockCount)} color="var(--accent-amber)" />
         <Kpi icon={PackageX} label="Martwy zapas" value={String(a.deadStockCount)} color="var(--accent-red)" />
       </div>
 
@@ -111,9 +113,9 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
           </div>
         </div>
         {tips === null ? (
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Kliknij „Analizuj”, by AI podsumowała stan magazynu i rekomendacje.</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("kliknijAnalizujByAi")}</p>
         ) : tips.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Brak wniosków (lub AI niedostępne).</p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("brakWnioskowLubAi")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {tips.map((t, i) => (
@@ -153,7 +155,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
           ))}
         </div>
         <div className="flex items-center gap-3 mt-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: "var(--accent-green)" }} /> przyjęcia</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: "var(--accent-green)" }} /> {t("przyjecia")}</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: "var(--accent-red)" }} /> wydania</span>
         </div>
       </section>
@@ -161,7 +163,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
       {/* Wartość wg magazynu */}
       {a.valueByWarehouse.length > 0 ? (
         <section>
-          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Wartość wg magazynu</h3>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{t("wartoscWgMagazynu")}</h3>
           <div className="flex flex-col gap-1.5">
             {a.valueByWarehouse.map((w) => (
               <div key={w.warehouse} className="flex items-center gap-2">
@@ -179,7 +181,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
       {/* ABC */}
       {a.abc.length > 0 ? (
         <section>
-          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Analiza ABC (Pareto wg wartości)</h3>
+          <h3 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{t("analizaAbcParetoWg")}</h3>
           <ul className="flex flex-col gap-0.5">
             {a.abc.slice(0, 12).map((x) => (
               <li key={x.id} className="flex items-center justify-between gap-2 px-2 py-1 rounded text-sm" style={{ backgroundColor: "var(--bg-surface)" }}>

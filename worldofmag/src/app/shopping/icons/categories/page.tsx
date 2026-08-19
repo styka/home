@@ -7,8 +7,10 @@ import { getAllUserIconVariants } from "@/modules/shopping/actions/categoryIcons
 import { getCategoryNames } from "@/modules/shopping/actions/categories";
 import { CategoryIconsManager } from "@/modules/shopping/ui/CategoryIconsManager";
 import { ChevronLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function IconCategoriesPage() {
+  const t = await getTranslations("app.shopping.icons.categories.page");
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 

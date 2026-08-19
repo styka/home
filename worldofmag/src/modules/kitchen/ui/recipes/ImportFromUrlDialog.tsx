@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
@@ -18,6 +19,7 @@ interface ImportFromUrlDialogProps {
 const VALID_MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack", "dessert"];
 
 export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps) {
+  const t = useTranslations("modules.kitchen.ImportFromUrlDialog");
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [pending, setPending] = useState(false);
@@ -98,7 +100,7 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
       }
     >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Wklej link do przepisu. AI pobierze stronę i wyciągnie składniki + kroki (najpierw spróbuje schema.org JSON-LD, potem LLM).
+        {t("wklejLinkDoPrzepisu")}
       </p>
       {aiUsage && (
         <div className="flex justify-end">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -40,6 +41,7 @@ type GroupEditorState = {
 };
 
 export function TasksSideNav() {
+  const t = useTranslations("modules.tasks.TasksSideNav");
   const confirmDialog = useConfirm();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -292,7 +294,7 @@ export function TasksSideNav() {
           onClick={openCreateGroup}
           className="focus:outline-none hover:opacity-70 p-0.5"
           style={{ color: "var(--text-muted)" }}
-          title="Nowa grupa projektów"
+          title={t("nowaGrupaProjektow")}
         >
           <Plus size={12} />
         </button>
@@ -335,10 +337,10 @@ export function TasksSideNav() {
               </Link>
               {hovered === `group:${g.id}` && (
                 <div className="flex items-center gap-1 mr-1.5 flex-shrink-0">
-                  <button onClick={(e) => openEditGroup(g, e)} className="focus:outline-none hover:opacity-70" style={{ color: "var(--text-muted)" }} title="Edytuj grupę">
+                  <button onClick={(e) => openEditGroup(g, e)} className="focus:outline-none hover:opacity-70" style={{ color: "var(--text-muted)" }} title={t("edytujGrupe")}>
                     <Pencil size={10} />
                   </button>
-                  <button onClick={(e) => handleDeleteGroup(g, e)} className="focus:outline-none hover:opacity-70" style={{ color: "var(--accent-red)" }} title="Usuń grupę">
+                  <button onClick={(e) => handleDeleteGroup(g, e)} className="focus:outline-none hover:opacity-70" style={{ color: "var(--accent-red)" }} title={t("usunGrupe")}>
                     <Trash2 size={10} />
                   </button>
                 </div>
@@ -347,7 +349,7 @@ export function TasksSideNav() {
             {isOpen && (
               members.length > 0
                 ? members.map(renderNestedProject)
-                : <div className="text-xs py-1" style={{ paddingLeft: 56, color: "var(--text-muted)" }}>Brak dostępnych projektów</div>
+                : <div className="text-xs py-1" style={{ paddingLeft: 56, color: "var(--text-muted)" }}>{t("brakDostepnychProjektow")}</div>
             )}
           </div>
         );
@@ -399,7 +401,7 @@ export function TasksSideNav() {
           <div className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>Projekty w grupie:</div>
           <div className="max-h-44 overflow-y-auto -mx-0.5">
             {selectableProjects.length === 0 && (
-              <div className="text-xs px-1 py-1" style={{ color: "var(--text-muted)" }}>Brak projektów</div>
+              <div className="text-xs px-1 py-1" style={{ color: "var(--text-muted)" }}>{t("brakProjektow")}</div>
             )}
             {selectableProjects.map((p) => {
               const checked = groupEditor.selected.includes(p.id);
@@ -513,7 +515,7 @@ export function TasksSideNav() {
                     onClick={(e) => { e.preventDefault(); setEditingId(p.id); setEditName(p.name); }}
                     className="focus:outline-none hover:opacity-70"
                     style={{ color: "var(--text-muted)" }}
-                    title="Zmień nazwę"
+                    title={t("zmienNazwe")}
                   >
                     <Pencil size={10} />
                   </button>
@@ -521,7 +523,7 @@ export function TasksSideNav() {
                     onClick={(e) => handleDelete(p.id, e)}
                     className="focus:outline-none hover:opacity-70"
                     style={{ color: "var(--accent-red)" }}
-                    title="Usuń projekt"
+                    title={t("usunProjekt")}
                   >
                     <Trash2 size={10} />
                   </button>

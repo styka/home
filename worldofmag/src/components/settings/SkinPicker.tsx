@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Pencil, Trash2, Copy } from "lucide-react";
@@ -23,6 +24,7 @@ export function SkinPicker({
   activeId: string | null;
   teams: TeamOpt[];
 }) {
+  const t = useTranslations("components.settings.SkinPicker");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -87,7 +89,7 @@ export function SkinPicker({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 {s.isSystem && <Badge>systemowa</Badge>}
                 {!s.isSystem && s.isOwn && <Badge>moja</Badge>}
-                {!s.isSystem && !s.isOwn && <Badge>udostępniona</Badge>}
+                {!s.isSystem && !s.isOwn && <Badge>{t("udostepniona")}</Badge>}
                 {s.isPublic && !s.isSystem && <Badge>publiczna</Badge>}
               </div>
               <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
@@ -96,7 +98,7 @@ export function SkinPicker({
                   <IconBtn title="Edytuj" onClick={() => setEditor({ open: true, initial: s, existingId: s.id })}><Pencil size={13} /></IconBtn>
                 )}
                 {s.isOwn && !s.isSystem && (
-                  <IconBtn title="Usuń" onClick={() => remove(s.id)} danger><Trash2 size={13} /></IconBtn>
+                  <IconBtn title={t("usun")} onClick={() => remove(s.id)} danger><Trash2 size={13} /></IconBtn>
                 )}
               </div>
             </div>
@@ -110,7 +112,7 @@ export function SkinPicker({
           onClick={() => setEditor({ open: true, initial: null, existingId: null })}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text-primary)", fontSize: 13, cursor: "pointer" }}
         >
-          <Plus size={15} /> Utwórz własną skórkę
+          <Plus size={15} /> {t("utworzWlasnaSkorke")}
         </button>
       </div>
 

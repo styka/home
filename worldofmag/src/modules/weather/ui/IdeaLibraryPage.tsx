@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -59,6 +60,7 @@ export function IdeaLibraryPage({
   /** 043: parametry adresu z serwera — filtr czytamy stąd, nie z `window`. */
   viewParams?: RawParams;
 }) {
+  const t = useTranslations("modules.weather.IdeaLibraryPage");
   const router = useRouter();
   const { showToast } = useToast();
   // 043: filtr stanu pomysłu w adresie (AC-8a).
@@ -110,7 +112,7 @@ export function IdeaLibraryPage({
       }
       icon={<Library size={22} />}
       iconColor="var(--accent-purple)"
-      title="Pomysły"
+      title={t("pomysly")}
       href="/pogoda/pomysly"
       subtitle="Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w „Co robić?”, dopóki ich nie przywrócisz."
     >
@@ -193,6 +195,7 @@ function LibraryRow({
   onDelete: () => void;
   onAddToTasks: () => void;
 }) {
+  const t = useTranslations("modules.weather.IdeaLibraryPage");
   const [open, setOpen] = useState(defaultOpen);
   const [detail, setDetail] = useState<string | null>(null);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
@@ -253,7 +256,7 @@ function LibraryRow({
         <div className="mt-2 border-t border-[var(--border)] pt-2">
           {loading ? (
             <p className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-              <Loader2 size={12} className="animate-spin" /> Wczytuję plan…
+              <Loader2 size={12} className="animate-spin" /> {t("wczytujePlan")}
             </p>
           ) : detail ? (
             <>
@@ -277,7 +280,7 @@ function LibraryRow({
       <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--border)] pt-2">
         {blocked ? (
           <Button size="sm" variant="ghost" className="py-3" onClick={() => onState("considered")}>
-            <RotateCcw size={13} /> Przywróć proponowanie
+            <RotateCcw size={13} /> {t("przywrocProponowanie")}
           </Button>
         ) : (
           <>
@@ -294,7 +297,7 @@ function LibraryRow({
             </Button>
             {canAddToTasks && (
               <Button size="sm" variant="ghost" className="py-3" onClick={onAddToTasks}>
-                <ListPlus size={13} /> Do zadań
+                <ListPlus size={13} /> {t("doZadan")}
               </Button>
             )}
           </>
@@ -302,7 +305,7 @@ function LibraryRow({
         <button
           onClick={onDelete}
           className="ml-auto rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-          title="Usuń (trafi do kosza)"
+          title={t("usunTrafiDoKosza")}
           aria-label={`Usuń pomysł: ${idea.title}`}
         >
           <Trash2 size={14} />

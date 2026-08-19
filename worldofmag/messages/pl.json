@@ -7,7 +7,8 @@
     },
     "cost": {
       "incomplete": "Któryś z użytych modeli nie ma stawek w cenniku — kwota jest niepełna. Cennik uzupełnia administrator w panelu LLM.",
-      "details": "Szczegóły kosztu i modelu (kliknij, by rozwinąć)"
+      "details": "Szczegóły kosztu i modelu (kliknij, by rozwinąć)",
+      "rozbicieKosztu": "Rozbicie kosztu"
     },
     "conflict": {
       "title": "Ktoś zmienił to w międzyczasie",
@@ -35,10 +36,12 @@
       "modifying": "Modyfikuję…",
       "sendHint": "Ctrl+Enter aby wysłać",
       "stopHint": "Kliknij 🎙 aby zatrzymać",
-      "applyHint": "Kliknij 🪄 aby zastosować"
+      "applyHint": "Kliknij 🪄 aby zastosować",
+      "dyktowanie": "Dyktowanie…"
     },
     "userFact": {
-      "confirm": "Zgadza się"
+      "confirm": "Zgadza się",
+      "nieOMnie": "Nie o mnie"
     },
     "loading": "Ładowanie…",
     "sectionHome": "Strona główna działu"
@@ -113,6 +116,1968 @@
       "linkDocsTitle": "Dokumentacja techniczna",
       "linkDocsDesc": "Runbooki devops, e2e, pokrycie akcji AI, kontrola dostępu.",
       "permissionNone": "bez uprawnienia modułowego"
+    }
+  },
+  "app": {
+    "admin": {
+      "access": {
+        "page": {
+          "zarzadzanieDostepem": "Zarządzanie dostępem"
+        }
+      },
+      "config": {
+        "AdminConfigForm": {
+          "uzywanyDoRozpoznawaniaListy": ". Używany do rozpoznawania listy zakupów z głosu i tekstu.",
+          "gdyPotrzebujeInformacjiSpoza": "(gdy potrzebuje informacji spoza Twoich danych — ceny, fakty, definicje) oraz moduł",
+          "wiadomosci": "Wiadomości",
+          "przyBudowaniuBazowejBazy": "przy budowaniu bazowej bazy wiedzy. Bez klucza działa darmowy fallback DuckDuckGo, ale bywa ograniczany dla IP serwerowni (Render), więc wyniki potrafią być puste.",
+          "zalozKontoBraveSearch": "Załóż konto (Brave Search API) i potwierdź e-mail.",
+          "przejdzDo": "Przejdź do",
+          "wklejTokenPonizejI": "Wklej token poniżej i kliknij „Zapisz”.",
+          "projektSkrzynkaIdentyfikatorProjektu": "Projekt-skrzynka (identyfikator projektu zadań)",
+          "uzytkownikowRobaczekWAsystencie": "użytkowników (robaczek w asystencie AI oraz tryb wskazywania elementu). Zgłaszający",
+          "prawaDoOdczytuTego": "prawa do odczytu tego projektu — może tam wyłącznie wrzucić zgłoszenie.",
+          "kluczJestZaszyfrowanyPokazujemy": "Klucz jest zaszyfrowany — pokazujemy tylko maskę. Wpisz nowy, aby nadpisać.",
+          "jakZdobycDarmowyKlucz": "Jak zdobyć darmowy klucz (≈2 000 zapytań/mc):",
+          "dataForSearchFree": "(Data for Search / Free) — do ~2 000 zapytań miesięcznie, 1 zapytanie/s. Brave może poprosić o kartę do weryfikacji, ale plan Free pozostaje bezpłatny.",
+          "zachowanieDomyslneCzyliProjekt": "= zachowanie domyślne, czyli projekt o nazwie „Omnia” należący do administratora."
+        },
+        "page": {
+          "dostawcyIPrzypisanieModeli": "Dostawcy i przypisanie modeli do typów operacji (dispatch, myślenie, obrazy, generowanie)"
+        }
+      },
+      "docs": {
+        "page": {
+          "najnowszaWersjaPlikow": "Najnowsza wersja plików",
+          "doswiadczeniaMd": "doświadczenia.md",
+          "zKataloguGlownegoRepozytorium": "z katalogu głównego repozytorium, aktualizowana automatycznie przy każdym buildzie."
+        }
+      },
+      "e2e": {
+        "page": {
+          "testyKlikaczeE2eJak": "Testy klikacze (E2E) — jak uruchomić",
+          "klikajaAplikacjeJakZywy": ". Klikają aplikację jak żywy użytkownik — na desktopie i na mobile (iPhone 13). Kod:",
+          "najprostszaDrogaTestyOdpalaja": "Najprostsza droga: testy odpalają się na",
+          "zJednorazowaLokalnaBaza": "z jednorazową, lokalną bazą w Dockerze (nic nie trzeba konfigurować ręcznie). W katalogu",
+          "widacKazdeKlikniecieSeria": "— widać każde kliknięcie. Seria leci po kolei na desktopie i na iPhone 13.",
+          "alboWPelniWolny": ", albo w pełni wolny",
+          "aProdukcjaWazne": "A produkcja? (ważne)",
+          "traktujemyProdukcje": "Traktujemy produkcję (",
+          "neonTrocheJakSrodowisko": "+ Neon) trochę jak środowisko testowe, ale",
+          "klikaczeNieJadaPo": "klikacze NIE jadą po produkcji",
+          "coWiecTestujemy": "Co więc testujemy?",
+          "jesliKiedysZechceszSmoke": "Jeśli kiedyś zechcesz „smoke” wprost na produkcji — zrób to ręcznie (zaloguj się Google i przeklikaj krytyczne ścieżki). Automatu nie kierujemy na prod, żeby nie ruszać realnych danych.",
+          "jakToDzialaPod": "Jak to działa pod spodem",
+          "bezpieczenstwo": "Bezpieczeństwo",
+          "testowyProviderLogowaniaJest": "Testowy provider logowania jest odcięty zmienną",
+          "renderNigdyJejNie": ". Render nigdy jej nie ustawia, więc na produkcji obejście logowania",
+          "zrodlemPrawdySaScenariusze": "Źródłem prawdy są scenariusze z",
+          "jakoUdokumentowanyBacklogKazdy": "jako udokumentowany backlog (każdy scenariusz widoczny w raporcie z krokami). Raport HTML zobaczysz po",
+          "gdzieZnowToZnalezc": "Gdzie znów to znaleźć"
+        }
+      },
+      "llm": {
+        "page": {
+          "dodajDostawcowKazdyZ": "Dodaj dostawców (każdy z własnym tokenem) i przypisz model do każdego typu operacji. Typy odpowiadają charakterowi zadania, nie modułowi. Każdy z trzech poziomów pracy asystenta konfigurujesz osobno — pola zostawione puste dziedziczą z poziomu standardowego."
+        }
+      },
+      "metrics": {
+        "page": {
+          "zuzycieAiDzienPo": "Zużycie AI dzień po dniu",
+          "brakDanychZuzyciaAi": "Brak danych zużycia AI w oknie."
+        }
+      },
+      "page": {
+        "metrykiZawartosc": "Metryki — zawartość",
+        "narzedzia": "Narzędzia",
+        "zarzadzanieDostepemRoleUprawnienia": "Zarządzanie dostępem (role & uprawnienia)",
+        "wiedzaOUzytkownikachFakty": "Wiedza o użytkownikach (fakty do podpowiedzi)",
+        "diagnostykaAsystentaAiLog": "Diagnostyka asystenta AI (log wywołań / rozmowa)",
+        "kolejkaZadanOcrAi": "Kolejka zadań (OCR / AI w tle)",
+        "moderacjaSporowUslugi": "Moderacja sporów (Usługi)",
+        "dokumentacjaProjektuClaudeMd": "Dokumentacja projektu (CLAUDE.md, doświadczenia.md)",
+        "audytPodsumowanieZmianWykonane": "Audyt — podsumowanie zmian (wykonane / pozostałe)",
+        "skorkiSystemowe": "Skórki systemowe",
+        "testyKlikaczeE2eJak": "Testy klikacze E2E — jak uruchomić"
+      },
+      "playground": {
+        "page": {
+          "galeriaKomponentow": "Galeria komponentów",
+          "interaktywneDemonstracjeWspolnychKomponentow": "Interaktywne demonstracje wspólnych komponentów — z podglądem w każdej skórce"
+        }
+      },
+      "qa": {
+        "page": {
+          "qaZarzadzanieScenariuszami": "QA — zarządzanie scenariuszami",
+          "modulEpicUserStory": "Moduł → Epic → User Story → Scenariusz",
+          "kazdyPoziomEdytujeszOsobno": ". Każdy poziom edytujesz osobno."
+        }
+      },
+      "reports": {
+        "slug": {
+          "edit": {
+            "EditReportForm": {
+              "tytul": "Tytuł",
+              "trescMarkdown": "Treść (Markdown)",
+              "wpiszTrescPoLewej": "Wpisz treść po lewej…"
+            }
+          }
+        },
+        "new": {
+          "page": {
+            "tytul": "Tytuł",
+            "tytulRaportu": "Tytuł raportu",
+            "dyskGoogleNieJest": "Dysk Google nie jest połączony — raport zapisze się w bazie. Połącz w",
+            "trescMarkdown": "Treść (Markdown)",
+            "tytulRaportu1010": "# Tytuł raportu&#10;&#10;Treść w formacie Markdown...",
+            "wpiszTrescPoLewej": "Wpisz treść po lewej…"
+          }
+        },
+        "page": {
+          "archiwumRaportowTechnicznychAnaliz": "Archiwum raportów technicznych, analiz i dokumentacji projektowej.",
+          "brakRaportowDodajPierwszy": "Brak raportów. Dodaj pierwszy raport przez seed lub bezpośrednio do bazy danych."
+        }
+      },
+      "spec-pipeline": {
+        "page": {
+          "jednaKomenda": "jedną komendą",
+          "przechodzaAutomatycznie": "przechodzą automatycznie",
+          "lacznieZRecenzja": "(łącznie z recenzją —",
+          "bezRecznegoApprove": "bez ręcznego approve",
+          "azDoMergeDo": ") aż do merge do",
+          "zawracaIPoprawiaWlasciwy": "zawraca i poprawia właściwy plik"
+        }
+      },
+      "user-facts": {
+        "page": {
+          "wiedzaOUzytkownikach": "Wiedza o użytkownikach",
+          "faktyZKtorychKorzystaja": "Fakty, z których korzystają moduły generujące treść „pod użytkownika”. Fakt zapisany tutaj ma pochodzenie „administrator” i nie jest nadpisywany automatycznym wnioskowaniem."
+        }
+      }
+    },
+    "auth": {
+      "signin": {
+        "page": {
+          "twojOsobistySwiatW": "Twój osobisty świat w jednym miejscu.",
+          "zakupyZadaniaTeamyNotatki": "Zakupy, zadania, teamy, notatki — wszystko co potrzebne na co dzień.",
+          "zalogujSieAbyKontynuowac": "Zaloguj się, aby kontynuować",
+          "zalogujSiePrzezGoogle": "Zaloguj się przez Google",
+          "korzystajacZAplikacjiAkceptujesz": "Korzystając z aplikacji akceptujesz"
+        }
+      }
+    },
+    "global-error": {
+      "aplikacjaNapotkalaBlad": "Aplikacja napotkała błąd",
+      "przepraszamyCosPoszloNie": "Przepraszamy, coś poszło nie tak. Spróbuj ponownie lub odśwież stronę.",
+      "sprobujPonownie": "Spróbuj ponownie"
+    },
+    "guide": {
+      "page": {
+        "stronaGlowna": "Strona główna",
+        "jakKorzystacZeStrony": "Jak korzystać ze strony głównej?",
+        "stronaGlownaPozwalaZarzadzac": "Strona główna pozwala zarządzać wszystkimi modułami aplikacji za pomocą języka naturalnego — wpisując lub mówiąc polecenia.",
+        "sterowanieGlosem": "Sterowanie głosem",
+        "przykladyPolecen": "Przykłady poleceń",
+        "wskazowki": "Wskazówki",
+        "mozeszWydacKilkaPolecen": "Możesz wydać kilka poleceń naraz w jednym zdaniu.",
+        "przedWykonaniemZawszeMozesz": "Przed wykonaniem zawsze możesz sprawdzić i zmienić wykryte akcje w oknie potwierdzenia.",
+        "uzyjSelektoraKontekstuAby": "Użyj selektora kontekstu aby zawęzić zakres do konkretnego modułu.",
+        "skrotCtrlEnterWysyla": "Skrót Ctrl+Enter wysyła wiadomość bez klikania przycisku.",
+        "poWykonaniuAkcjiMozesz": "Po wykonaniu akcji możesz od razu wydać kolejne polecenie.",
+        "wrocISprobuj": "Wróć i spróbuj"
+      }
+    },
+    "legal": {
+      "page": {
+        "politykaPrywatnosciIRegulamin": "Polityka prywatności i regulamin to obecnie wersje robocze przygotowane technicznie — wymagają weryfikacji prawnej przed publicznym startem. Eksport i usunięcie danych dostępne są w",
+        "ustawieniaPrywatnoscIDane": "Ustawienia → Prywatność i dane"
+      }
+    },
+    "not-found": {
+      "stronaKtorejSzukaszNie": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+      "wrocDoPulpitu": "Wróć do pulpitu"
+    },
+    "pets": {
+      "calendar": {
+        "page": {
+          "widokMiesieczny": "Widok miesięczny"
+        }
+      }
+    },
+    "settings": {
+      "page": {
+        "nieNalezyszJeszczeDo": "Nie należysz jeszcze do żadnego teamu.",
+        "wygladSkorka": "Wygląd — skórka",
+        "jezykIStrefaCzasowa": "Język i strefa czasowa",
+        "twojPlan": "Twój plan",
+        "zmianaPlanuBedzieDostepna": "Zmiana planu będzie dostępna po uruchomieniu płatności.",
+        "prywatnoscIDane": "Prywatność i dane",
+        "dokumentyPrawnePolitykaPrywatnosci": "Dokumenty prawne (polityka prywatności, regulamin, podprocesorzy) →",
+        "aktywnosc": "Aktywność",
+        "brakOstatniejAktywnosci": "Brak ostatniej aktywności."
+      },
+      "team": {
+        "teamId": {
+          "page": {
+            "zaprosUzytkownika": "Zaproś użytkownika",
+            "uzytkownikMusiWczesniejZalogowac": "Użytkownik musi wcześniej zalogować się do WorldOfMag.",
+            "mozliweTylkoGdyTeam": "Możliwe tylko gdy team nie posiada żadnych list zakupów.",
+            "usunTeam": "Usuń team"
+          }
+        },
+        "new": {
+          "page": {
+            "nowyZespolRodzina": "Nowy zespół / rodzina",
+            "zespolWspolpraca": "Zespół (współpraca)",
+            "gospodarstwoDomoweRodzinaOd": "Gospodarstwo domowe (rodzina) — od razu wspólne: zakupy, zadania, budżet",
+            "utworzTeam": "Utwórz team"
+          }
+        }
+      }
+    },
+    "shopping": {
+      "stores": {
+        "guide": {
+          "page": {
+            "mapySklepow": "Mapy sklepów",
+            "sortowanieZakupowWedlugTrasy": "🗺️ Sortowanie zakupów według trasy w sklepie",
+            "narysujInteraktywnaMapeSwojego": "Narysuj interaktywną mapę swojego sklepu — zaznacz wejście, kasę i działy z produktami, połącz je korytarzami podając odległości. Aplikacja wyliczy optymalną kolejność kategorii na liście zakupów, minimalizując całą trasę od wejścia do kasy.",
+            "jakToDziala": "Jak to działa?",
+            "utworzMapeSklepu": "Utwórz mapę sklepu",
+            "przejdzDo": "Przejdź do",
+            "iWpiszNazweSklepu": "i wpisz nazwę sklepu, następnie kliknij",
+            "mozeszStworzycOsobnaMape": ". Możesz stworzyć osobną mapę dla każdego odwiedzanego regularnie sklepu.",
+            "dodajWezlyNaMapie": "Dodaj węzły na mapie",
+            "dodajWezel": "+ Dodaj węzeł",
+            "klikajNaKanweAby": ". Klikaj na kanwę, aby umieszczać węzły. Każdy sklep potrzebuje jednego węzła START (wejście) i STOP (kasy). Resztę przypisz do kategorii produktów.",
+            "polaczWezlySciezkami": "Połącz węzły ścieżkami",
+            "polacz": "↔ Połącz",
+            "kliknijPierwszyWezelObramowanie": ". Kliknij pierwszy węzeł — obramowanie zmieni się na niebieskie. Kliknij drugi węzeł i wpisz wagę krawędzi, czyli odległość między tymi punktami. Możesz używać kroków, sekund lub dowolnej spójnej jednostki.",
+            "sortujListeZakupowWedlug": "Sortuj listę zakupów według sklepu",
+            "jakDzialaAlgorytmOptymalizacji": "Jak działa algorytm optymalizacji?",
+            "wyznaczenieNajkrotszejTrasyTo": "Wyznaczenie najkrótszej trasy to klasyczny problem optymalizacji. Aplikacja rozwiązuje go w dwóch krokach:",
+            "kategoriiKtorychNieMasz": "Kategorii, których nie masz na liście, nie musisz odwiedzać — chyba że przejście przez nie jest konieczne do osiągnięcia innego węzła najkrótszą drogą. Algorytm uwzględnia to automatycznie.",
+            "wskazowki": "Wskazówki",
+            "otworzMapySklepow": "🗺️ Otwórz Mapy sklepów",
+            "listaZakupow": "Lista zakupów",
+            "wejscieWezlyKategoriiKasy": "🚪 wejście · węzły kategorii · 🛒 kasy",
+            "optymalnaKolejnosc": "Optymalna kolejność",
+            "8Wezlow9Krawedzi": "8 węzłów · 9 krawędzi",
+            "edytujMape": "🗺 Edytuj mapę",
+            "wpiszNazweIKliknij": "wpisz nazwę i kliknij Dodaj",
+            "przeciagnijWezelAbyGo": "Przeciągnij węzeł, aby go przenieść",
+            "wejscieStart": "Wejście (START)",
+            "nabial": "Nabiał",
+            "wagaKrawedzi": "Waga krawędzi",
+            "nabialPiekarnia": "Nabiał → Piekarnia",
+            "polacz2": "Połącz",
+            "optymalnaTrasaLacznie8": "optymalna trasa (łącznie: 8)",
+            "inneSciezki": "inne ścieżki",
+            "heldKarpWybieraNajkrotsza": "Held-Karp wybiera najkrótszą permutację węzłów"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "admin": {
+      "AdminDocsViewer": {
+        "brakDokumentowDoWyswietlenia": "Brak dokumentów do wyświetlenia.",
+        "plikuNieZnalezionoPodczas": "Pliku nie znaleziono podczas builda — wyświetlana jest treść zastępcza."
+      },
+      "AdminJobsPage": {
+        "kolejkaZadan": "Kolejka zadań",
+        "sprzatnij24h": "Sprzątnij 24h+",
+        "najwiecejAktywnychPerUser": "Najwięcej aktywnych (per user)",
+        "brakZadan": "Brak zadań.",
+        "ponow": "Ponów",
+        "zadaniaWTleOcr": "Zadania w tle (OCR, generowanie, wnioski AI). Zawieszone „W toku” po ~2 min są automatycznie odzyskiwane; tu możesz też ręcznie ponowić błędne."
+      },
+      "AiCallsPage": {
+        "surowyLogWywolanModelu": "Surowy log wywołań modelu (tabela",
+        "lacznieZ": ") — łącznie z",
+        "odswiez": "Odśwież",
+        "conversationidPusteOstatnieWywolania": "conversationId (puste = ostatnie wywołania)",
+        "brakWpisowDlaTego": "Brak wpisów (dla tego filtra)."
+      },
+      "AiCoveragePage": {
+        "pelnaListaAkcjiUzytkownika": "Pełna lista akcji użytkownika —",
+        "odczytow": "odczytów",
+        "wiecJestZawszeAktualna": "), więc jest zawsze aktualna wobec wdrożonego kodu.",
+        "odczytyPodgladDanych": "Odczyty (podgląd danych)",
+        "szukajAkcjiModulu": "Szukaj akcji / modułu…",
+        "brakAkcjiSpelniajacychFiltry": "Brak akcji spełniających filtry.",
+        "podgladDanychZInformacja": "(podgląd danych) — z informacją, czy asystent AI ma do nich dostęp. Lista jest generowana z manifestu pokrycia, którego kompletność wymusza bramka build'u ("
+      },
+      "AuditLogPage": {
+        "zmianyUprawnienRbacI": "Zmiany uprawnień (RBAC) i konfiguracji systemu — kto, co i kiedy.",
+        "brakWpisowAudytu": "Brak wpisów audytu."
+      },
+      "AudytBookReader": {
+        "nastepny": "Następny"
+      },
+      "FeedbackTriggerButton": {
+        "zglosBladSugestieWskaz": "Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B"
+      },
+      "LlmConfigPanel": {
+        "dodajDostawce": "Dodaj dostawcę",
+        "usun": "Usuń",
+        "brakDostawcow": "— brak dostawców —",
+        "wysilekModelu": "Wysiłek modelu",
+        "domyslna": "domyślna",
+        "domyslny": "domyślny",
+        "dostawcaAnthropicIgnorujeTemperature": "Dostawca Anthropic ignoruje temperaturę (nowsze modele Claude odrzucają ten parametr) — nie zostanie wysłana.",
+        "doSzybkiejKlasyfikacjiDispatch": "do szybkiej klasyfikacji (dispatch). Domyślny dostawca (Groq) pozostaje jako zapas — środowisko bez klucza Anthropic działa dalej. Modele możesz potem zmienić w tabeli przypisań poniżej.",
+        "budzetAiIWylacznik": "Budżet AI i wyłącznik awaryjny",
+        "wylaczAiWCalym": "Wyłącz AI w całym systemie",
+        "hamulecBezpieczenstwaZatrzymuje": "Hamulec bezpieczeństwa. Zatrzymuje",
+        "miesiecznyBudzetInstalacji": "Miesięczny budżet instalacji",
+        "0BezBudzetu": "0 = bez budżetu",
+        "poWyczerpaniuBudzetu": "Po wyczerpaniu budżetu",
+        "wywolania": "wywołania",
+        "propozycjeKolejnychPytan": "Propozycje kolejnych pytań",
+        "podpowiadajKolejnePytaniaPod": "Podpowiadaj kolejne pytania pod odpowiedzią",
+        "asystentDopisuje23": "Asystent dopisuje 2–3 propozycje następnego pytania do",
+        "kazdej": "każdej",
+        "odpowiedziAKazdaZ": "odpowiedzi — a każda z nich to dodatkowe tokeny wyjścia. Wyłącz, jeśli wolisz krótsze i tańsze odpowiedzi.",
+        "licznikKosztuPrzyTresciach": "Licznik kosztu przy treściach AI",
+        "pokazujKosztPrzyTresciach": "Pokazuj koszt przy treściach wygenerowanych przez AI",
+        "tenSamWskaznikCo": "Ten sam wskaźnik co w oknie asystenta pojawia się przy każdej treści generowanej przez model — w Pogodzie, Kuchni, Notatkach, Magazynie i pozostałych modułach. Rozwinięcie (modele, tokeny, koszt każdego promptu) widzi",
+        "wylacznieAdministrator": "wyłącznie administrator",
+        "wylaczenieGasiWskaznikW": ". Wyłączenie gasi wskaźnik w całej aplikacji, łącznie z asystentem.",
+        "domyslneOdswiezanieSekcjiAi": "Domyślne odświeżanie sekcji AI",
+        "dotyczyUzytkownikowKtorzy": "Dotyczy użytkowników, którzy",
+        "wlasnegoTrybuWModule": "własnego trybu w module. Kto raz wybrał swój, przestaje dziedziczyć stąd — zmiana poniżej go nie dotknie.",
+        "stawkiWDolarachZa": "Stawki w dolarach za milion tokenów. Na ich podstawie liczymy koszt pokazywany użytkownikowi. Model, którego tu nie ma, ma koszt",
+        "nieZerowyWysilekModelu": "— nie zerowy. Wysiłek modelu i temperatura nie zmieniają ceny za token (wysiłek podnosi jednak liczbę tokenów odpowiedzi).",
+        "usunStawke": "Usuń stawkę",
+        "cennikJestPustyKoszty": "Cennik jest pusty — koszty liczymy wtedy z wartości wbudowanych w aplikację.",
+        "poczatekNazwyModelu": "Początek nazwy modelu",
+        "nazwaWlasnaOpcjonalnie": "Nazwa własna (opcjonalnie)",
+        "wejscieUsd1m": "Wejście (USD / 1M)",
+        "wyjscieUsd1m": "Wyjście (USD / 1M)",
+        "zapiszStawke": "Zapisz stawkę",
+        "wywolan": "Wywołań:",
+        "dzis": "Dziś:",
+        "wywolan2": "Wywołań",
+        "srCzas": "Śr. czas",
+        "brakZarejestrowanychWywolanW": "Brak zarejestrowanych wywołań w tym okresie.",
+        "poPrzekroczeniuSzacowanegoDziennego": "Po przekroczeniu szacowanego dziennego kosztu administratorzy dostają powiadomienie (raz na dobę). Alert nie blokuje asystenta.",
+        "przypisanieModeliDoTypow": "Przypisanie modeli do typów operacji",
+        "wywolaniaModeluTakzeZadania": "wywołania modelu — także zadania w tle (wiadomości, OCR, generowanie skórek), które nie mają zalogowanego użytkownika. Działa natychmiast; użytkownicy dostają uprzejmy komunikat, nie błąd.",
+        "wylaczoneBudzetJestTylko": "Wyłączone = budżet jest tylko alarmem (powiadomienia przy 50 %, 80 % i 100 %), a wydatki rosną dalej. Włączone = po przekroczeniu kwoty AI zachowuje się jak przy wyłączniku, do końca miesiąca albo do podniesienia budżetu.",
+        "dziennyProgAlertuKosztowego": "Dzienny próg alertu kosztowego (USD, 0 = wyłączony)",
+        "ileZlotychZa1": "Ile złotych za 1 USD. Wszędzie, gdzie pokazujemy kwotę w USD, doklejamy w nawiasie równowartość w PLN wg tego przelicznika (domyślnie 1 USD = 3,81 PLN)."
+      },
+      "PermissionManager": {
+        "toBramaDostepuDo": "To brama dostępu do panelu administratora — nie można jej usunąć, dopóki ktoś z niej korzysta.",
+        "brakUprawnien": "Brak uprawnień",
+        "brakZdefiniowanychRol": "Brak zdefiniowanych ról",
+        "ostatniaRolaDajacaDostep": "Ostatnia rola dająca dostęp do panelu administratora — nie można jej usunąć.",
+        "wybierzRole": "Wybierz rolę"
+      },
+      "SpeechAssignmentRow": {
+        "domyslnyGlos": "Domyślny głos",
+        "adresBazowyPodmienRegion": "Adres bazowy (podmień region)",
+        "kluczApiBezNiego": "Klucz API — bez niego lektor nie zadziała"
+      },
+      "SystemCategoryManager": {
+        "kategorieSystemoweWidoczneDla": "Kategorie systemowe widoczne dla wszystkich użytkowników. Zmiana nazwy aktualizuje wszystkie produkty w katalogu."
+      },
+      "SystemHealthPage": {
+        "polaczenie": "Połączenie",
+        "galaz": "Gałąź",
+        "kanalCzasuRzeczywistego": "Kanał czasu rzeczywistego",
+        "pulaPolaczen": "Pula połączeń",
+        "adresBazyWskazujeNa": "Adres bazy wskazuje na pulę połączeń, ale w URL-u nie ma",
+        "trybTransakcyjnyNieZnosi": ". Tryb transakcyjny nie znosi zapytań przygotowanych — dopisz flagę w konfiguracji środowiska (aplikacja nie robi tego sama, bo to zmiana sposobu rozmowy z bazą).",
+        "kolejkaZadan": "Kolejka zadań",
+        "modul": "Moduł",
+        "bledy": "Błędy",
+        "diagnostykaZapytanExplain": "Diagnostyka zapytań (EXPLAIN)",
+        "brakDanychDoProbki": "Brak danych do próbki (pusta baza).",
+        "monitorRegresowSeqNa": "Monitor regresów. „Seq” na małych tabelach jest normalny; sygnałem jest Seq Scan na dużej, gorącej liście (utracony indeks).",
+        "brakPomiarowZOstatniej": "Brak pomiarów z ostatniej doby. Metryki zbierają się w pamięci instancji i są dosypywane co minutę przez workera — pusto znaczy „nic się nie działo”, a nie „nie działa”."
+      },
+      "SystemSkinManager": {
+        "skorkiSystemowe": "Skórki systemowe",
+        "nowaSkorka": "Nowa skórka",
+        "skorkiSystemoweSaWidoczne": "Skórki systemowe są widoczne i dostępne dla wszystkich użytkowników. Zmiany wpływają na każdego, kto ma daną skórkę ustawioną.",
+        "usun": "Usuń"
+      },
+      "UserFactsPanel": {
+        "wiedzaOUzytkowniku": "Wiedza o użytkowniku",
+        "tenUzytkownikNieMa": "Ten użytkownik nie ma jeszcze żadnych faktów.",
+        "usun": "Usuń",
+        "tresc": "Treść"
+      },
+      "playground": {
+        "PlaygroundPage": {
+          "zamknijNawigacje": "Zamknij nawigację",
+          "pokazListeKomponentow": "Pokaż listę komponentów",
+          "biezacaSkorka": "Bieżąca skórka",
+          "wlasciwosci": "Właściwości"
+        }
+      },
+      "qa": {
+        "EditEpicForm": {
+          "tytul": "Tytuł",
+          "modul": "Moduł",
+          "slugOpcjonalnieAutoZ": "Slug (opcjonalnie — auto z tytułu)",
+          "opisKrotki": "Opis (krótki)",
+          "kolejnoscMniejszeWyzej": "Kolejność (mniejsze = wyżej)"
+        },
+        "EditScenarioForm": {
+          "tytul": "Tytuł",
+          "kolejnosc": "Kolejność",
+          "slugOpcjonalnieAutoZ": "Slug (opcjonalnie — auto z tytułu)",
+          "trescMarkdown": "Treść (Markdown)",
+          "podglad": "Podgląd"
+        },
+        "EditStoryForm": {
+          "tytul": "Tytuł",
+          "slugOpcjonalnieAutoZ": "Slug (opcjonalnie — auto z tytułu)",
+          "opisKrotki": "Opis (krótki)",
+          "kolejnoscMniejszeWyzej": "Kolejność (mniejsze = wyżej)"
+        },
+        "QaAdminTree": {
+          "brakEpikowKliknijEpic": "Brak epików — kliknij „+ Epic” by dodać.",
+          "usunEpic": "Usuń epic",
+          "usunStory": "Usuń story",
+          "podglad": "Podgląd",
+          "usun": "Usuń"
+        }
+      },
+      "RetentionPanel": {
+        "daneStarszeNizPodana": "Dane starsze niż podana liczba dni są kasowane raz na dobę. Zmiana działa od następnego przebiegu; wartości poniżej podanego minimum są podnoszone do minimum także wtedy, gdy ktoś zapisze je z pominięciem tego formularza."
+      }
+    },
+    "assistant": {
+      "AICommandSheet": {
+        "otworzAsystentaAi": "Otwórz asystenta AI",
+        "bezpieczneAkcjeWykonujaSie": "Bezpieczne akcje wykonują się bez pytania. Akcje nieodwracalne nadal wymagają potwierdzenia.",
+        "zglosProblemZAsystentem": "Zgłoś problem z Asystentem AI",
+        "historiaRozmow": "Historia rozmów",
+        "wrocDo": "Wróć do:",
+        "ukryjTenSkrot": "Ukryj ten skrót",
+        "ukryjSkrotDoPoprzedniej": "Ukryj skrót do poprzedniej rozmowy",
+        "otworzWZadaniach": "Otwórz w zadaniach",
+        "zglosProblemZAsystentem2": "Zgłoś problem z Asystentem AI (opis opcjonalny)",
+        "brakTresciDoZgloszenia": "Brak treści do zgłoszenia.",
+        "stalePreferencjeAsystentUwzglednia": "Stałe preferencje (asystent uwzględnia je w każdym poleceniu)",
+        "glosLektoraOdczytNa": "Głos lektora (odczyt na głos)",
+        "domyslnyPrzegladarki": "(domyślny przeglądarki)",
+        "glosyOmniiDzialajaWszedzie": "Głosy Omnii (działają wszędzie)",
+        "glosyTegoUrzadzenia": "Głosy tego urządzenia",
+        "posluchajProbki": "Posłuchaj próbki",
+        "posluchajProbkiGlosu": "Posłuchaj próbki głosu",
+        "probka": "Próbka",
+        "brakZapisanychRozmow": "Brak zapisanych rozmów.",
+        "zmienNazwe": "Zmień nazwę",
+        "zmienNazweRozmowy": "Zmień nazwę rozmowy",
+        "usun": "Usuń",
+        "usunRozmowe": "Usuń rozmowę",
+        "czescMamDostepDo": "Cześć! Mam dostęp do wszystkich Twoich danych i internetu. Zapytaj o cokolwiek, wydaj polecenie albo poproś o raport.",
+        "ponow": "Ponów",
+        "przerwijIMow": "Przerwij i mów",
+        "zakonczRozmoweGlosowa": "Zakończ rozmowę głosową",
+        "zakoncz": "Zakończ",
+        "zalacznik": "załącznik",
+        "zdjecieGotoweOpiszNp": "Zdjęcie gotowe — opisz (np. „do zakupów”) i wyślij, by rozpoznać przedmioty.",
+        "usunZdjecie": "Usuń zdjęcie",
+        "wiadomoscDoAsystenta": "Wiadomość do asystenta",
+        "zrobZdjecie": "Zrób zdjęcie",
+        "dodajZdjecie": "Dodaj zdjęcie",
+        "ustawieniaWlasnegoPoziomu": "Ustawienia własnego poziomu",
+        "akcjeNieodwracalneUsuwanieCzyszczenie": "Akcje nieodwracalne (usuwanie, czyszczenie) nadal wymagają potwierdzenia.",
+        "wyslij": "Wyślij",
+        "wysylaWiadomosc": "wysyła wiadomość",
+        "twojaOdpowiedz": "Twoja odpowiedź…",
+        "cofniete": "cofnięte",
+        "zatwierdz": "Zatwierdź",
+        "odrzucAkcje": "Odrzuć akcje",
+        "odrzuc": "Odrzuć",
+        "otworzRaport": "Otwórz raport"
+      },
+      "ActionDrawer": {
+        "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",
+        "kliknijQuotParametryQuot": "Kliknij \"Parametry\" przy akcji, aby edytować szczegóły przed wykonaniem."
+      },
+      "AssistantLevelSettings": {
+        "wczytujeUstawienia": "Wczytuję ustawienia…",
+        "administratorNieSkonfigurowalJeszcze": "Administrator nie skonfigurował jeszcze żadnego modelu, więc nie ma z czego wybierać. Poziom własny zacznie działać, gdy modele się pojawią.",
+        "ustawModelWysilekI": "Ustaw model, wysiłek i temperaturę osobno dla każdego rodzaju działania asystenta. Wartości startowe pochodzą z poziomu standardowego — zmieniasz tylko to, co chcesz mieć inaczej.",
+        "administratorNiePrzypisalModelu": "Administrator nie przypisał modelu do tego rodzaju działania, więc nie ma tu czego ustawiać. Pojawi się, gdy przypisanie powstanie w panelu LLM.",
+        "wysilek": "Wysiłek",
+        "przywrocUstawieniaAdministratora": "Przywróć ustawienia administratora"
+      }
+    },
+    "command-palette": {
+      "CommandPalette": {
+        "wpiszKomendeLubZnajdz": "Wpisz komendę lub znajdź listę…",
+        "wyczyscZakonczone": "Wyczyść zakończone",
+        "katalogProduktow": "Katalog produktów",
+        "nowaListaZakupow": "Nowa lista zakupów",
+        "nazwaNowejListyZakupow": "Nazwa nowej listy zakupów…",
+        "utworz": "Utwórz"
+      }
+    },
+    "favorites": {
+      "FavoriteCards": {
+        "zapiszMiejsceGwiazdkaW": "Zapisz miejsce gwiazdką w pasku, żeby wracać tu jednym kliknięciem."
+      },
+      "FavoritesSidebarSection": {
+        "zarzadzajUlubionymiNazwaIkona": "Zarządzaj ulubionymi — nazwa, ikona, kolor, kolejność",
+        "zarzadzajUlubionymi": "Zarządzaj ulubionymi",
+        "nieMaszJeszczeZapisanych": "Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją przyciskiem powyżej — wróci tu razem z filtrami."
+      },
+      "FavoritesSwitcher": {
+        "zarzadzajUlubionymiWUstawieniach": "Zarządzaj ulubionymi w ustawieniach"
+      }
+    },
+    "legal": {
+      "ConsentBanner": {
+        "politykaPrywatnosci": "polityką prywatności",
+        "abyDalejKorzystacZ": ", aby dalej korzystać z aplikacji."
+      }
+    },
+    "settings": {
+      "DriveSettings": {
+        "polaczono": "Połączono",
+        "dyskGoogleNieJest": "Dysk Google nie jest połączony",
+        "polaczAbyWgrywacPliki": "Połącz, aby wgrywać pliki (zdjęcia) do własnego Dysku.",
+        "aplikacjaUzywaUprawnienia": "Aplikacja używa uprawnienia",
+        "widziIZarzadzaWylacznie": "— widzi i zarządza wyłącznie plikami, które sama utworzy w folderze",
+        "naTwoimDyskuNie": "na Twoim Dysku. Nie ma dostępu do reszty Twoich plików.",
+        "polaczonoPomyslnie": "Połączono pomyślnie.",
+        "nieUdaloSiePolaczyc": "Nie udało się połączyć. Spróbuj ponownie.",
+        "anulowanoPolaczenie": "Anulowano połączenie."
+      },
+      "FavoriteViewsEditor": {
+        "miejscaZapisaneGwiazdkaW": "Miejsca zapisane gwiazdką w pasku. Kolejność decyduje o skrótach — pierwsze dziewięć pozycji otwierasz skrótami",
+        "zmienNazwe": "Zmień nazwę",
+        "wGore": "W górę",
+        "wDol": "W dół",
+        "usunZUlubionych": "Usuń z ulubionych",
+        "nieMaszJeszczeUlubionych": "Nie masz jeszcze ulubionych widoków. Wejdź w dowolne miejsce aplikacji — także z ustawionymi filtrami — i kliknij gwiazdkę w pasku, żeby je tu zapisać."
+      },
+      "MenuPrefsEditor": {
+        "wGore": "W górę",
+        "wDol": "W dół",
+        "brakIkonDodajPonizej": "Brak ikon — dodaj poniżej.",
+        "usunZDolnegoPaska": "Usuń z dolnego paska"
+      },
+      "PrivacySettings": {
+        "kompletTwoichDanychZe": "Komplet Twoich danych ze wszystkich modułów w formacie JSON (RODO art. 15/20).",
+        "eksportObejmujeDaneKtorych": "Eksport obejmuje dane, których jesteś właścicielem. Dane zespołów oraz sekrety logowania (tokeny) nie są zawarte.",
+        "usunKonto": "Usuń konto",
+        "trwaleUsunieszKontoI": "Trwale usuniesz konto i wszystkie swoje dane. Operacja jest nieodwracalna. Wpisz swój adres e-mail, aby potwierdzić.",
+        "twojEmail": "twój@email"
+      },
+      "SkinPicker": {
+        "udostepniona": "udostępniona",
+        "usun": "Usuń",
+        "utworzWlasnaSkorke": "Utwórz własną skórkę"
+      },
+      "UserFactsSection": {
+        "teInformacjeTrafiajaDo": "Te informacje trafiają do podpowiedzi w innych modułach (np. propozycji w Pogodzie). Możesz je poprawić, potwierdzić albo odrzucić — odrzucone nie wracają.",
+        "nicJeszczeNieWiemy": "Nic jeszcze nie wiemy. Hipotezy pojawią się, gdy będzie z czego je wyciągnąć — możesz też dopisać coś od siebie.",
+        "zgadzaSie": "Zgadza się",
+        "usun": "Usuń",
+        "tresc": "Treść",
+        "npLubiWycieczkiGorskie": "np. Lubi wycieczki górskie, ale nie w upały"
+      },
+      "WorkspaceLocaleSection": {
+        "ustawieniaZespoluZmieniaJego": "Ustawienia zespołu zmienia jego właściciel lub administrator."
+      }
+    },
+    "sharing": {
+      "ShareControl": {
+        "udostepnianie": "Udostępnianie",
+        "usunDostep": "Usuń dostęp",
+        "emailUzytkownika": "Email użytkownika…"
+      },
+      "SharingPage": {
+        "udostepnianie": "Udostępnianie",
+        "odwolywanieDostepuJednymKliknieciem": "Odwoływanie dostępu jednym kliknięciem dojdzie razem z etapem 2 zadania 12 — dopóki dostęp rozstrzygają dawne tabele udostępnień, usunięcie samego nadania nic by nie zmieniło, a przycisk obiecywałby skutek, którego nie ma."
+      }
+    },
+    "shell": {
+      "AppShell": {
+        "otworzMenu": "Otwórz menu",
+        "wiecej": "Więcej…",
+        "mapySklepow": "Mapy sklepów",
+        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli"
+      },
+      "FeedbackInspector": {
+        "zglosBladSugestieWskaz": "Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B",
+        "trybZglaszaniaBleduLub": "Tryb zgłaszania błędu lub sugestii",
+        "wskazElementZgloszenia": "Wskaż element zgłoszenia",
+        "anulujTrybZglaszania": "Anuluj tryb zgłaszania"
+      },
+      "ModuleSidebar": {
+        "spizarnia": "Spiżarnia",
+        "ksiazki": "Książki",
+        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
+        "stronaGlowna": "Strona główna",
+        "wiecej": "Więcej…"
+      },
+      "NotificationBell": {
+        "ladowanie": "Ładowanie…",
+        "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj."
+      }
+    },
+    "shortcuts": {
+      "ShortcutsButton": {
+        "skrotyKlawiszowe": "Skróty klawiszowe (?)",
+        "pokazSkrotyKlawiszowe": "Pokaż skróty klawiszowe"
+      },
+      "ShortcutsCheatSheet": {
+        "sciagawkaSkrotowKlawiszowych": "Ściągawka skrótów klawiszowych",
+        "skrotyKlawiszowe": "Skróty klawiszowe",
+        "skrotyStronyMajaPierwszenstwo": "Skróty strony mają pierwszeństwo przed globalnymi. W polach tekstowych działają tylko Esc i paleta poleceń — żeby nie przechwytywać pisania."
+      }
+    },
+    "skins": {
+      "SkinAiPanel": {
+        "opiszSkorkeSlowami": "Opisz skórkę słowami",
+        "npKonsolaStatkuKosmicznego": "np. konsola statku kosmicznego — bursztyn i granat, wersaliki w nagłówkach",
+        "nicNieZostaloJeszcze": "Nic nie zostało jeszcze zapisane — po wstawieniu możesz dostroić każdy token ręcznie.",
+        "zwin": "Zwiń",
+        "uzyjTejPropozycji": "Użyj tej propozycji"
+      },
+      "SkinEditor": {
+        "wlasnaCubicBezier": "własna (cubic-bezier)",
+        "podglad": "Podgląd",
+        "udostepnijPublicznieKazdyMoze": "Udostępnij publicznie (każdy może użyć)",
+        "zespol": "Zespół:"
+      },
+      "SkinPreview": {
+        "naglowek": "Nagłówek",
+        "tekstDrugorzedny": "Tekst drugorzędny"
+      }
+    },
+    "teams": {
+      "HouseholdOnboarding": {
+        "wszystkoCoDodaszNa": "Wszystko, co dodasz na wspólnych listach poniżej, widzą wszyscy domownicy."
+      },
+      "InvitationsList": {
+        "brakOczekujacychZaproszen": "Brak oczekujących zaproszeń.",
+        "odrzuc": "Odrzuć"
+      },
+      "InviteMemberForm": {
+        "emailUzytkownika": "Email użytkownika..."
+      },
+      "MemberList": {
+        "ograniczDostepDomownikaDo": "Ogranicz dostęp domownika do modułów",
+        "modulyDoKtorych": "Moduły, do których",
+        "maDostepWeWspoldzielonych": "ma dostęp we współdzielonych zasobach zespołu. Odznacz, by ograniczyć.",
+        "dostep": "Dostęp"
+      }
+    },
+    "trash": {
+      "TrashPage": {
+        "oproznijKosz": "Opróżnij kosz",
+        "przywroc": "Przywróć",
+        "usunTrwale": "Usuń trwale"
+      }
+    }
+  },
+  "modules": {
+    "calendar": {
+      "CalendarPage": {
+        "poprzedniMiesiac": "Poprzedni miesiąc",
+        "nastepnyMiesiac": "Następny miesiąc",
+        "pokazWszystkie": "Pokaż wszystkie"
+      },
+      "IcalFeedCard": {
+        "subskrybujAgendeOmniaW": "Subskrybuj agendę Omnia w Google/Apple Calendar (tylko do odczytu).",
+        "linkZawieraPrywatnyToken": "Link zawiera prywatny token — nie udostępniaj go. Możesz go w każdej chwili unieważnić.",
+        "brakSkonfigurowanegoAdresuAplikacji": "Brak skonfigurowanego adresu aplikacji (AUTH_URL) — link wygeneruje się po ustawieniu go w środowisku.",
+        "wygenerujNowyUniewaznijStary": "Wygeneruj nowy (unieważnij stary)"
+      }
+    },
+    "contacts": {
+      "ContactsPage": {
+        "usun": "Usuń",
+        "imieNazwa": "Imię / nazwa *"
+      }
+    },
+    "flota": {
+      "FlotaHomePage": {
+        "mojPrywatny": "Mój (prywatny)",
+        "przeglad": "Przegląd"
+      },
+      "VehicleDetailPage": {
+        "wrocDoFloty": "Wróć do floty",
+        "usunPojazd": "Usuń pojazd",
+        "kosztLaczny": "Koszt łączny:",
+        "kosztZl": "Koszt [zł]",
+        "pelnyBak": "Pełny bak",
+        "brakTankowan": "Brak tankowań.",
+        "brakWpisowSerwisowych": "Brak wpisów serwisowych.",
+        "dokumentyIZalaczniki": "Dokumenty i załączniki",
+        "fakturyDowodRejPolisa": "faktury, dowód rej., polisa OC (max ~2,5 MB)",
+        "brakZalacznikow": "Brak załączników.",
+        "usun": "Usuń"
+      }
+    },
+    "habits": {
+      "HabitFormModal": {
+        "npPijWodeRano": "np. Pij wodę rano",
+        "wylacz": "Wyłącz"
+      },
+      "HabitsPage": {
+        "naDzis": "Na dziś",
+        "ukonczonoDzis": "Ukończono dziś",
+        "pozaPlanemNaDzis": "Poza planem na dziś",
+        "szczegoly": "Szczegóły",
+        "najdluzszaSeria": "Najdłuższa seria",
+        "tenTydzien": "Ten tydzień",
+        "ukonczenie": "Ukończenie",
+        "utworzZadanieZTego": "Utwórz zadanie z tego nawyku",
+        "usun": "Usuń"
+      }
+    },
+    "health": {
+      "HealthAiOptInToggle": {
+        "dostepAsystentaAiDo": "Dostęp asystenta AI do danych zdrowotnych",
+        "domyslnieWylaczonePoWlaczeniu": "Domyślnie wyłączone. Po włączeniu asystent może czytać Twoje wizyty, badania i leki.",
+        "dostepAiDoDanych": "Dostęp AI do danych zdrowotnych"
+      },
+      "HealthHomePage": {
+        "wartoscLiczbowaDoTrendu": "Wartość liczbowa (do trendu)",
+        "zmienStatus": "Zmień status",
+        "trendyBadan": "Trendy badań",
+        "nadchodzace": "Nadchodzące",
+        "usun": "Usuń"
+      },
+      "MedicationsPage": {
+        "npPoPosilku": "np. po posiłku",
+        "cyklicznosc": "Cykliczność",
+        "dodajPore": "Dodaj porę",
+        "poczatek": "Początek",
+        "lekiIPielegnacja": "Leki i pielęgnacja",
+        "naDzis": "Na dziś",
+        "brakZaplanowanychDawekAni": "Brak zaplanowanych dawek ani czynności na dziś."
+      }
+    },
+    "home": {
+      "AdminDashboardWidget": {
+        "uzytkownikow": "Użytkowników",
+        "zespolow": "Zespołów",
+        "raportow": "Raportów",
+        "kontrolaDostepu": "Kontrola dostępu",
+        "otworz": "Otwórz"
+      },
+      "DailyBriefingCard": {
+        "odswiezBriefing": "Odśwież briefing",
+        "odswiez": "Odśwież",
+        "krotkiePodsumowanieDniaZaleglosci": "Krótkie podsumowanie dnia — zaległości, dzisiejsze terminy i najbliższe wydarzenia w jednym miejscu."
+      },
+      "HomeAssistantCard": {
+        "wybierzGotowaAkcjeAlbo": "Wybierz gotową akcję albo otwórz rozmowę",
+        "otworzAsystenta": "Otwórz asystenta"
+      },
+      "HomePage": {
+        "twojeModuly": "Twoje moduły",
+        "dzisINadchodzace": "Dziś i nadchodzące",
+        "wGore": "W górę",
+        "wDol": "W dół",
+        "zwierzeta": "Zwierzęta",
+        "naukaJezykow": "Nauka języków"
+      },
+      "KitchenWidget": {
+        "coDzisGotujemy": "Co dziś gotujemy",
+        "konczySieTermin": "Kończy się termin"
+      },
+      "ModuleSnapshotGrid": {
+        "zadaniaDzis": "Zadania dziś",
+        "zalegle": "Zaległe",
+        "przypieteNotatki": "Przypięte notatki",
+        "slowkaDoPowtorki": "Słówka do powtórki",
+        "opiekaDzis": "Opieka dziś",
+        "posilkiDzis": "Posiłki dziś",
+        "wygasajace": "Wygasające",
+        "przegladOcWkrotce": "Przegląd / OC wkrótce",
+        "magazynDoUzupelnienia": "Magazyn: do uzupełnienia"
+      },
+      "QuickStats": {
+        "zadanDzis": "zadań dziś",
+        "zaleglych": "zaległych"
+      },
+      "TodaySnapshot": {
+        "powtorki": "Powtórki",
+        "posilki": "Posiłki"
+      }
+    },
+    "kitchen": {
+      "KitchenHomePage": {
+        "posilkiDzis": "Posiłki dziś",
+        "spizarnia": "Spiżarnia",
+        "wygasajace": "Wygasające",
+        "coUgotowacZTego": "Co ugotować z tego co mam?",
+        "brakSugestiiUzupelnijSpizarnie": "Brak sugestii — uzupełnij spiżarnię lub dodaj przepisy.",
+        "zarzadzanie": "Zarządzanie",
+        "dzisWMenu": "Dziś w menu",
+        "calaSpizarnia": "Cała spiżarnia",
+        "konczySieTermin": "Kończy się termin",
+        "ksiazkiKucharskie": "Książki kucharskie"
+      },
+      "CookbookEditDialog": {
+        "usun": "Usuń",
+        "npWloskaKlasyka": "np. Włoska klasyka",
+        "wlasneEmoji": "Własne emoji"
+      },
+      "CookbookList": {
+        "ksiazkiKucharskie": "Książki kucharskie",
+        "brakKsiazekKucharskich": "Brak książek kucharskich",
+        "tworzKolekcjePrzepisowWedlug": "Twórz kolekcje przepisów według tematu — np. „Mama”, „Włoska klasyka”, „Desery”.",
+        "utworzPierwsza": "Utwórz pierwszą"
+      },
+      "CookbookView": {
+        "ksiazki": "Książki",
+        "wTejKsiazceNie": "W tej książce nie ma jeszcze przepisów."
+      },
+      "PantryEditSheet": {
+        "usun": "Usuń",
+        "ilosc": "Ilość",
+        "terminWaznosci": "Termin ważności",
+        "minimumAutoUzupelnianie": "Minimum (auto-uzupełnianie)",
+        "autoUzupelnij": "Auto-uzupełnij"
+      },
+      "PantryList": {
+        "spizarniaJestPusta": "Spiżarnia jest pusta",
+        "dodajPierwszaPozycjeZeby": "Dodaj pierwszą pozycję, żeby zacząć śledzić swój zapas. Pozycje ze spiżarni będą automatycznie pomijane przy generowaniu listy zakupów.",
+        "dodajPozycje": "Dodaj pozycję",
+        "szukajWSpizarni": "Szukaj w spiżarni…",
+        "ponizejMin": "poniżej min"
+      },
+      "StockTakeMode": {
+        "wpiszAktualnaIloscKazdego": "Wpisz aktualną ilość każdego produktu. Tab/Enter przechodzi do kolejnego pola."
+      },
+      "MealPlanWeek": {
+        "poprzedniTydzien": "Poprzedni tydzień",
+        "nastepnyTydzien": "Następny tydzień",
+        "listaZakupowZPlanu": "Lista zakupów z planu",
+        "synchronizuje": "Synchronizuję…",
+        "dzis": "Dziś"
+      },
+      "PlanWeekDialog": {
+        "brakPrzepisowWBibliotece": "Brak przepisów w bibliotece",
+        "aiLosujePlanTylko": "AI losuje plan tylko z Twoich własnych przepisów. Dodaj kilka, a potem wróć tutaj.",
+        "aiWybierzePrzepisyZ": "AI wybierze przepisy z Twojej biblioteki dla każdego slotu w tygodniu na podstawie preferencji.",
+        "liczbaOsob": "Liczba osób",
+        "maxCzasPosilekMin": "Max czas/posiłek (min)",
+        "posilkiDziennie": "Posiłki dziennie",
+        "polskaWloska": "polska, włoska",
+        "priorytetUzyjProduktowZe": "Priorytet: użyj produktów ze spiżarni",
+        "niePowtarzajPrzepisowW": "Nie powtarzaj przepisów w tygodniu",
+        "nadpiszIstniejaceWpisyW": "Nadpisz istniejące wpisy w planie",
+        "aiTworzyPlanNa": "AI tworzy plan na podstawie Twoich przepisów…"
+      },
+      "ShoppingFromPlanDialog": {
+        "listaZakupowZPlanu": "Lista zakupów z planu",
+        "biezacyTydzien": "Bieżący tydzień",
+        "najblizsze3Dni": "Najbliższe 3 dni",
+        "brakListZakupowUtworz": "Brak list zakupów. Utwórz najpierw listę w module Zakupy.",
+        "pominToCoJest": "Pomiń to co jest w spiżarni",
+        "pominSkladnikiOpcjonalne": "Pomiń składniki opcjonalne",
+        "podglad": "Podgląd",
+        "brakZaplanowanychPrzepisowW": "Brak zaplanowanych przepisów w tym zakresie."
+      },
+      "SlotEditorSheet": {
+        "usun": "Usuń",
+        "brakPasujacychPrzepisow": "Brak pasujących przepisów.",
+        "lubWlasnyTytul": "lub własny tytuł:",
+        "npObiadURodzicow": "np. obiad u rodziców"
+      },
+      "CookMode": {
+        "tenPrzepisNieMa": "Ten przepis nie ma jeszcze kroków.",
+        "wyjdz": "Wyjdź",
+        "pokazSkladniki": "Pokaż składniki",
+        "nastepnyKrok": "Następny krok",
+        "ilePorcjiWyszlo": "Ile porcji wyszło?",
+        "wroc": "Wróć"
+      },
+      "ImportFromAIDialog": {
+        "opiszDanieJednymZdaniem": "Opisz danie jednym zdaniem — AI ułoży pełen przepis (składniki + kroki).",
+        "npPierogiRuskieDla": "np. pierogi ruskie dla 4 osób; szybki obiad z kurczakiem na 30 min; wegański deser bez piekarnika"
+      },
+      "ImportFromImageDialog": {
+        "importZeZdjeciaOcr": "Import ze zdjęcia (OCR)",
+        "zrobZdjecieStronyZ": "Zrób zdjęcie strony z książki kucharskiej, kartki z notatkami lub ekranu z przepisem. AI rozpozna składniki i kroki.",
+        "kliknijLubUpuscPlik": "Kliknij lub upuść plik",
+        "podglad": "Podgląd",
+        "usunZdjecie": "Usuń zdjęcie"
+      },
+      "ImportFromUrlDialog": {
+        "wklejLinkDoPrzepisu": "Wklej link do przepisu. AI pobierze stronę i wyciągnie składniki + kroki (najpierw spróbuje schema.org JSON-LD, potem LLM)."
+      },
+      "PantrySuggestionsPanel": {
+        "zTegoCoMasz": "Z tego co masz w spiżarni"
+      },
+      "RecipeEditor": {
+        "sprawdzIPopraw": "Sprawdź i popraw",
+        "tytulSkladnikiIKroki": "tytuł, składniki i kroki przed zapisaniem.",
+        "tytul": "Tytuł",
+        "krotkiOpisOpcjonalny": "Krótki opis (opcjonalny)",
+        "urlZdjeciaOpcjonalny": "URL zdjęcia (opcjonalny)",
+        "trudnosc": "Trudność",
+        "aiUzupelniKuchniePosilek": "AI uzupełni kuchnię, posiłek i trudność na podstawie tytułu, składników i kroków",
+        "npWloska": "np. włoska",
+        "posilek": "Posiłek",
+        "ksiazkaKucharska": "Książka kucharska",
+        "skladniki": "Składniki",
+        "wklejBlokTekstuAi": "Wklej blok tekstu — AI rozpozna składniki.",
+        "ilosc": "ilość",
+        "zlJedn": "zł/jedn.",
+        "cenaZaJednostkeDo": "Cena za jednostkę (do kosztu przepisu)",
+        "nazwaSkladnika": "nazwa składnika",
+        "usunSkladnik": "Usuń składnik",
+        "usunKrok": "Usuń krok",
+        "wartosciOdzywczeNa1": "Wartości odżywcze (na 1 porcję, opcjonalnie)",
+        "bialkoG": "białko (g)",
+        "weglG": "węgl. (g)",
+        "tluszczG": "tłuszcz (g)",
+        "npNajlepiejZGuanciale": "np. Najlepiej z guanciale, pieprz świeżo mielony.",
+        "zdjeciaIZalaczniki": "Zdjęcia i załączniki",
+        "zapiszPrzepisAbyDodac": "Zapisz przepis, aby dodać zdjęcia kartek i odczytać z nich tekst (OCR)."
+      },
+      "RecipeFilters": {
+        "posilekDowolny": "Posiłek: dowolny",
+        "ksiazkaDowolna": "Książka: dowolna"
+      },
+      "RecipeImagesEditor": {
+        "zdjeciaIZalaczniki": "Zdjęcia i załączniki",
+        "naTymZdjeciuNie": "Na tym zdjęciu nie znaleziono tekstu."
+      },
+      "RecipeList": {
+        "szukajPrzepisow": "Szukaj przepisów… ( / )",
+        "importZeZdjeciaOcr": "Import ze zdjęcia (OCR)",
+        "brakPrzepisowSpelniajacychFiltry": "Brak przepisów spełniających filtry.",
+        "brakPrzepisow": "Brak przepisów",
+        "zacznijOdStworzeniaSwojego": "Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów."
+      },
+      "RecipeView": {
+        "usun": "Usuń",
+        "naPorcje": "Na porcję:",
+        "doListyZakupow": "Do listy zakupów",
+        "ugotowalem": "Ugotowałem",
+        "skladniki": "Składniki",
+        "brakSkladnikow": "Brak składników.",
+        "brakKrokow": "Brak kroków.",
+        "zdjeciaZPrzepisu": "Zdjęcia z przepisu",
+        "brakOdczytanegoTekstuZ": "Brak odczytanego tekstu z tego zdjęcia."
+      },
+      "ShopForRecipeDialog": {
+        "dodajDoListyZakupow": "Dodaj do listy zakupów",
+        "nieMaszZadnejListy": "Nie masz żadnej listy zakupów. Utwórz najpierw listę w module Zakupy.",
+        "pominToCoMam": "Pomiń to co mam w spiżarni",
+        "pominSkladnikiOpcjonalne": "Pomiń składniki opcjonalne",
+        "tenPrzepisNieMa": "Ten przepis nie ma jeszcze składników."
+      },
+      "ServingSelector": {
+        "zwiekszPorcje": "Zwiększ porcje"
+      },
+      "RecipeDrawer": {
+        "przeciagnijPrzepisNaSlot": "Przeciągnij przepis na slot w planie"
+      }
+    },
+    "languages": {
+      "DeckPage": {
+        "naukaJezykow": "Nauka języków",
+        "uczSie": "Ucz się",
+        "usunTalie": "Usuń talię",
+        "wklejTekstAiWyciagnie": "Wklej tekst — AI wyciągnie z niego kolejne słówka…",
+        "dodajSlowkaZTekstu": "Dodaj słówka z tekstu (AI)",
+        "doPowtorki": "Do powtórki",
+        "brakSlowekDodajJe": "Brak słówek. Dodaj je ręcznie lub wygeneruj z tekstu."
+      },
+      "LanguagesHomePage": {
+        "naukaJezykow": "Nauka języków",
+        "slowek": "Słówek",
+        "npSlownictwoDoDemo": "np. Słownictwo do demo projektu",
+        "jezykZnany": "Język znany",
+        "jezykUczony": "Język uczony",
+        "tekstZrodlowyOpcjonalnieAi": "Tekst źródłowy (opcjonalnie) — AI wyciągnie z niego słówka",
+        "wklejKodArtykulLub": "Wklej kod, artykuł lub dowolny tekst w języku, którego się uczysz…",
+        "slowkaDoPowtorki": "Słówka do powtórki"
+      },
+      "StudySession": {
+        "wrocDoTalii": "Wróć do talii",
+        "sprawdz": "Sprawdź",
+        "kliknijLubSpacjaAby": "Kliknij lub spacja, aby odsłonić"
+      },
+      "SpeakButton": {
+        "wymow": "Wymów"
+      }
+    },
+    "magazynowanie": {
+      "BarcodeScanner": {
+        "uruchamiamKamere": "Uruchamiam kamerę…"
+      },
+      "BatchesManager": {
+        "wczytuje": "Wczytuję…",
+        "brakPartiiDodajBy": "Brak partii. Dodaj, by śledzić daty ważności i wydawać wg FEFO.",
+        "usunPartie": "Usuń partię",
+        "ilosc": "Ilość",
+        "dodajPartie": "Dodaj partię",
+        "zdejmieZNajwczesniejWygasajacej": "zdejmie z najwcześniej wygasającej"
+      },
+      "DocumentsPage": {
+        "zeskanujZdjecieFakturyLub": "Zeskanuj zdjęcie faktury lub WZ — AI odczyta pozycje, a Ty jednym kliknięciem zaksięgujesz je na stan.",
+        "brakDokumentow": "Brak dokumentów.",
+        "usun": "Usuń",
+        "ilosc": "Ilość"
+      },
+      "PurchaseOrders": {
+        "zamowienia": "Zamówienia",
+        "brakZamowienUtworzPierwsze": "Brak zamówień. Utwórz pierwsze — możesz zasiać je brakami magazynowymi.",
+        "usun": "Usuń",
+        "wyslijMailem": "Wyślij mailem",
+        "noweZamowienie": "Nowe zamówienie",
+        "utworz": "Utwórz",
+        "dodajPozycje": "Dodaj pozycję"
+      },
+      "QrLabels": {
+        "wydrukujEtykietyDlaPolek": "Wydrukuj etykiety dla półek/pudeł. Zeskanuj telefonem, by zobaczyć zawartość danej lokalizacji.",
+        "brakLokalizacjiWMagazynie": "Brak lokalizacji w magazynie — dodaj własną etykietę poniżej.",
+        "magazynNpGaraz": "Magazyn (np. Garaż)",
+        "lokalizacjaNpRegalA3": "Lokalizacja (np. Regał A3)"
+      },
+      "ScanFlow": {
+        "przyjecie": "Przyjęcie",
+        "wpiszKodNazweRecznie": "Wpisz kod / nazwę ręcznie…",
+        "wyczyscWidok": "Wyczyść widok",
+        "nieznanyKodDodajPozycje": "Nieznany kod — dodaj pozycję",
+        "pomin": "Pomiń"
+      },
+      "StockTakeMode": {
+        "wpiszAktualnaIloscKazdej": "Wpisz aktualną ilość każdej pozycji. Zmiany trafią do dziennika ruchów jako korekta (spis)."
+      },
+      "StorageAnalytics": {
+        "wartoscMagazynu": "Wartość magazynu",
+        "ponizejMin": "Poniżej min.",
+        "kliknijAnalizujByAi": "Kliknij „Analizuj”, by AI podsumowała stan magazynu i rekomendacje.",
+        "brakWnioskowLubAi": "Brak wniosków (lub AI niedostępne).",
+        "przyjecia": "przyjęcia",
+        "wartoscWgMagazynu": "Wartość wg magazynu",
+        "analizaAbcParetoWg": "Analiza ABC (Pareto wg wartości)"
+      },
+      "StorageEditSheet": {
+        "usun": "Usuń",
+        "garazMagazynGlowny": "garaż, magazyn główny…",
+        "regalA3StrychSzafa": "regał A3, strych, szafa…",
+        "ilosc": "Ilość",
+        "przyjecie": "Przyjęcie",
+        "narzedziaChemia": "narzędzia, chemia…",
+        "kodWewnetrzny": "kod wewnętrzny",
+        "terminWaznosci": "Termin ważności",
+        "zdjecie": "Zdjęcie",
+        "stanMinimalnyUzupelnianie": "Stan minimalny (uzupełnianie)",
+        "przeniesDoInnegoMagazynu": "Przenieś do innego magazynu",
+        "przenies": "Przenieś",
+        "historiaRuchow": "Historia ruchów"
+      },
+      "StorageList": {
+        "dodajPozycjeRecznieAlbo": "Dodaj pozycje ręcznie albo zeskanuj zdjęcie półki, regału czy szafy — AI rozpozna przedmioty i utworzy listę.",
+        "skanujZdjecie": "Skanuj zdjęcie",
+        "dodajPozycje": "Dodaj pozycję",
+        "inwentaryzacjaZeZdjecia": "Inwentaryzacja ze zdjęcia",
+        "doZakupow": "Do zakupów",
+        "ponizejMin": "poniżej min"
+      },
+      "StorageNav": {
+        "przelaczTrybDomProfesjonalny": "Przełącz tryb Dom ↔ Profesjonalny"
+      },
+      "StorageScan": {
+        "inwentaryzacjaZeZdjecia": "Inwentaryzacja ze zdjęcia",
+        "zrobLubWybierzZdjecie": "Zrób lub wybierz zdjęcie półki, regału, szafy czy garażu. AI rozpozna przedmioty, a Ty poprawisz listę przed zapisem.",
+        "garazMagazynGlowny": "garaż, magazyn główny…",
+        "regalA3Strych": "regał A3, strych…",
+        "ilosc": "ilość",
+        "usun": "Usuń"
+      },
+      "StorageSearch": {
+        "wpiszCzegoSzukaszPokaze": "Wpisz, czego szukasz — pokażę magazyn i lokalizację. Zapytaj naturalnie („gdzie mam ładowarkę do wiertarki”) i użyj AI.",
+        "npSrubokretKrzyzakowyKable": "np. śrubokręt krzyżakowy, kable USB…",
+        "pokazDopasowanieTekstowe": "pokaż dopasowanie tekstowe"
+      },
+      "StorageSettingsForm": {
+        "uzywanaWWyceniePozycji": "Używana w wycenie pozycji, analityce i eksporcie (np. do ubezpieczenia)."
+      },
+      "SuppliersPage": {
+        "brakDostawcowDodajPierwszego": "Brak dostawców. Dodaj pierwszego — przyda się przy dokumentach i zamówieniach.",
+        "usun": "Usuń"
+      }
+    },
+    "news": {
+      "HotTopics": {
+        "goraceTematy": "Gorące tematy",
+        "ostatnie24hWszystkieZrodla": "ostatnie 24h · wszystkie źródła",
+        "teTematyNieBeda": "Te tematy nie będą proponowane. Możesz je przywrócić na listę propozycji albo od razu zacząć monitorować.",
+        "przywroc": "Przywróć",
+        "analizujeNaglowkiZOstatnich": "Analizuję nagłówki z ostatnich 24 godzin…",
+        "nieUdaloSiePrzygotowac": "Nie udało się przygotować gorących tematów.",
+        "sprobujPonownie": "Spróbuj ponownie",
+        "goraceTematyPowstanaPo": "Gorące tematy powstaną po kliknięciu",
+        "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach."
+      },
+      "NewsItemCard": {
+        "odrzuc": "Odrzuć"
+      },
+      "NewsPage": {
+        "wiadomosci": "Wiadomości",
+        "strumien": "Strumień",
+        "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
+        "brakNowychIstotnychWiadomosci": "Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać najświeższe materiały (tylko z ostatnich 24 godzin).",
+        "widokiModuluWiadomosci": "Widoki modułu Wiadomości",
+        "ostatnieOdswiezanieNiePowiodlo": "Ostatnie odświeżanie nie powiodło się.",
+        "modelNieskonfigurowanyMaterialPobrany": "model nieskonfigurowany — materiał pobrany, analiza pominięta",
+        "historiaOdswiezen": "Historia odświeżeń",
+        "wczytuje": "Wczytuję…",
+        "brakZapisanychPrzebiegowPierwszy": "Brak zapisanych przebiegów. Pierwszy pojawi się tu po najbliższym odświeżeniu.",
+        "usunTemat": "Usuń temat",
+        "tytulTematu": "Tytuł tematu",
+        "filtrSemantycznyOpiszDokladnie": "Filtr semantyczny (opisz dokładnie, co Cię interesuje)",
+        "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych"
+      },
+      "NewsReader": {
+        "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
+        "poprzedniaWiadomosc": "Poprzednia wiadomość",
+        "czytajNaGlos": "Czytaj na głos",
+        "nastepneZdanie": "Następne zdanie",
+        "nastepnaWiadomosc": "Następna wiadomość"
+      },
+      "NewsSettings": {
+        "zrodlaWiadomosci": "Źródła wiadomości",
+        "usunZrodlo": "Usuń źródło",
+        "nazwaZrodlaNpTvn24": "Nazwa źródła (np. TVN24)",
+        "dodajZrodlo": "Dodaj źródło",
+        "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",
+        "opisZrodla": "Opis źródła"
+      },
+      "NewsStream": {
+        "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
+        "sluchajCalegoTematu": "Słuchaj całego tematu",
+        "oznaczCalyTematJako": "Oznacz cały temat jako przeczytany",
+        "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie."
+      },
+      "NewsTimeline": {
+        "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",
+        "materialZrodlowy": "Materiał źródłowy"
+      }
+    },
+    "notes": {
+      "GroupsManager": {
+        "utworz": "Utwórz",
+        "brakFolderowUtworzPierwszy": "Brak folderów. Utwórz pierwszy."
+      },
+      "NoteList": {
+        "brakNotatekNacisnij": "Brak notatek. Naciśnij",
+        "abyDodac": "aby dodać."
+      },
+      "NoteRow": {
+        "tytul": "Tytuł...",
+        "trescNotatkiMarkdown": "Treść notatki (markdown)...",
+        "podglad": "Podgląd…",
+        "trescNotatki": "Treść notatki...",
+        "podgladMarkdownNaZywo": "Podgląd markdown na żywo",
+        "powiedzCoZmienic": "Powiedz co zmienić",
+        "przypieta": "Przypięta",
+        "usunD": "Usuń (d)",
+        "usun": "Usuń",
+        "brakWczesniejszychWersji": "Brak wcześniejszych wersji.",
+        "przywrocTeWersje": "Przywróć tę wersję",
+        "przywroc": "Przywróć",
+        "linkujaTu": "Linkują tu:"
+      },
+      "NotesHomePage": {
+        "przypiete": "Przypięte",
+        "zarzadzanie": "Zarządzanie"
+      },
+      "NotesPage": {
+        "koszPrzywrocUsuniete": "Kosz — przywróć usunięte",
+        "koszPrzywrocUsunieteNotatki": "Kosz — przywróć usunięte notatki"
+      },
+      "NotesQA": {
+        "zrodla": "Źródła:",
+        "zadajPytanieDotyczaceNotatek": "Zadaj pytanie dotyczące notatek..."
+      },
+      "TagSuggestions": {
+        "analizujeTresc": "Analizuję treść...",
+        "odswiezSugestie": "Odśwież sugestie"
+      },
+      "TagsManager": {
+        "utworz": "Utwórz",
+        "brakTagowDodajPierwszy": "Brak tagów. Dodaj pierwszy lub pozwól AI je zaproponować.",
+        "usunTag": "Usuń tag"
+      },
+      "QuickNoteBar": {
+        "nowaNotatkaEnterAby": "Nowa notatka... (Enter aby rozwinąć)",
+        "trescNotatki": "Treść notatki...",
+        "dodajNotatke": "Dodaj notatkę"
+      }
+    },
+    "pets": {
+      "CareAgenda": {
+        "brakZaplanowanychZadanOpieki": "Brak zaplanowanych zadań opieki 🎉"
+      },
+      "PetBreeding": {
+        "brakCechGenetycznychDodaj": "Brak cech genetycznych. Dodaj geny/morphy, aby korzystać z kalkulatora par.",
+        "zygotycznosc": "Zygotyczność",
+        "dodajGenyTemuZwierzeciu": "Dodaj geny temu zwierzęciu oraz przynajmniej jednemu zwierzęciu tego samego gatunku, aby policzyć potomstwo.",
+        "brakWspolnychAktywnychGenow": "Brak wspólnych/aktywnych genów do policzenia.",
+        "rodowod": "Rodowód",
+        "brakParHodowlanychZ": "Brak par hodowlanych z udziałem tego zwierzęcia.",
+        "sprzedaz": "Sprzedaż",
+        "brakRekordowSprzedazy": "Brak rekordów sprzedaży.",
+        "utworz": "Utwórz",
+        "dataZlozenia": "Data złożenia",
+        "plodne": "Płodne",
+        "wilgotnosc": "Wilgotność (%)",
+        "imie": "Imię *",
+        "plec": "Płeć",
+        "zapiszSprzedaz": "Zapisz sprzedaż",
+        "oznaczZwierzeJakoSprzedane": "Oznacz zwierzę jako sprzedane"
+      },
+      "PetDetailPage": {
+        "zwierzeta": "Zwierzęta"
+      },
+      "PetForm": {
+        "imie": "Imię *",
+        "plec": "Płeć",
+        "urlZdjecia": "URL zdjęcia",
+        "wlasciciel": "Właściciel"
+      },
+      "PetHusbandry": {
+        "odlacz": "Odłącz",
+        "przypiszIstniejacy": "Przypisz istniejący",
+        "pojemnoscL": "Pojemność (l)",
+        "dlugoscCm": "Długość (cm)",
+        "utworzNowyZbiornik": "Utwórz nowy zbiornik",
+        "nowyPomiarParametrow": "Nowy pomiar parametrów",
+        "sprzet": "Sprzęt",
+        "brakSprzetuGrzalkaFiltr": "Brak sprzętu (grzałka, filtr, żarówka UVB…).",
+        "dodajSprzet": "Dodaj sprzęt",
+        "npZarowkaUvb10": "np. Żarówka UVB 10.0",
+        "wymienDoOpcjonalnie": "Wymień do (opcjonalnie)",
+        "historiaPomiarow": "Historia pomiarów",
+        "pustePoleUzyjDomyslnego": "Puste pole = użyj domyślnego zakresu bezpieczeństwa."
+      },
+      "PetSections": {
+        "usun": "Usuń",
+        "dlugoscCm": "Długość (cm)",
+        "npDrontalSzczepienieWscieklizna": "np. Drontal, szczepienie wścieklizna",
+        "nastepnyTermin": "Następny termin",
+        "zalacznik": "załącznik",
+        "powod": "Powód",
+        "kosztZl": "Koszt (zł)",
+        "nastepnaWizyta": "Następna wizyta",
+        "urlZalacznikaSkanWynik": "URL załącznika (skan, wynik)",
+        "tytul": "Tytuł *",
+        "zwrocone": "Zwrócone",
+        "sumaKosztowWizytWeterynaryjnych": "suma kosztów wizyt weterynaryjnych",
+        "dokumentyIZdjecia": "Dokumenty i zdjęcia",
+        "urlZdjeciaProfilowego": "URL zdjęcia profilowego",
+        "zalacznikiZWizyt": "Załączniki z wizyt",
+        "integracjaGoogleDriveWkrotce": "Integracja Google Drive — wkrótce",
+        "wkrotceBedzieMoznaWskazac": "Wkrótce będzie można wskazać własny folder na Google Drive i przechowywać tam zdjęcia oraz dokumenty (rodowody, wyniki badań). Na razie wklejaj linki URL.",
+        "udostepnianie": "Udostępnianie",
+        "abyUdostepnicCalemuZespolowi": "Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.",
+        "widocznoscFunkcji": "Widoczność funkcji",
+        "zapiszWidocznosc": "Zapisz widoczność"
+      },
+      "PetsHomePage": {
+        "zwierzeta": "Zwierzęta",
+        "zalegle": "Zaległe",
+        "dzis": "Dziś",
+        "nadchodzace": "Nadchodzące",
+        "mojeZwierzeta": "Moje zwierzęta",
+        "uzyjMagicznejIkonyAby": "Użyj magicznej ikony (✨), aby tekstem lub głosem dodać zwierzę, zważyć je, zaplanować lek czy zapisać karmienie."
+      },
+      "PetsSideNav": {
+        "brakZwierzat": "Brak zwierząt"
+      },
+      "WelfareSuggestions": {
+        "poradyAiPowstanaPo": "Porady AI powstaną po kliknięciu"
+      }
+    },
+    "portfel": {
+      "BudgetsPage": {
+        "budzetyICele": "Budżety i cele",
+        "budzetyMiesieczne": "Budżety miesięczne",
+        "budzet": "Budżet",
+        "mojPrywatny": "Mój (prywatny)",
+        "usunBudzet": "Usuń budżet",
+        "celeOszczednosciowe": "Cele oszczędnościowe",
+        "juzMam": "Już mam",
+        "usunCel": "Usuń cel",
+        "wplac": "+ Wpłać"
+      },
+      "ElementDetailPage": {
+        "wrocDoPortfela": "Wróć do portfela",
+        "usunElement": "Usuń element",
+        "podgladImportuCsv": "Podgląd importu CSV"
+      },
+      "FinanceAiAccessToggle": {
+        "dostepAsystentaAiDo": "Dostęp asystenta AI do danych finansowych",
+        "gdyWlaczoneAsystentMoze": "Gdy włączone, asystent może czytać Twoje salda i elementy portfela. Wyłącz, by nie trafiały do AI.",
+        "dostepAiDoDanych": "Dostęp AI do danych finansowych"
+      },
+      "MonthlyReportPage": {
+        "raportyMiesieczne": "Raporty miesięczne",
+        "starszyMiesiac": "Starszy miesiąc",
+        "nowszyMiesiac": "Nowszy miesiąc"
+      },
+      "PortfelHomePage": {
+        "majatekNetto": "Majątek netto",
+        "budzetyICele": "Budżety i cele",
+        "limityWydatkowPerKategoria": "Limity wydatków per kategoria + cele oszczędnościowe",
+        "raportyMiesieczne": "Raporty miesięczne",
+        "gdziePoszlyPieniadzePodzial": "Gdzie poszły pieniądze — podział wydatków na kategorie",
+        "majatekWCzasie": "Majątek w czasie",
+        "saldoPoczatkowe": "Saldo początkowe",
+        "mojPrywatny": "Mój (prywatny)"
+      },
+      "PortfelSettingsPage": {
+        "gdyWlaczoneKosztyZ": "Gdy włączone, koszty z innych modułów (na razie:",
+        "saAutomatycznieKsiegowaneJako": ") są automatycznie księgowane jako wydatek na wybranym koncie. Usunięcie rekordu cofa wpis.",
+        "ksiegujWydatkiAutomatycznie": "Księguj wydatki automatycznie",
+        "zapisuje": "Zapisuję…",
+        "prywatnoscIAi": "Prywatność i AI",
+        "majatekNettoPrzeliczanyJest": "Majątek netto przeliczany jest na",
+        "waluteSprawozdawcza": "walutę sprawozdawczą",
+        "dlaKontWInnych": ". Dla kont w innych walutach ustaw kurs (ile waluty bazowej za 1 jednostkę), ręcznie lub z NBP.",
+        "brakKursowDodajPonizej": "Brak kursów — dodaj poniżej lub pobierz z NBP.",
+        "usunKurs": "Usuń kurs"
+      },
+      "PortfelSideNav": {
+        "budzetyICele": "Budżety i cele",
+        "raportyMiesieczne": "Raporty miesięczne"
+      }
+    },
+    "qa": {
+      "QaHomePage": {
+        "epikow": "epików",
+        "moduly": "Moduły",
+        "brakScenariuszyWkrotce": "Brak scenariuszy — wkrótce",
+        "wkrotce": "Wkrótce",
+        "zglaszanieBugow": "Zgłaszanie bugów",
+        "srodowiska": "Środowiska"
+      },
+      "ScenarioPage": {
+        "nastepny": "Następny",
+        "wrocDoListyModulu": "Wróć do listy modułu"
+      }
+    },
+    "reports": {
+      "ReportsHomePage": {
+        "zespolowe": "Zespołowe",
+        "wedlugKategorii": "Według kategorii",
+        "zarzadzanie": "Zarządzanie",
+        "trescNaDyskuGoogle": "Treść na Dysku Google"
+      }
+    },
+    "services": {
+      "AvailabilityEditor": {
+        "dostepnoscDoRezerwacji": "Dostępność do rezerwacji",
+        "klienciZarezerwujaWolneSloty": "Klienci zarezerwują wolne sloty w tych godzinach dla ofert z włączoną rezerwacją.",
+        "calaFirmaSolo": "Cała firma (solo)",
+        "zapiszDostepnosc": "Zapisz dostępność"
+      },
+      "ListingDetailPage": {
+        "wszystkieUslugi": "Wszystkie usługi",
+        "toTwojaOfertaZarzadzaj": "To Twoja oferta — zarządzaj nią w panelu wykonawcy.",
+        "zlecenieWyslanePrzekierowuje": "Zlecenie wysłane! Przekierowuję…",
+        "zamowTeUsluge": "Zamów tę usługę",
+        "npNaprawaCieknacegoKranu": "np. Naprawa cieknącego kranu w łazience",
+        "szczegolyOpcjonalnie": "Szczegóły (opcjonalnie)",
+        "wyslijZlecenie": "Wyślij zlecenie",
+        "terminZarezerwowanyPrzekierowuje": "Termin zarezerwowany! Przekierowuję…",
+        "dzien": "Dzień",
+        "szukamWolnychTerminow": "Szukam wolnych terminów…",
+        "brakWolnychTerminowTego": "Brak wolnych terminów tego dnia. Wybierz inny dzień."
+      },
+      "ModerationPage": {
+        "uslugi": "Usługi",
+        "moderacjaSporow": "Moderacja sporów",
+        "rozwiaz": "Rozwiąż",
+        "odrzuc": "Odrzuć"
+      },
+      "MyRequestsPage": {
+        "wszystkieUslugi": "Wszystkie usługi",
+        "zmienTermin": "Zmień termin",
+        "ocen": "Oceń",
+        "brakWolnychTerminowTego": "Brak wolnych terminów tego dnia.",
+        "wyslijOcene": "Wyślij ocenę"
+      },
+      "PromoCodesManager": {
+        "kwotaZl": "Kwota (zł)",
+        "brakKodowDodajKod": "Brak kodów. Dodaj kod, by oferować klientom zniżki.",
+        "usun": "Usuń"
+      },
+      "ProviderPanelPage": {
+        "wszystkieUslugi": "Wszystkie usługi",
+        "przychodzaceZlecenia": "Przychodzące zlecenia",
+        "nazwaWyswietlana": "Nazwa wyświetlana *",
+        "npJanKowalskiUslugi": "np. Jan Kowalski — usługi hydrauliczne",
+        "hasloTaglineNaProfil": "Hasło / tagline (na profil i link)",
+        "npHydraulikZ15": "np. Hydraulik z 15-letnim doświadczeniem, Warszawa",
+        "obszarDzialania": "Obszar działania",
+        "doswiadczenieSpecjalizacjaGodzinyPracy": "Doświadczenie, specjalizacja, godziny pracy…",
+        "profilWidocznyWKatalogu": "Profil widoczny w katalogu usług",
+        "dodajOferte": "Dodaj ofertę",
+        "tytulOferty": "Tytuł oferty *",
+        "npMontazINaprawa": "np. Montaż i naprawa instalacji wodnej",
+        "rezerwacjaTerminowBooksy": "Rezerwacja terminów (Booksy)",
+        "umow": "Umów",
+        "umowTermin": "Umów termin",
+        "usunZdjecie": "Usuń zdjęcie",
+        "lokalizacjaDoWyszukiwaniaW": "Lokalizacja (do wyszukiwania w pobliżu)",
+        "uzyjMojejLokalizacji": "Użyj mojej lokalizacji",
+        "usun": "Usuń"
+      },
+      "ProviderPublicPage": {
+        "wszystkieUslugi": "Wszystkie usługi"
+      },
+      "RequestThread": {
+        "ladowanieWatku": "Ładowanie wątku…",
+        "wiadomosci": "Wiadomości",
+        "brakWiadomosciNapiszBy": "Brak wiadomości. Napisz, by ustalić szczegóły.",
+        "odrzuc": "Odrzuć",
+        "wyslijWycenePln": "Wyślij wycenę (PLN)",
+        "wyslij": "Wyślij",
+        "napiszWiadomosc": "Napisz wiadomość…",
+        "zapiszKwote": "Zapisz kwotę",
+        "ksiegujPrzychodWOpcjonalnie": "Księguj przychód w… (opcjonalnie)",
+        "oznaczJakoOplacone": "Oznacz jako opłacone",
+        "wykonawcaNieWystawilJeszcze": "Wykonawca nie wystawił jeszcze płatności.",
+        "usun": "usuń",
+        "twojeZgloszenie": "(Twoje zgłoszenie)",
+        "zglosProblemDoModeracji": "Zgłoś problem do moderacji",
+        "powodNpUslugaNiewykonana": "Powód (np. usługa niewykonana)",
+        "wyslijZgloszenie": "Wyślij zgłoszenie"
+      },
+      "ServicesCatalogPage": {
+        "uslugi": "Usługi",
+        "szukajUslugiLubWykonawcy": "Szukaj usługi lub wykonawcy…",
+        "cenaRosnaco": "Cena rosnąco",
+        "cenaMalejaco": "Cena malejąco",
+        "zRezerwacjaOnline": "Z rezerwacją online",
+        "promien": "Promień"
+      },
+      "StaffManager": {
+        "dodajPracownikowByKlienci": "Dodaj pracowników, by klienci rezerwowali wizyty u konkretnej osoby. Każdy pracownik ma własny harmonogram dostępności (ustaw go w sekcji „Dostępność”).",
+        "imie": "Imię",
+        "brakPracownikowFirmaJednoosobowa": "Brak pracowników — firma jednoosobowa (rezerwacje na cały profil).",
+        "usun": "Usuń"
+      }
+    },
+    "shopping": {
+      "CategoryGroup": {
+        "zmienIkoneKategorii": "Zmień ikonę kategorii",
+        "przeciagnijAbyZmienicKolejnosc": "Przeciągnij, aby zmienić kolejność"
+      },
+      "CategoryIconPicker": {
+        "wybierzIkone": "Wybierz ikonę",
+        "usun": "Usuń",
+        "dodatkoweWskazowkiDlaGeneratora": "Dodatkowe wskazówki dla generatora (opcjonalnie)",
+        "losujWiecej": "Losuj więcej",
+        "przywrocDomyslnaIkone": "Przywróć domyślną ikonę",
+        "sprobujPonownie": "Spróbuj ponownie",
+        "kliknijLosujWiecejBy": "Kliknij „Losuj więcej” by wygenerować ikony"
+      },
+      "CategoryIconsManager": {
+        "zmienIkone": "Zmień ikonę",
+        "usunIkone": "Usuń ikonę",
+        "usunIkoneKategoriaWroci": "Usuń ikonę — kategoria wróci do domyślnego emoji",
+        "wybierzIkone": "Wybierz ikonę"
+      },
+      "CategoryManager": {
+        "zarzadzajIkonamiSvg": "Zarządzaj ikonami SVG",
+        "wlasneKategorie": "Własne kategorie",
+        "brakWlasnychKategoriiKliknij": "Brak własnych kategorii. Kliknij „Nowa kategoria” by dodać.",
+        "wbudowaneKategorieZAutomatycznym": "Wbudowane kategorie z automatycznym rozpoznawaniem słów kluczowych — tylko do odczytu.",
+        "zmianaNazwyWlasnejKategorii": "Zmiana nazwy własnej kategorii aktualizuje produkty w Twoim katalogu, ale nie produkty już dodane do list zakupów.",
+        "brakWynikow": "Brak wyników",
+        "wpiszWlasne": "Wpisz własne…"
+      },
+      "IconLibrary": {
+        "usun": "Usuń",
+        "kliknijWygenerowanaIkoneBy": "Kliknij wygenerowaną ikonę by zapisać do biblioteki",
+        "dodatkoweWskazowkiOpcjonalnie": "Dodatkowe wskazówki (opcjonalnie)…",
+        "wpiszTematLubWskazowki": "Wpisz temat lub wskazówki i kliknij „Generuj”",
+        "kliknijGenerujNoweBy": "Kliknij „Generuj nowe” by dodać pierwsze ikony"
+      },
+      "ItemList": {
+        "brakProduktow": "Brak produktów.",
+        "nacisnij": "Naciśnij",
+        "abyDodac": ", aby dodać."
+      },
+      "ItemRow": {
+        "cenaZl": "cena zł",
+        "przeniesNaInnaListe": "Przenieś na inną listę"
+      },
+      "LLMInputSection": {
+        "przetworzPrzezAiCtrl": "Przetwórz przez AI (Ctrl+Enter)",
+        "rozpoznaneProduktyZaznaczKtore": "Rozpoznane produkty — zaznacz które dodać",
+        "dodajDoKataloguProduktow": "Dodaj do katalogu produktów",
+        "wroc": "← Wróć"
+      },
+      "ProductManager": {
+        "brakProduktow": "Brak produktów."
+      },
+      "ShoppingHomePage": {
+        "zespolowe": "Zespołowe",
+        "przywrocListe": "Przywróć listę",
+        "przywroc": "Przywróć",
+        "zarzadzanie": "Zarządzanie"
+      },
+      "ShoppingPage": {
+        "wybierzListeZakupow": "Wybierz listę zakupów",
+        "zarzadzajListami": "+ Zarządzaj listami…",
+        "zakonczZakupy": "Zakończ zakupy",
+        "usunacKupionePozycje": "Usunąć kupione pozycje?",
+        "tejOperacjiNieDa": "Tej operacji nie da się cofnąć — usunięte pozycje nie trafiają do kosza.",
+        "zarchiwizujListe": "Zarchiwizuj listę",
+        "wydanoKupioneZCena": "Wydano (kupione z ceną)",
+        "abyKsiegowacZakupyW": "Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia."
+      },
+      "ShoppingSideNav": {
+        "trafiajaTuBrakiZ": "Trafiają tu braki z Magazynu",
+        "zmienNazwe": "Zmień nazwę",
+        "usunListe": "Usuń listę",
+        "mapySklepow": "Mapy sklepów"
+      },
+      "SortControl": {
+        "brakMapSklepow": "Brak map sklepów",
+        "dodajMapeSklepu": "+ Dodaj mapę sklepu",
+        "jakToDziala": "Jak to działa? →"
+      },
+      "StoreMapEditor": {
+        "wejscieStart": "Wejście (START)",
+        "typWezla": "Typ węzła",
+        "wagaKrawedzi": "Waga krawędzi",
+        "polacz": "Połącz"
+      },
+      "StoreWizard": {
+        "odleglosc": "Odległość:",
+        "odlegloscOdWejscia": "Odległość od wejścia:",
+        "skonfigurujMapeSklepu": "Skonfiguruj mapę sklepu",
+        "mapaSklepuPozwalaSortowac": "Mapa sklepu pozwala sortować listę zakupów zgodnie z układem regałów, żebyś szedł przez sklep w optymalnej kolejności.",
+        "odpowiedzNaKilkaPytan": "Odpowiedz na kilka pytań o układzie sklepu",
+        "aiZnaUkladyPopularnych": "AI zna układy popularnych polskich sklepów (Biedronka, Lidl, Żabka…)",
+        "wroc": "← Wróć",
+        "generujMapePrzezAi": "Generuj mapę przez AI",
+        "podajNazweSieciHandlowej": "Podaj nazwę sieci handlowej — AI wygeneruje typowy układ.",
+        "npBiedronkaLidlZabka": "np. Biedronka, Lidl, Żabka…",
+        "aiAnalizujeUkladSklepu": "AI analizuje układ sklepu…",
+        "sprawdzCzyUkladWyglada": "Sprawdź czy układ wygląda poprawnie.",
+        "wchodzacDoSklepuKtora": "Wchodząc do sklepu, którą kategorię mijasz jako pierwszą?",
+        "brakPolaczenZTego": "Brak połączeń z tego miejsca (ślepy zaułek)",
+        "sprawdzPodgladIZapisz": "Sprawdź podgląd i zapisz.",
+        "doJakichKategoriiMozesz": "Do jakich kategorii możesz przejść bezpośrednio? Podaj odległości (1 = obok, 10 = drugi koniec sklepu)."
+      },
+      "StoresManager": {
+        "mapySklepow": "Mapy sklepów",
+        "jakUzywac": "Jak używać?",
+        "brakSklepowDodajPierwszy": "Brak sklepów. Dodaj pierwszy sklep powyżej.",
+        "zmienNazwe": "Zmień nazwę",
+        "usunSklep": "Usuń sklep",
+        "skonfigurujMape": "Skonfiguruj mapę",
+        "usun": "Usuń"
+      },
+      "UnitManager": {
+        "wlasneJednostki": "Własne jednostki",
+        "brakWlasnychJednostekKliknij": "Brak własnych jednostek. Kliknij „Nowa jednostka” by dodać.",
+        "wbudowaneJednostkiDostepneDla": "Wbudowane jednostki dostępne dla wszystkich — tylko do odczytu."
+      },
+      "StoreEditorClient": {
+        "przebudujMape": "🔄 Przebuduj mapę"
+      },
+      "StoreGraphView": {
+        "przebudujMape": "🔄 Przebuduj mapę"
+      },
+      "QuickAddBar": {
+        "ilosc": "Ilość",
+        "dodajRecznie": "Dodaj ręcznie"
+      },
+      "OfflineIndicator": {
+        "offlineCzeka": "Offline — {n, plural, one {# zmiana czeka} few {# zmiany czekają} other {# zmian czeka}} na wysłanie",
+        "offlineLokalnie": "Offline — pracujesz lokalnie",
+        "synchronizuje": "Synchronizuję zmiany…",
+        "doWyslania": "{n, plural, one {# zmiana do wysłania} few {# zmiany do wysłania} other {# zmian do wysłania}}"
+      }
+    },
+    "tasks": {
+      "AITaskInput": {
+        "wczytajZPlikuZdjecie": "Wczytaj z pliku: zdjęcie listy, CSV, JSON lub TXT",
+        "zalacznik": "Załącznik",
+        "slucham": "Słucham…",
+        "ctrlEnterAbyPrzetworzyc": "Ctrl+Enter aby przetworzyć",
+        "rozpoznaneZadaniaZaznaczKtore": "Rozpoznane zadania — zaznacz które dodać",
+        "wroc": "← Wróć"
+      },
+      "BulkActionBar": {
+        "wyczyscTermin": "Wyczyść termin",
+        "ustawKategorie": "Ustaw kategorię",
+        "usun": "usuń",
+        "brakTagow": "Brak tagów",
+        "usun2": "Usuń"
+      },
+      "ProjectActionsMenu": {
+        "zapiszNazwe": "Zapisz nazwę",
+        "zmienNazwe": "Zmień nazwę",
+        "usunProjekt": "Usuń projekt"
+      },
+      "TaskDetail": {
+        "wrocDoListyZadan": "Wróć do listy zadań",
+        "wroc": "Wróć",
+        "szczegolyZadania": "Szczegóły zadania",
+        "usunZadanie": "Usuń zadanie",
+        "oznaczZrobioneAlePolicz": "Oznacz zrobione, ale policz następne wystąpienie inaczej niż w ustawieniach",
+        "zrobioneZOdstepstwem": "Zrobione z odstępstwem",
+        "odDzis": "od dziś",
+        "zrobioneNastepneWystapienieW": "Zrobione — następne wystąpienie w tej dacie",
+        "oczekujeNaWeryfikacje": "Oczekuje na weryfikację",
+        "zatwierdz": "Zatwierdź",
+        "odrzucWrocDoRealizacji": "Odrzuć — wróć do realizacji (lub wybierz inny status powyżej)",
+        "odrzuc": "Odrzuć",
+        "tytulZadania": "Tytuł zadania…",
+        "dodajOpisMarkdownObslugiwany": "Dodaj opis (Markdown obsługiwany)…",
+        "przeniesDoInnegoProjektu": "Przenieś do innego projektu",
+        "dataWykonaniaMozeszJa": "Data wykonania — możesz ją zmienić (np. gdy odhaczasz z opóźnieniem)",
+        "dzienMiesiaca": "Dzień miesiąca:",
+        "kolejneWystapienieZawszeTego": "Kolejne wystąpienie zawsze tego dnia miesiąca (puste = ten sam dzień co termin)",
+        "nastepnyTermin": "Następny termin",
+        "odCzegoLiczycKolejny": "Od czego liczyć kolejny termin po wykonaniu",
+        "usunPowtarzanie": "Usuń powtarzanie",
+        "zrobioneNastepneLicz": "Zrobione — następne licz",
+        "nastepneWTejDacie": "Następne w tej dacie"
+      },
+      "TaskList": {
+        "sprobujZmienicFiltrStatusu": "Spróbuj zmienić filtr statusu"
+      },
+      "TaskRow": {
+        "zmienStatus": "Zmień status",
+        "kliknijAbyZmienicDate": "Kliknij, aby zmienić datę"
+      },
+      "TaskStatusConfigEditor": {
+        "wlaczony": "Włączony",
+        "wSciezce": "W ścieżce",
+        "wGore": "W górę",
+        "wDol": "W dół",
+        "usunStatus": "Usuń status",
+        "statusZamykajacyChowanyW": "Status „zamykający” (chowany w widoku aktywnych, jak Zrobione)",
+        "dodajWlasnyStatus": "Dodaj własny status",
+        "bierzeUdzialWPrzechodzeniu": "— bierze udział w przechodzeniu przód/tył (klik checkboxa, klawisz x). Kolejność wyznacza zakładki i kierunek ścieżki. Statusy systemowe można tylko włączać/wyłączać; własne można edytować i usuwać."
+      },
+      "TaskTagsManager": {
+        "tagiZadan": "🏷️ Tagi zadań",
+        "brakTagowStworzPierwszy": "Brak tagów. Stwórz pierwszy tag.",
+        "usun": "Usuń",
+        "podglad": "podgląd"
+      },
+      "TasksGuide": {
+        "schematTrojpanelowegoInterfejsu": "Schemat trójpanelowego interfejsu",
+        "dzis": "📅 Dziś",
+        "nadchodzace": "📆 Nadchodzące",
+        "zalegle": "⚠️ Zaległe",
+        "dzis2": "📅 Dziś",
+        "recznie": "✏ Ręcznie",
+        "dzis1400": "Dziś 14:00",
+        "przegladKoduPr47": "Przegląd kodu PR #47",
+        "dzis15m": "Dziś ⏱ 15m",
+        "spotkanieZZespolem": "Spotkanie z zespołem",
+        "dzis3": "Dziś",
+        "listaZadan": "② Lista zadań",
+        "szczegolyZadania": "Szczegóły zadania",
+        "prezentacjaWynikow": "○ Prezentacja wyników",
+        "udostepnianie": "🤝 Udostępnianie",
+        "panelSzczegolow": "③ Panel szczegółów",
+        "cyklZyciaStatusowZadania": "Cykl życia statusów zadania",
+        "cyklDlaZadanPowtarzajacych": "↻ cykl (dla zadań powtarzających się)",
+        "odlozone": "ODŁOŻONE",
+        "statusyOdlozoneIAnulowane": "Statusy ODŁOŻONE i ANULOWANE ustawia się ręcznie w panelu szczegółów",
+        "skalaPriorytetowZadan": "Skala priorytetów zadań",
+        "wizualizacjaZadanCyklicznych": "Wizualizacja zadań cyklicznych",
+        "przykladowyMiesiacTypyPowtarzania": "Przykładowy miesiąc — typy powtarzania",
+        "kazdyTypMaOpcje": "Każdy typ ma opcję",
+        "zrobRaport": "„Zrób raport",
+        "doPiatkuPilne": "do piątku pilne”",
+        "glosPl": "Głos (PL)",
+        "tytulPriorytetDataPowtarzanie": "tytuł, priorytet, data, powtarzanie",
+        "mozeszEdytowacPrzedZapisem": "Możesz edytować przed zapisem",
+        "sugestiePodzadan": "✦ Sugestie podzadań",
+        "aiProponujeListeKrokow": "AI proponuje listę kroków",
+        "skrotyKlawiszowe": "Skróty klawiszowe",
+        "pelnaListaSkrotow": "Pełna lista skrótów",
+        "schematUdostepnianiaZadania": "Schemat udostępniania zadania",
+        "roleDostepu": "Role dostępu",
+        "mozeEdytowacZadanie": "Może edytować zadanie,",
+        "dodawacKomentarze": "dodawać komentarze",
+        "spisTresci": "SPIS TREŚCI",
+        "przewodnikUzytkownika": "Przewodnik użytkownika",
+        "modulZadaniaWorldofmag": "Moduł Zadania — WorldOfMag",
+        "toZaawansowanyMenadzerZadan": "to zaawansowany menadżer zadań zintegrowany z resztą aplikacji WorldOfMag. Obsługuje projekty, priorytety, powtarzanie, podzadania, tagi, udostępnianie oraz funkcje sztucznej inteligencji — w tym wprowadzanie głosowe i semantyczne wyszukiwanie. Ten przewodnik przeprowadzi Cię przez każdą funkcję krok po kroku.",
+        "przegladInterfejsu": "Przegląd interfejsu",
+        "widoczneJednoczesnieNaSzerokim": ", widoczne jednocześnie na szerokim ekranie:",
+        "naMalychEkranachMobile": "Na małych ekranach (mobile) panel szczegółów otwiera się jako pełnoekranowy modal. Wróć do listy przyciskiem",
+        "lubSkrotem": "lub skrótem",
+        "kliknijIkoneKoszaPojawia": "Kliknij ikonę kosza 🗑️ (pojawia się przy projekcie po najechaniu), aby usunąć projekt.",
+        "uwagaUsuniecieProjektuUsuwa": "Uwaga: usunięcie projektu usuwa wszystkie zadania w nim!",
+        "dodawanieZadan": "Dodawanie zadań",
+        "recznie2": "Ręcznie",
+        "reczneDodawanie": "Ręczne dodawanie",
+        "nacisnij": "Naciśnij",
+        "zDowolnegoMiejscaNa": "z dowolnego miejsca na liście, aby natychmiast przenieść kursor do pola dodawania w trybie Ręcznie.",
+        "przygotujPrezentacjeNaPiatek": "„Przygotuj prezentację na piątek, priorytet wysoki. Kup mleko i chleb jutro. Zadzwoń do klienta Kowalski — pilne.”",
+        "wprowadzanieGlosowe": "Wprowadzanie głosowe 🎤",
+        "funkcjeAiWymagajaAktywnego": "Funkcje AI wymagają aktywnego połączenia z internetem — używają modelu Groq LLM (llama-3.1-8b). W razie problemu z siecią spróbuj ponownie lub skorzystaj z trybu Ręcznie.",
+        "dostepnePola": "Dostępne pola",
+        "przyciskKoszaWNaglowku": "Przycisk kosza 🗑️ w nagłówku panelu usuwa zadanie po potwierdzeniu. Operacja jest",
+        "cyklStatusow": "Cykl statusów",
+        "lubZDropdownuW": ", lub z dropdownu w panelu szczegółów.",
+        "skalaPriorytetow": "Skala priorytetów",
+        "kolorPaskaPoLewej": "Kolor paska po lewej stronie każdego wiersza na liście zadań odpowiada priorytetowi — dzięki temu od razu widzisz co jest najważniejsze.",
+        "abyAiOszacowaloNa": ", aby AI oszacowało na podstawie tytułu i opisu. Czas wyświetla się też na wierszu listy (np.",
+        "zKolejnymTerminemZgodnym": "z kolejnym terminem zgodnym z regułą powtarzania.",
+        "kliknijZapiszPoSkonfigurowaniu": "Kliknij „Zapisz” po skonfigurowaniu reguły — zmiany nie zapisują się automatycznie dla sekcji powtarzania. Kliknij „Usuń powtarzanie”, aby wyłączyć cykl.",
+        "zarzadzanieTagami": "Zarządzanie tagami",
+        "wSidebarsiePodLista": "w sidebarsie (pod listą projektów). Znajdziesz tam stronę zarządzania gdzie możesz:",
+        "przypisywanieTagowDoZadania": "Przypisywanie tagów do zadania odbywa się w panelu szczegółów — kliknij na tag aby go aktywować (pełna jasność) lub dezaktywować (szary, 35% opacity). Możesz też wpisać nową nazwę tagu i nacisnąć Enter aby go stworzyć i od razu przypisać.",
+        "liczbaKomentarzyWidocznaJest": "Liczba komentarzy widoczna jest jako ikonka 📎 na wierszu zadania na liście — szybka informacja że zadanie ma dyskusję bez otwierania panelu.",
+        "lubIkoneLupyW": "lub ikonę lupy w nagłówku. Wyszukiwanie filtruje zadania w czasie rzeczywistym po: tytule, opisie i nazwach tagów.",
+        "modelJezykowyPrzeszukaDo": ". Model językowy przeszuka do 100 zadań i zwróci wyniki dopasowane znaczeniowo — nawet jeśli słowa się nie pokrywają. Np. zapytanie „zadania związane z klientami” znajdzie „Raport kwartalny”, „Prezentacja dla Kowalskiego” itp.",
+        "wBanerzeAbyWrocic": "w banerze aby wrócić do normalnego widoku.",
+        "udostepnianie2": "Udostępnianie",
+        "jakUdostepnicZadanie": "Jak udostępnić zadanie",
+        "udostepnianieDzialaNaPoziomie": "Udostępnianie działa na poziomie pojedynczego zadania. Aby udostępnić cały projekt, poproś administratora o dodanie użytkownika jako członka projektu.",
+        "wlaczaniePowiadomien": "Włączanie powiadomień",
+        "zezwol": "Zezwól",
+        "ikonaZmieniKolorNa": ". Ikona zmieni kolor na pomarańczowy.",
+        "kiedyPojawiaSiePowiadomienie": "Kiedy pojawia się powiadomienie",
+        "powiadomieniaPrzegladarkoweDzialajaTylko": "Powiadomienia przeglądarkowe działają tylko jeśli aplikacja jest otwarta w przeglądarce. Na iOS (iPhone / iPad) wymagają zainstalowania aplikacji jako PWA (Dodaj do ekranu głównego).",
+        "pelnaTabelaSkrotow": "Pełna tabela skrótów",
+        "skrot": "Skrót",
+        "skrotyDzialajaTylkoGdy": "Skróty działają tylko gdy kursor",
+        "wPoluTekstowymNacisnij": "w polu tekstowym. Naciśnij",
+        "abyOpuscicPoleI": "aby opuścić pole i wrócić do nawigacji klawiaturą.",
+        "listyZadan": "listy zadań",
+        "panelNawigacjiLewySidebar": "<strong>① Panel nawigacji</strong> (lewy sidebar) — przełączaj widoki i projekty. Dostępny globalnie w aplikacji.",
+        "listaZadanSrodekWyswietla": "<strong>② Lista zadań</strong> (środek) — wyświetla zadania aktywnego widoku z filtrem statusu i tagów. Tu dodajesz nowe zadania.",
+        "panelSzczegolowPrawyPanel": "<strong>③ Panel szczegółów</strong> (prawy panel) — otwiera się po kliknięciu zadania. Edytujesz tu wszystkie pola, podzadania i komentarze.",
+        "dzisZadaniaZTerminem": "<strong>📅 Dziś</strong> — zadania z terminem na bieżący dzień, posortowane wg priorytetu.",
+        "nadchodzaceZadaniaZTerminem": "<strong>📆 Nadchodzące</strong> — zadania z terminem od jutra do ~30 dni, grupowane wg dnia tygodnia.",
+        "zalegleZadaniaPoTerminie": "<strong>⚠️ Zaległe</strong> — zadania po terminie (niezrobione), posortowane od najstarszego.",
+        "wszystkieWszystkieTwojeZadania": "<strong>◎ Wszystkie</strong> — wszystkie Twoje zadania ze wszystkich projektów.",
+        "skrzynkaInboxProjektTworzony": "<strong>📥 Skrzynka (Inbox)</strong> — projekt tworzony automatycznie. Nowe zadania dodane z widoków wirtualnych trafiają tu domyślnie.",
+        "wlasneProjektyMozeszTworzyc": "<strong>Własne projekty</strong> — możesz tworzyć nieograniczoną liczbę projektów (emoji + nazwa). Ikona ołówka pojawia się po najechaniu — kliknij by zmienić nazwę.",
+        "nowyProjektKliknijNa": "<strong>+ Nowy projekt</strong> — kliknij na dole listy projektów i wpisz nazwę.",
+        "tagiLinkDoStrony": "<strong>🏷️ Tagi</strong> — link do strony zarządzania tagami.",
+        "statusRozwijaneDoZrobienia": "<strong>Status</strong> — rozwijane: Do zrobienia / W trakcie / Zrobione / Odłożone / Anulowane.",
+        "priorytetRozwijaneBrakNiski": "<strong>Priorytet</strong> — rozwijane: Brak / Niski / Średni / Wysoki / Pilne.",
+        "tytulEdytowalnyZapisujeSie": "<strong>Tytuł</strong> — edytowalny, zapisuje się po kliknięciu poza pole.",
+        "opisWieloliniowePoleTekstowe": "<strong>Opis</strong> — wieloliniowe pole tekstowe. Obsługuje Markdown (podgląd w przyszłych wersjach).",
+        "terminDueDateData": "<strong>Termin (due date)</strong> — data i godzina końca zadania. Wpływa na widoki Dziś / Zaległe / Nadchodzące.",
+        "startOpcjonalnaDataRozpoczecia": "<strong>Start</strong> — opcjonalna data rozpoczęcia.",
+        "tagiKliknijTagAby": "<strong>Tagi</strong> — kliknij tag aby przypisać/odpiąć. Możesz też wpisać nową nazwę i ją dodać.",
+        "powtarzanieKliknijSekcjeAby": "<strong>Powtarzanie</strong> — kliknij sekcję aby rozwinąć konfigurację (patrz sekcja 6).",
+        "podzadaniaListaKrokowZ": "<strong>Podzadania</strong> — lista kroków z postępem (np. 2/5).",
+        "udostepnianieZarzadzajDostepemInnych": "<strong>Udostępnianie</strong> — zarządzaj dostępem innych użytkowników.",
+        "todoZadanieDoZrobienia": "<strong>TODO</strong> — zadanie do zrobienia. Stan domyślny.",
+        "doneZakonczoneDlaZadan": "<strong>DONE</strong> — zakończone. Dla zadań cyklicznych tworzy automatycznie następne wystąpienie.",
+        "deferredOdlozoneNaPozniej": "<strong>DEFERRED</strong> — odłożone na później. Nie pojawia się w widoku Dziś.",
+        "coTydzienWeeklyWybrane": "<strong>Co tydzień (WEEKLY)</strong> — wybrane dni tygodnia (Pn/Wt/Śr...) co N tygodni.",
+        "coMiesiacMonthlyTen": "<strong>Co miesiąc (MONTHLY)</strong> — ten sam dzień miesiąca, co N miesięcy.",
+        "koniecPowtarzaniaOpcjonalnaData": "<strong>Koniec powtarzania</strong> — opcjonalna data, po której zadanie nie pojawi się ponownie.",
+        "tworzycNoweTagiNazwa": "Tworzyć nowe tagi (nazwa + wybór koloru z palety 8 kolorów).",
+        "edytowacIstniejaceTagiKliknij": "Edytować istniejące tagi (kliknij ikonę ołówka).",
+        "usuwacTagiKliknijKosz": "Usuwać tagi (kliknij kosz — tag znika ze wszystkich zadań!).",
+        "wpiszTytulPodzadaniaW": "Wpisz tytuł podzadania w polu na dole sekcji i naciśnij <strong>Enter</strong> lub ikonę <strong>+</strong>.",
+        "zaznaczCheckboxPrzyPodzadaniu": "Zaznacz checkbox przy podzadaniu aby oznaczyć je jako ukończone (zmienia status na DONE).",
+        "kliknijPrzyciskAiObok": "Kliknij przycisk <strong>✦ AI</strong> obok nagłówka — AI zaproponuje do 6 podzadań na podstawie tytułu i opisu zadania.",
+        "podzadaniaSugerowanePrzezAi": "Podzadania sugerowane przez AI pojawiają się listą — kliknij <strong>+</strong> przy każdym aby je dodać.",
+        "wpiszKomentarzWPolu": "Wpisz komentarz w polu tekstowym i naciśnij <Kbd>Enter</Kbd> lub ikonę wysłania.",
+        "mozeszUsunacSwojeKomentarze": "Możesz usunąć swoje komentarze (ikona kosza przy własnym komentarzu).",
+        "komentarzeSaWidoczneDla": "Komentarze są widoczne dla wszystkich użytkowników mających dostęp do zadania.",
+        "parsowanieTekstuGlosuOpisujesz": "<strong>Parsowanie tekstu / głosu</strong> — opisujesz zadania, AI wyciąga tytuły, priorytety, daty, tagi i reguły powtarzania.",
+        "wyszukiwanieSemantyczneZnajdzZadania": "<strong>Wyszukiwanie semantyczne</strong> — znajdź zadania po znaczeniu, nie tylko po słowach kluczowych.",
+        "sugestiePodzadanAiProponuje": "<strong>Sugestie podzadań</strong> — AI proponuje kroki do wykonania dla danego zadania.",
+        "wpiszAdresEMail": "Wpisz adres e-mail użytkownika w polu wyszukiwania.",
+        "wybierzRoleWidzTylko": "Wybierz rolę: <strong>Widz</strong> (tylko odczyt) lub <strong>Edytor</strong> (pełna edycja).",
+        "kliknijPrzyciskJesliUzytkownik": "Kliknij przycisk <strong>+</strong> — jeśli użytkownik istnieje w systemie, otrzyma dostęp natychmiast.",
+        "listaAktywnychUdzialowcowPojawia": "Lista aktywnych udziałowców pojawia się powyżej pola. Kliknij ikonę usunięcia aby cofnąć dostęp.",
+        "systemSprawdzaZadaniaPrzy": "System sprawdza zadania przy każdym załadowaniu strony z modułem Zadania.",
+        "powiadomieniePojawiaSieDla": "Powiadomienie pojawia się dla zadań, których termin (due date) wypada <strong>w ciągu najbliższych 30 minut</strong>.",
+        "powiadomieniaDotyczaTylkoZadan": "Powiadomienia dotyczą tylko zadań niezakończonych (status inny niż DONE i CANCELLED).",
+        "modul": "Moduł",
+        "interfejsZadanPodzielonyJest": "Interfejs Zadań podzielony jest na",
+        "szybkiFormularzWJednej": "Szybki formularz w jednej linii. Wpisz tytuł zadania i opcjonalnie ustaw datę. Priorytet ustawia się przyciskiem po lewej (klikaj aby cyklować: — → ↓ → ◆ → ↑ → ‼). Zatwierdź Enterem lub przyciskiem",
+        "opiszJednoLubWiecej": "Opisz jedno lub więcej zadań naturalnym językiem, np.:",
+        "aiWyciagnieKilkaZadan": "AI wyciągnie kilka zadań jednocześnie z priorytetami, datami i tagami. Przed dodaniem możesz każde z nich przejrzeć i edytować w podglądzie.",
+        "wTrybieAiKliknij": "W trybie AI kliknij ikonę mikrofonu. Mów po polsku — transkrypcja pojawi się automatycznie w polu tekstowym, gotowa do analizy przez AI. Wymaga zgody przeglądarki na mikrofon (jednorazowy popup).",
+        "kliknijDowolneZadanieNa": "Kliknij dowolne zadanie na liście, aby otworzyć panel szczegółów po prawej stronie. Wszystkie pola zapisują się",
+        "kazdeZadaniePrzechodziPrzez": "Każde zadanie przechodzi przez cykl statusów. Możesz zmieniać status klikając ikonę przy zadaniu na liście, skrótem",
+        "priorytetWplywaNaKolejnosc": "Priorytet wpływa na kolejność grupowania zadań w widokach ALL, Dziś i Projekt — od Pilne na górze.",
+        "kliknijUstawPowtarzanieW": "Kliknij „Ustaw powtarzanie” w panelu szczegółów. Dostępne typy:",
+        "tagiToKoloroweEtykiety": "Tagi to kolorowe etykiety przypisywane do zadań. Możesz je tworzyć globalnie i używać w dowolnych projektach. Każdy tag ma unikalną nazwę i kolor.",
+        "przejdzDo": "Przejdź do",
+        "wGornejCzesciListy": "W górnej części listy zadań widoczne są wszystkie Twoje tagi. Kliknij tag aby go wybrać — lista przefiltruje się do zadań posiadających",
+        "kazdeZadanieMozeMiec": "Każde zadanie może mieć nieograniczoną liczbę podzadań. W nagłówku sekcji widoczny jest postęp, np.",
+        "sekcjaKomentarzySluzyDo": "Sekcja komentarzy służy do dyskusji i notatek związanych z zadaniem. Widoczna jest nazwa użytkownika i timestamp każdego komentarza.",
+        "poWpisaniuFrazyNacisnij": "Po wpisaniu frazy naciśnij",
+        "aktywneWynikiAiOznaczone": "Aktywne wyniki AI oznaczone są banerem w kolorze fioletowym. Kliknij",
+        "mozeszUdostepnicDowolneZadanie": "Możesz udostępnić dowolne zadanie innym użytkownikom systemu. Otwórz panel szczegółów i znajdź sekcję",
+        "aplikacjaMozeWysylacPowiadomienia": "Aplikacja może wysyłać powiadomienia przeglądarkowe o zbliżających się terminach zadań.",
+        "kliknijIkoneDzwonkaW": "Kliknij ikonę dzwonka 🔔 w prawym górnym rogu listy zadań. Przeglądarka wyświetli popup z prośbą o zezwolenie — kliknij",
+        "interfejsJestZaprojektowanyZ": "Interfejs jest zaprojektowany z myślą o pracy z klawiatury. Większość akcji dostępna jest bez sięgania po myszkę — styl podobny do Vim / Linear.",
+        "nbspTwojeKolekcjeZadan": " (Twoje kolekcje zadań).",
+        "naGorzeListyZadan": "Na górze listy zadań widoczne są dwa tryby dodawania. Przełączasz je zakładkami  ",
+        "nbspPrzyOpuszczeniuPola": " przy opuszczeniu pola (blur) lub po chwili bezczynności (600 ms debounce).",
+        "ustawDateIGodzine": "Ustaw datę i godzinę ukończenia zadania. System koloruje terminy na liście: czerwony = po terminie, pomarańczowy = dziś.",
+        "nbspWybraneTagiJednoczesnie": " wybrane tagi jednocześnie (logika AND). Kliknij tag ponownie aby odznaczyć."
+      },
+      "TasksHomePage": {
+        "dzis": "Dziś",
+        "zalegle": "Zaległe",
+        "nadchodzace": "Nadchodzące",
+        "zarzadzanie": "Zarządzanie",
+        "naDzis": "Na dziś"
+      },
+      "TasksPage": {
+        "dzis": "📅 Dziś",
+        "nadchodzace": "📆 Nadchodzące",
+        "zalegle": "⚠️ Zaległe",
+        "wieleProjektow": "🗂 Wiele projektów",
+        "pasekAkcjiListyPrzewin": "Pasek akcji listy — przewiń w poziomie, by zobaczyć więcej",
+        "szukajZadan": "Szukaj zadań",
+        "grupujPoPriorytetachJak": "Grupuj po priorytetach (jak w „Dziś”)",
+        "zaznaczWieleZadan": "Zaznacz wiele zadań",
+        "konfiguracjaStatusowListy": "Konfiguracja statusów listy",
+        "koszPrzywrocUsuniete": "Kosz — przywróć usunięte",
+        "koszPrzywrocUsunieteZadania": "Kosz — przywróć usunięte zadania",
+        "przewinPasekAkcjiW": "Przewiń pasek akcji w lewo",
+        "przewinPasekAkcjiW2": "Przewiń pasek akcji w prawo",
+        "edytujGrupeNazwaProjekty": "Edytuj grupę (nazwa / projekty)",
+        "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)"
+      },
+      "TasksSideNav": {
+        "nowaGrupaProjektow": "Nowa grupa projektów",
+        "edytujGrupe": "Edytuj grupę",
+        "usunGrupe": "Usuń grupę",
+        "brakDostepnychProjektow": "Brak dostępnych projektów",
+        "brakProjektow": "Brak projektów",
+        "zmienNazwe": "Zmień nazwę",
+        "usunProjekt": "Usuń projekt"
+      },
+      "TimelineView": {
+        "brakZadanDoPokazania": "Brak zadań do pokazania."
+      },
+      "QuickAddTask": {
+        "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
+        "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
+      }
+    },
+    "truck": {
+      "TruckPlannerPage": {
+        "trasyTirSaWe": "Trasy TIR są we wczesnej fazie — wynik z OpenRouteService bywa przybliżony i nie uwzględnia wszystkich ograniczeń. Zawsze zweryfikuj trasę przed wyjazdem.",
+        "skad": "Skąd",
+        "npWarszawaMarszalkowska1": "np. Warszawa, Marszałkowska 1",
+        "dokad": "Dokąd",
+        "npKrakowRynekGlowny": "np. Kraków, Rynek Główny 1",
+        "najpierwZapiszProfilPojazdu": "Najpierw zapisz profil pojazdu powyżej.",
+        "robotUwzglednionych": "robót uwzględnionych",
+        "otworzWGoogleMaps": "Otwórz w Google Maps"
+      }
+    },
+    "warsztaty": {
+      "MaintenanceAgenda": {
+        "przegladyISerwis30": "Przeglądy i serwis (30 dni + zaległe)",
+        "brakZaplanowanychPrzegladow": "Brak zaplanowanych przeglądów.",
+        "materialyNaWyczerpaniu": "Materiały na wyczerpaniu",
+        "wszystkieMaterialyPowyzejStanu": "Wszystkie materiały powyżej stanu minimalnego."
+      },
+      "WarsztatNav": {
+        "przelaczTrybDomProfesjonalny": "Przełącz tryb Dom ↔ Profesjonalny"
+      },
+      "WarsztatSettingsForm": {
+        "trybProOdblokowujeZakladke": "Tryb Pro odblokowuje zakładkę „Przeglądy”, przypisywanie narzędzi do osób/stanowisk i dziennik projektów."
+      },
+      "WorkshopDetail": {
+        "usunWarsztat": "Usuń warsztat",
+        "dodajPozycje": "Dodaj pozycję",
+        "brakWyposazeniaDodajRecznie": "Brak wyposażenia. Dodaj ręcznie lub skorzystaj z zakładki „Podpowiedzi”.",
+        "usun": "Usuń",
+        "ilosc": "Ilość",
+        "nastepnyPrzeglad": "Następny przegląd",
+        "sprzetKtoryWartoMiec": "Sprzęt, który warto mieć w warsztacie typu",
+        "zaznaczBrakiIDodaj": ". Zaznacz braki i dodaj je do wyposażenia jednym kliknięciem.",
+        "brakProjektowDodajZlecenie": "Brak projektów. Dodaj zlecenie realizowane w tym warsztacie."
+      },
+      "WorkshopsList": {
+        "nieMaszJeszczeZadnego": "Nie masz jeszcze żadnego warsztatu.",
+        "utworzPierwszyWybierzeszProfil": "Utwórz pierwszy — wybierzesz profil (stolarski, samochodowy, malarski…), a my podpowiemy, jaki sprzęt warto mieć.",
+        "warsztatZespolowy": "Warsztat zespołowy",
+        "npGarazPracowniaMalarska": "np. Garaż, Pracownia malarska",
+        "npGarazPiwnicaPokoj": "np. garaż, piwnica, pokój 2",
+        "wlasciciel": "Właściciel",
+        "utworzWarsztat": "Utwórz warsztat"
+      }
+    },
+    "weather": {
+      "ForecastView": {
+        "dzis": "Dziś",
+        "wschodSlonca": "Wschód słońca",
+        "zachodSlonca": "Zachód słońca",
+        "fazaKsiezyca": "Faza księżyca",
+        "najblizszeGodziny": "Najbliższe godziny",
+        "najblizszeDni": "Najbliższe dni"
+      },
+      "IdeaDetailSheet": {
+        "wrocDoListy": "Wróć do listy",
+        "zamknijSzczegoly": "Zamknij szczegóły",
+        "ukladamPlan": "Układam plan…",
+        "nieUdaloSiePrzygotowac": "Nie udało się przygotować planu. Spróbuj wygenerować go ponownie.",
+        "dodajDoZadan": "Dodaj do zadań"
+      },
+      "IdeaLibraryPage": {
+        "pomysly": "Pomysły",
+        "wczytujePlan": "Wczytuję plan…",
+        "przywrocProponowanie": "Przywróć proponowanie",
+        "doZadan": "Do zadań",
+        "usunTrafiDoKosza": "Usuń (trafi do kosza)"
+      },
+      "IdeasPanel": {
+        "coRobic": "Co robić?",
+        "propozycjePowstanaPoKliknieciu": "Propozycje powstaną po kliknięciu",
+        "szukamPomyslowNaTe": "Szukam pomysłów na tę pogodę…",
+        "nieUdaloSiePrzygotowac": "Nie udało się przygotować propozycji.",
+        "sprobujPonownie": "Spróbuj ponownie",
+        "modelNieZaproponowalNic": "Model nie zaproponował nic na tę porę. Spróbuj innego dnia lub pory albo poproś o nowe propozycje.",
+        "zapisanePomysly": "Zapisane pomysły →",
+        "propozycjaZwiazanaZKonkretnym": "Propozycja związana z konkretnym miejscem w okolicy",
+        "ogladalesJuzSzczegolyTej": "Oglądałeś już szczegóły tej propozycji",
+        "juzRozwazana": "już rozważana"
+      },
+      "LocationMapPicker": {
+        "wczytujeMape": "Wczytuję mapę…",
+        "nieUdaloSieWczytac": "Nie udało się wczytać mapy. Wskaż lokalizację po nazwie lub przez GPS."
+      },
+      "WatchersPanel": {
+        "brakObserwatorowDodajGotowy": "Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu”, „Bieganie”) albo własny opisany naturalnym językiem — AI oceni je względem prognozy.",
+        "usunObserwator": "Usuń obserwator",
+        "nazwaNpWypadW": "Nazwa (np. Wypad w góry)",
+        "coObserwowacNpWeekend": "Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr"
+      },
+      "WeatherPage": {
+        "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",
+        "ustawJakoDomyslna": "Ustaw jako domyślną",
+        "brakZapisanychLokalizacjiDodaj": "Brak zapisanych lokalizacji. Dodaj miasto poniżej lub użyj GPS.",
+        "dodajMiastoNpKrakow": "Dodaj miasto (np. Kraków)"
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef } from "react";
 import { Send, Loader2 } from "lucide-react";
 import type { Note } from "@/types";
@@ -26,6 +27,7 @@ function parseAnswer(raw: string): { clean: string; indices: number[] } {
 }
 
 export function NotesQA({ allNotes, filteredNotes, onScrollToNote }: NotesQAProps) {
+  const t = useTranslations("modules.notes.NotesQA");
   const [useFiltered, setUseFiltered] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<QAMessage[]>([]);
@@ -135,7 +137,7 @@ export function NotesQA({ allNotes, filteredNotes, onScrollToNote }: NotesQAProp
             </p>
             {msg.sourceIndices.length > 0 && (
               <div className="mt-1.5 pt-1.5 border-t" style={{ borderColor: "var(--border)" }}>
-                <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Źródła: </span>
+                <span className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>{t("zrodla")} </span>
                 {msg.sourceIndices.map((idx) => {
                   const note = contextNotes[idx];
                   if (!note) return null;
@@ -174,7 +176,7 @@ export function NotesQA({ allNotes, filteredNotes, onScrollToNote }: NotesQAProp
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); } }}
-          placeholder="Zadaj pytanie dotyczące notatek..."
+          placeholder={t("zadajPytanieDotyczaceNotatek")}
           className="flex-1 bg-transparent text-sm focus:outline-none"
           style={{ color: "var(--text-primary)" }}
           disabled={streaming}

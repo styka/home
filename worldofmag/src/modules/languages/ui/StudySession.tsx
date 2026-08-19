@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, RotateCcw, PartyPopper, Check, X, Pencil, Layers } from "lucide-react";
@@ -31,6 +32,7 @@ function answerMatches(input: string, translation: string): boolean {
 }
 
 export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocabulary[] }) {
+  const t = useTranslations("modules.languages.StudySession");
   const [queue, setQueue] = useState<Vocabulary[]>(cards);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -132,7 +134,7 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
               {reviewed > 0 ? `Powtórzono ${reviewed} słówek. Wróć później po kolejne.` : "Wszystkie słówka są na bieżąco. Dodaj nowe lub wróć później."}
             </p>
             <Link href={`/languages/${deck.id}`} className="px-4 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-purple)", color: "var(--on-accent)", textDecoration: "none", marginTop: 8 }}>
-              Wróć do talii
+              {t("wrocDoTalii")}
             </Link>
           </div>
         ) : (
@@ -182,12 +184,12 @@ export function StudySession({ deck, cards }: { deck: LanguageDeck; cards: Vocab
                     style={{ width: "100%", textAlign: "center", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", color: "var(--text-primary)", fontSize: 16 }}
                   />
                   <button type="submit" className="px-4 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-purple)", color: "var(--on-accent)", border: "none" }}>
-                    Sprawdź
+                    {t("sprawdz")}
                   </button>
                 </form>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <RotateCcw size={12} /> Kliknij lub spacja, aby odsłonić
+                  <RotateCcw size={12} /> {t("kliknijLubSpacjaAby")}
                 </div>
               )}
             </div>

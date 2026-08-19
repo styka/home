@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Trash2, Plus, FolderOpen } from "lucide-react";
 import { createNoteGroup, updateNoteGroup, deleteNoteGroup } from "../actions/noteGroups";
@@ -15,6 +16,7 @@ interface GroupsManagerProps {
 }
 
 export function GroupsManager({ groups }: GroupsManagerProps) {
+  const t = useTranslations("modules.notes.GroupsManager");
   const [, startTransition] = useTransition();
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -103,7 +105,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
               <button onClick={handleCreate} disabled={!newName.trim()}
                 className="text-xs px-3 py-1 rounded"
                 style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
-                Utwórz
+                {t("utworz")}
               </button>
               <button onClick={() => setCreating(false)}
                 className="text-xs px-2 py-1 rounded"
@@ -118,7 +120,7 @@ export function GroupsManager({ groups }: GroupsManagerProps) {
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <FolderOpen size={32} style={{ color: "var(--text-muted)" }} />
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Brak folderów. Utwórz pierwszy.
+              {t("brakFolderowUtworzPierwszy")}
             </p>
           </div>
         )}

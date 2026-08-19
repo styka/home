@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { Keyboard, X } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ import { SHORTCUTS_OPEN_EVENT } from "@/platform/shortcuts/shortcutsBus";
  * modyfikatora blokującego.
  */
 export function ShortcutsCheatSheet() {
+  const t = useTranslations("components.shortcuts.ShortcutsCheatSheet");
   const registry = useShortcutsRegistry();
   const [open, setOpen] = useState(false);
 
@@ -77,7 +79,7 @@ export function ShortcutsCheatSheet() {
       data-omnia-overlay="shortcuts"
       role="dialog"
       aria-modal="true"
-      aria-label="Ściągawka skrótów klawiszowych"
+      aria-label={t("sciagawkaSkrotowKlawiszowych")}
       onClick={() => setOpen(false)}
       style={{
         position: "fixed", inset: 0, zIndex: 70,
@@ -98,7 +100,7 @@ export function ShortcutsCheatSheet() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <Keyboard size={16} style={{ color: "var(--accent-blue)" }} />
           <h2 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: 0, flex: 1 }}>
-            Skróty klawiszowe
+            {t("skrotyKlawiszowe")}
           </h2>
           <button
             onClick={() => setOpen(false)}
@@ -121,8 +123,7 @@ export function ShortcutsCheatSheet() {
         />
 
         <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "14px 0 0", lineHeight: 1.5 }}>
-          Skróty strony mają pierwszeństwo przed globalnymi. W polach tekstowych działają tylko
-          Esc i paleta poleceń — żeby nie przechwytywać pisania.
+          {t("skrotyStronyMajaPierwszenstwo")}
         </p>
       </div>
     </div>

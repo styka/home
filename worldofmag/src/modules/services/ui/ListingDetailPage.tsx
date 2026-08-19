@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +18,7 @@ function todayISO(): string {
 }
 
 export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingDTO; isOwnListing: boolean }) {
+  const t = useTranslations("modules.services.ListingDetailPage");
   const router = useRouter();
   const [title, setTitle] = useState(listing.title);
   const [description, setDescription] = useState("");
@@ -56,7 +58,7 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
       state="ready"
       breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-      <ArrowLeft size={15} /> Wszystkie usługi
+      <ArrowLeft size={15} /> {t("wszystkieUslugi")}
     </Link>
       }
       icon={<span style={{ fontSize: 24 }}>{listing.category?.icon ?? "🛠️"}</span>}
@@ -98,23 +100,23 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
       {/* Formularz zlecenia */}
       {isOwnListing ? (
         <div style={{ ...cardStyle, cursor: "default", color: "var(--text-muted)", fontSize: 13 }}>
-          To Twoja oferta — zarządzaj nią w panelu wykonawcy.
+          {t("toTwojaOfertaZarzadzaj")}
         </div>
       ) : sent ? (
         <div style={{ ...cardStyle, cursor: "default", color: "var(--accent-green)", fontSize: 14, fontWeight: 600 }}>
-          <Check size={18} /> Zlecenie wysłane! Przekierowuję…
+          <Check size={18} /> {t("zlecenieWyslanePrzekierowuje")}
         </div>
       ) : (
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Handshake size={16} color="var(--accent-blue)" /> Zamów tę usługę
+            <Handshake size={16} color="var(--accent-blue)" /> {t("zamowTeUsluge")}
           </div>
           <div>
             <label style={fieldLabelStyle}>Czego potrzebujesz?</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} style={fieldInputStyle} placeholder="np. Naprawa cieknącego kranu w łazience" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} style={fieldInputStyle} placeholder={t("npNaprawaCieknacegoKranu")} />
           </div>
           <div>
-            <label style={fieldLabelStyle}>Szczegóły (opcjonalnie)</label>
+            <label style={fieldLabelStyle}>{t("szczegolyOpcjonalnie")}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ ...fieldInputStyle, resize: "vertical" }} placeholder="Dodatkowe informacje dla wykonawcy…" />
           </div>
           <div>
@@ -123,7 +125,7 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
           </div>
           {error && <div style={{ fontSize: 12, color: "var(--accent-red)" }}>{error}</div>}
           <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: busy ? 0.6 : 1 }}>
-            <Send size={15} /> Wyślij zlecenie
+            <Send size={15} /> {t("wyslijZlecenie")}
           </button>
         </form>
       )}
@@ -132,6 +134,7 @@ export function ListingDetailPage({ listing, isOwnListing }: { listing: ListingD
 }
 
 function BookingWidget({ listingId, durationMin }: { listingId: string; durationMin: number }) {
+  const t = useTranslations("modules.services.ListingDetailPage");
   const router = useRouter();
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
@@ -181,7 +184,7 @@ function BookingWidget({ listingId, durationMin }: { listingId: string; duration
   if (done) {
     return (
       <div style={{ ...cardStyle, cursor: "default", color: "var(--accent-green)", fontSize: 14, fontWeight: 600 }}>
-        <Check size={18} /> Termin zarezerwowany! Przekierowuję…
+        <Check size={18} /> {t("terminZarezerwowanyPrzekierowuje")}
       </div>
     );
   }
@@ -203,13 +206,13 @@ function BookingWidget({ listingId, durationMin }: { listingId: string; duration
         </div>
       )}
       <div>
-        <label style={fieldLabelStyle}>Dzień</label>
+        <label style={fieldLabelStyle}>{t("dzien")}</label>
         <input type="date" value={date} min={todayISO()} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, width: 180 }} />
       </div>
       {loading ? (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Szukam wolnych terminów…</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("szukamWolnychTerminow")}</div>
       ) : slots.length === 0 ? (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak wolnych terminów tego dnia. Wybierz inny dzień.</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakWolnychTerminowTego")}</div>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {slots.map((iso) => {

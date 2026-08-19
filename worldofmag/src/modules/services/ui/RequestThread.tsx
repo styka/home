@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Send, MessageSquare, Tag, Check, X, Wallet, AlertTriangle } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ function money(grosze: number, currency: string): string {
 
 /** Wątek zlecenia: czat klient↔wykonawca (M1) + wyceny (M3). */
 export function RequestThread({ requestId }: { requestId: string }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [thread, setThread] = useState<RequestThreadDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -33,7 +35,7 @@ export function RequestThread({ requestId }: { requestId: string }) {
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: "nearest" }); }, [thread?.messages.length]);
 
   if (error) return <div style={{ fontSize: 12, color: "var(--accent-red)", paddingTop: 8 }}>{error}</div>;
-  if (!thread) return <div style={{ fontSize: 12, color: "var(--text-muted)", paddingTop: 8 }}>Ładowanie wątku…</div>;
+  if (!thread) return <div style={{ fontSize: 12, color: "var(--text-muted)", paddingTop: 8 }}>{t("ladowanieWatku")}</div>;
 
   const closed = thread.status === "COMPLETED" || thread.status === "CANCELLED" || thread.status === "DECLINED";
   const canQuote = thread.role === "provider" && !closed;
@@ -67,11 +69,11 @@ export function RequestThread({ requestId }: { requestId: string }) {
       {/* Czat */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
-          <MessageSquare size={13} /> Wiadomości
+          <MessageSquare size={13} /> {t("wiadomosci")}
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto", padding: "2px 0" }}>
           {thread.messages.length === 0 ? (
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak wiadomości. Napisz, by ustalić szczegóły.</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakWiadomosciNapiszBy")}</span>
           ) : (
             thread.messages.map((m) => (
               <div key={m.id} style={{ alignSelf: m.mine ? "flex-end" : "flex-start", maxWidth: "82%" }}>
@@ -98,6 +100,7 @@ export function RequestThread({ requestId }: { requestId: string }) {
 }
 
 function QuoteRow({ quote, role, pending, onRespond }: { quote: ServiceQuoteDTO; role: "client" | "provider"; pending: boolean; onRespond: (accept: boolean) => void }) {
+  const t = useTranslations("modules.services.RequestThread");
   const color = quote.status === "ACCEPTED" ? "var(--accent-green)" : quote.status === "REJECTED" ? "var(--text-muted)" : "var(--accent-amber)";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 8 }}>
@@ -108,7 +111,7 @@ function QuoteRow({ quote, role, pending, onRespond }: { quote: ServiceQuoteDTO;
         <span style={{ display: "inline-flex", gap: 4 }}>
           <button disabled={pending} onClick={() => onRespond(true)} title="Akceptuj"
             style={{ ...primaryButtonStyle, padding: "4px 8px", background: "var(--accent-green)" }}><Check size={14} /></button>
-          <button disabled={pending} onClick={() => onRespond(false)} title="Odrzuć"
+          <button disabled={pending} onClick={() => onRespond(false)} title={t("odrzuc")}
             style={{ ...secondaryButtonStyle, padding: "4px 8px", color: "var(--accent-red)" }}><X size={14} /></button>
         </span>
       )}
@@ -117,6 +120,7 @@ function QuoteRow({ quote, role, pending, onRespond }: { quote: ServiceQuoteDTO;
 }
 
 function QuoteForm({ requestId, onSent }: { requestId: string; onSent: () => void }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -138,13 +142,13 @@ function QuoteForm({ requestId, onSent }: { requestId: string; onSent: () => voi
 
   return (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 6, padding: 8, background: "var(--bg-base)", border: "1px dashed var(--border)", borderRadius: 8 }}>
-      <label style={fieldLabelStyle}>Wyślij wycenę (PLN)</label>
+      <label style={fieldLabelStyle}>{t("wyslijWycenePln")}</label>
       <div style={{ display: "flex", gap: 6 }}>
         <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="np. 250"
           style={{ ...fieldInputStyle, width: 110 }} />
         <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Zakres / uwagi (opcjonalnie)"
           style={{ ...fieldInputStyle, flex: 1 }} />
-        <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1, whiteSpace: "nowrap" }}>Wyślij</button>
+        <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1, whiteSpace: "nowrap" }}>{t("wyslij")}</button>
       </div>
       {err && <span style={{ fontSize: 11, color: "var(--accent-red)" }}>{err}</span>}
     </form>
@@ -152,6 +156,7 @@ function QuoteForm({ requestId, onSent }: { requestId: string; onSent: () => voi
 }
 
 function MessageForm({ requestId, onSent }: { requestId: string; onSent: () => void }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -169,15 +174,16 @@ function MessageForm({ requestId, onSent }: { requestId: string; onSent: () => v
 
   return (
     <form onSubmit={submit} style={{ display: "flex", gap: 6 }}>
-      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Napisz wiadomość…" style={{ ...fieldInputStyle, flex: 1 }} />
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder={t("napiszWiadomosc")} style={{ ...fieldInputStyle, flex: 1 }} />
       <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6, opacity: busy ? 0.6 : 1 }}>
-        <Send size={14} /> Wyślij
+        <Send size={14} /> {t("wyslij")}
       </button>
     </form>
   );
 }
 
 function PaymentSection({ requestId, role, payment, onChange }: { requestId: string; role: "client" | "provider"; payment: ServicePaymentDTO | null; onChange: () => void }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [amount, setAmount] = useState(payment ? String(payment.amount / 100) : "");
   const [method, setMethod] = useState<PaymentMethod>(payment?.method ?? "cash");
   const [invoiceNo, setInvoiceNo] = useState(payment?.invoiceNo ?? "");
@@ -248,17 +254,17 @@ function PaymentSection({ requestId, role, payment, onChange }: { requestId: str
             {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((m) => <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</option>)}
           </select>
           <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="nr faktury (opc.)" style={{ ...fieldInputStyle, width: 130 }} />
-          <button onClick={saveAmount} disabled={busy} style={secondaryButtonStyle}>Zapisz kwotę</button>
+          <button onClick={saveAmount} disabled={busy} style={secondaryButtonStyle}>{t("zapiszKwote")}</button>
         </div>
       )}
 
       {role === "provider" && payment && !paid && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
           <select value={walletId} onFocusCapture={loadWallets} onChange={(e) => setWalletId(e.target.value)} style={{ ...fieldInputStyle, width: 200 }}>
-            <option value="">Księguj przychód w… (opcjonalnie)</option>
+            <option value="">{t("ksiegujPrzychodWOpcjonalnie")}</option>
             {elements.map((el) => <option key={el.id} value={el.id}>{el.name}</option>)}
           </select>
-          <button onClick={markPaid} disabled={busy} style={{ ...primaryButtonStyle, background: "var(--accent-green)" }}>Oznacz jako opłacone</button>
+          <button onClick={markPaid} disabled={busy} style={{ ...primaryButtonStyle, background: "var(--accent-green)" }}>{t("oznaczJakoOplacone")}</button>
         </div>
       )}
 
@@ -272,7 +278,7 @@ function PaymentSection({ requestId, role, payment, onChange }: { requestId: str
         </div>
       )}
 
-      {role === "client" && !payment && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Wykonawca nie wystawił jeszcze płatności.</span>}
+      {role === "client" && !payment && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("wykonawcaNieWystawilJeszcze")}</span>}
       {error && <span style={{ fontSize: 11, color: "var(--accent-red)" }}>{error}</span>}
       {info && <span style={{ fontSize: 11, color: "var(--accent-green)" }}>{info}</span>}
     </div>
@@ -280,6 +286,7 @@ function PaymentSection({ requestId, role, payment, onChange }: { requestId: str
 }
 
 function PromoCodeRow({ requestId, payment, onChange }: { requestId: string; payment: ServicePaymentDTO; onChange: () => void }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -301,7 +308,7 @@ function PromoCodeRow({ requestId, payment, onChange }: { requestId: string; pay
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
         <Tag size={12} style={{ color: "var(--accent-green)" }} />
         Kod <strong style={{ color: "var(--text-primary)" }}>{payment.promoCode}</strong> — rabat {money(payment.discount, payment.currency)}
-        <button onClick={clear} disabled={busy} style={{ background: "none", border: "none", color: "var(--accent-red)", cursor: "pointer", fontSize: 11, padding: 0 }}>usuń</button>
+        <button onClick={clear} disabled={busy} style={{ background: "none", border: "none", color: "var(--accent-red)", cursor: "pointer", fontSize: 11, padding: 0 }}>{t("usun")}</button>
         {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}
       </div>
     );
@@ -321,6 +328,7 @@ const DISPUTE_STATUS_LABELS: Record<string, string> = { OPEN: "Otwarte", RESOLVE
 const DISPUTE_STATUS_COLORS: Record<string, string> = { OPEN: "var(--accent-amber)", RESOLVED: "var(--accent-green)", REJECTED: "var(--text-muted)" };
 
 function DisputeSection({ requestId }: { requestId: string }) {
+  const t = useTranslations("modules.services.RequestThread");
   const [disputes, setDisputes] = useState<ServiceDisputeDTO[] | null>(null);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -350,7 +358,7 @@ function DisputeSection({ requestId }: { requestId: string }) {
         <div key={d.id} style={{ fontSize: 12, padding: "6px 8px", borderRadius: 6, background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{d.reason}</span>
           <span style={{ marginLeft: 6, color: DISPUTE_STATUS_COLORS[d.status] }}>· {DISPUTE_STATUS_LABELS[d.status]}</span>
-          {d.mine && <span style={{ marginLeft: 6, color: "var(--text-muted)" }}>(Twoje zgłoszenie)</span>}
+          {d.mine && <span style={{ marginLeft: 6, color: "var(--text-muted)" }}>{t("twojeZgloszenie")}</span>}
           {d.description && <div style={{ color: "var(--text-muted)", marginTop: 2 }}>{d.description}</div>}
           {d.resolution && <div style={{ color: "var(--accent-green)", marginTop: 2 }}>Moderator: {d.resolution}</div>}
         </div>
@@ -358,15 +366,15 @@ function DisputeSection({ requestId }: { requestId: string }) {
 
       {!hasOpen && !open && (
         <button onClick={() => setOpen(true)} style={{ alignSelf: "flex-start", fontSize: 12, color: "var(--accent-red)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          Zgłoś problem do moderacji
+          {t("zglosProblemDoModeracji")}
         </button>
       )}
       {open && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Powód (np. usługa niewykonana)" style={fieldInputStyle} />
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("powodNpUslugaNiewykonana")} style={fieldInputStyle} />
           <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Opis (opcjonalnie)" rows={2} style={{ ...fieldInputStyle, resize: "vertical" }} />
           <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={submit} disabled={busy || !reason.trim()} style={{ ...primaryButtonStyle, background: "var(--accent-red)" }}>Wyślij zgłoszenie</button>
+            <button onClick={submit} disabled={busy || !reason.trim()} style={{ ...primaryButtonStyle, background: "var(--accent-red)" }}>{t("wyslijZgloszenie")}</button>
             <button onClick={() => setOpen(false)} style={secondaryButtonStyle}>Anuluj</button>
           </div>
           {err && <span style={{ color: "var(--accent-red)", fontSize: 11 }}>{err}</span>}

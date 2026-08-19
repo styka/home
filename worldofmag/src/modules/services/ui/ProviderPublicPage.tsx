@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Star, MessageSquare, Share2, Check } from "lucide-react";
@@ -29,6 +30,7 @@ interface ProviderPublic {
 }
 
 export function ProviderPublicPage({ provider, isAdmin = false }: { provider: ProviderPublic; isAdmin?: boolean }) {
+  const t = useTranslations("modules.services.ProviderPublicPage");
   const [verified, setVerified] = useState(provider.verified);
   const [favored, setFavored] = useState(provider.isFavorite);
   const [copied, setCopied] = useState(false);
@@ -58,7 +60,7 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
       state="ready"
       breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-      <ArrowLeft size={15} /> Wszystkie usługi
+      <ArrowLeft size={15} /> {t("wszystkieUslugi")}
     </Link>
       }
       icon={<span style={{ fontSize: 22 }}>👤</span>}

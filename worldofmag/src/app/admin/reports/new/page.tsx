@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -31,6 +32,7 @@ const inputStyle = {
 };
 
 export default function NewReportPage() {
+  const t = useTranslations("app.admin.reports.new.page");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState("");
@@ -116,12 +118,12 @@ export default function NewReportPage() {
 
           <div>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>
-              Tytuł
+              {t("tytul")}
             </label>
             <input
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Tytuł raportu"
+              placeholder={t("tytulRaportu")}
               style={inputStyle}
               autoFocus
             />
@@ -188,14 +190,14 @@ export default function NewReportPage() {
                 ? toDrive
                   ? "Treść raportu trafi jako plik .md do folderu „Omnia/Raporty” na Twoim Dysku. Metadane zostają w bazie."
                   : "Treść raportu zostanie zapisana w bazie danych."
-                : <>Dysk Google nie jest połączony — raport zapisze się w bazie. Połącz w <Link href="/settings" style={{ color: "var(--accent-blue)" }}>Ustawienia → Dysk Google</Link>.</>}
+                : <>{t("dyskGoogleNieJest")} <Link href="/settings" style={{ color: "var(--accent-blue)" }}>Ustawienia → Dysk Google</Link>.</>}
             </p>
           </div>
 
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Treść (Markdown)
+                {t("trescMarkdown")}
               </label>
               <div style={{ display: "flex", gap: 2 }}>
                 {([["edit", <Edit3 key="e" size={12} />, "Edytor"], ["split", <Columns key="s" size={12} />, "Split"], ["preview", <Eye key="p" size={12} />, "Podgląd"]] as const).map(([mode, icon, label]) => (
@@ -211,7 +213,7 @@ export default function NewReportPage() {
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="# Tytuł raportu&#10;&#10;Treść w formacie Markdown..."
+                  placeholder={t("tytulRaportu1010")}
                   rows={24}
                   style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, flex: 1, minWidth: 0 }}
                 />
@@ -219,7 +221,7 @@ export default function NewReportPage() {
               {previewMode !== "edit" && (
                 <div
                   style={{ flex: 1, minWidth: 0, padding: "12px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", overflowY: "auto", minHeight: 400 }}
-                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:var(--text-muted);font-size:13px">Wpisz treść po lewej…</p>' }}
+                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:var(--text-muted);font-size:13px">{t("wpiszTrescPoLewej")}</p>' }}
                 />
               )}
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { Plus, Trash2, Loader2, Egg, Dna, GitBranch, Coins, Calculator } from "lucide-react";
@@ -53,6 +54,7 @@ function int(s: string): number | null { return s.trim() === "" ? null : parseIn
 // ─── Genetyka ────────────────────────────────────────────────────────────────
 
 export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const { data, loading, reload } = useBreeding(pet.id);
   const [isPending, startTransition] = useTransition();
@@ -84,7 +86,7 @@ export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Title title="Genotyp / morphy" />
-        {genes.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak cech genetycznych. Dodaj geny/morphy, aby korzystać z kalkulatora par.</p> : (
+        {genes.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("brakCechGenetycznychDodaj")}</p> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {genes.map((g, i) => (
               <div key={i} style={{ ...card, display: "flex", alignItems: "center", gap: 8 }}>
@@ -105,7 +107,7 @@ export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
                 {(Object.keys(GENE_MODE_LABELS) as GeneMode[]).map((m) => <option key={m} value={m}>{GENE_MODE_LABELS[m]}</option>)}
               </select>
             </Field>
-            <Field label="Zygotyczność">
+            <Field label={t("zygotycznosc")}>
               <select style={inputStyle} value={zygosity} onChange={(e) => setZygosity(e.target.value as Zygosity)}>
                 {zygositiesForMode(mode).map((z) => <option key={z} value={z}>{ZYGOSITY_LABELS[z]}</option>)}
               </select>
@@ -119,7 +121,7 @@ export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
         <Title title="Kalkulator pary" />
         {genes.length === 0 || partnersWithGenes.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
-            Dodaj geny temu zwierzęciu oraz przynajmniej jednemu zwierzęciu tego samego gatunku, aby policzyć potomstwo.
+            {t("dodajGenyTemuZwierzeciu")}
           </p>
         ) : (
           <>
@@ -131,7 +133,7 @@ export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
             </Field>
             {partner && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {results.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak wspólnych/aktywnych genów do policzenia.</p> : results.map((r) => (
+                {results.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("brakWspolnychAktywnychGenow")}</p> : results.map((r) => (
                   <div key={r.gene} style={card}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                       <Calculator size={13} style={{ color: "var(--accent-purple)" }} />
@@ -163,6 +165,7 @@ export function GeneticsSection({ pet }: { pet: PetWithRelations }) {
 // ─── Hodowla ────────────────────────────────────────────────────────────────
 
 export function BreedingSection({ pet }: { pet: PetWithRelations }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const { data, loading, reload } = useBreeding(pet.id);
   const [isPending, startTransition] = useTransition();
@@ -185,7 +188,7 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Rodowód */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <Title title="Rodowód" />
+        <Title title={t("rodowod")} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <Field label="Ojciec">
             <select style={inputStyle} value={data.sire?.id ?? ""} onChange={(e) => setParents(e.target.value || null, data.dam?.id ?? null)} disabled={isPending}>
@@ -217,7 +220,7 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
       {/* Pary hodowlane */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Title title="Pary hodowlane" action={addBtn(() => setPairOpen(true), "Nowa para")} />
-        {data.pairs.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak par hodowlanych z udziałem tego zwierzęcia.</p> : (
+        {data.pairs.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("brakParHodowlanychZ")}</p> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {data.pairs.map((p) => <PairCard key={p.id} pair={p} pet={pet} onChange={reload} />)}
           </div>
@@ -226,8 +229,8 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
 
       {/* Sprzedaż */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <Title title="Sprzedaż" action={addBtn(() => setSaleOpen(true), "Zapisz sprzedaż")} />
-        {data.sales.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak rekordów sprzedaży.</p> : (
+        <Title title={t("sprzedaz")} action={addBtn(() => setSaleOpen(true), "Zapisz sprzedaż")} />
+        {data.sales.length === 0 ? <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("brakRekordowSprzedazy")}</p> : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {data.sales.map((s) => (
               <div key={s.id} style={{ ...card, display: "flex", alignItems: "center", gap: 8 }}>
@@ -250,6 +253,7 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
 }
 
 function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][number]; pet: PetWithRelations; onChange: () => void }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -340,6 +344,7 @@ function PairCard({ pair, pet, onChange }: { pair: PetBreedingData["pairs"][numb
 }
 
 function PairModal({ pet, candidates, onClose, onSaved }: { pet: PetWithRelations; candidates: PetBreedingData["candidates"]; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState(`Para ${pet.name}`);
@@ -359,7 +364,7 @@ function PairModal({ pet, candidates, onClose, onSaved }: { pet: PetWithRelation
   }
 
   return (
-    <Modal title="Nowa para hodowlana" onClose={onClose} footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>Utwórz</PrimaryButton></>}>
+    <Modal title="Nowa para hodowlana" onClose={onClose} footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>{t("utworz")}</PrimaryButton></>}>
       <Field label="Nazwa *"><input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} /></Field>
       <Field label="Partner (ten sam gatunek)">
         <select style={inputStyle} value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
@@ -372,6 +377,7 @@ function PairModal({ pet, candidates, onClose, onSaved }: { pet: PetWithRelation
 }
 
 function ClutchModal({ pairId, onClose, onSaved }: { pairId: string; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [laidAt, setLaidAt] = useState(new Date().toISOString().slice(0, 10));
@@ -396,18 +402,19 @@ function ClutchModal({ pairId, onClose, onSaved }: { pairId: string; onClose: ()
   return (
     <Modal title="Nowy klutch / miot" onClose={onClose} wide footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>Dodaj</PrimaryButton></>}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Field label="Data złożenia"><input type="date" style={inputStyle} value={laidAt} onChange={(e) => setLaidAt(e.target.value)} /></Field>
+        <Field label={t("dataZlozenia")}><input type="date" style={inputStyle} value={laidAt} onChange={(e) => setLaidAt(e.target.value)} /></Field>
         <Field label="Oczekiwane wyklucie"><input type="date" style={inputStyle} value={expected} onChange={(e) => setExpected(e.target.value)} /></Field>
         <Field label="Liczba jaj"><input style={inputStyle} inputMode="numeric" value={eggCount} onChange={(e) => setEggCount(e.target.value)} /></Field>
-        <Field label="Płodne"><input style={inputStyle} inputMode="numeric" value={fertileCount} onChange={(e) => setFertileCount(e.target.value)} /></Field>
+        <Field label={t("plodne")}><input style={inputStyle} inputMode="numeric" value={fertileCount} onChange={(e) => setFertileCount(e.target.value)} /></Field>
         <Field label="Temp. inkubacji (°C)"><input style={inputStyle} inputMode="decimal" value={tempC} onChange={(e) => setTempC(e.target.value)} /></Field>
-        <Field label="Wilgotność (%)"><input style={inputStyle} inputMode="decimal" value={humidity} onChange={(e) => setHumidity(e.target.value)} /></Field>
+        <Field label={t("wilgotnosc")}><input style={inputStyle} inputMode="decimal" value={humidity} onChange={(e) => setHumidity(e.target.value)} /></Field>
       </div>
     </Modal>
   );
 }
 
 function OffspringModal({ pet, pair, onClose, onSaved }: { pet: PetWithRelations; pair: PetBreedingData["pairs"][number]; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");
@@ -426,8 +433,8 @@ function OffspringModal({ pet, pair, onClose, onSaved }: { pet: PetWithRelations
   return (
     <Modal title="Nowy potomek" onClose={onClose} footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>Dodaj</PrimaryButton></>}>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Rodzice: ♂ {pair.male?.name ?? "—"} × ♀ {pair.female?.name ?? "—"}</p>
-      <Field label="Imię *"><input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} /></Field>
-      <Field label="Płeć">
+      <Field label={t("imie")}><input autoFocus style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} /></Field>
+      <Field label={t("plec")}>
         <select style={inputStyle} value={sex} onChange={(e) => setSex(e.target.value)}>
           <option value="unknown">Nieznana</option><option value="male">Samiec</option><option value="female">Samica</option>
         </select>
@@ -437,6 +444,7 @@ function OffspringModal({ pet, pair, onClose, onSaved }: { pet: PetWithRelations
 }
 
 function SaleModal({ petId, onClose, onSaved }: { petId: string; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("modules.pets.PetBreeding");
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [buyerName, setBuyerName] = useState("");
@@ -455,7 +463,7 @@ function SaleModal({ petId, onClose, onSaved }: { petId: string; onClose: () => 
   }
 
   return (
-    <Modal title="Zapisz sprzedaż" onClose={onClose} footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>Zapisz</PrimaryButton></>}>
+    <Modal title={t("zapiszSprzedaz")} onClose={onClose} footer={<><GhostButton onClick={onClose}>Anuluj</GhostButton><PrimaryButton onClick={create} disabled={isPending}>Zapisz</PrimaryButton></>}>
       <Field label="Nabywca"><input autoFocus style={inputStyle} value={buyerName} onChange={(e) => setBuyerName(e.target.value)} /></Field>
       <Field label="Kontakt"><input style={inputStyle} value={buyerContact} onChange={(e) => setBuyerContact(e.target.value)} placeholder="e-mail / telefon" /></Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -463,7 +471,7 @@ function SaleModal({ petId, onClose, onSaved }: { petId: string; onClose: () => 
         <Field label="Data"><input type="date" style={inputStyle} value={soldAt} onChange={(e) => setSoldAt(e.target.value)} /></Field>
       </div>
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)" }}>
-        <input type="checkbox" checked={markSold} onChange={(e) => setMarkSold(e.target.checked)} /> Oznacz zwierzę jako sprzedane
+        <input type="checkbox" checked={markSold} onChange={(e) => setMarkSold(e.target.checked)} /> {t("oznaczZwierzeJakoSprzedane")}
       </label>
     </Modal>
   );

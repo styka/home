@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { signIn } from "@/platform/auth/session"
 import { BrandLogo } from "@/components/brand/BrandLogo"
 import { AppName } from "@/components/brand/AppName"
@@ -13,6 +14,7 @@ const FEATURES = [
 ]
 
 export default function SignInPage({ searchParams }: { searchParams?: { callbackUrl?: string } }) {
+  const t = useTranslations("app.auth.signin.page");
   const raw = searchParams?.callbackUrl
   // Tylko ścieżki względne (ochrona przed open-redirect); /auth/* → pulpit, by uniknąć pętli.
   const callbackUrl =
@@ -262,8 +264,8 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
             <span><AppName /></span>
           </div>
           <p className="signin-hero-sub">
-            Twój osobisty świat w jednym miejscu.<br />
-            Zakupy, zadania, teamy, notatki — wszystko co potrzebne na co dzień.
+            {t("twojOsobistySwiatW")}<br />
+            {t("zakupyZadaniaTeamyNotatki")}
           </p>
 
           <div className="signin-features">
@@ -292,7 +294,7 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
           <div className="signin-card">
             <div className="signin-card-logo"><BrandLogo px={56} /></div>
             <div className="signin-card-title"><AppName /></div>
-            <div className="signin-card-sub">Zaloguj się, aby kontynuować</div>
+            <div className="signin-card-sub">{t("zalogujSieAbyKontynuowac")}</div>
 
             <form
               action={async () => {
@@ -308,12 +310,12 @@ export default function SignInPage({ searchParams }: { searchParams?: { callback
                   <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
                   <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
                 </svg>
-                Zaloguj się przez Google
+                {t("zalogujSiePrzezGoogle")}
               </button>
             </form>
 
             <p className="signin-footer">
-              Korzystając z aplikacji akceptujesz<br />politykę prywatności {APP_NAME}.
+              {t("korzystajacZAplikacjiAkceptujesz")}<br />politykę prywatności {APP_NAME}.
             </p>
           </div>
         </div>

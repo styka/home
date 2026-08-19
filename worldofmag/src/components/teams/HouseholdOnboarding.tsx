@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link"
 
 type Ref = { id: string; name: string } | null
@@ -19,6 +20,7 @@ export default function HouseholdOnboarding({
   sharedProject: Ref
   sharedWallet: Ref
 }) {
+  const t = useTranslations("components.teams.HouseholdOnboarding");
   const itemStyle: React.CSSProperties = {
     display: "flex",
     alignItems: "baseline",
@@ -49,7 +51,7 @@ export default function HouseholdOnboarding({
         🏡 Pierwsze kroki w rodzinie
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
-        Wszystko, co dodasz na wspólnych listach poniżej, widzą wszyscy domownicy.
+        {t("wszystkoCoDodaszNa")}
       </p>
 
       <div style={itemStyle}>

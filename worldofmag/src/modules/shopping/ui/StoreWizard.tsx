@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, ArrowRight, RotateCcw, Check, Loader2 } from "lucide-react";
@@ -109,6 +110,7 @@ function CategoryGrid({
   onWeightChange: (key: string, w: number) => void;
   single?: boolean;
 }) {
+  const t = useTranslations("modules.shopping.StoreWizard");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* STOP row */}
@@ -148,7 +150,7 @@ function CategoryGrid({
               </button>
               {isSelected && !single && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Odległość:</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("odleglosc")}</span>
                   <input
                     type="number"
                     min={1} max={20}
@@ -169,7 +171,7 @@ function CategoryGrid({
               )}
               {isSelected && single && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 4 }}>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Odległość od wejścia:</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("odlegloscOdWejscia")}</span>
                   <input
                     type="number"
                     min={1} max={20}
@@ -205,6 +207,7 @@ interface StoreWizardProps {
 }
 
 export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardProps) {
+  const t = useTranslations("modules.shopping.StoreWizard");
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>(initialStore ? "intro" : "intro");
   const [aiStoreName, setAiStoreName] = useState(storeName);
@@ -439,11 +442,10 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
         <>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-              Skonfiguruj mapę sklepu
+              {t("skonfigurujMapeSklepu")}
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, lineHeight: 1.6 }}>
-              Mapa sklepu pozwala sortować listę zakupów zgodnie z układem regałów,
-              żebyś szedł przez sklep w optymalnej kolejności.
+              {t("mapaSklepuPozwalaSortowac")}
             </p>
           </div>
 
@@ -467,7 +469,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               <div>
                 <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Kreator krok po kroku</p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                  Odpowiedz na kilka pytań o układzie sklepu
+                  {t("odpowiedzNaKilkaPytan")}
                 </p>
               </div>
               <ArrowRight size={16} style={{ marginLeft: "auto", color: "var(--text-muted)", flexShrink: 0 }} />
@@ -492,7 +494,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               <div>
                 <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Generuj przez AI</p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>
-                  AI zna układy popularnych polskich sklepów (Biedronka, Lidl, Żabka…)
+                  {t("aiZnaUkladyPopularnych")}
                 </p>
               </div>
               <Sparkles size={16} style={{ marginLeft: "auto", color: "var(--accent-purple)", flexShrink: 0 }} />
@@ -513,13 +515,13 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
         <>
           <div>
             <button onClick={() => setPhase("intro")} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer", padding: 0, marginBottom: 12 }}>
-              ← Wróć
+              {t("wroc")}
             </button>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-              Generuj mapę przez AI
+              {t("generujMapePrzezAi")}
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>
-              Podaj nazwę sieci handlowej — AI wygeneruje typowy układ.
+              {t("podajNazweSieciHandlowej")}
             </p>
           </div>
 
@@ -529,7 +531,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               value={aiStoreName}
               onChange={(e) => setAiStoreName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") generateAI(); }}
-              placeholder="np. Biedronka, Lidl, Żabka…"
+              placeholder={t("npBiedronkaLidlZabka")}
               style={{
                 flex: 1,
                 padding: "10px 14px",
@@ -575,7 +577,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "48px 0" }}>
           <Loader2 size={36} style={{ color: "var(--accent-purple)", animation: "spin 1s linear infinite" }} />
           <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: 0 }}>
-            AI analizuje układ sklepu…
+            {t("aiAnalizujeUkladSklepu")}
           </p>
           <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -589,7 +591,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               Wygenerowana mapa
             </h2>
             <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
-              Sprawdź czy układ wygląda poprawnie.
+              {t("sprawdzCzyUkladWyglada")}
             </p>
           </div>
 
@@ -646,13 +648,13 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
         <>
           <div>
             <button onClick={() => setPhase("intro")} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer", padding: 0, marginBottom: 12 }}>
-              ← Wróć
+              {t("wroc")}
             </button>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
               Pierwsza kategoria
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>
-              Wchodząc do sklepu, którą kategorię mijasz jako pierwszą?
+              {t("wchodzacDoSklepuKtora")}
             </p>
           </div>
 
@@ -700,7 +702,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               Z &ldquo;{currentNodeMeta.label}&rdquo;…
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>
-              Do jakich kategorii możesz przejść bezpośrednio? Podaj odległości (1 = obok, 10 = drugi koniec sklepu).
+              {t("doJakichKategoriiMozesz")}
             </p>
           </div>
 
@@ -711,7 +713,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               onChange={(e) => { setNoConnections(e.target.checked); if (e.target.checked) setSelected(new Set()); }}
               style={{ width: 16, height: 16 }}
             />
-            Brak połączeń z tego miejsca (ślepy zaułek)
+            {t("brakPolaczenZTego")}
           </label>
 
           {!noConnections && (
@@ -754,7 +756,7 @@ export function StoreWizard({ storeId, storeName, initialStore }: StoreWizardPro
               Mapa gotowa!
             </h2>
             <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0 }}>
-              Sprawdź podgląd i zapisz.
+              {t("sprawdzPodgladIZapisz")}
             </p>
           </div>
 

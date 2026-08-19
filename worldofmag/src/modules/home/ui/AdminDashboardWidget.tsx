@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Shield, Users, BookOpen, ChevronRight, Settings, Code, FileText } from "lucide-react";
 
@@ -10,6 +11,7 @@ interface AdminDashboardWidgetProps {
 }
 
 export function AdminDashboardWidget({ userCount, teamCount, reportCount }: AdminDashboardWidgetProps) {
+  const t = useTranslations("modules.home.AdminDashboardWidget");
   const buildBranch = process.env.NEXT_PUBLIC_BUILD_BRANCH;
   const buildSha = process.env.NEXT_PUBLIC_BUILD_COMMIT_SHA;
   const buildMsg = process.env.NEXT_PUBLIC_BUILD_COMMIT_MESSAGE;
@@ -55,20 +57,20 @@ export function AdminDashboardWidget({ userCount, teamCount, reportCount }: Admi
             gap: 2,
           }}
         >
-          Otwórz <ChevronRight size={11} />
+          {t("otworz")} <ChevronRight size={11} />
         </Link>
       </div>
 
       {/* Counters */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 }}>
-        <AdminCounter icon={<Users size={14} />} label="Użytkowników" value={userCount} />
-        <AdminCounter icon={<Shield size={14} />} label="Zespołów" value={teamCount} />
-        <AdminCounter icon={<BookOpen size={14} />} label="Raportów" value={reportCount} />
+        <AdminCounter icon={<Users size={14} />} label={t("uzytkownikow")} value={userCount} />
+        <AdminCounter icon={<Shield size={14} />} label={t("zespolow")} value={teamCount} />
+        <AdminCounter icon={<BookOpen size={14} />} label={t("raportow")} value={reportCount} />
       </div>
 
       {/* Quick links */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
-        <AdminLink href="/admin/access" icon={<Shield size={13} />} label="Kontrola dostępu" />
+        <AdminLink href="/admin/access" icon={<Shield size={13} />} label={t("kontrolaDostepu")} />
         <AdminLink href="/admin/config" icon={<Settings size={13} />} label="Konfiguracja" />
         <AdminLink href="/admin/reports" icon={<FileText size={13} />} label="Raporty" />
         <AdminLink href="/admin/architecture" icon={<Code size={13} />} label="Architektura" />

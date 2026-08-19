@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { Printer, QrCode, Plus } from "lucide-react";
@@ -15,6 +16,7 @@ interface QrLabelsProps {
 }
 
 export function QrLabels({ locations }: QrLabelsProps) {
+  const t = useTranslations("modules.magazynowanie.QrLabels");
   const [selected, setSelected] = useState<Set<string>>(() => new Set(locations.map((l) => l.key)));
   const [customWh, setCustomWh] = useState("");
   const [customLoc, setCustomLoc] = useState("");
@@ -80,7 +82,7 @@ export function QrLabels({ locations }: QrLabelsProps) {
             <QrCode size={20} style={{ color: "var(--accent-blue)" }} /> Etykiety QR
           </h2>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            Wydrukuj etykiety dla półek/pudeł. Zeskanuj telefonem, by zobaczyć zawartość danej lokalizacji.
+            {t("wydrukujEtykietyDlaPolek")}
           </p>
         </div>
 
@@ -108,7 +110,7 @@ export function QrLabels({ locations }: QrLabelsProps) {
           </div>
         ) : (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            Brak lokalizacji w magazynie — dodaj własną etykietę poniżej.
+            {t("brakLokalizacjiWMagazynie")}
           </p>
         )}
 
@@ -116,7 +118,7 @@ export function QrLabels({ locations }: QrLabelsProps) {
           <input
             value={customWh}
             onChange={(e) => setCustomWh(e.target.value)}
-            placeholder="Magazyn (np. Garaż)"
+            placeholder={t("magazynNpGaraz")}
             className="flex-1 px-2.5 py-1.5 rounded border text-sm"
             style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           />
@@ -124,7 +126,7 @@ export function QrLabels({ locations }: QrLabelsProps) {
             value={customLoc}
             onChange={(e) => setCustomLoc(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            placeholder="Lokalizacja (np. Regał A3)"
+            placeholder={t("lokalizacjaNpRegalA3")}
             className="flex-1 px-2.5 py-1.5 rounded border text-sm"
             style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Search } from "lucide-react";
@@ -57,6 +58,7 @@ function Stat({ label, counts }: { label: string; counts: { ai: number; pending:
 }
 
 export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
+  const t = useTranslations("components.admin.AiCoveragePage");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [kind, setKind] = useState<KindFilter>("all");
   const [q, setQ] = useState("");
@@ -87,14 +89,12 @@ export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
 
       <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>Pokrycie akcji przez asystenta AI</h1>
       <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "0 0 20px", lineHeight: 1.5 }}>
-        Pełna lista akcji użytkownika — <strong>mutacji</strong> (zapis) i <strong>odczytów</strong> (podgląd danych) — z informacją,
-        czy asystent AI ma do nich dostęp. Lista jest generowana z manifestu pokrycia, którego kompletność wymusza bramka build'u
-        (<code>check:ai-coverage</code>), więc jest zawsze aktualna wobec wdrożonego kodu.
+        {t("pelnaListaAkcjiUzytkownika")} <strong>mutacji</strong> (zapis) i <strong>{t("odczytow")}</strong> {t("podgladDanychZInformacja")}<code>check:ai-coverage</code>{t("wiecJestZawszeAktualna")}
       </p>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
         <Stat label="Mutacje (zapis danych)" counts={coverage.mutation} />
-        <Stat label="Odczyty (podgląd danych)" counts={coverage.read} />
+        <Stat label={t("odczytyPodgladDanych")} counts={coverage.read} />
       </div>
 
       {/* Filtry */}
@@ -104,7 +104,7 @@ export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Szukaj akcji / modułu…"
+            placeholder={t("szukajAkcjiModulu")}
             style={{ width: "100%", padding: "8px 8px 8px 32px", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 13 }}
           />
         </div>
@@ -135,7 +135,7 @@ export function AiCoveragePage({ coverage }: { coverage: AiCoverage }) {
       ))}
 
       {filtered.length === 0 && (
-        <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 32 }}>Brak akcji spełniających filtry.</p>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: 32 }}>{t("brakAkcjiSpelniajacychFiltry")}</p>
       )}
       </div>
     </div>

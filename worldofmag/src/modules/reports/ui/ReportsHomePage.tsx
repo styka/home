@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -32,6 +33,7 @@ interface ReportsHomePageProps {
 }
 
 export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewParams = {} }: ReportsHomePageProps) {
+  const t = useTranslations("modules.reports.ReportsHomePage");
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
   // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
   const viewSpec = useMemo(() => ({ q: text("") }), []);
@@ -115,7 +117,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewPara
           <StatTile value={myCount} label="Moje" color="var(--accent-blue)" icon={<User size={14} />} />
         )}
         {teamCount > 0 && (
-          <StatTile value={teamCount} label="Zespołowe" color="var(--accent-green)" />
+          <StatTile value={teamCount} label={t("zespolowe")} color="var(--accent-green)" />
         )}
         <StatTile
           value={categoryEntries.length}
@@ -177,7 +179,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewPara
       {/* By category */}
       {categoryEntries.length >= 2 && (
         <div>
-          <SectionHeading>Według kategorii</SectionHeading>
+          <SectionHeading>{t("wedlugKategorii")}</SectionHeading>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
             {categoryEntries.map(([cat, count]) => {
               const info = getCategoryInfo(cat);
@@ -231,7 +233,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewPara
           strony) — martwy link, przez który „nie dało się nigdzie przejść". */}
       {isAdmin && (
         <div>
-          <SectionHeading>Zarządzanie</SectionHeading>
+          <SectionHeading>{t("zarzadzanie")}</SectionHeading>
           <ManagementGrid
             items={[
               { href: "/admin/reports", icon: <Plus size={16} />, label: "Panel admina", color: "var(--accent-purple)" },
@@ -244,6 +246,7 @@ export function ReportsHomePage({ reports, myCount, teamCount, isAdmin, viewPara
 }
 
 function ReportRow({ report }: { report: ReportSummary }) {
+  const t = useTranslations("modules.reports.ReportsHomePage");
   const info = getCategoryInfo(report.category);
   return (
     <Link
@@ -317,7 +320,7 @@ function ReportRow({ report }: { report: ReportSummary }) {
           )}
           {report.storage === "drive" && (
             <span
-              title="Treść na Dysku Google"
+              title={t("trescNaDyskuGoogle")}
               style={{ fontSize: 11, color: "var(--accent-green)", display: "flex", alignItems: "center", gap: 4 }}
             >
               <HardDrive size={10} />

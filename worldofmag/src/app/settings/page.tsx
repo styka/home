@@ -1,4 +1,5 @@
-import { auth } from "@/platform/auth/session"
+
+import { getTranslations } from "next-intl/server";import { auth } from "@/platform/auth/session"
 import { getMyTeams } from "@/actions/teams"
 import { getRecentActivity } from "@/actions/activity"
 import { getMenuPrefs } from "@/actions/menuPrefs"
@@ -27,6 +28,7 @@ export default async function SettingsPage({
 }: {
   searchParams?: { drive?: string }
 }) {
+  const t = await getTranslations("app.settings.page");
   const session = await auth()
   const driveStatus = await getDriveStatus()
   const teams = await getMyTeams()
@@ -140,7 +142,7 @@ export default async function SettingsPage({
 
         {teams.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            Nie należysz jeszcze do żadnego teamu.
+            {t("nieNalezyszJeszczeDo")}
           </p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -217,7 +219,7 @@ export default async function SettingsPage({
       {/* Wygląd / Skórka */}
       <section>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-          Wygląd — skórka
+          {t("wygladSkorka")}
         </h2>
         <SkinPicker skins={skins} activeId={activeSkinId} teams={teamOpts} />
       </section>
@@ -226,7 +228,7 @@ export default async function SettingsPage({
       {ustawieniaJezykowe && ustawieniaJezykowe.przestrzenie.length > 0 && (
         <section>
           <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            Język i strefa czasowa
+            {t("jezykIStrefaCzasowa")}
           </h2>
           <WorkspaceLocaleSection przestrzenie={ustawieniaJezykowe.przestrzenie} jezyki={ustawieniaJezykowe.jezyki} />
         </section>
@@ -235,7 +237,7 @@ export default async function SettingsPage({
       {plan && (
         <section>
           <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            Twój plan
+            {t("twojPlan")}
           </h2>
           <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, padding: "16px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -244,7 +246,7 @@ export default async function SettingsPage({
             </div>
             {zuzycieAi && <AiUsageMeters zuzycie={zuzycieAi} />}
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10, lineHeight: 1.6 }}>
-              Zmiana planu będzie dostępna po uruchomieniu płatności.
+              {t("zmianaPlanuBedzieDostepna")}
             </div>
           </div>
         </section>
@@ -262,22 +264,22 @@ export default async function SettingsPage({
       {/* Prywatność i dane (RODO) */}
       <section>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-          Prywatność i dane
+          {t("prywatnoscIDane")}
         </h2>
         <PrivacySettings />
         <Link href="/legal" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "var(--accent-blue)", textDecoration: "none" }}>
-          Dokumenty prawne (polityka prywatności, regulamin, podprocesorzy) →
+          {t("dokumentyPrawnePolitykaPrywatnosci")}
         </Link>
       </section>
 
       {/* Activity */}
       <section>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-          Aktywność
+          {t("aktywnosc")}
         </h2>
         {activityForUI.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            Brak ostatniej aktywności.
+            {t("brakOstatniejAktywnosci")}
           </p>
         ) : (
           <ActivityFeed activities={activityForUI} permissions={userPermissions} />

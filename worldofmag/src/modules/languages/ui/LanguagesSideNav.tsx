@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +9,7 @@ import { getDecks } from "../actions/languageDecks";
 import type { LanguageDeck } from "@/types";
 
 export function LanguagesSideNav() {
+  const t = useTranslations("modules.languages.LanguagesSideNav");
   const pathname = usePathname();
   const [decks, setDecks] = useState<LanguageDeck[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);

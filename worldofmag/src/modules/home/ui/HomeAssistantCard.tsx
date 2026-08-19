@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { openAssistant } from "@/platform/ai/assistantBus";
 import type { AssistantStarter } from "@/lib/ai/assistantStarters";
@@ -25,6 +26,7 @@ interface HomeAssistantCardProps {
  * poniżej zgięcia na telefonie.
  */
 export function HomeAssistantCard({ starters }: HomeAssistantCardProps) {
+  const t = useTranslations("modules.home.HomeAssistantCard");
   return (
     <section
       aria-label="Asystent AI"
@@ -56,11 +58,11 @@ export function HomeAssistantCard({ starters }: HomeAssistantCardProps) {
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Asystent</div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Wybierz gotową akcję albo otwórz rozmowę</div>
+          <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t("wybierzGotowaAkcjeAlbo")}</div>
         </div>
         <button
           onClick={() => openAssistant()}
-          title="Otwórz asystenta"
+          title={t("otworzAsystenta")}
           style={{
             display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
             minHeight: 32, padding: "0 11px", fontSize: 12, fontWeight: 600,
@@ -68,7 +70,7 @@ export function HomeAssistantCard({ starters }: HomeAssistantCardProps) {
             background: "var(--accent-blue)", color: "var(--on-accent)", cursor: "pointer",
           }}
         >
-          Otwórz asystenta
+          {t("otworzAsystenta")}
           <ArrowRight size={13} />
         </button>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useRef } from "react";
 import { Clock, ChevronRight, Paperclip, Check } from "lucide-react";
 import { toggleTaskStatus, updateTask } from "../actions/tasks";
@@ -56,6 +57,7 @@ interface TaskRowProps {
 }
 
 export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, indent = 0, statusConfig = DEFAULT_STATUS_CONFIG, selectionMode = false, isChecked = false, onToggleSelect }: TaskRowProps) {
+  const t = useTranslations("modules.tasks.TaskRow");
   const [isPending, startTransition] = useTransition();
   const [editingDate, setEditingDate] = useState(false);
   // Long-press na mobile wchodzi w tryb zaznaczania; ref blokuje „klik" wywołany po geście.
@@ -166,7 +168,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
         disabled={isPending}
         className="flex-shrink-0 mt-0.5 focus:outline-none hover:opacity-70"
         style={{ color: statusMeta.color }}
-        title="Zmień status"
+        title={t("zmienStatus")}
       >
         {isPending ? (
           <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent-blue)" }} />
@@ -222,7 +224,7 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
             <span
               className="text-xs cursor-pointer hover:underline"
               onClick={handleDateClick}
-              title="Kliknij, aby zmienić datę"
+              title={t("kliknijAbyZmienicDate")}
               style={{
                 color: dateInfo.isOverdue ? "var(--accent-red)" : dateInfo.isToday ? "var(--accent-amber)" : "var(--text-muted)",
                 fontWeight: dateInfo.isOverdue || dateInfo.isToday ? 500 : undefined,

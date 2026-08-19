@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Star, X } from "lucide-react";
@@ -41,6 +42,7 @@ interface FavoriteStarButtonProps {
  * oznaczałoby podwójne nagłówki w ~20 modułach — stąd góra nawigacji zamiast nagłówka strony.
  */
 export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonProps) {
+  const t = useTranslations("components.favorites.FavoriteStarButton");
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

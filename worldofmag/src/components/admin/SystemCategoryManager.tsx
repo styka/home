@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import type { SystemCategory } from "@/actions/adminCategories";
@@ -11,6 +12,7 @@ interface SystemCategoryManagerProps {
 }
 
 function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations("components.admin.SystemCategoryManager");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +86,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
 }
 
 export function SystemCategoryManager({ categories: initial }: SystemCategoryManagerProps) {
+  const t = useTranslations("components.admin.SystemCategoryManager");
   const [categories, setCategories] = useState(initial);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -158,7 +161,7 @@ export function SystemCategoryManager({ categories: initial }: SystemCategoryMan
       </div>
 
       <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-        Kategorie systemowe widoczne dla wszystkich użytkowników. Zmiana nazwy aktualizuje wszystkie produkty w katalogu.
+        {t("kategorieSystemoweWidoczneDla")}
       </p>
 
       {/* Add form */}

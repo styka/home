@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import React, { useState, useRef, useCallback, useEffect, useTransition } from "react";
 import { MousePointer, Plus, GitBranch, Trash2 } from "lucide-react";
 import type { StoreWithGraph, StoreNodeData, StoreEdgeData } from "@/types";
@@ -76,6 +77,7 @@ interface StoreMapEditorProps {
 }
 
 export function StoreMapEditor({ store }: StoreMapEditorProps) {
+  const t = useTranslations("modules.shopping.StoreMapEditor");
   const [nodes, setNodes] = useState<StoreNodeData[]>(store.nodes);
   const [edges, setEdges] = useState<StoreEdgeData[]>(store.edges);
   const [mode, setMode] = useState<EditorMode>("select");
@@ -421,7 +423,7 @@ export function StoreMapEditor({ store }: StoreMapEditorProps) {
             <rect x={0} y={0} width={120} height={64} rx={6}
               fill="var(--bg-elevated)" fillOpacity={0.92} stroke="var(--border)" strokeWidth={1} />
             <circle cx={16} cy={18} r={7} fill="#16a34a" />
-            <text x={28} y={22} fontSize={10} fill="var(--text-secondary)">Wejście (START)</text>
+            <text x={28} y={22} fontSize={10} fill="var(--text-secondary)">{t("wejscieStart")}</text>
             <circle cx={16} cy={36} r={7} fill="#dc2626" />
             <text x={28} y={40} fontSize={10} fill="var(--text-secondary)">Kasy (STOP)</text>
             <circle cx={16} cy={54} r={7} fill="#6b7280" />
@@ -472,6 +474,7 @@ interface NodeTypeDialogProps {
 }
 
 function NodeTypeDialog({ dialog, existingNodes, pos, onChange, onConfirm, onCancel }: NodeTypeDialogProps) {
+  const t = useTranslations("modules.shopping.StoreMapEditor");
   const hasStart = existingNodes.some(n => n.type === "START");
   const hasStop  = existingNodes.some(n => n.type === "STOP");
 
@@ -487,7 +490,7 @@ function NodeTypeDialog({ dialog, existingNodes, pos, onChange, onConfirm, onCan
       }}
       onPointerDown={e => e.stopPropagation()}
     >
-      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Typ węzła</p>
+      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{t("typWezla")}</p>
       <div className="flex gap-1 mb-2">
         {(["CATEGORY", "START", "STOP"] as const).map(t => {
           const disabled = (t === "START" && hasStart) || (t === "STOP" && hasStop);
@@ -558,6 +561,7 @@ interface WeightInputDialogProps {
 }
 
 function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm, onCancel }: WeightInputDialogProps) {
+  const t = useTranslations("modules.shopping.StoreMapEditor");
   return (
     <div
       className="absolute z-50 rounded-lg p-3 min-w-[190px]"
@@ -570,7 +574,7 @@ function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm
       }}
       onPointerDown={e => e.stopPropagation()}
     >
-      <p className="text-xs font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>Waga krawędzi</p>
+      <p className="text-xs font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>{t("wagaKrawedzi")}</p>
       <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
         {fromLabel} → {toLabel}
       </p>
@@ -595,7 +599,7 @@ function WeightInputDialog({ fromLabel, toLabel, pos, value, onChange, onConfirm
           className="flex-1 text-xs py-1.5 rounded font-medium"
           style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
         >
-          Połącz
+          {t("polacz")}
         </button>
         <button
           onClick={onCancel}

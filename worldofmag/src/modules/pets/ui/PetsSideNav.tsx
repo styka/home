@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +10,7 @@ import { speciesEmoji } from "../lib/petSpecies";
 import type { Pet } from "@/types";
 
 export function PetsSideNav() {
+  const t = useTranslations("modules.pets.PetsSideNav");
   const pathname = usePathname();
   const [pets, setPets] = useState<Pet[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function PetsSideNav() {
 
       {pets.length === 0 ? (
         <div className="flex items-center gap-2 mx-2 text-xs" style={{ paddingLeft: 40, paddingTop: 5, paddingBottom: 5, color: "var(--text-muted)" }}>
-          <PawPrint size={12} /> Brak zwierząt
+          <PawPrint size={12} /> {t("brakZwierzat")}
         </div>
       ) : (
         pets.map((p) => (

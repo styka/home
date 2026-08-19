@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
@@ -27,6 +28,7 @@ const COLOR_PRESETS: Array<{ label: string; value: string | null }> = [
 ];
 
 export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDialogProps) {
+  const t = useTranslations("modules.kitchen.CookbookEditDialog");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -109,7 +111,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm disabled:opacity-50"
               style={{ color: "var(--accent-red)" }}
             >
-              <Trash2 size={14} /> Usuń
+              <Trash2 size={14} /> {t("usun")}
             </button>
           ) : <span />}
           <div className="flex items-center gap-2">
@@ -140,7 +142,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="np. Włoska klasyka"
+          placeholder={t("npWloskaKlasyka")}
           autoFocus
           className="w-full px-3 py-2 rounded border text-sm"
           style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
@@ -181,7 +183,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
             onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
             className="w-12 h-9 px-1 rounded border text-center text-lg"
             style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            aria-label="Własne emoji"
+            aria-label={t("wlasneEmoji")}
           />
         </div>
       </div>

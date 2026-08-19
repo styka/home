@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ChevronDown, FlaskConical, FileText, Layers, ShoppingCart, CheckSquare, ChefHat, Home, BookOpen, Users, Settings, Lock, Shield, Sparkles, type LucideIcon } from "lucide-react";
@@ -18,6 +19,7 @@ interface QaModuleBrowserProps {
 }
 
 export function QaModuleBrowser({ module, tree }: QaModuleBrowserProps) {
+  const t = useTranslations("modules.qa.QaModuleBrowser");
   const info = getModuleInfo(module);
   const Icon = ICON_MAP[info.iconName] ?? Sparkles;
 
@@ -61,6 +63,7 @@ export function QaModuleBrowser({ module, tree }: QaModuleBrowserProps) {
 }
 
 function EpicCard({ epic }: { epic: ModuleTree }) {
+  const t = useTranslations("modules.qa.QaModuleBrowser");
   const [open, setOpen] = useState(true);
   const scenarioCount = epic.userStories.reduce((s, st) => s + st.scenarios.length, 0);
 
@@ -118,6 +121,7 @@ function EpicCard({ epic }: { epic: ModuleTree }) {
 }
 
 function StoryRow({ story }: { story: ModuleTree["userStories"][number] }) {
+  const t = useTranslations("modules.qa.QaModuleBrowser");
   const [open, setOpen] = useState(true);
   return (
     <div style={{ borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg-base)" }}>

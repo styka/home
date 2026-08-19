@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Palette } from "lucide-react";
@@ -13,6 +14,7 @@ type EditorState =
   | { open: true; initial: SkinView | null; existingId: string | null };
 
 export function SystemSkinManager({ skins }: { skins: SkinView[] }) {
+  const t = useTranslations("components.admin.SystemSkinManager");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -31,19 +33,19 @@ export function SystemSkinManager({ skins }: { skins: SkinView[] }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 20, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
           <Palette size={20} style={{ color: "var(--text-secondary)" }} />
-          Skórki systemowe
+          {t("skorkiSystemowe")}
         </h1>
         <button
           type="button"
           onClick={() => setEditor({ open: true, initial: null, existingId: null })}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "var(--accent-blue)", border: "1px solid var(--accent-blue)", borderRadius: 6, color: "var(--on-accent)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
         >
-          <Plus size={15} /> Nowa skórka
+          <Plus size={15} /> {t("nowaSkorka")}
         </button>
       </div>
 
       <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>
-        Skórki systemowe są widoczne i dostępne dla wszystkich użytkowników. Zmiany wpływają na każdego, kto ma daną skórkę ustawioną.
+        {t("skorkiSystemoweSaWidoczne")}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
@@ -58,7 +60,7 @@ export function SystemSkinManager({ skins }: { skins: SkinView[] }) {
               <button type="button" title="Edytuj" onClick={() => setEditor({ open: true, initial: s, existingId: s.id })} style={btn()}>
                 <Pencil size={13} />
               </button>
-              <button type="button" title="Usuń" onClick={() => remove(s.id)} disabled={pending} style={btn(true)}>
+              <button type="button" title={t("usun")} onClick={() => remove(s.id)} disabled={pending} style={btn(true)}>
                 <Trash2 size={13} />
               </button>
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, HeartPulse, Plus, Trash2, Pencil, Check, X, Clock, Bandage, CalendarClock } from "lucide-react";
@@ -101,6 +102,7 @@ function formFromSchedule(s: MedicationSchedule): FormState {
 }
 
 function ScheduleForm({ initial, onSave, onCancel }: { initial: FormState; onSave: (f: FormState) => Promise<void>; onCancel: () => void }) {
+  const t = useTranslations("modules.health.MedicationsPage");
   const [form, setForm] = useState<FormState>(initial);
   const [newTime, setNewTime] = useState("12:00");
   const [busy, setBusy] = useState(false);
@@ -195,12 +197,12 @@ function ScheduleForm({ initial, onSave, onCancel }: { initial: FormState; onSav
         </div>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>Instrukcja</label>
-          <input style={inputStyle} value={form.instructions} onChange={(e) => set("instructions", e.target.value)} placeholder="np. po posiłku" />
+          <input style={inputStyle} value={form.instructions} onChange={(e) => set("instructions", e.target.value)} placeholder={t("npPoPosilku")} />
         </div>
       </div>
 
       <div>
-        <label style={labelStyle}>Cykliczność</label>
+        <label style={labelStyle}>{t("cyklicznosc")}</label>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {FREQ.map((f) => (
             <button
@@ -272,14 +274,14 @@ function ScheduleForm({ initial, onSave, onCancel }: { initial: FormState; onSav
               </span>
             ))}
             <input style={{ ...inputStyle, width: 110 }} type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
-            <button onClick={addTime} className="px-2 py-1 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>Dodaj porę</button>
+            <button onClick={addTime} className="px-2 py-1 rounded text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>{t("dodajPore")}</button>
           </div>
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1 }}>
-          <label style={labelStyle}>Początek</label>
+          <label style={labelStyle}>{t("poczatek")}</label>
           <input style={inputStyle} type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} />
         </div>
         <div style={{ flex: 1 }}>
@@ -378,6 +380,7 @@ function ScheduleCard({ s, focused, onEdit, onDelete, onToggleActive, onFocus }:
 }
 
 export function MedicationsPage({ schedules, today }: { schedules: MedicationSchedule[]; today: { date: string; slots: DoseSlot[] } }) {
+  const t = useTranslations("modules.health.MedicationsPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -451,7 +454,7 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
       state="ready"
       icon={<Pill size={22} />}
       iconColor="var(--accent-red)"
-      title="Leki i pielęgnacja"
+      title={t("lekiIPielegnacja")}
       subtitle="Harmonogram dawkowania leków i czynności pielęgnacyjnych"
       headerAction={
         <button onClick={() => { setAdding(true); setEditing(null); }} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium" style={{ background: "var(--accent-red)", color: "var(--on-accent)", border: "none" }}>
@@ -470,11 +473,11 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
 
       <section>
         <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px", display: "flex", justifyContent: "space-between" }}>
-          <span>Na dziś</span>
+          <span>{t("naDzis")}</span>
           {today.slots.length > 0 && <span>{doneCount}/{today.slots.length}</span>}
         </h2>
         {today.slots.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>Brak zaplanowanych dawek ani czynności na dziś.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("brakZaplanowanychDawekAni")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {today.slots.map((d) => (

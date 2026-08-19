@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Layers, Plus, Trash2, ArrowUpFromLine, Loader2, AlertTriangle } from "lucide-react";
 import { getStorageItem, addBatch, deleteBatch, issueByFEFO } from "../actions/storage";
@@ -13,6 +14,7 @@ const inputStyle: React.CSSProperties = { backgroundColor: "var(--bg-elevated)",
  * z serwera. Wydanie FEFO zdejmuje z partii o najwcześniejszej dacie ważności.
  */
 export function BatchesManager({ itemId }: { itemId: string }) {
+  const t = useTranslations("modules.magazynowanie.BatchesManager");
   const { showToast } = useToast();
   const [batches, setBatches] = useState<StorageBatch[] | null>(null);
   const [pending, startTransition] = useTransition();
@@ -90,10 +92,10 @@ export function BatchesManager({ itemId }: { itemId: string }) {
 
       {batches === null ? (
         <div className="flex items-center gap-2 text-xs py-2" style={{ color: "var(--text-muted)" }}>
-          <Loader2 size={13} className="animate-spin" /> Wczytuję…
+          <Loader2 size={13} className="animate-spin" /> {t("wczytuje")}
         </div>
       ) : batches.length === 0 ? (
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Brak partii. Dodaj, by śledzić daty ważności i wydawać wg FEFO.</p>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("brakPartiiDodajBy")}</p>
       ) : (
         <ul className="flex flex-col gap-0.5">
           {batches.map((b) => {
@@ -110,7 +112,7 @@ export function BatchesManager({ itemId }: { itemId: string }) {
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="tabular-nums" style={{ color: "var(--text-secondary)" }}>{b.quantity}</span>
-                  <button type="button" onClick={() => removeBatch(b.id)} disabled={pending} aria-label="Usuń partię" style={{ color: "var(--text-muted)" }}><Trash2 size={12} /></button>
+                  <button type="button" onClick={() => removeBatch(b.id)} disabled={pending} aria-label={t("usunPartie")} style={{ color: "var(--text-muted)" }}><Trash2 size={12} /></button>
                 </span>
               </li>
             );
@@ -122,22 +124,22 @@ export function BatchesManager({ itemId }: { itemId: string }) {
       <div className="grid grid-cols-[1fr_1fr] gap-1.5">
         <input value={lotNo} onChange={(e) => setLotNo(e.target.value)} placeholder="Nr partii" className="px-2 py-1.5 rounded border text-xs" style={inputStyle} />
         <input value={serialNo} onChange={(e) => setSerialNo(e.target.value)} placeholder="Nr seryjny" className="px-2 py-1.5 rounded border text-xs" style={inputStyle} />
-        <input value={qty} onChange={(e) => setQty(e.target.value)} type="number" step="any" placeholder="Ilość" className="px-2 py-1.5 rounded border text-xs text-right tabular-nums" style={inputStyle} />
+        <input value={qty} onChange={(e) => setQty(e.target.value)} type="number" step="any" placeholder={t("ilosc")} className="px-2 py-1.5 rounded border text-xs text-right tabular-nums" style={inputStyle} />
         <input value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} type="date" className="px-2 py-1.5 rounded border text-xs" style={inputStyle} />
       </div>
       <button type="button" onClick={add} disabled={pending} className="self-start inline-flex items-center gap-1 text-xs px-2 py-1 rounded border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--accent-blue)" }}>
-        <Plus size={12} /> Dodaj partię
+        <Plus size={12} /> {t("dodajPartie")}
       </button>
 
       {/* Wydanie FEFO */}
       {batches && batches.length > 0 ? (
         <div className="flex items-center gap-1.5 mt-1">
-          <input value={issueQty} onChange={(e) => setIssueQty(e.target.value)} type="number" step="any" placeholder="Ilość" className="w-20 px-2 py-1.5 rounded border text-xs text-right tabular-nums" style={inputStyle} />
+          <input value={issueQty} onChange={(e) => setIssueQty(e.target.value)} type="number" step="any" placeholder={t("ilosc")} className="w-20 px-2 py-1.5 rounded border text-xs text-right tabular-nums" style={inputStyle} />
           <button type="button" onClick={fefo} disabled={pending} className="inline-flex items-center gap-1 text-xs px-2 py-1.5 rounded disabled:opacity-50" style={{ backgroundColor: "var(--accent-red)", color: "var(--on-accent)" }}>
             <ArrowUpFromLine size={12} /> Wydaj FEFO
           </button>
           <span className="inline-flex items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
-            <AlertTriangle size={10} /> zdejmie z najwcześniej wygasającej
+            <AlertTriangle size={10} /> {t("zdejmieZNajwczesniejWygasajacej")}
           </span>
         </div>
       ) : null}

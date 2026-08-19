@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Keyboard } from "lucide-react";
 import { openShortcutsCheatSheet } from "@/platform/shortcuts/shortcutsBus";
 
@@ -14,12 +15,13 @@ import { openShortcutsCheatSheet } from "@/platform/shortcuts/shortcutsBus";
  * w pasku jest tam najcenniejsze.
  */
 export function ShortcutsButton() {
+  const t = useTranslations("components.shortcuts.ShortcutsButton");
   return (
     <button
       type="button"
       onClick={openShortcutsCheatSheet}
-      title="Skróty klawiszowe (?)"
-      aria-label="Pokaż skróty klawiszowe"
+      title={t("skrotyKlawiszowe")}
+      aria-label={t("pokazSkrotyKlawiszowe")}
       className="hidden md:flex"
       style={{
         alignItems: "center",

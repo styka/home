@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -24,69 +25,61 @@ const C = {
 };
 
 export default function StoreSortingGuidePage() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   return (
     <div className="overflow-y-auto" style={{ backgroundColor: C.bgBase, minHeight: "100%", color: C.textPrimary }}>
       <div className="max-w-3xl mx-auto px-4 py-8 pb-20">
 
         <Link href="/shopping/stores" className="inline-flex items-center gap-1.5 text-sm mb-8" style={{ color: C.textMuted }}>
           <ArrowLeft size={14} />
-          Mapy sklepów
+          {t("mapySklepow")}
         </Link>
 
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-3">
-            🗺️ Sortowanie zakupów według trasy w sklepie
+            {t("sortowanieZakupowWedlugTrasy")}
           </h1>
           <p className="text-sm leading-7" style={{ color: C.textSecondary }}>
-            Narysuj interaktywną mapę swojego sklepu — zaznacz wejście, kasę i działy z produktami,
-            połącz je korytarzami podając odległości. Aplikacja wyliczy optymalną kolejność kategorii
-            na liście zakupów, minimalizując całą trasę od wejścia do kasy.
+            {t("narysujInteraktywnaMapeSwojego")}
           </p>
         </div>
 
         <div className="mb-12">
-          <SectionTitle>Jak to działa?</SectionTitle>
+          <SectionTitle>{t("jakToDziala")}</SectionTitle>
           <OverviewSVG />
         </div>
 
         <Divider />
 
-        <Step number={1} title="Utwórz mapę sklepu">
+        <Step number={1} title={t("utworzMapeSklepu")}>
           <p className="text-sm leading-6 mb-5" style={{ color: C.textSecondary }}>
-            Przejdź do <strong style={{ color: C.textPrimary }}>Mapy sklepów</strong> i wpisz nazwę sklepu,
-            następnie kliknij <strong style={{ color: C.textPrimary }}>Dodaj</strong>. Możesz stworzyć osobną
-            mapę dla każdego odwiedzanego regularnie sklepu.
+            {t("przejdzDo")} <strong style={{ color: C.textPrimary }}>{t("mapySklepow")}</strong> {t("iWpiszNazweSklepu")} <strong style={{ color: C.textPrimary }}>Dodaj</strong>{t("mozeszStworzycOsobnaMape")}
           </p>
           <CreateStoreSVG />
         </Step>
 
-        <Step number={2} title="Dodaj węzły na mapie">
+        <Step number={2} title={t("dodajWezlyNaMapie")}>
           <p className="text-sm leading-6 mb-5" style={{ color: C.textSecondary }}>
             Otwórz edytor mapy i wybierz tryb{" "}
             <kbd style={{ padding: "2px 7px", borderRadius: 4, backgroundColor: C.bgElevated, border: `1px solid ${C.border}`, fontSize: 11, color: C.textSecondary }}>
-              + Dodaj węzeł
-            </kbd>.
-            Klikaj na kanwę, aby umieszczać węzły. Każdy sklep potrzebuje jednego węzła
-            START (wejście) i STOP (kasy). Resztę przypisz do kategorii produktów.
+              {t("dodajWezel")}
+            </kbd>{t("klikajNaKanweAby")}
           </p>
           <NodeTypesSVG />
           <div className="mt-4"><MapEditorSVG /></div>
         </Step>
 
-        <Step number={3} title="Połącz węzły ścieżkami">
+        <Step number={3} title={t("polaczWezlySciezkami")}>
           <p className="text-sm leading-6 mb-5" style={{ color: C.textSecondary }}>
             Wybierz tryb{" "}
             <kbd style={{ padding: "2px 7px", borderRadius: 4, backgroundColor: C.bgElevated, border: `1px solid ${C.border}`, fontSize: 11, color: C.textSecondary }}>
-              ↔ Połącz
-            </kbd>.
-            Kliknij pierwszy węzeł — obramowanie zmieni się na niebieskie. Kliknij drugi węzeł
-            i wpisz wagę krawędzi, czyli odległość między tymi punktami. Możesz używać kroków,
-            sekund lub dowolnej spójnej jednostki.
+              {t("polacz")}
+            </kbd>{t("kliknijPierwszyWezelObramowanie")}
           </p>
           <EdgeWeightSVG />
         </Step>
 
-        <Step number={4} title="Sortuj listę zakupów według sklepu">
+        <Step number={4} title={t("sortujListeZakupowWedlug")}>
           <p className="text-sm leading-6 mb-5" style={{ color: C.textSecondary }}>
             Na liście zakupów kliknij przycisk{" "}
             <span className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: C.bgElevated, color: C.textSecondary, border: `1px solid ${C.border}` }}>
@@ -101,9 +94,9 @@ export default function StoreSortingGuidePage() {
         <Divider />
 
         <div className="mb-10">
-          <SectionTitle>Jak działa algorytm optymalizacji?</SectionTitle>
+          <SectionTitle>{t("jakDzialaAlgorytmOptymalizacji")}</SectionTitle>
           <p className="text-sm leading-6 mb-5" style={{ color: C.textSecondary }}>
-            Wyznaczenie najkrótszej trasy to klasyczny problem optymalizacji. Aplikacja rozwiązuje go w dwóch krokach:
+            {t("wyznaczenieNajkrotszejTrasyTo")}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
             <AlgoCard icon="⚡" title="Floyd-Warshall" desc="Oblicza najkrótsze ścieżki między wszystkimi parami węzłów w grafie korytarzy, uwzględniając tranzyt przez węzły pośrednie." />
@@ -111,13 +104,12 @@ export default function StoreSortingGuidePage() {
           </div>
           <AlgorithmSVG />
           <div className="mt-4 rounded-lg p-4 text-xs leading-6" style={{ backgroundColor: C.bgSurface, border: `1px solid ${C.border}`, color: C.textMuted }}>
-            Kategorii, których nie masz na liście, nie musisz odwiedzać — chyba że przejście przez nie jest
-            konieczne do osiągnięcia innego węzła najkrótszą drogą. Algorytm uwzględnia to automatycznie.
+            {t("kategoriiKtorychNieMasz")}
           </div>
         </div>
 
         <div className="mb-10">
-          <SectionTitle>Wskazówki</SectionTitle>
+          <SectionTitle>{t("wskazowki")}</SectionTitle>
           <div className="flex flex-col gap-2">
             {[
               { icon: "📐", tip: "Wagi krawędzi nie muszą być w metrach. Możesz liczyć korytarze: pierwsze przejście = 1, każde kolejne +1." },
@@ -137,7 +129,7 @@ export default function StoreSortingGuidePage() {
 
         <div className="flex justify-center pt-2">
           <Link href="/shopping/stores" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium" style={{ backgroundColor: C.green, color: "var(--on-accent)" }}>
-            🗺️ Otwórz Mapy sklepów
+            {t("otworzMapySklepow")}
           </Link>
         </div>
 
@@ -185,6 +177,7 @@ function AlgoCard({ icon, title, desc }: { icon: string; title: string; desc: st
 // ──── SVG Illustrations ────────────────────────────────────────────────────
 
 function OverviewSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   return (
     <svg viewBox="0 0 760 170" className="w-full rounded-xl" style={{ display: "block" }}>
       <defs>
@@ -195,7 +188,7 @@ function OverviewSVG() {
 
       {/* ── Panel 1: shopping list ── */}
       <rect x={0} y={10} width={218} height={150} rx={8} fill="#1a1a1a" stroke="#333" strokeWidth={1} />
-      <text x={12} y={30} fontSize={11} fontWeight="bold" fill="#fff">Lista zakupów</text>
+      <text x={12} y={30} fontSize={11} fontWeight="bold" fill="#fff">{t("listaZakupow")}</text>
       <line x1={8} y1={36} x2={210} y2={36} stroke="#333" strokeWidth={1} />
       {[
         { t: "mleko", c: "#ca8a04" }, { t: "jabłka", c: "#16a34a" },
@@ -239,7 +232,7 @@ function OverviewSVG() {
       <circle cx={436} cy={116} r={17} fill="#dc2626" />
       <text x={436} y={122} textAnchor="middle" fontSize={15}>🛒</text>
 
-      <text x={282} y={152} fontSize={8} fill="#808080">🚪 wejście  ·  węzły kategorii  ·  🛒 kasy</text>
+      <text x={282} y={152} fontSize={8} fill="#808080">{t("wejscieWezlyKategoriiKasy")}</text>
 
       {/* ── Arrow 2 ── */}
       <line x1={496} y1={85} x2={528} y2={85} stroke="#555" strokeWidth={1.5} markerEnd="url(#ov-arr)" />
@@ -248,7 +241,7 @@ function OverviewSVG() {
 
       {/* ── Panel 3: sorted ── */}
       <rect x={540} y={10} width={218} height={150} rx={8} fill="#1a1a1a" stroke="#333" strokeWidth={1} />
-      <text x={552} y={30} fontSize={11} fontWeight="bold" fill="#fff">Optymalna kolejność</text>
+      <text x={552} y={30} fontSize={11} fontWeight="bold" fill="#fff">{t("optymalnaKolejnosc")}</text>
       <line x1={548} y1={36} x2={750} y2={36} stroke="#333" strokeWidth={1} />
       {[
         { n: "1", cat: "Nabiał & Jajka", c: "#ca8a04" },
@@ -272,13 +265,14 @@ function OverviewSVG() {
 }
 
 function CreateStoreSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   return (
     <svg viewBox="0 0 680 120" className="w-full rounded-xl" style={{ display: "block" }}>
       <rect x={0} y={0} width={680} height={120} rx={10} fill="#1a1a1a" stroke="#333" strokeWidth={1} />
 
       {/* header */}
       <text x={16} y={22} fontSize={10} fill="#808080">← Zakupy</text>
-      <text x={80} y={22} fontSize={12} fontWeight="bold" fill="#fff">Mapy sklepów</text>
+      <text x={80} y={22} fontSize={12} fontWeight="bold" fill="#fff">{t("mapySklepow")}</text>
       <line x1={0} y1={28} x2={680} y2={28} stroke="#333" strokeWidth={1} />
 
       {/* new store form */}
@@ -290,15 +284,15 @@ function CreateStoreSVG() {
       {/* existing store item */}
       <rect x={16} y={80} width={646} height={32} rx={6} fill="#242424" stroke="#333" strokeWidth={1} />
       <text x={28} y={100} fontSize={11} fontWeight="500" fill="#fff">Lidl</text>
-      <text x={28} y={110} fontSize={9} fill="#808080">8 węzłów · 9 krawędzi</text>
+      <text x={28} y={110} fontSize={9} fill="#808080">{t("8Wezlow9Krawedzi")}</text>
 
       {/* edit button */}
       <rect x={536} y={88} width={118} height={20} rx={4} fill="#2f2f2f" stroke="#333" strokeWidth={1} />
-      <text x={595} y={102} textAnchor="middle" fontSize={9} fill="#b0b0b0">🗺 Edytuj mapę</text>
+      <text x={595} y={102} textAnchor="middle" fontSize={9} fill="#b0b0b0">{t("edytujMape")}</text>
 
       {/* tooltips / annotations */}
       <line x1={460} y1={20} x2={558} y2={32} stroke="#16a34a" strokeWidth={1} strokeDasharray="3 2" />
-      <text x={342} y={18} fontSize={9} fill="#16a34a">wpisz nazwę i kliknij Dodaj</text>
+      <text x={342} y={18} fontSize={9} fill="#16a34a">{t("wpiszNazweIKliknij")}</text>
     </svg>
   );
 }
@@ -332,6 +326,7 @@ function NodeTypesSVG() {
 }
 
 function MapEditorSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   // nodes
   const start  = { cx: 100, cy: 210, fill: "#16a34a", emoji: "🚪", label: "Wejście" };
   const dairy  = { cx: 215, cy: 140, fill: "#ca8a04", emoji: "🧀", label: "Nabiał" };
@@ -373,7 +368,7 @@ function MapEditorSVG() {
             fill={active ? "#fff" : "#808080"}>{label}</text>
         </g>
       ))}
-      <text x={450} y={25} fontSize={9} fill="#555">Przeciągnij węzeł, aby go przenieść</text>
+      <text x={450} y={25} fontSize={9} fill="#555">{t("przeciagnijWezelAbyGo")}</text>
 
       {/* canvas background */}
       <rect x={0} y={42} width={720} height={248} fill="#0d0d0d" />
@@ -409,7 +404,7 @@ function MapEditorSVG() {
       {/* legend */}
       <rect x={8} y={50} width={132} height={64} rx={6} fill="#1a1a1a" fillOpacity={0.9} stroke="#333" strokeWidth={1} />
       <circle cx={22} cy={66} r={6} fill="#16a34a" />
-      <text x={34} y={70} fontSize={9} fill="#b0b0b0">Wejście (START)</text>
+      <text x={34} y={70} fontSize={9} fill="#b0b0b0">{t("wejscieStart")}</text>
       <circle cx={22} cy={83} r={6} fill="#dc2626" />
       <text x={34} y={87} fontSize={9} fill="#b0b0b0">Kasy (STOP)</text>
       <circle cx={22} cy={100} r={6} fill="#808080" />
@@ -419,6 +414,7 @@ function MapEditorSVG() {
 }
 
 function EdgeWeightSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   return (
     <svg viewBox="0 0 620 185" className="w-full rounded-xl" style={{ display: "block" }}>
       <rect x={0} y={0} width={620} height={185} rx={10} fill="#0d0d0d" stroke="#333" strokeWidth={1} />
@@ -432,7 +428,7 @@ function EdgeWeightSVG() {
       {/* node A - Dairy */}
       <circle cx={160} cy={92} r={24} fill="#ca8a04" fillOpacity={0.9} />
       <text x={160} y={99} textAnchor="middle" fontSize={20}>🧀</text>
-      <text x={160} y={128} textAnchor="middle" fontSize={10} fill="#b0b0b0">Nabiał</text>
+      <text x={160} y={128} textAnchor="middle" fontSize={10} fill="#b0b0b0">{t("nabial")}</text>
 
       {/* node B - Bakery - selected as edge-end */}
       <circle cx={390} cy={92} r={30} fill="none" stroke="#60a5fa" strokeWidth={2} strokeDasharray="5 3" />
@@ -446,12 +442,12 @@ function EdgeWeightSVG() {
       {/* weight dialog */}
       <rect x={420} y={48} width={175} height={90} rx={8} fill="#242424" stroke="#333" strokeWidth={1}
         style={{ filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.6))" }} />
-      <text x={434} y={68} fontSize={11} fontWeight="bold" fill="#fff">Waga krawędzi</text>
-      <text x={434} y={82} fontSize={9} fill="#808080">Nabiał → Piekarnia</text>
+      <text x={434} y={68} fontSize={11} fontWeight="bold" fill="#fff">{t("wagaKrawedzi")}</text>
+      <text x={434} y={82} fontSize={9} fill="#808080">{t("nabialPiekarnia")}</text>
       <rect x={434} y={90} width={147} height={22} rx={4} fill="#1a1a1a" stroke="#555" strokeWidth={1} />
       <text x={444} y={105} fontSize={11} fill="#fff">3</text>
       <rect x={434} y={120} width={68} height={20} rx={4} fill="#2563eb" />
-      <text x={468} y={133} textAnchor="middle" fontSize={10} fontWeight="600" fill="#fff">Połącz</text>
+      <text x={468} y={133} textAnchor="middle" fontSize={10} fontWeight="600" fill="#fff">{t("polacz2")}</text>
       <rect x={508} y={120} width={68} height={20} rx={4} fill="#2f2f2f" />
       <text x={542} y={133} textAnchor="middle" fontSize={10} fill="#b0b0b0">Anuluj</text>
 
@@ -462,6 +458,7 @@ function EdgeWeightSVG() {
 }
 
 function SortingSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   const categories = [
     { cat: "Nabiał & Jajka", c: "#ca8a04", n: "1", items: ["mleko", "ser żółty"] },
     { cat: "Piekarnia",       c: "#d97706", n: "2", items: ["chleb"] },
@@ -476,7 +473,7 @@ function SortingSVG() {
       {/* Header bar */}
       <rect x={0} y={0} width={720} height={40} rx={0} fill="#1a1a1a" />
       <rect x={0} y={39} width={720} height={1} fill="#333" />
-      <text x={14} y={25} fontSize={12} fontWeight="bold" fill="#fff">Lista zakupów</text>
+      <text x={14} y={25} fontSize={12} fontWeight="bold" fill="#fff">{t("listaZakupow")}</text>
 
       {/* Sort button (closed) */}
       <rect x={560} y={10} width={108} height={22} rx={5} fill="#242424" stroke="#333" strokeWidth={1} />
@@ -539,6 +536,7 @@ function SortingSVG() {
 }
 
 function AlgorithmSVG() {
+  const t = useTranslations("app.shopping.stores.guide.page");
   // A small graph showing optimal path highlighted
   // Nodes: S(start), A, B, C, D, E(stop)
   const S = { cx: 60,  cy: 110, fill: "#16a34a", emoji: "🚪" };
@@ -619,10 +617,10 @@ function AlgorithmSVG() {
 
       {/* legend */}
       <line x1={430} y1={170} x2={470} y2={170} stroke="#2563eb" strokeWidth={2.5} />
-      <text x={478} y={174} fontSize={9} fill="#93c5fd">optymalna trasa (łącznie: 8)</text>
+      <text x={478} y={174} fontSize={9} fill="#93c5fd">{t("optymalnaTrasaLacznie8")}</text>
       <line x1={430} y1={187} x2={470} y2={187} stroke="#2a2a2a" strokeWidth={1.5} />
-      <text x={478} y={191} fontSize={9} fill="#555">inne ścieżki</text>
-      <text x={430} y={208} fontSize={8} fill="#808080">Held-Karp wybiera najkrótszą permutację węzłów</text>
+      <text x={478} y={191} fontSize={9} fill="#555">{t("inneSciezki")}</text>
+      <text x={430} y={208} fontSize={8} fill="#808080">{t("heldKarpWybieraNajkrotsza")}</text>
     </svg>
   );
 }

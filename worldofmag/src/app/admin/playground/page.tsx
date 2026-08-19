@@ -5,8 +5,10 @@ import { FlaskConical, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { PlaygroundPage } from "@/components/admin/playground/PlaygroundPage";
 import { listAvailableSkins } from "@/actions/skins";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminPlaygroundPage() {
+  const t = await getTranslations("app.admin.playground.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -29,10 +31,10 @@ export default async function AdminPlaygroundPage() {
           <FlaskConical size={16} style={{ color: "var(--accent-purple)" }} />
           <div>
             <h1 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-              Galeria komponentów
+              {t("galeriaKomponentow")}
             </h1>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-              Interaktywne demonstracje wspólnych komponentów — z podglądem w każdej skórce
+              {t("interaktywneDemonstracjeWspolnychKomponentow")}
             </p>
           </div>
         </div>

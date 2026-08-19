@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +18,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 
 export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
+  const t = useTranslations("modules.flota.VehicleDetailPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -68,7 +70,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
       width="narrow"
       state="ready"
       breadcrumb={
-        <button onClick={() => router.push("/flota")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title="Wróć do floty">
+        <button onClick={() => router.push("/flota")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title={t("wrocDoFloty")}>
           <ArrowLeft size={14} /> Flota
         </button>
       }
@@ -76,7 +78,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
       iconColor="var(--accent-blue)"
       title={vehicle.name}
       headerAction={
-        <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń pojazd"><Trash2 size={16} /></button>
+        <button onClick={removeVehicle} style={{ ...iconBtn, color: "var(--accent-red)" }} title={t("usunPojazd")}><Trash2 size={16} /></button>
       }
     >
         {/* Przegląd / dane */}
@@ -100,7 +102,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
           {/* Z-291: TCO — koszt posiadania (paliwo + serwis) + koszt/km */}
           {tco.total > 0 && (
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: 13 }}>
-              <span style={{ color: "var(--text-secondary)" }}>Koszt łączny: <strong style={{ color: "var(--text-primary)" }}>{tco.total.toFixed(0)} zł</strong></span>
+              <span style={{ color: "var(--text-secondary)" }}>{t("kosztLaczny")} <strong style={{ color: "var(--text-primary)" }}>{tco.total.toFixed(0)} zł</strong></span>
               {tco.costPerKm !== null && <span style={{ color: "var(--text-secondary)" }}>{tco.costPerKm.toFixed(2)} zł/km</span>}
               <span style={{ color: "var(--text-muted)" }}>paliwo {tco.fuelCost.toFixed(0)} · serwis {tco.serviceCost.toFixed(0)}{tco.insuranceCost > 0 ? ` (w tym OC/AC ${tco.insuranceCost.toFixed(0)})` : ""} zł</span>
             </div>
@@ -120,14 +122,14 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <input value={fOdo} onChange={(e) => setFOdo(e.target.value)} placeholder="Przebieg [km]" type="number" style={mini} />
             <input value={fLiters} onChange={(e) => setFLiters(e.target.value)} placeholder="Litry" type="number" step="0.01" style={mini} />
-            <input value={fCost} onChange={(e) => setFCost(e.target.value)} placeholder="Koszt [zł]" type="number" step="0.01" style={mini} />
+            <input value={fCost} onChange={(e) => setFCost(e.target.value)} placeholder={t("kosztZl")} type="number" step="0.01" style={mini} />
             <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-secondary)" }}>
-              <input type="checkbox" checked={fFull} onChange={(e) => setFFull(e.target.checked)} style={{ accentColor: "var(--accent-blue)" }} /> Pełny bak
+              <input type="checkbox" checked={fFull} onChange={(e) => setFFull(e.target.checked)} style={{ accentColor: "var(--accent-blue)" }} /> {t("pelnyBak")}
             </label>
             <button onClick={addFuel} disabled={isPending} style={addBtn}>{isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Dodaj</button>
           </div>
           {vehicle.fuelLogs.length === 0 ? (
-            <p style={emptyText}>Brak tankowań.</p>
+            <p style={emptyText}>{t("brakTankowan")}</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[...vehicle.fuelLogs].reverse().map((l) => (
@@ -149,11 +151,11 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
               {Object.entries(SERVICE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
             <input value={sNote} onChange={(e) => setSNote(e.target.value)} placeholder="Opis" style={{ ...mini, flex: 2 }} />
-            <input value={sCost} onChange={(e) => setSCost(e.target.value)} placeholder="Koszt [zł]" type="number" step="0.01" style={mini} />
+            <input value={sCost} onChange={(e) => setSCost(e.target.value)} placeholder={t("kosztZl")} type="number" step="0.01" style={mini} />
             <button onClick={addService} disabled={isPending} style={addBtn}>{isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Dodaj</button>
           </div>
           {vehicle.services.length === 0 ? (
-            <p style={emptyText}>Brak wpisów serwisowych.</p>
+            <p style={emptyText}>{t("brakWpisowSerwisowych")}</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {vehicle.services.map((s) => (
@@ -175,6 +177,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
 }
 
 function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
+  const t = useTranslations("modules.flota.VehicleDetailPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -203,24 +206,24 @@ function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
 
   return (
     <div style={card}>
-      <h2 style={h2}><Paperclip size={16} /> Dokumenty i załączniki</h2>
+      <h2 style={h2}><Paperclip size={16} /> {t("dokumentyIZalaczniki")}</h2>
       <div style={{ marginBottom: 10 }}>
         <label style={{ ...addBtn, display: "inline-flex", cursor: busy ? "wait" : "pointer" }}>
           {busy ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Dodaj plik
           <input type="file" accept="image/*,application/pdf" onChange={onFile} disabled={busy} style={{ display: "none" }} />
         </label>
-        <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 8 }}>faktury, dowód rej., polisa OC (max ~2,5 MB)</span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 8 }}>{t("fakturyDowodRejPolisa")}</span>
       </div>
       {error && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: "0 0 8px" }}>{error}</p>}
       {attachments.length === 0 ? (
-        <p style={emptyText}>Brak załączników.</p>
+        <p style={emptyText}>{t("brakZalacznikow")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {attachments.map((a) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-primary)", padding: "6px 8px", borderRadius: 6, background: "var(--bg-base)" }}>
               <span style={{ color: "var(--text-muted)", width: 78 }}>{new Date(a.createdAt).toLocaleDateString("pl-PL")}</span>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ flex: 1, color: "var(--accent-blue)", textDecoration: "none", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (await confirmDialog("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={13} /></button>
+              <button onClick={async () => { if (await confirmDialog("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={13} /></button>
             </div>
           ))}
         </div>
@@ -230,10 +233,11 @@ function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
 }
 
 function Row({ children, onDelete, pending }: { children: React.ReactNode; onDelete: () => void; pending: boolean }) {
+  const t = useTranslations("modules.flota.VehicleDetailPage");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-primary)", padding: "6px 8px", borderRadius: 6, background: "var(--bg-base)" }}>
       {children}
-      <button onClick={onDelete} disabled={pending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={13} /></button>
+      <button onClick={onDelete} disabled={pending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={13} /></button>
     </div>
   );
 }

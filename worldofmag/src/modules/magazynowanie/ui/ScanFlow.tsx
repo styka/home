@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { ScanLine, ArrowDownToLine, ArrowUpFromLine, Plus, Undo2, Keyboard, PackagePlus, Loader2 } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
@@ -44,6 +45,7 @@ function beep(ok: boolean) {
 }
 
 export function ScanFlow() {
+  const t = useTranslations("modules.magazynowanie.ScanFlow");
   const { showToast } = useToast();
   const [mode, setMode] = useState<Mode>("in");
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -187,7 +189,7 @@ export function ScanFlow() {
             color: mode === "in" ? "#0d0d0d" : "var(--text-secondary)",
           }}
         >
-          <ArrowDownToLine size={18} /> Przyjęcie
+          <ArrowDownToLine size={18} /> {t("przyjecie")}
         </button>
         <button
           type="button"
@@ -220,7 +222,7 @@ export function ScanFlow() {
             value={manual}
             onChange={(e) => setManual(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleManual()}
-            placeholder="Wpisz kod / nazwę ręcznie…"
+            placeholder={t("wpiszKodNazweRecznie")}
             className="flex-1 bg-transparent outline-none text-sm"
             style={{ color: "var(--text-primary)" }}
           />
@@ -243,7 +245,7 @@ export function ScanFlow() {
           </h3>
           {session.length > 0 ? (
             <button type="button" onClick={() => setSession([])} className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Wyczyść widok
+              {t("wyczyscWidok")}
             </button>
           ) : null}
         </div>
@@ -289,7 +291,7 @@ export function ScanFlow() {
           >
             <div className="flex items-center gap-2">
               <PackagePlus size={18} style={{ color: "var(--accent-blue)" }} />
-              <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>Nieznany kod — dodaj pozycję</h3>
+              <h3 className="font-semibold" style={{ color: "var(--text-primary)" }}>{t("nieznanyKodDodajPozycje")}</h3>
             </div>
             <p className="text-xs tabular-nums" style={{ color: "var(--text-muted)" }}>Kod: {unknown.code}</p>
             <input
@@ -328,7 +330,7 @@ export function ScanFlow() {
               </button>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => { setUnknown(null); setScannerOpen(true); }} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>
-                  Pomiń
+                  {t("pomin")}
                 </button>
                 <button type="button" onClick={saveUnknown} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
                   Dodaj i licz

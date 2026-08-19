@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useRef } from "react";
 import { Plus, Truck, Trash2, Pencil, Mail, Phone } from "lucide-react";
 import { addSupplier, updateSupplier, deleteSupplier } from "../actions/storage";
@@ -17,6 +18,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
+  const t = useTranslations("modules.magazynowanie.SuppliersPage");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editing, setEditing] = useState<StorageSupplier | "new" | null>(null);
@@ -87,7 +89,7 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
 
       {suppliers.length === 0 ? (
         <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>
-          Brak dostawców. Dodaj pierwszego — przyda się przy dokumentach i zamówieniach.
+          {t("brakDostawcowDodajPierwszego")}
         </p>
       ) : (
         <ul className="flex flex-col gap-1.5">
@@ -133,6 +135,7 @@ function SupplierEditor({
   onClose: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const t = useTranslations("modules.magazynowanie.SuppliersPage");
   const confirmDialog = useConfirm();
   const [name, setName] = useState(supplier?.name ?? "");
   const [contact, setContact] = useState(supplier?.contact ?? "");
@@ -179,7 +182,7 @@ function SupplierEditor({
       footer={
         <div className="flex items-center justify-between" style={{ width: "100%" }}>
           {supplier ? (
-            <button type="button" onClick={remove} disabled={pending} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-red)" }}><Trash2 size={14} /> Usuń</button>
+            <button type="button" onClick={remove} disabled={pending} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-red)" }}><Trash2 size={14} /> {t("usun")}</button>
           ) : <span />}
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>

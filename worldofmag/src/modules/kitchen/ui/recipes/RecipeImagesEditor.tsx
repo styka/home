@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Trash2, ScanText, Loader2, FileText } from "lucide-react";
@@ -18,6 +19,7 @@ interface RecipeImagesEditorProps {
 }
 
 export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEditorProps) {
+  const t = useTranslations("modules.kitchen.RecipeImagesEditor");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -103,7 +105,7 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
     <section>
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-          Zdjęcia i załączniki
+          {t("zdjeciaIZalaczniki")}
         </h2>
         <button
           type="button"
@@ -200,7 +202,7 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
                   </label>
                 ) : img.ocrMarkdown === "" ? (
                   <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>
-                    Na tym zdjęciu nie znaleziono tekstu.
+                    {t("naTymZdjeciuNie")}
                   </p>
                 ) : (
                   <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>

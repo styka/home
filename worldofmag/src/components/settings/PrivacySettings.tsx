@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Download, Loader2, ShieldCheck, Trash2, AlertTriangle } from "lucide-react";
 import { exportMyData, deleteMyAccount } from "@/actions/privacy";
@@ -9,6 +10,7 @@ import { exportMyData, deleteMyAccount } from "@/actions/privacy";
 // zapisuje je jako JSON po stronie przeglądarki. „Usuń konto" trwale kasuje dane
 // po potwierdzeniu adresem e-mail.
 export function PrivacySettings() {
+  const t = useTranslations("components.settings.PrivacySettings");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
@@ -70,7 +72,7 @@ export function PrivacySettings() {
         <div style={{ flex: 1 }}>
           <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>Pobierz moje dane</div>
           <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-            Komplet Twoich danych ze wszystkich modułów w formacie JSON (RODO art. 15/20).
+            {t("kompletTwoichDanychZe")}
           </div>
         </div>
         <button
@@ -100,8 +102,7 @@ export function PrivacySettings() {
         <p style={{ color: "var(--accent-red)", fontSize: 12, margin: 0 }}>{error}</p>
       ) : (
         <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-          Eksport obejmuje dane, których jesteś właścicielem. Dane zespołów oraz sekrety logowania
-          (tokeny) nie są zawarte.
+          {t("eksportObejmujeDaneKtorych")}
         </p>
       )}
 
@@ -117,22 +118,21 @@ export function PrivacySettings() {
               borderRadius: 6, color: "var(--accent-red)", fontSize: 13, cursor: "pointer",
             }}
           >
-            <Trash2 size={14} /> Usuń konto
+            <Trash2 size={14} /> {t("usunKonto")}
           </button>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "var(--accent-red)", fontSize: 13 }}>
               <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Trwale usuniesz konto i wszystkie swoje dane. Operacja jest nieodwracalna. Wpisz swój
-                adres e-mail, aby potwierdzić.
+                {t("trwaleUsunieszKontoI")}
               </span>
             </div>
             <input
               type="email"
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
-              placeholder="twój@email"
+              placeholder={t("twojEmail")}
               autoComplete="off"
               style={{
                 padding: "8px 12px", background: "var(--bg-base)", border: "1px solid var(--border)",

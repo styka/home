@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useTransition, useImperativeHandle, forwardRef } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { createTask } from "../actions/tasks";
@@ -30,6 +31,7 @@ interface QuickAddTaskProps {
 
 export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
   function QuickAddTask({ projectId, onCreated }, ref) {
+    const t = useTranslations("modules.tasks.QuickAddTask");
     const [value, setValue] = useState("");
     const [priority, setPriority] = useState<TaskPriority>("NONE");
     const [isPending, startTransition] = useTransition();
@@ -115,7 +117,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
             }}
             className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded focus:outline-none text-sm font-bold"
             style={{ color: currentPriority.color }}
-            title="Priorytet (kliknij by zmienić)"
+            title={t("priorytetKliknijByZmienic")}
           >
             {currentPriority.label}
           </button>
@@ -124,7 +126,7 @@ export const QuickAddTask = forwardRef<QuickAddTaskHandle, QuickAddTaskProps>(
             ref={inputRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
+            placeholder={t("dodajLubOpiszZadanie")}
             className="flex-1 min-w-0 bg-transparent text-sm focus:outline-none"
             style={{ color: "var(--text-primary)" }}
           />

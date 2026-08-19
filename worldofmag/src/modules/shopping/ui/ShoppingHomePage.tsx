@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image as ImageIcon, Archive, RotateCcw, Users, Clock } from "lucide-react";
@@ -59,6 +60,7 @@ interface ShoppingHomePageProps {
 }
 
 export function ShoppingHomePage({ lists, archivedLists = [], totalPending, recentItems }: ShoppingHomePageProps) {
+  const t = useTranslations("modules.shopping.ShoppingHomePage");
   const confirmDialog = useConfirm();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -182,7 +184,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
           label="Do kupienia"
           color={totalPending > 0 ? "var(--accent-amber)" : "var(--text-muted)"}
         />
-        <StatTile value={teamListsCount} label="Zespołowe" color="var(--accent-purple)" />
+        <StatTile value={teamListsCount} label={t("zespolowe")} color="var(--accent-purple)" />
         <StatTile
           value={archivedLists.length}
           label="Archiwum"
@@ -313,10 +315,10 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
                       alignItems: "center",
                       gap: 4,
                     }}
-                    title="Przywróć listę"
+                    title={t("przywrocListe")}
                   >
                     <RotateCcw size={12} />
-                    Przywróć
+                    {t("przywroc")}
                   </button>
                 </div>
               ))}
@@ -327,7 +329,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
 
       {/* Management */}
       <div>
-        <SectionHeading>Zarządzanie</SectionHeading>
+        <SectionHeading>{t("zarzadzanie")}</SectionHeading>
         <ManagementGrid
           items={[
             { href: "/shopping/products", icon: <Package size={16} />, label: "Produkty", color: "var(--accent-blue)" },

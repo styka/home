@@ -1,0 +1,7 @@
+{
+  "_opis": "097 (zadanie 35): pliki, w których tekst NIE MOŻE iść przez `t()` — z powodem. Wyjątek jest per plik; martwy wpis wywala build, żeby lista nie rosła jako wygodniejsza alternatywa dla tłumaczenia.",
+  "pliki": {
+    "src/lib/ui/playground/registry.tsx": "Katalog komponentów dla /admin/playground. Te napisy są TREŚCIĄ PRZYKŁADU („Zwykły”, „Błąd”, „Dziś”), a nie interfejsem produktu — tłumacz nie ma tu czego tłumaczyć, a przepuszczenie ich przez `t()` zamieniłoby galerię komponentów w drugie miejsce do utrzymywania słownika.",
+    "src/modules/weather/ui/WeatherPage.tsx": "Jedno wystąpienie: prop `loading` w `dynamic()` liczony NA POZIOMIE MODUŁU, przed wejściem do komponentu — hooka nie ma tam jak zawołać. Reszta pliku idzie przez `t()`."
+  }
+}

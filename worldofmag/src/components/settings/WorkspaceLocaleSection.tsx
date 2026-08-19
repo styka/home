@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { setWorkspaceLocale, type UstawieniaPrzestrzeniDTO } from "@/actions/workspaceSettings";
 
@@ -48,6 +49,7 @@ function WierszPrzestrzeni({
   przestrzen: UstawieniaPrzestrzeniDTO;
   jezyki: { kod: string; nazwa: string }[];
 }) {
+  const t = useTranslations("components.settings.WorkspaceLocaleSection");
   const [locale, setLocale] = useState(przestrzen.locale);
   const [timezone, setTimezone] = useState(przestrzen.timezone);
   const [isPending, startTransition] = useTransition();
@@ -122,7 +124,7 @@ function WierszPrzestrzeni({
       </div>
       {!przestrzen.mogeZmieniac && (
         <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 6 }}>
-          Ustawienia zespołu zmienia jego właściciel lub administrator.
+          {t("ustawieniaZespoluZmieniaJego")}
         </div>
       )}
       {stan === "ok" && <div style={{ fontSize: 11.5, color: "var(--accent-green)", marginTop: 6 }}>Zapisano</div>}

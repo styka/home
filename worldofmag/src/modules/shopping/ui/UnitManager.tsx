@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import type { UnitWithUsage } from "../actions/units";
@@ -10,6 +11,7 @@ interface UnitManagerProps {
 }
 
 export function UnitManager({ units }: UnitManagerProps) {
+  const t = useTranslations("modules.shopping.UnitManager");
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function UnitManager({ units }: UnitManagerProps) {
       {/* Custom units */}
       <div className="flex items-center justify-between mb-3">
         <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--text-muted)", margin: 0 }}>
-          Własne jednostki
+          {t("wlasneJednostki")}
         </h2>
         <button
           onClick={() => setAdding(true)}
@@ -87,7 +89,7 @@ export function UnitManager({ units }: UnitManagerProps) {
       <div className="mb-8" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {custom.length === 0 && !adding ? (
           <p className="px-4 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-            Brak własnych jednostek. Kliknij „Nowa jednostka” by dodać.
+            {t("brakWlasnychJednostekKliknij")}
           </p>
         ) : (
           custom.map((u, i) => (
@@ -139,7 +141,7 @@ export function UnitManager({ units }: UnitManagerProps) {
         Jednostki podstawowe
       </h2>
       <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-        Wbudowane jednostki dostępne dla wszystkich — tylko do odczytu.
+        {t("wbudowaneJednostkiDostepneDla")}
       </p>
       <div style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         {base.map((u, i) => (

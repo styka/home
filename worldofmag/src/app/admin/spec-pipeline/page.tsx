@@ -15,6 +15,7 @@ import {
   Eye,
 } from "lucide-react";
 import { AdminDocsViewer } from "@/components/admin/AdminDocsViewer";
+import { getTranslations } from "next-intl/server";
 import {
   SPEC_PIPELINE_DOCS,
   SPEC_PIPELINE_GENERATED_AT,
@@ -36,6 +37,7 @@ const STAGES: {
 ];
 
 export default async function AdminSpecPipelinePage() {
+  const t = await getTranslations("app.admin.spec-pipeline.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -60,16 +62,14 @@ export default async function AdminSpecPipelinePage() {
           <strong style={{ color: "var(--text-primary)" }}>jak</strong>, potem kroki — a na końcu{" "}
           <strong style={{ color: "var(--text-primary)" }}>weryfikacja i recenzja</strong>. Wzorowany na{" "}
           <strong style={{ color: "var(--text-primary)" }}>GitHub Spec Kit</strong>, dostosowany do Omnii.
-          Uruchamiasz go <strong style={{ color: "var(--text-primary)" }}>jedną komendą</strong>{" "}
+          Uruchamiasz go <strong style={{ color: "var(--text-primary)" }}>{t("jednaKomenda")}</strong>{" "}
           <code style={{ fontFamily: "monospace" }}>/specify</code>: pytania pojawiają się{" "}
           <strong style={{ color: "var(--text-primary)" }}>co do zasady raz</strong> (na starcie, z
           wyraźnie oznaczoną odpowiedzią rekomendowaną — z wąską furtką na później, gdy wypłynie
           naprawdę ważna, nieprzewidziana decyzja), a kolejne etapy{" "}
-          <strong style={{ color: "var(--text-primary)" }}>przechodzą automatycznie</strong> (łącznie z
-          recenzją — <strong style={{ color: "var(--text-primary)" }}>bez ręcznego approve</strong>) aż
-          do merge do <code style={{ fontFamily: "monospace" }}>develop</code> — a gdy któryś etap
+          <strong style={{ color: "var(--text-primary)" }}>{t("przechodzaAutomatycznie")}</strong> {t("lacznieZRecenzja")} <strong style={{ color: "var(--text-primary)" }}>{t("bezRecznegoApprove")}</strong>{t("azDoMergeDo")} <code style={{ fontFamily: "monospace" }}>develop</code> — a gdy któryś etap
           wykryje błąd we wcześniejszym artefakcie,{" "}
-          <strong style={{ color: "var(--text-primary)" }}>zawraca i poprawia właściwy plik</strong>{" "}
+          <strong style={{ color: "var(--text-primary)" }}>{t("zawracaIPoprawiaWlasciwy")}</strong>{" "}
           (spójność spec ↔ plan ↔ zadania ↔ kod). Na końcu pada jedno pytanie domykające —{" "}
           <em style={{ color: "var(--text-primary)" }}>{"„Mistrzu Magu, czy zrobić merge develop do master?”"}</em>{" "}
           — bo <code style={{ fontFamily: "monospace" }}>master</code> to produkcja i promujemy go tylko

@@ -1,9 +1,11 @@
 "use client"
 
+import { useTranslations } from "next-intl";
 import { inviteUser } from "@/actions/invitations"
 import { useState } from "react"
 
 export default function InviteMemberForm({ teamId }: { teamId: string }) {
+  const t = useTranslations("components.teams.InviteMemberForm");
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle")
   const [error, setError] = useState("")
@@ -30,7 +32,7 @@ export default function InviteMemberForm({ teamId }: { teamId: string }) {
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email użytkownika..."
+        placeholder={t("emailUzytkownika")}
         style={{
           flex: 1,
           background: "var(--bg-elevated)",

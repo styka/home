@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { ChevronDown, ChevronRight, GripVertical } from "lucide-react";
 import {
@@ -65,6 +66,7 @@ export function CategoryGroup({
   emojiOverride,
   otherLists,
 }: CategoryGroupProps) {
+  const t = useTranslations("modules.shopping.CategoryGroup");
   const [collapsed, setCollapsed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   // Optimistic local override: null means "use server-side emojiOverride or default"
@@ -152,8 +154,8 @@ export function CategoryGroup({
           style={{ width: 32, height: 32, color: "var(--text-muted)" }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
-          title="Zmień ikonę kategorii"
-          aria-label="Zmień ikonę kategorii"
+          title={t("zmienIkoneKategorii")}
+          aria-label={t("zmienIkoneKategorii")}
         >
           {isSvg(effectiveIcon) ? (
             <SvgIcon content={effectiveIcon} size={18} />
@@ -214,6 +216,7 @@ function SortableItemRow({
   rowRef: (el: HTMLDivElement | null) => void;
   otherLists?: { id: string; name: string }[];
 }) {
+  const t = useTranslations("modules.shopping.CategoryGroup");
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id, disabled: isEditing });
 
@@ -233,8 +236,8 @@ function SortableItemRow({
       onClick={(e) => e.stopPropagation()}
       className="flex-shrink-0 flex items-center justify-center cursor-grab touch-none opacity-0 group-hover:opacity-100 focus:opacity-100"
       style={{ width: 18, height: 24, color: "var(--text-muted)", marginLeft: -6, marginRight: -2 }}
-      aria-label="Przeciągnij, aby zmienić kolejność"
-      title="Przeciągnij, aby zmienić kolejność"
+      aria-label={t("przeciagnijAbyZmienicKolejnosc")}
+      title={t("przeciagnijAbyZmienicKolejnosc")}
     >
       <GripVertical size={14} />
     </button>

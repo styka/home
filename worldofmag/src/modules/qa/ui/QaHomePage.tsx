@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   FlaskConical,
@@ -47,6 +48,7 @@ export function QaHomePage({
   modulesCovered,
   isAdmin,
 }: QaHomePageProps) {
+  const t = useTranslations("modules.qa.QaHomePage");
   const statsByModule = new Map(stats.map((s) => [s.module, s]));
 
   return (
@@ -92,14 +94,14 @@ export function QaHomePage({
         }}
       >
         <StatTile value={totalScenarios} label="scenariuszy" color="var(--accent-red)" icon={<FlaskConical size={14} />} />
-        <StatTile value={totalEpics} label="epików" color="var(--accent-purple)" />
+        <StatTile value={totalEpics} label={t("epikow")} color="var(--accent-purple)" />
         <StatTile value={totalStories} label="user stories" color="var(--accent-blue)" />
         <StatTile value={modulesCovered} label={`/ ${QA_MODULES.length} modułów`} color="var(--accent-green)" />
       </div>
 
       {/* Modules grid */}
       <div>
-        <SectionHeading>Moduły</SectionHeading>
+        <SectionHeading>{t("moduly")}</SectionHeading>
         <div
           style={{
             display: "grid",
@@ -152,7 +154,7 @@ export function QaHomePage({
                   opacity: 0.4,
                   cursor: "default",
                 }}
-                title="Brak scenariuszy — wkrótce"
+                title={t("brakScenariuszyWkrotce")}
               >
                 <div
                   style={{
@@ -181,7 +183,7 @@ export function QaHomePage({
 
       {/* Coming soon placeholders */}
       <div>
-        <SectionHeading>Wkrótce</SectionHeading>
+        <SectionHeading>{t("wkrotce")}</SectionHeading>
         <div
           style={{
             display: "grid",
@@ -190,9 +192,9 @@ export function QaHomePage({
           }}
         >
           <ComingSoonTile icon={<Activity size={16} />} title="Test runs" desc="Historia przebiegów testów" />
-          <ComingSoonTile icon={<Bug size={16} />} title="Zgłaszanie bugów" desc="Tracker błędów powiązany ze scenariuszami" />
+          <ComingSoonTile icon={<Bug size={16} />} title={t("zglaszanieBugow")} desc="Tracker błędów powiązany ze scenariuszami" />
           <ComingSoonTile icon={<BarChart3 size={16} />} title="Statystyki" desc="Coverage, last run, success rate" />
-          <ComingSoonTile icon={<Globe size={16} />} title="Środowiska" desc="Prod/staging/local — status, linki" />
+          <ComingSoonTile icon={<Globe size={16} />} title={t("srodowiska")} desc="Prod/staging/local — status, linki" />
         </div>
       </div>
     </ModuleView>

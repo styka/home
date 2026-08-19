@@ -234,7 +234,7 @@ export function SmartTextarea({
                   background: "var(--accent-red)",
                 }}
               />
-              Dyktowanie…
+              {t("dyktowanie")}
             </span>
           )}
           {state === "voice_modify" && (

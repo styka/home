@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,6 +67,7 @@ export function QaAdminTree({ epics }: QaAdminTreeProps) {
 }
 
 function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }) {
+  const t = useTranslations("components.admin.qa.QaAdminTree");
   const info = getModuleInfo(module);
   const [open, setOpen] = useState(epics.length > 0);
   const scenarioCount = epics.reduce(
@@ -113,7 +115,7 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
           target="_blank"
           style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
         >
-          podgląd <ExternalLink size={10} />
+          {t("podglad")} <ExternalLink size={10} />
         </Link>
         <Link
           href={`/admin/qa/epic/new?module=${module}`}
@@ -136,7 +138,7 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
         <div style={{ padding: "8px 12px 12px" }}>
           {epics.length === 0 ? (
             <p style={{ fontSize: 12, color: "var(--text-muted)", padding: "8px 4px", margin: 0 }}>
-              Brak epików — kliknij „+ Epic” by dodać.
+              {t("brakEpikowKliknijEpic")}
             </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -152,6 +154,7 @@ function ModuleSection({ module, epics }: { module: string; epics: AdminEpic[] }
 }
 
 function EpicRow({ epic }: { epic: AdminEpic }) {
+  const t = useTranslations("components.admin.qa.QaAdminTree");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -203,7 +206,7 @@ function EpicRow({ epic }: { epic: AdminEpic }) {
         <Link href={`/admin/qa/epic/${epic.slug}/edit`} title="Edytuj epic" style={iconBtn}>
           <Pencil size={11} />
         </Link>
-        <button onClick={handleDelete} disabled={isPending} title="Usuń epic" style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
+        <button onClick={handleDelete} disabled={isPending} title={t("usunEpic")} style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
           <Trash2 size={11} />
         </button>
       </div>
@@ -230,6 +233,7 @@ function EpicRow({ epic }: { epic: AdminEpic }) {
 }
 
 function StoryRow({ story }: { story: AdminStory }) {
+  const t = useTranslations("components.admin.qa.QaAdminTree");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -281,7 +285,7 @@ function StoryRow({ story }: { story: AdminStory }) {
         <Link href={`/admin/qa/story/${story.slug}/edit`} title="Edytuj story" style={iconBtn}>
           <Pencil size={10} />
         </Link>
-        <button onClick={handleDelete} disabled={isPending} title="Usuń story" style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
+        <button onClick={handleDelete} disabled={isPending} title={t("usunStory")} style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
           <Trash2 size={10} />
         </button>
       </div>
@@ -299,6 +303,7 @@ function StoryRow({ story }: { story: AdminStory }) {
 }
 
 function ScenarioRow({ scenario }: { scenario: AdminScenario }) {
+  const t = useTranslations("components.admin.qa.QaAdminTree");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -339,12 +344,12 @@ function ScenarioRow({ scenario }: { scenario: AdminScenario }) {
       <Link
         href={`/qa/scenariusz/${scenario.slug}`}
         target="_blank"
-        title="Podgląd"
+        title={t("podglad")}
         style={iconBtn}
       >
         <ExternalLink size={10} />
       </Link>
-      <button onClick={handleDelete} disabled={isPending} title="Usuń" style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
+      <button onClick={handleDelete} disabled={isPending} title={t("usun")} style={{ ...iconBtn, color: "var(--accent-red)", cursor: isPending ? "wait" : "pointer" }}>
         <Trash2 size={10} />
       </button>
     </div>

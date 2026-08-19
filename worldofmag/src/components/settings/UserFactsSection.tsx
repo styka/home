@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Brain, Check, X, Pencil, Plus, Trash2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +31,7 @@ import {
  * niewidzialny profil sterujący tym, co system podpowiada.
  */
 export function UserFactsSection() {
+  const t = useTranslations("components.settings.UserFactsSection");
   const { showToast } = useToast();
   const [facts, setFacts] = useState<UserFactDTO[] | null>(null);
   const [editing, setEditing] = useState<UserFactDTO | null>(null);
@@ -105,8 +107,7 @@ export function UserFactsSection() {
         </div>
       </div>
       <p className="mb-3 text-xs text-[var(--text-muted)]">
-        Te informacje trafiają do podpowiedzi w innych modułach (np. propozycji w Pogodzie).
-        Możesz je poprawić, potwierdzić albo odrzucić — odrzucone nie wracają.
+        {t("teInformacjeTrafiajaDo")}
       </p>
 
       {facts === null ? (
@@ -115,8 +116,7 @@ export function UserFactsSection() {
         </div>
       ) : facts.length === 0 ? (
         <p className="rounded-md border border-dashed border-[var(--border)] p-4 text-center text-xs text-[var(--text-muted)]">
-          Nic jeszcze nie wiemy. Hipotezy pojawią się, gdy będzie z czego je wyciągnąć — możesz też
-          dopisać coś od siebie.
+          {t("nicJeszczeNieWiemy")}
         </p>
       ) : (
         <div className="space-y-4">
@@ -145,7 +145,7 @@ export function UserFactsSection() {
                           disabled={busy}
                           onClick={() => act(() => confirmUserFact(f.id))}
                         >
-                          <Check size={13} /> Zgadza się
+                          <Check size={13} /> {t("zgadzaSie")}
                         </Button>
                       )}
                       <Button
@@ -165,7 +165,7 @@ export function UserFactsSection() {
                         disabled={busy}
                         onClick={() => act(() => deleteUserFact(f.id))}
                       >
-                        <Trash2 size={13} /> Usuń
+                        <Trash2 size={13} /> {t("usun")}
                       </Button>
                     </div>
                   </li>
@@ -203,6 +203,7 @@ function FactModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const t = useTranslations("components.settings.UserFactsSection");
   const { showToast } = useToast();
   const [text, setText] = useState(fact?.text ?? "");
   const [category, setCategory] = useState<UserFactCategory>(fact?.category ?? "interests");
@@ -253,12 +254,12 @@ function FactModal({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-[var(--text-secondary)]">Treść</label>
+        <label className="mb-1 block text-xs text-[var(--text-secondary)]">{t("tresc")}</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}
-          placeholder="np. Lubi wycieczki górskie, ale nie w upały"
+          placeholder={t("npLubiWycieczkiGorskie")}
           className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Trash2, Sparkles } from "lucide-react";
 import type { CategoryIconVariantData } from "../actions/categoryIcons";
@@ -23,6 +24,7 @@ function CategoryRow({
   onChangeIcon: () => void;
   onDeleteIcon: () => void;
 }) {
+  const t = useTranslations("modules.shopping.CategoryIconsManager");
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -50,7 +52,7 @@ function CategoryRow({
               backgroundColor: hovered ? "var(--bg-hover)" : "var(--bg-surface)",
               border: `1.5px solid ${hovered ? "var(--accent-blue)" : "var(--border)"}`,
             }}
-            title="Zmień ikonę"
+            title={t("zmienIkone")}
           >
             <IconDisplay content={icon.svgContent} size={24} />
           </button>
@@ -62,8 +64,8 @@ function CategoryRow({
             style={{ width: 28, height: 28, color: "var(--text-muted)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent"; }}
-            aria-label="Usuń ikonę"
-            title="Usuń ikonę — kategoria wróci do domyślnego emoji"
+            aria-label={t("usunIkone")}
+            title={t("usunIkoneKategoriaWroci")}
           >
             <Trash2 size={13} />
           </button>
@@ -77,7 +79,7 @@ function CategoryRow({
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
         >
           <Sparkles size={11} />
-          Wybierz ikonę
+          {t("wybierzIkone")}
         </button>
       )}
     </div>
@@ -85,6 +87,7 @@ function CategoryRow({
 }
 
 export function CategoryIconsManager({ variants: initialVariants, allCategories }: CategoryIconsManagerProps) {
+  const t = useTranslations("modules.shopping.CategoryIconsManager");
   // Flatten to one icon per category (use the active one, or the first if none active)
   const [iconMap, setIconMap] = useState<Record<string, CategoryIconVariantData | null>>(() => {
     const map: Record<string, CategoryIconVariantData | null> = {};

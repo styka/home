@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -61,6 +62,7 @@ export function IdeasPanel({
   usdPlnRate?: number;
   canAddToTasks: boolean;
 }) {
+  const t = useTranslations("modules.weather.IdeasPanel");
   const { showToast } = useToast();
   const [date, setDate] = useState<string>(forecast.daily[0]?.date ?? "");
   const [part, setPart] = useState<DayPart>(() => currentDayPart());
@@ -280,7 +282,7 @@ export function IdeasPanel({
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
-          <Sparkles size={15} className="text-[var(--accent-purple)]" /> Co robić?
+          <Sparkles size={15} className="text-[var(--accent-purple)]" /> {t("coRobic")}
         </h3>
         {/* 038: DOKŁADNIE JEDEN przycisk generujący. Wcześniej stały tu obok siebie „Pomysły"
             (odnośnik do biblioteki) i „Wylosuj inne" (generowanie) — oba wyglądały jak przycisk,
@@ -330,7 +332,7 @@ export function IdeasPanel({
         <AiContentPending
           busy={loading}
           onGenerate={() => load({ force: true })}
-          title="Propozycje powstaną po kliknięciu"
+          title={t("propozycjePowstanaPoKliknieciu")}
           hint="Ta sekcja jest ustawiona na „na żądanie”, więc samo wejście na stronę nic nie kosztuje."
           actionLabel="Zaproponuj, co robić"
           sectionKind="weather.ideas"
@@ -342,7 +344,7 @@ export function IdeasPanel({
           }}
         />
       ) : loading && ideas === null ? (
-        <p className="py-4 text-sm text-[var(--text-muted)]">Szukam pomysłów na tę pogodę…</p>
+        <p className="py-4 text-sm text-[var(--text-muted)]">{t("szukamPomyslowNaTe")}</p>
       ) : error ? (
         /* 038: awaria musi WYGLĄDAĆ inaczej niż brak pomysłów. Wcześniej oba stany były jednakowo
            szarym zdaniem, więc nieudane generowanie użytkownik czytał jako „nie ma co robić" i
@@ -351,12 +353,12 @@ export function IdeasPanel({
           <p className="mb-2 flex items-start gap-1.5 text-sm text-[var(--text-primary)]">
             <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--accent-amber)]" />
             <span>
-              <span className="font-medium">Nie udało się przygotować propozycji.</span>{" "}
+              <span className="font-medium">{t("nieUdaloSiePrzygotowac")}</span>{" "}
               <span className="text-[var(--text-secondary)]">{error}</span>
             </span>
           </p>
           <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ force: true })}>
-            Spróbuj ponownie
+            {t("sprobujPonownie")}
           </Button>
         </div>
       ) : ideas && ideas.length > 0 ? (
@@ -400,8 +402,7 @@ export function IdeasPanel({
       ) : (
         <div className="py-3">
           <p className="mb-2 text-sm text-[var(--text-muted)]">
-            Model nie zaproponował nic na tę porę. Spróbuj innego dnia lub pory albo poproś o nowe
-            propozycje.
+            {t("modelNieZaproponowalNic")}
           </p>
           <Button size="sm" variant="secondary" className="py-3" onClick={() => load({ force: true })}>
             Nowe propozycje
@@ -414,7 +415,7 @@ export function IdeasPanel({
           href="/pogoda/pomysly"
           className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
         >
-          <Library size={13} /> Zapisane pomysły →
+          <Library size={13} /> {t("zapisanePomysly")}
         </Link>
         {/* 041: licznik kosztu przeniósł się do paska nad listą (`AiContentMeta`). Stał tu osobno,
             w stopce, więc „kiedy powstało" i „ile kosztowało" czytało się w dwóch różnych miejscach
@@ -442,6 +443,7 @@ function IdeaCard({
   onBlock: () => void;
   onSave: () => void;
 }) {
+  const t = useTranslations("modules.weather.IdeasPanel");
   const Icon = CATEGORY_ICON[idea.category];
   return (
     <div
@@ -456,7 +458,7 @@ function IdeaCard({
             <span
               className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-[var(--accent-green)]"
               style={{ border: "1px solid var(--accent-green)" }}
-              title="Propozycja związana z konkretnym miejscem w okolicy"
+              title={t("propozycjaZwiazanaZKonkretnym")}
             >
               <MapPin size={9} /> w okolicy
             </span>
@@ -465,9 +467,9 @@ function IdeaCard({
             <span
               className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-[var(--text-muted)]"
               style={{ border: "1px solid var(--border)" }}
-              title="Oglądałeś już szczegóły tej propozycji"
+              title={t("ogladalesJuzSzczegolyTej")}
             >
-              <Eye size={9} /> już rozważana
+              <Eye size={9} /> {t("juzRozwazana")}
             </span>
           )}
         </span>

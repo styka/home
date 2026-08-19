@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import {
@@ -45,6 +46,7 @@ export function TasksHomePage({
   overdueCount,
   todayPreview,
 }: TasksHomePageProps) {
+  const t = useTranslations("modules.tasks.TasksHomePage");
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -167,14 +169,14 @@ export function TasksHomePage({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
         <StatTile
           value={todayCount}
-          label="Dziś"
+          label={t("dzis")}
           color={todayCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
           icon={<CalendarClock size={14} />}
           href="/tasks/today"
         />
         <StatTile
           value={overdueCount}
-          label="Zaległe"
+          label={t("zalegle")}
           color={overdueCount > 0 ? "var(--accent-red)" : "var(--text-muted)"}
           icon={<AlertCircle size={14} />}
           href="/tasks/overdue"
@@ -182,7 +184,7 @@ export function TasksHomePage({
         />
         <StatTile
           value={upcomingCount}
-          label="Nadchodzące"
+          label={t("nadchodzace")}
           color={upcomingCount > 0 ? "var(--accent-amber)" : "var(--text-muted)"}
           icon={<CalendarDays size={14} />}
           href="/tasks/upcoming"
@@ -216,7 +218,7 @@ export function TasksHomePage({
               </Link>
             }
           >
-            Na dziś
+            {t("naDzis")}
           </SectionHeading>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {todayPreview.map((task) => (
@@ -307,7 +309,7 @@ export function TasksHomePage({
 
       {/* Management */}
       <div>
-        <SectionHeading>Zarządzanie</SectionHeading>
+        <SectionHeading>{t("zarzadzanie")}</SectionHeading>
         <ManagementGrid
           items={[
             { href: "/tasks/tags", icon: <Tag size={16} />, label: "Tagi", color: "var(--accent-green)" },

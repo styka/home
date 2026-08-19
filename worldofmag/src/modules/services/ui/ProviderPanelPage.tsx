@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -68,6 +69,7 @@ interface Props {
 }
 
 export function ProviderPanelPage({ provider, categories, incomingRequests, stats }: Props) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const router = useRouter();
   const [editingProfile, setEditingProfile] = useState(provider == null);
 
@@ -77,7 +79,7 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
       state="ready"
       breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-      <ArrowLeft size={15} /> Wszystkie usługi
+      <ArrowLeft size={15} /> {t("wszystkieUslugi")}
     </Link>
       }
       icon={<Briefcase size={22} />}
@@ -162,7 +164,7 @@ export function ProviderPanelPage({ provider, categories, incomingRequests, stat
       {/* Przychodzące zlecenia */}
       {provider && (
         <div>
-          <SectionHeading>Przychodzące zlecenia</SectionHeading>
+          <SectionHeading>{t("przychodzaceZlecenia")}</SectionHeading>
           {incomingRequests.length === 0 ? (
             <EmptyState icon={<Briefcase size={26} />} message="Brak zleceń" hint="Gdy klient zamówi Twoją usługę, pojawi się tutaj." />
           ) : (
@@ -188,6 +190,7 @@ function ProfileForm({
   onDone: () => void;
   onCancel?: () => void;
 }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
   const [tagline, setTagline] = useState(initial?.tagline ?? "");
   const [area, setArea] = useState(initial?.area ?? "");
@@ -219,15 +222,15 @@ function ProfileForm({
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
       <div>
-        <label style={fieldLabelStyle}>Nazwa wyświetlana *</label>
-        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={fieldInputStyle} placeholder="np. Jan Kowalski — usługi hydrauliczne" />
+        <label style={fieldLabelStyle}>{t("nazwaWyswietlana")}</label>
+        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={fieldInputStyle} placeholder={t("npJanKowalskiUslugi")} />
 
-        <label style={fieldLabelStyle}>Hasło / tagline (na profil i link)</label>
-        <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={160} style={fieldInputStyle} placeholder="np. Hydraulik z 15-letnim doświadczeniem, Warszawa" />
+        <label style={fieldLabelStyle}>{t("hasloTaglineNaProfil")}</label>
+        <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={160} style={fieldInputStyle} placeholder={t("npHydraulikZ15")} />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ flex: 1 }}>
-          <label style={fieldLabelStyle}>Obszar działania</label>
+          <label style={fieldLabelStyle}>{t("obszarDzialania")}</label>
           <input value={area} onChange={(e) => setArea(e.target.value)} style={fieldInputStyle} placeholder="np. Warszawa" />
         </div>
         <div style={{ flex: 1 }}>
@@ -241,11 +244,11 @@ function ProfileForm({
       </div>
       <div>
         <label style={fieldLabelStyle}>O mnie</label>
-        <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} style={{ ...fieldInputStyle, resize: "vertical" }} placeholder="Doświadczenie, specjalizacja, godziny pracy…" />
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} style={{ ...fieldInputStyle, resize: "vertical" }} placeholder={t("doswiadczenieSpecjalizacjaGodzinyPracy")} />
       </div>
       <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer" }}>
         <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
-        Profil widoczny w katalogu usług
+        {t("profilWidocznyWKatalogu")}
       </label>
       {error && <div style={{ fontSize: 12, color: "var(--accent-red)" }}>{error}</div>}
       <div style={{ display: "flex", gap: 8 }}>
@@ -267,6 +270,7 @@ function ListingsSection({
   categories: ServiceCategoryDTO[];
   onChange: () => void;
 }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const confirmDialog = useConfirm();
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -277,7 +281,7 @@ function ListingsSection({
         action={
           !adding && (
             <button onClick={() => { setAdding(true); setEditId(null); }} style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px" }}>
-              <Plus size={14} /> Dodaj ofertę
+              <Plus size={14} /> {t("dodajOferte")}
             </button>
           )
         }
@@ -337,6 +341,7 @@ function ListingForm({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const [title, setTitle] = useState(listing?.title ?? "");
   const [description, setDescription] = useState(listing?.description ?? "");
   const [categoryId, setCategoryId] = useState(listing?.category?.id ?? "");
@@ -384,8 +389,8 @@ function ListingForm({
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 10, border: "1px solid var(--border-focus)", background: "var(--bg-surface)" }}>
       <div>
-        <label style={fieldLabelStyle}>Tytuł oferty *</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} style={fieldInputStyle} placeholder="np. Montaż i naprawa instalacji wodnej" />
+        <label style={fieldLabelStyle}>{t("tytulOferty")}</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} style={fieldInputStyle} placeholder={t("npMontazINaprawa")} />
       </div>
       <div>
         <label style={fieldLabelStyle}>Opis</label>
@@ -423,7 +428,7 @@ function ListingForm({
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: durationMin.trim() ? "var(--text-secondary)" : "var(--text-muted)", cursor: durationMin.trim() ? "pointer" : "not-allowed", paddingBottom: 8 }}>
           <input type="checkbox" checked={bookingEnabled} disabled={!durationMin.trim()} onChange={(e) => setBookingEnabled(e.target.checked)} />
-          Rezerwacja terminów (Booksy)
+          {t("rezerwacjaTerminowBooksy")}
         </label>
       </div>
       {listing && (
@@ -444,6 +449,7 @@ function ListingForm({
 }
 
 function IncomingRequestCard({ request, onChange }: { request: RequestDTO; onChange: () => void }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const [pending, startTransition] = useTransition();
   const [scheduledAt, setScheduledAt] = useState("");
   const [showSchedule, setShowSchedule] = useState(false);
@@ -475,7 +481,7 @@ function IncomingRequestCard({ request, onChange }: { request: RequestDTO; onCha
       {showSchedule && (
         <div style={{ display: "flex", gap: 8, width: "100%" }}>
           <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} style={{ ...fieldInputStyle, flex: 1 }} />
-          <button disabled={!scheduledAt || pending} onClick={() => advance("SCHEDULED", { scheduledAt })} style={primaryButtonStyle}>Umów</button>
+          <button disabled={!scheduledAt || pending} onClick={() => advance("SCHEDULED", { scheduledAt })} style={primaryButtonStyle}>{t("umow")}</button>
         </div>
       )}
 
@@ -483,7 +489,7 @@ function IncomingRequestCard({ request, onChange }: { request: RequestDTO; onCha
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {actions.map((a) =>
             a === "SCHEDULED" ? (
-              <button key={a} onClick={() => setShowSchedule(true)} disabled={pending} style={secondaryButtonStyle}>Umów termin</button>
+              <button key={a} onClick={() => setShowSchedule(true)} disabled={pending} style={secondaryButtonStyle}>{t("umowTermin")}</button>
             ) : (
               <button
                 key={a}
@@ -521,6 +527,7 @@ function nextActionsFor(status: RequestDTO["status"]): RequestStatus[] {
 }
 
 function PortfolioSection({ images, onChange }: { images: { id: string; url: string; caption: string | null }[]; onChange: () => void }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const confirmDialog = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -555,7 +562,7 @@ function PortfolioSection({ images, onChange }: { images: { id: string; url: str
             <img src={img.url} alt={img.caption ?? "Realizacja"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             <button
               onClick={async () => { if (await confirmDialog("Usunąć zdjęcie?")) { await deleteServiceImage(img.id); onChange(); } }}
-              aria-label="Usuń zdjęcie"
+              aria-label={t("usunZdjecie")}
               style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "var(--on-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             >
               <Trash2 size={13} />
@@ -604,6 +611,7 @@ function OnboardingChecklist({ hasListing, hasAvailability, hasImages }: { hasLi
 }
 
 function LocationControl({ hasLocation, onChange }: { hasLocation: boolean; onChange: () => void }) {
+  const t = useTranslations("modules.services.ProviderPanelPage");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -632,13 +640,13 @@ function LocationControl({ hasLocation, onChange }: { hasLocation: boolean; onCh
 
   return (
     <div>
-      <SectionHeading>Lokalizacja (do wyszukiwania w pobliżu)</SectionHeading>
+      <SectionHeading>{t("lokalizacjaDoWyszukiwaniaW")}</SectionHeading>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: hasLocation ? "var(--accent-green)" : "var(--text-muted)" }}>
           <MapPin size={15} /> {hasLocation ? "Lokalizacja ustawiona" : "Brak lokalizacji"}
         </span>
-        <button onClick={useMyLocation} disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>Użyj mojej lokalizacji</button>
-        {hasLocation && <button onClick={clearLocation} disabled={busy} style={secondaryButtonStyle}>Usuń</button>}
+        <button onClick={useMyLocation} disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>{t("uzyjMojejLokalizacji")}</button>
+        {hasLocation && <button onClick={clearLocation} disabled={busy} style={secondaryButtonStyle}>{t("usun")}</button>}
         {msg && <span style={{ fontSize: 12, color: msg.startsWith("Zapisano") || msg.startsWith("Usunięto") ? "var(--accent-green)" : "var(--accent-red)" }}>{msg}</span>}
       </div>
     </div>

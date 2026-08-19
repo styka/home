@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function EditReportForm({ report }: Props) {
+  const t = useTranslations("app.admin.reports.slug.edit.EditReportForm");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -140,7 +142,7 @@ export function EditReportForm({ report }: Props) {
 
           <div>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 6 }}>
-              Tytuł
+              {t("tytul")}
             </label>
             <input
               value={title}
@@ -168,7 +170,7 @@ export function EditReportForm({ report }: Props) {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Treść (Markdown)
+                {t("trescMarkdown")}
               </label>
               <div style={{ display: "flex", gap: 2 }}>
                 {([["edit", <Edit3 key="e" size={12} />, "Edytor"], ["split", <Columns key="s" size={12} />, "Split"], ["preview", <Eye key="p" size={12} />, "Podgląd"]] as const).map(([mode, icon, label]) => (
@@ -191,7 +193,7 @@ export function EditReportForm({ report }: Props) {
               {previewMode !== "edit" && (
                 <div
                   style={{ flex: 1, minWidth: 0, padding: "12px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", overflowY: "auto", minHeight: 500 }}
-                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:var(--text-muted);font-size:13px">Wpisz treść po lewej…</p>' }}
+                  dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:var(--text-muted);font-size:13px">{t("wpiszTrescPoLewej")}</p>' }}
                 />
               )}
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Check, Loader2, AlertCircle, Clock, CalendarDays, Syringe, Pill, Bug, Utensils, Stethoscope } from "lucide-react";
@@ -31,6 +32,7 @@ function dueLabel(iso: string): string {
 }
 
 export function CareAgenda({ items, emptyHint }: { items: CareAgendaItem[]; emptyHint?: string }) {
+  const t = useTranslations("modules.pets.CareAgenda");
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
@@ -55,7 +57,7 @@ export function CareAgenda({ items, emptyHint }: { items: CareAgendaItem[]; empt
   if (visible.length === 0) {
     return (
       <div style={{ padding: "20px 16px", borderRadius: 10, border: "1px dashed var(--border)", background: "var(--bg-surface)", textAlign: "center" }}>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>Brak zaplanowanych zadań opieki 🎉</p>
+        <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>{t("brakZaplanowanychZadanOpieki")}</p>
         {emptyHint && <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0" }}>{emptyHint}</p>}
       </div>
     );

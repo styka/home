@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { setRetentionDays, type StanRetencjiDTO } from "@/actions/config";
 
@@ -14,6 +15,7 @@ import { setRetentionDays, type StanRetencjiDTO } from "@/actions/config";
  * danych — a wtedy „czy retencja w ogóle chodzi” to pytanie bez odpowiedzi.
  */
 export function RetentionPanel({ stan }: { stan: StanRetencjiDTO }) {
+  const t = useTranslations("components.admin.RetentionPanel");
   return (
     <section style={{ marginBottom: 24 }}>
       <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
@@ -21,9 +23,7 @@ export function RetentionPanel({ stan }: { stan: StanRetencjiDTO }) {
       </h2>
       <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, marginTop: 0, marginBottom: 14 }}>
-          Dane starsze niż podana liczba dni są kasowane raz na dobę. Zmiana działa od następnego
-          przebiegu; wartości poniżej podanego minimum są podnoszone do minimum także wtedy, gdy ktoś
-          zapisze je z pominięciem tego formularza.
+          {t("daneStarszeNizPodana")}
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

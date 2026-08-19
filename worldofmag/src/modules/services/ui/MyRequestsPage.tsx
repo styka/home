@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -22,6 +23,7 @@ function todayISO(): string {
 type Tab = "client" | "provider";
 
 export function MyRequestsPage({ asClient, asProvider, viewParams = {} }: { asClient: RequestDTO[]; asProvider: RequestDTO[]; viewParams?: RawParams }) {
+  const t = useTranslations("modules.services.MyRequestsPage");
   // 043: zakładka w adresie (AC-8a).
   const viewSpec = useMemo(() => ({ tab: oneOf(["client", "provider"] as const, "client") }), []);
   const [view, setView] = useViewState(viewSpec, viewParams);
@@ -36,7 +38,7 @@ export function MyRequestsPage({ asClient, asProvider, viewParams = {} }: { asCl
       state="ready"
       breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-      <ArrowLeft size={15} /> Wszystkie usługi
+      <ArrowLeft size={15} /> {t("wszystkieUslugi")}
     </Link>
       } icon={<ClipboardList size={22} />} iconColor="var(--accent-blue)" title="Moje zlecenia" subtitle="Zlecenia złożone i przyjęte"
     >
@@ -87,6 +89,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
 }
 
 function RequestCard({ request, role, onChange }: { request: RequestDTO; role: Tab; onChange: () => void }) {
+  const t = useTranslations("modules.services.MyRequestsPage");
   const [pending, startTransition] = useTransition();
   const [reviewing, setReviewing] = useState(false);
   const [threadOpen, setThreadOpen] = useState(false);
@@ -125,12 +128,12 @@ function RequestCard({ request, role, onChange }: { request: RequestDTO; role: T
           </button>
           {canReschedule && (
             <button onClick={() => setRescheduling((o) => !o)} style={{ ...secondaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <CalendarClock size={14} /> Zmień termin
+              <CalendarClock size={14} /> {t("zmienTermin")}
             </button>
           )}
           {canReview && (
             <button onClick={() => setReviewing(true)} style={{ ...primaryButtonStyle, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Star size={14} /> Oceń
+              <Star size={14} /> {t("ocen")}
             </button>
           )}
           {canCancel && (
@@ -155,6 +158,7 @@ function RequestCard({ request, role, onChange }: { request: RequestDTO; role: T
 }
 
 function RescheduleControl({ request, onDone }: { request: RequestDTO; onDone: () => void }) {
+  const t = useTranslations("modules.services.MyRequestsPage");
   const slotMode = request.bookingEnabled && !!request.listingId && !!request.durationMin;
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
@@ -186,7 +190,7 @@ function RescheduleControl({ request, onDone }: { request: RequestDTO; onDone: (
         <>
           <input type="date" value={date} min={todayISO()} onChange={(e) => setDate(e.target.value)} style={{ ...fieldInputStyle, width: 180 }} />
           {slots.length === 0 ? (
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak wolnych terminów tego dnia.</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakWolnychTerminowTego")}</span>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {slots.map((iso) => (
@@ -210,6 +214,7 @@ function RescheduleControl({ request, onDone }: { request: RequestDTO; onDone: (
 }
 
 function ReviewForm({ requestId, onDone, onCancel }: { requestId: string; onDone: () => void; onCancel: () => void }) {
+  const t = useTranslations("modules.services.MyRequestsPage");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
@@ -253,7 +258,7 @@ function ReviewForm({ requestId, onDone, onCancel }: { requestId: string; onDone
       </div>
       {error && <div style={{ fontSize: 12, color: "var(--accent-red)" }}>{error}</div>}
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>Wyślij ocenę</button>
+        <button type="submit" disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? 0.6 : 1 }}>{t("wyslijOcene")}</button>
         <button type="button" onClick={onCancel} style={secondaryButtonStyle}><X size={15} /></button>
       </div>
     </form>

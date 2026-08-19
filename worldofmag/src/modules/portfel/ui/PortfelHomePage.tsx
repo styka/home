@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function PortfelHomePage({ overview, teams }: Props) {
+  const t = useTranslations("modules.portfel.PortfelHomePage");
   const { elements, totalNet, currency, series, monthlyRate, projection6m, missingRates } = overview;
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -69,7 +71,7 @@ export function PortfelHomePage({ overview, teams }: Props) {
       {/* Podsumowanie */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
         <div style={tile}>
-          <span style={tileLabel}>Majątek netto</span>
+          <span style={tileLabel}>{t("majatekNetto")}</span>
           <span style={{ fontSize: 22, fontWeight: 700, color: totalNet >= 0 ? "var(--text-primary)" : "var(--accent-red)" }}>{formatMoney(totalNet, currency)}</span>
         </div>
         <div style={tile}>
@@ -92,8 +94,8 @@ export function PortfelHomePage({ overview, teams }: Props) {
       <Link href="/portfel/budzety" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
         <Target size={18} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>Budżety i cele</span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Limity wydatków per kategoria + cele oszczędnościowe</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>{t("budzetyICele")}</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("limityWydatkowPerKategoria")}</span>
         </div>
         <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
       </Link>
@@ -102,8 +104,8 @@ export function PortfelHomePage({ overview, teams }: Props) {
       <Link href="/portfel/raporty" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-surface)", textDecoration: "none" }}>
         <BarChart3 size={18} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>Raporty miesięczne</span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Gdzie poszły pieniądze — podział wydatków na kategorie</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>{t("raportyMiesieczne")}</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("gdziePoszlyPieniadzePodzial")}</span>
         </div>
         <ChevronRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
       </Link>
@@ -111,7 +113,7 @@ export function PortfelHomePage({ overview, teams }: Props) {
       {/* Wykres majątku */}
       {series.length >= 2 && (
         <div style={{ padding: 16, borderRadius: 12, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
-          <SectionHeading>Majątek w czasie</SectionHeading>
+          <SectionHeading>{t("majatekWCzasie")}</SectionHeading>
           <LineChart points={series} color="var(--accent-green)" height={170} formatY={(y) => formatMoney(y, currency)} />
         </div>
       )}
@@ -122,10 +124,10 @@ export function PortfelHomePage({ overview, teams }: Props) {
           <select value={kind} onChange={(e) => setKind(e.target.value)} style={{ ...inputStyle, maxWidth: 150 }}>
             {Object.entries(ELEMENT_KIND_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
-          <input value={initial} onChange={(e) => setInitial(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder="Saldo początkowe" type="number" step="0.01" style={{ ...inputStyle, maxWidth: 160 }} />
+          <input value={initial} onChange={(e) => setInitial(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleCreate()} placeholder={t("saldoPoczatkowe")} type="number" step="0.01" style={{ ...inputStyle, maxWidth: 160 }} />
           {teams.length > 0 && (
             <select value={ownerTeamId} onChange={(e) => setOwnerTeamId(e.target.value)} style={{ ...inputStyle, maxWidth: 170 }}>
-              <option value="">Mój (prywatny)</option>
+              <option value="">{t("mojPrywatny")}</option>
               {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           )}

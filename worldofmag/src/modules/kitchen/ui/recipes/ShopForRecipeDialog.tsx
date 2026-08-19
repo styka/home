@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { ShoppingCart } from "lucide-react";
 import { shopForRecipe } from "../../actions/recipes";
@@ -29,6 +30,7 @@ export function ShopForRecipeDialog({
   onClose,
   defaultServings,
 }: ShopForRecipeDialogProps) {
+  const t = useTranslations("modules.kitchen.ShopForRecipeDialog");
   const [listId, setListId] = useState<string>(lists[0]?.id ?? "");
   const [servings, setServings] = useState(defaultServings);
   const [skipPantry, setSkipPantry] = useState(true);
@@ -100,7 +102,7 @@ export function ShopForRecipeDialog({
       title={
         <span className="flex items-center gap-2">
           <ShoppingCart size={16} style={{ color: "var(--accent-orange)" }} />
-          Dodaj do listy zakupów
+          {t("dodajDoListyZakupow")}
         </span>
       }
       footer={
@@ -125,7 +127,7 @@ export function ShopForRecipeDialog({
     >
       {lists.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--accent-amber)" }}>
-              Nie masz żadnej listy zakupów. Utwórz najpierw listę w module Zakupy.
+              {t("nieMaszZadnejListy")}
             </p>
           ) : (
             <label className="flex flex-col gap-1 text-sm">
@@ -150,11 +152,11 @@ export function ShopForRecipeDialog({
 
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={skipPantry} onChange={(e) => setSkipPantry(e.target.checked)} />
-            <span style={{ color: "var(--text-primary)" }}>Pomiń to co mam w spiżarni</span>
+            <span style={{ color: "var(--text-primary)" }}>{t("pominToCoMam")}</span>
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={skipOptional} onChange={(e) => setSkipOptional(e.target.checked)} />
-            <span style={{ color: "var(--text-primary)" }}>Pomiń składniki opcjonalne</span>
+            <span style={{ color: "var(--text-primary)" }}>{t("pominSkladnikiOpcjonalne")}</span>
           </label>
 
           <div className="flex flex-col gap-1 mt-1">
@@ -164,7 +166,7 @@ export function ShopForRecipeDialog({
             <ul className="flex flex-col gap-1 max-h-60 overflow-y-auto">
               {recipe.ingredients.length === 0 ? (
                 <li className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  Ten przepis nie ma jeszcze składników.
+                  {t("tenPrzepisNieMa")}
                 </li>
               ) : null}
               {recipe.ingredients.map((ing) => {

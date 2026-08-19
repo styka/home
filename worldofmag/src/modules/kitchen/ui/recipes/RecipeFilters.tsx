@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { MEAL_TYPE_LABELS } from "@/types/kitchen";
 import type { MealType } from "@/types/kitchen";
@@ -28,6 +29,7 @@ const MAX_MINUTES_PRESETS: Array<{ label: string; value: number }> = [
 ];
 
 export function RecipeFilters({ state, onChange, cuisines, tags, cookbooks }: RecipeFiltersProps) {
+  const t = useTranslations("modules.kitchen.RecipeFilters");
   const activeCount =
     (state.cuisine ? 1 : 0) +
     (state.mealType ? 1 : 0) +
@@ -69,7 +71,7 @@ export function RecipeFilters({ state, onChange, cuisines, tags, cookbooks }: Re
           className="px-2 py-1 rounded border text-xs"
           style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", color: "var(--text-primary)" }}
         >
-          <option value="">Posiłek: dowolny</option>
+          <option value="">{t("posilekDowolny")}</option>
           {(Object.keys(MEAL_TYPE_LABELS) as MealType[]).map((mt) => (
             <option key={mt} value={mt}>{MEAL_TYPE_LABELS[mt]}</option>
           ))}
@@ -82,7 +84,7 @@ export function RecipeFilters({ state, onChange, cuisines, tags, cookbooks }: Re
             className="px-2 py-1 rounded border text-xs"
             style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           >
-            <option value="">Książka: dowolna</option>
+            <option value="">{t("ksiazkaDowolna")}</option>
             {cookbooks.map((cb) => (
               <option key={cb.id} value={cb.id}>{cb.emoji} {cb.name}</option>
             ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { addPantryItem, updatePantryItem, deletePantryItem } from "../../actions/pantry";
@@ -27,6 +28,7 @@ function toDateInput(d: Date | null | undefined): string {
 }
 
 export function PantryEditSheet({ open, onClose, item, defaultLocation }: PantryEditSheetProps) {
+  const t = useTranslations("modules.kitchen.PantryEditSheet");
   const confirmDialog = useConfirm();
   const [name, setName] = useState(item?.name ?? "");
   const [quantity, setQuantity] = useState<string>(item?.quantity?.toString() ?? "");
@@ -106,7 +108,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
                 className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50"
                 style={{ color: "var(--accent-red)" }}
               >
-                <Trash2 size={14} /> Usuń
+                <Trash2 size={14} /> {t("usun")}
               </button>
             ) : <span />}
           </div>
@@ -137,7 +139,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
         />
       </Field>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Ilość">
+        <Field label={t("ilosc")}>
           <input
             type="number"
             step="any"
@@ -170,7 +172,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
           ))}
         </select>
       </Field>
-      <Field label="Termin ważności">
+      <Field label={t("terminWaznosci")}>
         <input
           type="date"
           value={expiresAt}
@@ -180,7 +182,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
         />
       </Field>
       <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-        <Field label="Minimum (auto-uzupełnianie)">
+        <Field label={t("minimumAutoUzupelnianie")}>
           <input
             type="number"
             step="any"
@@ -197,7 +199,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
             checked={autoShop}
             onChange={(e) => setAutoShop(e.target.checked)}
           />
-          Auto-uzupełnij
+          {t("autoUzupelnij")}
         </label>
       </div>
     </Modal>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
@@ -42,6 +43,7 @@ const RECURRING_TYPES = [
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
 export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
+  const t = useTranslations("modules.tasks.TaskDetail");
   const confirmDialog = useConfirm();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -330,20 +332,20 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
             onClick={onClose}
             className="md:hidden flex items-center gap-1 -ml-1.5 pr-2 py-1.5 rounded focus:outline-none"
             style={{ color: "var(--text-secondary)" }}
-            aria-label="Wróć do listy zadań"
+            aria-label={t("wrocDoListyZadan")}
           >
             <ChevronLeft size={18} />
-            <span className="text-sm">Wróć</span>
+            <span className="text-sm">{t("wroc")}</span>
           </button>
           {isPending && <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent-blue)" }} />}
-          <span className="text-xs hidden md:inline" style={{ color: "var(--text-muted)" }}>Szczegóły zadania</span>
+          <span className="text-xs hidden md:inline" style={{ color: "var(--text-muted)" }}>{t("szczegolyZadania")}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={handleDelete}
             className="p-1.5 rounded hover:opacity-70 focus:outline-none"
             style={{ color: "var(--accent-red)" }}
-            title="Usuń zadanie"
+            title={t("usunZadanie")}
           >
             <Trash2 size={14} />
           </button>
@@ -386,9 +388,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               onClick={() => setShowCompleteOpts((v) => !v)}
               className="flex items-center gap-1.5 text-xs focus:outline-none"
               style={{ color: "var(--text-muted)" }}
-              title="Oznacz zrobione, ale policz następne wystąpienie inaczej niż w ustawieniach"
+              title={t("oznaczZrobioneAlePolicz")}
             >
-              <CheckCircle2 size={12} /> Zrobione z odstępstwem
+              <CheckCircle2 size={12} /> {t("zrobioneZOdstepstwem")}
               <ChevronDown size={12} style={{ transform: showCompleteOpts ? "rotate(180deg)" : undefined }} />
             </button>
             {showCompleteOpts && (
@@ -398,14 +400,14 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                   className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
                   style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
                 >
-                  Zrobione — następne licz <strong>od terminu</strong>
+                  {t("zrobioneNastepneLicz")} <strong>od terminu</strong>
                 </button>
                 <button
                   onClick={() => handleCompleteRecurring({ anchor: "COMPLETION" })}
                   className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
                   style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
                 >
-                  Zrobione — następne licz <strong>od dziś</strong>
+                  {t("zrobioneNastepneLicz")} <strong>{t("odDzis")}</strong>
                 </button>
                 <div className="flex items-center gap-1.5">
                   <input
@@ -420,9 +422,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                     disabled={!completeNextDate}
                     className="text-xs px-2 py-1.5 rounded focus:outline-none disabled:opacity-40"
                     style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
-                    title="Zrobione — następne wystąpienie w tej dacie"
+                    title={t("zrobioneNastepneWystapienieW")}
                   >
-                    Następne w tej dacie
+                    {t("nastepneWTejDacie")}
                   </button>
                 </div>
               </div>
@@ -437,7 +439,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
             style={{ borderColor: "var(--border)", background: "rgba(245,158,11,0.08)" }}
           >
             <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--accent-amber)" }}>
-              <Eye size={13} /> Oczekuje na weryfikację
+              <Eye size={13} /> {t("oczekujeNaWeryfikacje")}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -446,15 +448,15 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                 style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
                 title="Zweryfikowano — oznacz jako zrobione"
               >
-                <CheckCircle2 size={13} /> Zatwierdź
+                <CheckCircle2 size={13} /> {t("zatwierdz")}
               </button>
               <button
                 onClick={() => handleStatusChange("IN_PROGRESS")}
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none border"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                title="Odrzuć — wróć do realizacji (lub wybierz inny status powyżej)"
+                title={t("odrzucWrocDoRealizacji")}
               >
-                <Undo2 size={13} /> Odrzuć
+                <Undo2 size={13} /> {t("odrzuc")}
               </button>
             </div>
           </div>
@@ -469,7 +471,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
             onBlur={handleTitleBlur}
             className="w-full bg-transparent font-semibold focus:outline-none"
             style={{ fontSize: 16, color: "var(--text-primary)", lineHeight: 1.4 }}
-            placeholder="Tytuł zadania…"
+            placeholder={t("tytulZadania")}
           />
         </div>
 
@@ -486,7 +488,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               onChange={(e) => { setDescription(e.target.value); autoSizeDescription(e.currentTarget); }}
               onBlur={handleDescriptionBlur}
               rows={3}
-              placeholder="Dodaj opis (Markdown obsługiwany)…"
+              placeholder={t("dodajOpisMarkdownObslugiwany")}
               className="w-full bg-transparent text-sm focus:outline-none resize-none"
               style={{ color: "var(--text-secondary)", lineHeight: 1.6, overflowY: "auto" }}
             />
@@ -503,7 +505,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               className="text-sm text-left w-full focus:outline-none"
               style={{ color: "var(--text-muted)" }}
             >
-              Dodaj opis (Markdown obsługiwany)…
+              {t("dodajOpisMarkdownObslugiwany")}
             </button>
           )}
         </div>
@@ -519,7 +521,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                 onChange={(e) => { if (e.target.value && e.target.value !== task.projectId) run(() => updateTask(task.id, { projectId: e.target.value })); }}
                 className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                title="Przenieś do innego projektu"
+                title={t("przeniesDoInnegoProjektu")}
               >
                 {task.projectId == null && <option value="">— bez projektu —</option>}
                 {[...allProjects].sort((a, b) => Number(b.isInbox) - Number(a.isInbox)).map((p) => (
@@ -560,7 +562,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                 type="date"
                 value={completedAt}
                 onChange={(e) => handleCompletedAtChange(e.target.value)}
-                title="Data wykonania — możesz ją zmienić (np. gdy odhaczasz z opóźnieniem)"
+                title={t("dataWykonaniaMozeszJa")}
                 className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
               />
@@ -698,7 +700,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
               {recurringType === "MONTHLY" && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>Dzień miesiąca:</span>
+                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("dzienMiesiaca")}</span>
                   <input
                     type="number"
                     min={1}
@@ -708,7 +710,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                     placeholder="np. 15"
                     className="w-16 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
                     style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                    title="Kolejne wystąpienie zawsze tego dnia miesiąca (puste = ten sam dzień co termin)"
+                    title={t("kolejneWystapienieZawszeTego")}
                   />
                   <span className="text-xs" style={{ color: "var(--text-muted)" }}>(puste = jak termin)</span>
                 </div>
@@ -726,13 +728,13 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Następny termin</span>
+                <span className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("nastepnyTermin")}</span>
                 <select
                   value={recurringAnchor}
                   onChange={(e) => setRecurringAnchor(e.target.value as "DUE" | "COMPLETION")}
                   className="flex-1 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
                   style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                  title="Od czego liczyć kolejny termin po wykonaniu"
+                  title={t("odCzegoLiczycKolejny")}
                 >
                   <option value="DUE">licz od terminu</option>
                   <option value="COMPLETION">licz od daty wykonania</option>
@@ -758,7 +760,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
                   )}
                 </button>
                 <button onClick={handleRecurringClear} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>
-                  Usuń powtarzanie
+                  {t("usunPowtarzanie")}
                 </button>
               </div>
             </div>

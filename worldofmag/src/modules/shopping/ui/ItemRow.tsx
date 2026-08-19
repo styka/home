@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useEffect, useTransition } from "react";
 import { Trash2, AlertCircle, ChevronRight, Loader2 } from "lucide-react";
 import type { Item, ItemStatus } from "@/types";
@@ -25,6 +26,7 @@ interface ItemRowProps {
 }
 
 export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, rowRef, otherLists = [], dragHandle }: ItemRowProps) {
+  const t = useTranslations("modules.shopping.ItemRow");
   const online = useOnlineStatus();
   const [isPending, startTransition] = useTransition();
   const [localStatus, setLocalStatus] = useState<ItemStatus>(item.status as ItemStatus);
@@ -149,7 +151,7 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
             onKeyDown={handleEditKeyDown}
             className="w-20 bg-transparent text-xs text-right focus:outline-none"
             style={{ color: "var(--text-secondary)" }}
-            placeholder="cena zł"
+            placeholder={t("cenaZl")}
             type="number"
             step="0.01"
             inputMode="decimal"
@@ -280,8 +282,8 @@ export function ItemRow({ item, isFocused, isEditing, onFocus, onStartEdit, onSt
               onChange={(e) => { e.stopPropagation(); handleMove(e.target.value); }}
               className="text-xs bg-transparent border rounded focus:outline-none py-0.5"
               style={{ borderColor: "var(--border)", color: "var(--text-muted)", maxWidth: 104 }}
-              title="Przenieś na inną listę"
-              aria-label="Przenieś na inną listę"
+              title={t("przeniesNaInnaListe")}
+              aria-label={t("przeniesNaInnaListe")}
             >
               <option value="">⇄ Lista…</option>
               {otherLists.map((l) => (

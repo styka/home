@@ -1,18 +1,20 @@
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CalendarClock, AlertTriangle, PackageOpen } from "lucide-react";
 import type { MaintenanceOverview } from "../actions/warsztat";
 
 export function MaintenanceAgenda({ overview }: { overview: MaintenanceOverview }) {
+  const t = useTranslations("modules.warsztaty.MaintenanceAgenda");
   const { due, lowStock } = overview;
 
   return (
     <div className="px-4 md:px-6 py-6 max-w-3xl mx-auto flex flex-col gap-6">
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-          <CalendarClock size={15} /> Przeglądy i serwis (30 dni + zaległe)
+          <CalendarClock size={15} /> {t("przegladyISerwis30")}
         </h2>
         {due.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Brak zaplanowanych przeglądów.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("brakZaplanowanychPrzegladow")}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {due.map((i) => (
@@ -42,10 +44,10 @@ export function MaintenanceAgenda({ overview }: { overview: MaintenanceOverview 
 
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-3 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
-          <PackageOpen size={15} /> Materiały na wyczerpaniu
+          <PackageOpen size={15} /> {t("materialyNaWyczerpaniu")}
         </h2>
         {lowStock.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Wszystkie materiały powyżej stanu minimalnego.</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("wszystkieMaterialyPowyzejStanu")}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {lowStock.map((i) => (

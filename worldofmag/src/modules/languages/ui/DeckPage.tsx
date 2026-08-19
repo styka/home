@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -28,6 +29,7 @@ function isDue(card: Vocabulary): boolean {
 }
 
 export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] } }) {
+  const t = useTranslations("modules.languages.DeckPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [term, setTerm] = useState("");
@@ -102,7 +104,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
       state="ready"
       breadcrumb={
         <Link href="/languages" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>
-          <ChevronLeft size={14} /> Nauka języków
+          <ChevronLeft size={14} /> {t("naukaJezykow")}
         </Link>
       }
       icon={<Languages size={22} />}
@@ -116,9 +118,9 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
               className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium"
               style={{ background: dueCount > 0 ? "var(--accent-green)" : "var(--bg-hover)", color: dueCount > 0 ? "var(--on-accent)" : "var(--text-secondary)", textDecoration: "none" }}
             >
-              <Play size={15} /> Ucz się
+              <Play size={15} /> {t("uczSie")}
             </Link>
-            <button onClick={removeDeck} className="p-2 rounded" style={{ color: "var(--accent-red)", background: "var(--bg-hover)", border: "none" }} title="Usuń talię">
+            <button onClick={removeDeck} className="p-2 rounded" style={{ color: "var(--accent-red)", background: "var(--bg-hover)", border: "none" }} title={t("usunTalie")}>
               <Trash2 size={15} />
             </button>
           </div>
@@ -142,7 +144,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
               style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontFamily: "inherit" }}
               value={genText}
               onChange={(e) => setGenText(e.target.value)}
-              placeholder="Wklej tekst — AI wyciągnie z niego kolejne słówka…"
+              placeholder={t("wklejTekstAiWyciagnie")}
             />
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={generate} disabled={genBusy || !genText.trim()} className="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium disabled:opacity-40" style={{ background: "var(--accent-amber)", color: "var(--on-accent)", border: "none" }}>
@@ -159,7 +161,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
           </div>
         ) : (
           <button onClick={() => setShowGen(true)} className="flex items-center gap-2 px-3 py-2 rounded text-sm self-start" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
-            <Sparkles size={14} style={{ color: "var(--accent-amber)" }} /> Dodaj słówka z tekstu (AI)
+            <Sparkles size={14} style={{ color: "var(--accent-amber)" }} /> {t("dodajSlowkaZTekstu")}
           </button>
         )}
 
@@ -184,7 +186,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
                     </div>
                     {card.example && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{card.example}</div>}
                   </div>
-                  {isDue(card) && <span title="Do powtórki" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent-green)", flexShrink: 0 }} />}
+                  {isDue(card) && <span title={t("doPowtorki")} style={{ width: 8, height: 8, borderRadius: 999, background: "var(--accent-green)", flexShrink: 0 }} />}
                   <SpeakButton text={card.term} lang={deck.targetLang} />
                   <button onClick={() => startEdit(card)} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }}><Pencil size={14} /></button>
                   <button onClick={() => remove(card.id)} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
@@ -194,7 +196,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
           ))}
           {deck.cards.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "16px 0" }}>
-              Brak słówek. Dodaj je ręcznie lub wygeneruj z tekstu.
+              {t("brakSlowekDodajJe")}
             </p>
           )}
         </div>

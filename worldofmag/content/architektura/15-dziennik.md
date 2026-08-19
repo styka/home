@@ -3176,3 +3176,76 @@ widok, który jest czystym dziennikiem bez agregatów po stronie klienta — log
 
 **Stan:** zero zapytań bez granicy (było 207 + 55 nieodróżnionych od nich), bramka `check:pagination`
 jest regułą bezwzględną z czterema próbami mutacyjnymi, build **exit 0**, `test:unit` 1049/1049.
+
+---
+
+## 097 — Zadanie 35 domknięte: 1300 tekstów wyszło z komponentów, a bramka przestała być zapadką
+
+Zapadka i18n stała na **1416**. To była uczciwa decyzja z 089 — koszt wyciągania rośnie z każdym
+tygodniem, więc zatrzymanie wzrostu było tańsze niż jednorazowy przebieg. Miała jednak wadę, której
+z zewnątrz nie widać: **próg nie odpowiadał na pytanie kontrolne z rozdz. 12.1**. Przy 1416
+literałach odpowiedź na „czy dodanie języka to praca tłumacza" brzmiała „nie" tak samo jak przy 1528.
+
+### Co zostało zrobione
+
+**1358 tekstów** przeniesionych do `messages/pl.json` w 227 plikach, przez kodmod pisany i poprawiany
+w sześciu turach. Klucze są **czytelne dla tłumacza** (slug z polskiej treści: `usunKonto`,
+`kompletTwoichDanychZe`), przestrzeń wynika ze ścieżki pliku (`modules.tasks.TaskDetail`).
+
+### Pięć rzeczy, które kodmod robił źle, zanim zaczął robić dobrze
+
+Każda z nich znalazła się przez `tsc`, nie przez przegląd — i każda jest powodem, dla którego
+„wyciągnięcie tekstów" nie jest zadaniem na jedno wyrażenie regularne.
+
+| Błąd | Objaw | Poprawka |
+|---|---|---|
+| Podmiany i wstrzyknięcia w dwóch przebiegach | pozycje ciał funkcji liczone w tekście oryginalnym, po podmianach nieaktualne — `const t` lądował **w środku napisu** | jeden przebieg, wszystkie zmiany malejąco po pozycji |
+| Zjadanie białych znaków | `<Icon /> Usuń konto` → `<Icon />{t(…)}`, ikona przyklejona do napisu | spacje zostają na zewnątrz `{t(…)}` |
+| `label = "x"` uznane za atrybut JSX | przypisanie do zmiennej zamienione na `label={t(…)}` — błąd składni | atrybut musi być bez spacji wokół `=`, tak jak wymaga JSX |
+| Generyk i literał wzięte za tekst | `useState<string>(…)` i `"<strong>Lista zadań</strong>"` w tablicy | sygnatury kodu w treści + skaner literałów tekstowych |
+| `await getTranslations` w funkcji nie-async | 21 błędów „await tylko w async" | wybór hooka per DEKLARACJA: `useTranslations` działa też w RSC, `getTranslations` tylko tam, gdzie funkcja i tak jest async |
+
+Skaner literałów zasługuje na osobne zdanie, bo pierwsza wersja liczyła **parzystość cudzysłowów od
+początku linii** i przewracała się na literale szablonowym z cudzysłowem w środku
+(`` `Usunąć kontakt „${nazwa}"?` ``): od tego miejsca cała reszta linii wyglądała jak wnętrze
+napisu, więc bramka **przestawała widzieć** teksty stojące dalej. Zastąpił ją skaner z trzema
+ogranicznikami i znakami ucieczki.
+
+### Tryb szeroki — próba, którą trzeba było wycofać
+
+Po wyciągnięciu tekstów z polskimi znakami zostało ~1600 literałów **bez** diakrytyków. Kodmod
+dostał tryb szeroki i podmienił 781 z nich. Efekt: **22 pliki z błędami składni**. Przyczyna jest
+pouczająca — bez diakrytyków znika jedyny sygnał odróżniający zdanie od kodu, więc `) : null ) : (`
+z operatora warunkowego trafiło do słownika jako „tekst". Tryb wycofany w całości, 759 podmian
+cofniętych, stan sprawdzony `tsc` i bramką.
+
+### Czego świadomie NIE wyciągnięto — i dlaczego to nie jest lenistwo
+
+Zostało ~1600 literałów bez polskich znaków. Podział:
+
+- **~780 to nie tekst** — adresy (`console.groq.com/keys`), nazwy pól (`web_search`), przykładowe
+  wartości (`gsk_…`), identyfikatory. Tłumacz nie ma tu czego tłumaczyć.
+- **~820 to FRAGMENTY ZDAŃ** rozbite znacznikiem `<strong>`: „Opcjonalny, ale", „zalecany",
+  „nie zyskuje". Wyciągnięcie ich jako osobnych kluczy byłoby dla tłumaczenia **gorsze** niż
+  zostawienie zdania w kodzie: z kawałków nie da się złożyć zdania w języku o innym szyku.
+  Poprawnym rozwiązaniem jest `t.rich(…)` ze znacznikiem w treści komunikatu — czyli przepisanie
+  zdanie po zdaniu, decyzja, a nie transformacja. Zapisane jako następny krok.
+
+### Bramka
+
+`check:i18n` przestała być zapadką i jest regułą: **zero** tekstów z polskimi znakami zaszytych
+w komponentach, dwa pliki z wyjątkiem (galeria komponentów — treść przykładu; jeden prop liczony na
+poziomie modułu, gdzie hooka nie ma jak zawołać). Doszła druga kontrola, ważniejsza w praktyce:
+**każdy klucz musi istnieć w słowniku**. Wyciągnięcie 1300 tekstów ma jeden groźny tryb awarii —
+`t("klucz")` bez wpisu — którego `tsc` nie widzi, a użytkownik dostaje surową nazwę klucza na
+ekranie. Bramka rozwiązuje wywołanie do najbliższej deklaracji `useTranslations` powyżej (w jednym
+pliku bywa kilka komponentów i każdy ma własną przestrzeń pod tą samą nazwą `t`) i sprawdza wpis.
+Znalazła przy pierwszym uruchomieniu jeden brak sprzed tej zmiany: `ui.error.loading`.
+
+Do tego test `messages/pl.json`: każda **wartość** musi być poprawnym ICU. Bramka pilnuje kluczy,
+test pilnuje treści — jedno bez drugiego zostawia połowę drogi. Liczba mnoga w jedynym miejscu,
+gdzie była zaszyta w kodzie (`? "zmiana" : "zmian"`), poszła do ICU `plural`, bo warunek w kodzie
+nie wyraża języka o innej liczbie form niż polski.
+
+**Stan:** build **exit 0**, `test:unit` 1049/1049, `check:i18n` **0**, `check:pagination` 0 bez
+granicy, klikacz e2e zielony.

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, Headphones, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -63,6 +64,7 @@ export function NewsStream({
   /** Udostępnia rodzicowi funkcję „przewiń do tematu", żeby selektor tematu mógł jej użyć. */
   registerScrollToTopic: (fn: (topicId: string) => void) => void;
 }) {
+  const t = useTranslations("modules.news.NewsStream");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const sectionRefs = useRef(new Map<string, HTMLElement>());
@@ -253,7 +255,7 @@ export function NewsStream({
   if (topics.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-        Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
+        {t("dodajPierwszyTematDo")}
       </div>
     );
   }
@@ -339,7 +341,7 @@ export function NewsStream({
                   <button
                     onClick={() => toggleReader({ kind: "topic", topicId: topic.id })}
                     aria-pressed={reader.kind === "topic" && reader.topicId === topic.id}
-                    title="Słuchaj całego tematu"
+                    title={t("sluchajCalegoTematu")}
                     aria-label={`Słuchaj tematu: ${topic.title}`}
                     className={cn(
                       "shrink-0 rounded-md p-2 transition-colors",
@@ -353,7 +355,7 @@ export function NewsStream({
                   <button
                     onClick={() => markTopic(topic.id, topic.title)}
                     disabled={busyTopicId === topic.id}
-                    title="Oznacz cały temat jako przeczytany"
+                    title={t("oznaczCalyTematJako")}
                     aria-label={`Oznacz temat jako przeczytany: ${topic.title}`}
                     className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-green)] disabled:opacity-40"
                   >
@@ -377,7 +379,7 @@ export function NewsStream({
               // Temat bez nowych pozycji ZOSTAJE na liście. Znikający temat wygląda jak usterka,
               // a pusta sekcja jest informacją: „tu nic nowego nie przyszło".
               <p className="mt-3 rounded-lg border border-dashed border-[var(--border)] px-4 py-3 text-xs text-[var(--text-muted)]">
-                Brak nowych wiadomości w tym temacie.
+                {t("brakNowychWiadomosciW")}
               </p>
             ) : (
               <div className="mt-3 space-y-3">

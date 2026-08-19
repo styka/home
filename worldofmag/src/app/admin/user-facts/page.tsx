@@ -5,9 +5,11 @@ import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { UserFactsPanel } from "@/components/admin/UserFactsPanel";
+import { getTranslations } from "next-intl/server";
 
 // 039: wgląd administratora w wiedzę o użytkowniku — i możliwość jej poprawienia.
 export default async function AdminUserFactsPage() {
+  const t = await getTranslations("app.admin.user-facts.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -20,11 +22,10 @@ export default async function AdminUserFactsPage() {
     <div style={{ flex: 1, overflowY: "auto", padding: "24px 16px" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
-          Wiedza o użytkownikach
+          {t("wiedzaOUzytkownikach")}
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
-          Fakty, z których korzystają moduły generujące treść „pod użytkownika”. Fakt zapisany tutaj
-          ma pochodzenie „administrator” i nie jest nadpisywany automatycznym wnioskowaniem.
+          {t("faktyZKtorychKorzystaja")}
         </p>
         <UserFactsPanel users={users} />
       </div>

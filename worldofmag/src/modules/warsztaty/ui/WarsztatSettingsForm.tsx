@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Building2, Check } from "lucide-react";
 import { setWarsztatMode, type WarsztatMode } from "../actions/warsztat";
 
 export function WarsztatSettingsForm({ mode }: { mode: WarsztatMode }) {
+  const t = useTranslations("modules.warsztaty.WarsztatSettingsForm");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -71,7 +73,7 @@ export function WarsztatSettingsForm({ mode }: { mode: WarsztatMode }) {
           })}
         </div>
         <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
-          Tryb Pro odblokowuje zakładkę „Przeglądy”, przypisywanie narzędzi do osób/stanowisk i dziennik projektów.
+          {t("trybProOdblokowujeZakladke")}
         </p>
       </section>
     </div>

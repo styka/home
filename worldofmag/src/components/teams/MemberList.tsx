@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl";
 import { changeMemberRole, removeMember, setMemberModuleAccess } from "@/actions/teams"
 import { useState } from "react"
 import { RESTRICTABLE_MODULES, moduleLabel, parseModuleAccess } from "@/lib/teams/memberAccess"
@@ -23,6 +24,7 @@ export default function MemberList({
   currentUserId: string
   currentUserRole: string
 }) {
+  const t = useTranslations("components.teams.MemberList");
   const confirmDialog = useConfirm()
   const [busy, setBusy] = useState<string | null>(null)
   const [accessOpen, setAccessOpen] = useState<string | null>(null)
@@ -140,9 +142,9 @@ export default function MemberList({
                     fontSize: 12,
                     padding: "4px 8px",
                   }}
-                  title="Ogranicz dostęp domownika do modułów"
+                  title={t("ograniczDostepDomownikaDo")}
                 >
-                  Dostęp
+                  {t("dostep")}
                 </button>
               )}
               {canRemove && (
@@ -194,6 +196,7 @@ function ModuleAccessEditor({
   moduleAccess: string | null
   onClose: () => void
 }) {
+  const t = useTranslations("components.teams.MemberList");
   const confirmDialog = useConfirm()
   // null = brak ograniczeń → wszystkie zaznaczone na starcie.
   const initial = parseModuleAccess(moduleAccess)
@@ -234,8 +237,7 @@ function ModuleAccessEditor({
       }}
     >
       <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-        Moduły, do których <strong style={{ color: "var(--text-secondary)" }}>{name}</strong> ma dostęp
-        we współdzielonych zasobach zespołu. Odznacz, by ograniczyć.
+        {t("modulyDoKtorych")} <strong style={{ color: "var(--text-secondary)" }}>{name}</strong> {t("maDostepWeWspoldzielonych")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 4 }}>
         {RESTRICTABLE_MODULES.map((id) => (

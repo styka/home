@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Camera, Upload, Loader2 } from "lucide-react";
@@ -19,6 +20,7 @@ const VALID_MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack", "
 const MAX_BYTES = 8 * 1024 * 1024;
 
 export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogProps) {
+  const t = useTranslations("modules.kitchen.ImportFromImageDialog");
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -122,7 +124,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       title={
         <span className="flex items-center gap-2">
           <Camera size={16} style={{ color: "var(--accent-purple)" }} />
-          Import ze zdjęcia (OCR)
+          {t("importZeZdjeciaOcr")}
         </span>
       }
       footer={
@@ -143,8 +145,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
       }
     >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Zrób zdjęcie strony z książki kucharskiej, kartki z notatkami lub ekranu z przepisem.
-        AI rozpozna składniki i kroki.
+        {t("zrobZdjecieStronyZ")}
       </p>
 
       {!preview ? (
@@ -159,7 +160,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
           }}
         >
           <Upload size={28} style={{ color: "var(--text-muted)" }} />
-          <span className="text-sm">Kliknij lub upuść plik</span>
+          <span className="text-sm">{t("kliknijLubUpuscPlik")}</span>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             JPG, PNG, WebP · max 8 MB
           </span>
@@ -177,7 +178,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={preview}
-            alt="Podgląd"
+            alt={t("podglad")}
             className="w-full rounded border"
             style={{ borderColor: "var(--border)", maxHeight: 320, objectFit: "contain" }}
           />
@@ -186,7 +187,7 @@ export function ImportFromImageDialog({ open, onClose }: ImportFromImageDialogPr
             onClick={handleClear}
             className="absolute top-2 right-2 rounded-full p-1"
             style={{ backgroundColor: "rgba(0,0,0,0.6)", color: "var(--on-accent)" }}
-            aria-label="Usuń zdjęcie"
+            aria-label={t("usunZdjecie")}
           >
             <X size={14} />
           </button>

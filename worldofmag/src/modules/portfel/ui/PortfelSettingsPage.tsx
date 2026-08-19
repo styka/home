@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { ModuleView } from "@/components/ui/view";
 import Link from "next/link";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
+  const t = useTranslations("modules.portfel.PortfelSettingsPage");
   const [enabled, setEnabled] = useState(settings.autoExpenseEnabled);
   const [elementId, setElementId] = useState(settings.autoExpenseElementId ?? "");
   const [pending, startTransition] = useTransition();
@@ -54,8 +56,7 @@ export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
         <div>
           <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Auto-wydatki</h2>
           <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-            Gdy włączone, koszty z innych modułów (na razie: <strong>tankowania i serwisy z Floty</strong>)
-            są automatycznie księgowane jako wydatek na wybranym koncie. Usunięcie rekordu cofa wpis.
+            {t("gdyWlaczoneKosztyZ")} <strong>tankowania i serwisy z Floty</strong>{t("saAutomatycznieKsiegowaneJako")}
           </p>
         </div>
 
@@ -66,7 +67,7 @@ export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
             onChange={(e) => { setEnabled(e.target.checked); save({ enabled: e.target.checked }); }}
             style={{ width: 18, height: 18 }}
           />
-          <span style={{ fontSize: 14, color: "var(--text-primary)" }}>Księguj wydatki automatycznie</span>
+          <span style={{ fontSize: 14, color: "var(--text-primary)" }}>{t("ksiegujWydatkiAutomatycznie")}</span>
         </label>
 
         <label style={{ display: "flex", flexDirection: "column", gap: 6, opacity: enabled ? 1 : 0.5 }}>
@@ -89,13 +90,13 @@ export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
         </label>
 
         <div style={{ height: 18, display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-          {pending && <><Loader2 size={13} className="animate-spin" style={{ color: "var(--text-muted)" }} /> <span style={{ color: "var(--text-muted)" }}>Zapisuję…</span></>}
+          {pending && <><Loader2 size={13} className="animate-spin" style={{ color: "var(--text-muted)" }} /> <span style={{ color: "var(--text-muted)" }}>{t("zapisuje")}</span></>}
           {!pending && saved && <><Check size={13} style={{ color: "var(--accent-green)" }} /> <span style={{ color: "var(--accent-green)" }}>Zapisano</span></>}
         </div>
       </div>
 
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px" }}>Prywatność i AI</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px" }}>{t("prywatnoscIAi")}</h2>
         <FinanceAiAccessToggle />
       </div>
 
@@ -105,6 +106,7 @@ export function PortfelSettingsPage({ accounts, settings, currency }: Props) {
 }
 
 function CurrencySection({ baseCurrency, rates }: { baseCurrency: string; rates: ExchangeRateDTO[] }) {
+  const t = useTranslations("modules.portfel.PortfelSettingsPage");
   const [base, setBase] = useState(baseCurrency);
   const [newCur, setNewCur] = useState("");
   const [newRate, setNewRate] = useState("");
@@ -147,8 +149,7 @@ function CurrencySection({ baseCurrency, rates }: { baseCurrency: string; rates:
           <Coins size={16} style={{ color: "var(--accent-amber)" }} /> Waluty i kursy
         </h2>
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-          Majątek netto przeliczany jest na <strong>walutę sprawozdawczą</strong>. Dla kont w innych
-          walutach ustaw kurs (ile waluty bazowej za 1 jednostkę), ręcznie lub z NBP.
+          {t("majatekNettoPrzeliczanyJest")} <strong>{t("waluteSprawozdawcza")}</strong>{t("dlaKontWInnych")}
         </p>
       </div>
 
@@ -167,7 +168,7 @@ function CurrencySection({ baseCurrency, rates }: { baseCurrency: string; rates:
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Kursy (1 waluta = X {base})</span>
         {rates.filter((r) => r.currency !== base).length === 0 && (
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak kursów — dodaj poniżej lub pobierz z NBP.</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("brakKursowDodajPonizej")}</span>
         )}
         {rates.filter((r) => r.currency !== base).map((r) => (
           <div key={r.currency} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -179,7 +180,7 @@ function CurrencySection({ baseCurrency, rates }: { baseCurrency: string; rates:
               style={{ width: 120, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-base)", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
             />
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{base} {r.source === "nbp" ? "· NBP" : ""}</span>
-            <button onClick={() => startTransition(() => { deleteExchangeRate(r.currency); })} title="Usuń kurs" style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", marginLeft: "auto" }}>
+            <button onClick={() => startTransition(() => { deleteExchangeRate(r.currency); })} title={t("usunKurs")} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", marginLeft: "auto" }}>
               <Trash2 size={13} />
             </button>
           </div>

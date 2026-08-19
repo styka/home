@@ -4,6 +4,55 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-20 — Kodmod na JSX: pięć pułapek, z których każda wygląda jak jedno wyrażenie regularne
+**Problem:** Wyciągnięcie 1358 tekstów z komponentów do `messages/pl.json` wydawało się zadaniem na
+jeden regex. Kodmod trzeba było poprawiać pięć razy, za każdym razem po błędzie z `tsc`:
+(1) podmiany i wstrzyknięcia `const t` w dwóch przebiegach — pozycje ciał funkcji liczone w tekście
+oryginalnym przestawały pasować po podmianach i hook lądował **w środku napisu**; (2) zjadanie
+białych znaków wokół tekstu — `<Icon /> Usuń` traciło spację; (3) `label = "x"` (przypisanie do
+zmiennej) potraktowane jak atrybut JSX; (4) generyk `useState<string>(…)` i literał
+`"<strong>Lista</strong>"` wzięte za tekst między znacznikami; (5) `await getTranslations` wstawione
+do funkcji, która nie jest `async`.
+**Rozwiązanie:** Jeden przebieg zmian malejąco po pozycji; białe znaki na zewnątrz `{t(…)}`; atrybut
+rozpoznawany bez spacji wokół `=`; odsiew po SYGNATURACH kodu plus skaner literałów tekstowych;
+wybór hooka per DEKLARACJA (`useTranslations` działa też w komponencie serwerowym, `getTranslations`
+tylko w async).
+**Lekcja:** Kodmod na JSX nie jest podmianą tekstu, tylko małym kompilatorem. Zanim go puścisz na
+200 plików, uruchom na jednym katalogu i **przeczytaj diff** — a potem i tak licz się z tym, że
+`tsc` znajdzie klasę przypadków, o której nie pomyślałeś.
+
+## 2026-08-20 — Bez diakrytyków znika jedyny sygnał odróżniający zdanie od kodu
+**Problem:** Po wyciągnięciu tekstów z polskimi znakami został ~1600 literałów bez nich. Kodmod
+dostał „tryb szeroki" i podmienił 781 z nich — efekt: **22 pliki z błędami składni**. Do słownika
+trafiło m.in. `) : null ) : (` z operatora warunkowego, bo między `>` a `<` naprawdę tam stało.
+**Rozwiązanie:** Tryb wycofany w całości (759 podmian cofniętych, stan sprawdzony `tsc` i bramką).
+Kryterium diakrytyków zostaje jako granica automatu; resztę trzeba rozstrzygać ręcznie.
+**Lekcja:** Automat potrzebuje sygnału, po którym rozpoznaje swój cel. Kiedy sygnał znika (tu:
+polskie znaki), nie rozszerzaj automatu „na oko" — zmień narzędzie albo zostaw robotę człowiekowi.
+Rozszerzony automat nie robi więcej dobrego, tylko więcej.
+
+## 2026-08-20 — Fragment zdania jako osobny klucz jest dla tłumacza gorszy niż zdanie w kodzie
+**Problem:** Po wyciągnięciu pełnych tekstów zostało ~820 literałów będących KAWAŁKAMI zdań
+rozbitych znacznikiem (`Opcjonalny, ale <strong>zalecany</strong> do web_search`). Licznik bramki
+kusił, żeby wyciągnąć je jako `t("opcjonalnyAle")` i `t("zalecany")` — i zejść do zera.
+**Rozwiązanie:** Zostawione świadomie, z zapisanym powodem. Z „Opcjonalny, ale" i „zalecany" nie da
+się złożyć zdania w języku o innym szyku; poprawne rozwiązanie to `t.rich(...)` ze znacznikiem
+w treści komunikatu, czyli przepisanie zdanie po zdaniu.
+**Lekcja:** Miernik pokazuje liczbę, nie cel. Zejście licznika do zera kosztem sensu tłumaczenia
+byłoby regresem udającym postęp — a bramka nigdy by tego nie zauważyła.
+
+## 2026-08-20 — Parzystość cudzysłowów w linii to zły sposób na „czy jestem w stringu"
+**Problem:** Bramka i18n sprawdzała, czy trafienie stoi wewnątrz literału, licząc cudzysłowy od
+początku linii. Wystarczył literał szablonowy z cudzysłowem w środku
+(`` `Usunąć kontakt „${nazwa}"?` ``), żeby parzystość się odwróciła i **cała reszta linii** stała
+się dla bramki „wnętrzem napisu". Bramka przestawała widzieć teksty stojące dalej — czyli myliła się
+w stronę ciszy, najgorszą z możliwych.
+**Rozwiązanie:** Skaner z trzema ogranicznikami (`"`, `'`, `` ` ``), znakami ucieczki i zerowaniem
+stanu na końcu linii dla cudzysłowów, które nie przechodzą przez nową linię.
+**Lekcja:** Heurystyka parzystości działa tylko w gramatyce z jednym rodzajem ogranicznika. Przy
+trzech (i szablonach wieloliniowych) trzeba napisać skaner — to piętnaście linii, a różnica jest
+między bramką, która pilnuje, a bramką, która czasem pilnuje.
+
 ## 2026-08-20 — Zapadka, która nie widzi spłaty, zniechęca do spłacania
 **Problem:** `check:pagination` liczyła zapytania bez `take` wzorcem tekstowym. Jedyne miejsce
 w aplikacji z prawdziwą paginacją kursorową (log audytu) wnosi `take` **spreadem**

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Pencil, Map, HelpCircle } from "lucide-react";
@@ -11,6 +12,7 @@ interface StoresManagerProps {
 }
 
 export function StoresManager({ stores: initialStores }: StoresManagerProps) {
+  const t = useTranslations("modules.shopping.StoresManager");
   const [stores, setStores] = useState<StoreWithGraph[]>(initialStores);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
           Zakupy
         </Link>
         <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          Mapy sklepów
+          {t("mapySklepow")}
         </h1>
         <Link
           href="/shopping/stores/guide"
@@ -63,7 +65,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
           style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}
         >
           <HelpCircle size={12} />
-          Jak używać?
+          {t("jakUzywac")}
         </Link>
       </div>
 
@@ -98,7 +100,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
       {/* Stores list */}
       {stores.length === 0 ? (
         <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
-          Brak sklepów. Dodaj pierwszy sklep powyżej.
+          {t("brakSklepowDodajPierwszy")}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -139,7 +141,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                     onClick={() => startRename(store)}
                     className="p-2 rounded"
                     style={{ color: "var(--text-muted)" }}
-                    title="Zmień nazwę"
+                    title={t("zmienNazwe")}
                   >
                     <Pencil size={14} />
                   </button>
@@ -151,7 +153,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                         className="px-2 py-1 rounded text-xs"
                         style={{ backgroundColor: "var(--accent-red)", color: "var(--on-accent)" }}
                       >
-                        Usuń
+                        {t("usun")}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
@@ -166,7 +168,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                       onClick={() => setConfirmDeleteId(store.id)}
                       className="p-2 rounded"
                       style={{ color: "var(--text-muted)" }}
-                      title="Usuń sklep"
+                      title={t("usunSklep")}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -182,7 +184,7 @@ export function StoresManager({ stores: initialStores }: StoresManagerProps) {
                     }}
                   >
                     <Map size={13} />
-                    <span>Skonfiguruj mapę</span>
+                    <span>{t("skonfigurujMape")}</span>
                   </Link>
                 </div>
               </div>

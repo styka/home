@@ -10,8 +10,10 @@ import petsModule from "@/modules/pets/module";
 import { getCareAgenda } from "@/modules/pets/actions/petCare";
 import { PageHeader, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import { CareAgenda } from "@/modules/pets/ui/CareAgenda";
+import { getTranslations } from "next-intl/server";
 
 export default async function PetsCalendarPage() {
+  const t = await getTranslations("app.pets.calendar.page");
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, petsModule.permission)) redirect("/");
@@ -31,7 +33,7 @@ export default async function PetsCalendarPage() {
           action={
             hasCalendar ? (
               <Link href="/calendar?module=pets" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-secondary)", fontSize: 13, textDecoration: "none" }}>
-                <CalendarRange size={14} /> Widok miesięczny
+                <CalendarRange size={14} /> {t("widokMiesieczny")}
               </Link>
             ) : undefined
           }

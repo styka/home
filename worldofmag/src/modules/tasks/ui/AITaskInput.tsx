@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useTransition } from "react";
 import { Mic, MicOff, Loader2, Plus, CheckSquare, Square, Sparkles, X, Paperclip } from "lucide-react";
 import { createTask } from "../actions/tasks";
@@ -44,6 +45,7 @@ declare global {
 }
 
 export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
+  const t = useTranslations("modules.tasks.AITaskInput");
   const [text, setText] = useState("");
   const [tasks, setTasks] = useState<ParsedTask[]>([]);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
@@ -232,10 +234,10 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
               disabled={loading}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium focus:outline-none disabled:opacity-40"
               style={{ backgroundColor: "var(--bg-surface)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-              title="Wczytaj z pliku: zdjęcie listy, CSV, JSON lub TXT"
+              title={t("wczytajZPlikuZdjecie")}
             >
               <Paperclip size={13} />
-              Załącznik
+              {t("zalacznik")}
             </button>
             <button
               onClick={processText}
@@ -249,7 +251,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
             {recording && (
               <span className="text-xs" style={{ color: "var(--accent-red)" }}>
                 <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: "var(--accent-red)", animation: "pulse 1s infinite" }} />
-                Słucham…
+                {t("slucham")}
               </span>
             )}
           </div>
@@ -259,14 +261,14 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
             </div>
           )}
           {error && <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>}
-          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Ctrl+Enter aby przetworzyć</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("ctrlEnterAbyPrzetworzyc")}</p>
         </div>
       )}
 
       {showResults && (
         <>
           <div className="px-4 pb-1">
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Rozpoznane zadania — zaznacz które dodać</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("rozpoznaneZadaniaZaznaczKtore")}</p>
           </div>
           <div style={{ maxHeight: 300, overflowY: "auto" }}>
             {tasks.map((task, i) => (
@@ -314,7 +316,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
             ))}
           </div>
           <div className="flex items-center justify-between gap-3 px-4 py-2 border-t" style={{ borderColor: "var(--border)" }}>
-            <button onClick={reset} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>← Wróć</button>
+            <button onClick={reset} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>{t("wroc")}</button>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{selectedCount} z {tasks.length}</span>
               <button

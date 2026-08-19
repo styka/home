@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CheckSquare, Flag, Calendar, Tag as TagIcon, FolderInput, Trash2, X, Circle } from "lucide-react";
 import { StatusIcon } from "./StatusIcon";
@@ -40,6 +41,7 @@ export function BulkActionBar({
   count, totalVisible, allSelected, pending, statusConfig = DEFAULT_STATUS_CONFIG,
   allProjects, allTags, onSelectAll, onClear, onApply, onDelete,
 }: BulkActionBarProps) {
+  const t = useTranslations("modules.tasks.BulkActionBar");
   const [panel, setPanel] = useState<Panel>(null);
   const [dueValue, setDueValue] = useState("");
   const [categoryValue, setCategoryValue] = useState("");
@@ -138,7 +140,7 @@ export function BulkActionBar({
                 onClick={() => apply({ dueDate: new Date(dueValue + "T12:00:00") })}>Ustaw termin</button>
               <button className="flex-1 px-2 py-2 rounded text-sm"
                 style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)" }}
-                onClick={() => apply({ dueDate: null })}>Wyczyść termin</button>
+                onClick={() => apply({ dueDate: null })}>{t("wyczyscTermin")}</button>
             </div>
           </div>
         )}
@@ -151,7 +153,7 @@ export function BulkActionBar({
               style={{ backgroundColor: "var(--bg-base)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
             <button className="w-full px-2 py-2 rounded text-sm" disabled={!categoryValue.trim()}
               style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)", opacity: categoryValue.trim() ? 1 : 0.5 }}
-              onClick={() => apply({ category: categoryValue.trim() })}>Ustaw kategorię</button>
+              onClick={() => apply({ category: categoryValue.trim() })}>{t("ustawKategorie")}</button>
           </div>
         )}
         {panel === "project" && (
@@ -170,10 +172,10 @@ export function BulkActionBar({
         {panel === "tags" && (
           <div className={panelWrap} style={panelStyle}>
             <p className="text-xs px-1 pb-1.5" style={{ color: "var(--text-muted)" }}>
-              Klik: <span style={{ color: "var(--accent-green)" }}>dodaj</span> → <span style={{ color: "var(--accent-red)" }}>usuń</span> → brak
+              Klik: <span style={{ color: "var(--accent-green)" }}>dodaj</span> → <span style={{ color: "var(--accent-red)" }}>{t("usun")}</span> → brak
             </p>
             <div className="flex flex-wrap gap-1.5 pb-2">
-              {allTags.length === 0 && <span className="text-xs" style={{ color: "var(--text-muted)" }}>Brak tagów</span>}
+              {allTags.length === 0 && <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("brakTagow")}</span>}
               {allTags.map((t) => {
                 const st = tagState[t.id];
                 const border = st === "add" ? "var(--accent-green)" : st === "remove" ? "var(--accent-red)" : "var(--border)";
@@ -231,7 +233,7 @@ export function BulkActionBar({
           </button>
           <button className={actionBtn} disabled={pending} onClick={onDelete}
             style={{ color: "var(--accent-red)" }}>
-            <Trash2 size={16} /> Usuń
+            <Trash2 size={16} /> {t("usun2")}
           </button>
 
           <div className="w-px self-stretch mx-0.5" style={{ backgroundColor: "var(--border)" }} />

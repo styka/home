@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useTransition, useState } from "react";
 import Link from "next/link";
 import {
@@ -104,6 +105,7 @@ export function KitchenHomePage({
   cookbooks,
   totalCookbooks,
 }: KitchenHomePageProps) {
+  const t = useTranslations("modules.kitchen.KitchenHomePage");
   const todayPlannedCount = todayMeals.filter((m) => m.status !== "SKIPPED").length;
   const [suggestions, setSuggestions] = useState<Array<{ recipeId: string; slug: string; title: string; reason?: string }> | null>(null);
   const [suggestBusy, setSuggestBusy] = useState(false);
@@ -172,21 +174,21 @@ export function KitchenHomePage({
         />
         <StatTile
           value={todayPlannedCount}
-          label="Posiłki dziś"
+          label={t("posilkiDzis")}
           color={todayPlannedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
           icon={<CalendarDays size={14} />}
           href="/kitchen/plan"
         />
         <StatTile
           value={pantryCount}
-          label="Spiżarnia"
+          label={t("spizarnia")}
           color="var(--accent-green)"
           icon={<Package size={14} />}
           href="/kitchen/pantry"
         />
         <StatTile
           value={expiringSoonCount}
-          label="Wygasające"
+          label={t("wygasajace")}
           color={expiringSoonCount > 0 ? "var(--accent-red)" : "var(--text-muted)"}
           icon={<AlertTriangle size={14} />}
           href="/kitchen/pantry"
@@ -198,7 +200,7 @@ export function KitchenHomePage({
       {pantryCount > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Co ugotować z tego co mam?</span>
+            <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{t("coUgotowacZTego")}</span>
             <button
               onClick={fetchSuggestions}
               disabled={suggestBusy}
@@ -211,7 +213,7 @@ export function KitchenHomePage({
           {suggestError && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{suggestError}</p>}
           {suggestions !== null && (
             suggestions.length === 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak sugestii — uzupełnij spiżarnię lub dodaj przepisy.</p>
+              <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("brakSugestiiUzupelnijSpizarnie")}</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {suggestions.map((s) => (
@@ -249,7 +251,7 @@ export function KitchenHomePage({
             </Link>
           }
         >
-          Dziś w menu
+          {t("dzisWMenu")}
         </SectionHeading>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
           {SLOT_ORDER.map((slot) => {
@@ -275,11 +277,11 @@ export function KitchenHomePage({
                   gap: 3,
                 }}
               >
-                Cała spiżarnia <ChevronRight size={11} />
+                {t("calaSpizarnia")} <ChevronRight size={11} />
               </Link>
             }
           >
-            Kończy się termin
+            {t("konczySieTermin")}
           </SectionHeading>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {expiring.map((item) => (
@@ -460,7 +462,7 @@ export function KitchenHomePage({
               ) : undefined
             }
           >
-            Książki kucharskie
+            {t("ksiazkiKucharskie")}
           </SectionHeading>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
             {cookbooks.map((cb) => (
@@ -504,7 +506,7 @@ export function KitchenHomePage({
 
       {/* Management */}
       <div>
-        <SectionHeading>Zarządzanie</SectionHeading>
+        <SectionHeading>{t("zarzadzanie")}</SectionHeading>
         <ManagementGrid
           items={[
             { href: "/kitchen/recipes", icon: <BookMarked size={16} />, label: "Przepisy", color: "var(--accent-orange)" },
@@ -519,6 +521,7 @@ export function KitchenHomePage({
 }
 
 function TodaySlotCard({ slot, meal }: { slot: string; meal: TodayMeal | undefined }) {
+  const t = useTranslations("modules.kitchen.KitchenHomePage");
   const [isPending, startTransition] = useTransition();
 
   if (!meal) {

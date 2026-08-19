@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Search, Sparkles, MapPin, Loader2, PackageSearch } from "lucide-react";
 import { llm } from "@/lib/llm-client";
@@ -13,6 +14,7 @@ interface StorageSearchProps {
 }
 
 export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
+  const t = useTranslations("modules.magazynowanie.StorageSearch");
   const { showToast } = useToast();
   const [query, setQuery] = useState(initialLocation ?? "");
   const [aiIds, setAiIds] = useState<string[] | null>(null);
@@ -67,7 +69,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
           Gdzie to jest?
         </h2>
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          Wpisz, czego szukasz — pokażę magazyn i lokalizację. Zapytaj naturalnie („gdzie mam ładowarkę do wiertarki”) i użyj AI.
+          {t("wpiszCzegoSzukaszPokaze")}
         </p>
       </div>
 
@@ -79,7 +81,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setAiIds(null); }}
             onKeyDown={(e) => e.key === "Enter" && askAI()}
-            placeholder="np. śrubokręt krzyżakowy, kable USB…"
+            placeholder={t("npSrubokretKrzyzakowyKable")}
             className="flex-1 bg-transparent outline-none text-sm"
             style={{ color: "var(--text-primary)" }}
           />
@@ -97,7 +99,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
 
       {aiMatches ? (
         <p className="text-xs" style={{ color: "var(--accent-purple)" }}>
-          Wyniki AI ({aiMatches.length}). <button type="button" className="underline" onClick={() => setAiIds(null)}>pokaż dopasowanie tekstowe</button>
+          Wyniki AI ({aiMatches.length}). <button type="button" className="underline" onClick={() => setAiIds(null)}>{t("pokazDopasowanieTekstowe")}</button>
         </p>
       ) : null}
 

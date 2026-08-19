@@ -14,8 +14,10 @@ import {
   Smartphone,
 } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export default async function E2EGuidePage() {
+  const t = await getTranslations("app.admin.e2e.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -34,21 +36,19 @@ export default async function E2EGuidePage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <MousePointerClick size={20} style={{ color: "var(--accent-red)" }} />
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Testy klikacze (E2E) — jak uruchomić
+            {t("testyKlikaczeE2eJak")}
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 32, marginTop: 4 }}>
           Automatyczne testy w przeglądarce (Playwright) odtwarzające scenariusze QA z modułu{" "}
-          <Link href="/qa" style={{ color: "var(--accent-red)" }}>/qa</Link>. Klikają aplikację jak żywy użytkownik —
-          na desktopie i na mobile (iPhone 13). Kod: <Code>worldofmag/e2e/</Code>, pełne README:{" "}
+          <Link href="/qa" style={{ color: "var(--accent-red)" }}>/qa</Link>{t("klikajaAplikacjeJakZywy")} <Code>worldofmag/e2e/</Code>, pełne README:{" "}
           <Code>worldofmag/e2e/README.md</Code>.
         </p>
 
         {/* Szybki start */}
         <Section title="Szybki start — jedna komenda" icon={<Rocket size={15} />}>
           <p style={paraStyle}>
-            Najprostsza droga: testy odpalają się na <strong>Twoim localhost</strong> z jednorazową, lokalną bazą w
-            Dockerze (nic nie trzeba konfigurować ręcznie). W katalogu <Code>worldofmag/</Code>:
+            {t("najprostszaDrogaTestyOdpalaja")} <strong>Twoim localhost</strong> {t("zJednorazowaLokalnaBaza")} <Code>worldofmag/</Code>:
           </p>
           <CodeBlock code={`# 1) jednorazowo
 npm install
@@ -60,12 +60,11 @@ npm run test:e2e:local
 # 3) sprzątanie bazy po pracy
 npm run test:e2e:local:down`} />
           <Callout color="var(--accent-green)" icon={<Smartphone size={14} />}>
-            Tryb demo jest <strong>headed + zwolniony</strong> — widać każde kliknięcie. Seria leci po kolei na
-            desktopie i na iPhone 13.
+            Tryb demo jest <strong>headed + zwolniony</strong> {t("widacKazdeKlikniecieSeria")}
           </Callout>
           <p style={paraStyle}>
             Wymagany jest tylko <strong>Docker</strong> (darmowy): macOS najprościej{" "}
-            <em>Docker Desktop</em>, albo w pełni wolny <em>Colima</em>
+            <em>Docker Desktop</em>{t("alboWPelniWolny")} <em>Colima</em>
             (<Code>brew install colima docker docker-compose &amp;&amp; colima start</Code>).
           </p>
         </Section>
@@ -87,10 +86,10 @@ npm run test:e2e:local:down`} />
         </Section>
 
         {/* Relacja do produkcji */}
-        <Section title="A produkcja? (ważne)" icon={<Server size={15} />}>
+        <Section title={t("aProdukcjaWazne")} icon={<Server size={15} />}>
           <p style={paraStyle}>
-            Traktujemy produkcję (<Code>worldofmag.onrender.com</Code> + Neon) trochę jak środowisko testowe, ale
-            <strong> klikacze NIE jadą po produkcji</strong> — i to celowo:
+            {t("traktujemyProdukcje")}<Code>worldofmag.onrender.com</Code> {t("neonTrocheJakSrodowisko")}
+            <strong> {t("klikaczeNieJadaPo")}</strong> — i to celowo:
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
             <Step
@@ -105,18 +104,17 @@ npm run test:e2e:local:down`} />
             />
             <Step
               n={3}
-              label="Co więc testujemy?"
+              label={t("coWiecTestujemy")}
               desc="Ten sam kod, który jest na produkcji — uruchomiony lokalnie (npm run dev) na czystej bazie. Jeśli klikacze są zielone lokalnie, ten sam build na Render zachowa się tak samo."
             />
           </div>
           <Callout color="var(--accent-amber)" icon={<AlertTriangle size={14} />}>
-            Jeśli kiedyś zechcesz „smoke” wprost na produkcji — zrób to ręcznie (zaloguj się Google i przeklikaj
-            krytyczne ścieżki). Automatu nie kierujemy na prod, żeby nie ruszać realnych danych.
+            {t("jesliKiedysZechceszSmoke")}
           </Callout>
         </Section>
 
         {/* Jak to działa */}
-        <Section title="Jak to działa pod spodem" icon={<Cog size={15} />}>
+        <Section title={t("jakToDzialaPod")} icon={<Cog size={15} />}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Step n={1} label="Start serwera" desc="Playwright sam odpala npm run dev z E2E_TEST_MODE=1 (aktywuje testowy login)." />
             <Step n={2} label="Seed" desc="Zakłada użytkowników testowych i komplet uprawnień w bazie (admin = wszystko, limited = tylko strona główna do testów blokad)." />
@@ -126,25 +124,23 @@ npm run test:e2e:local:down`} />
         </Section>
 
         {/* Autoryzacja / bezpieczeństwo */}
-        <Section title="Bezpieczeństwo" icon={<ShieldCheck size={15} />}>
+        <Section title={t("bezpieczenstwo")} icon={<ShieldCheck size={15} />}>
           <Callout color="var(--accent-green)" icon={<ShieldCheck size={14} />}>
-            Testowy provider logowania jest odcięty zmienną <Code>E2E_TEST_MODE</Code>. Render nigdy jej nie ustawia,
-            więc na produkcji obejście logowania <strong>nie istnieje</strong> — zero ryzyka.
+            {t("testowyProviderLogowaniaJest")} <Code>E2E_TEST_MODE</Code>{t("renderNigdyJejNie")} <strong>nie istnieje</strong> — zero ryzyka.
           </Callout>
         </Section>
 
         {/* Pokrycie */}
         <Section title="Pokrycie scenariuszy" icon={<ListChecks size={15} />}>
           <p style={paraStyle}>
-            Źródłem prawdy są scenariusze z <Link href="/qa" style={{ color: "var(--accent-red)" }}>/qa</Link> (201
+            {t("zrodlemPrawdySaScenariusze")} <Link href="/qa" style={{ color: "var(--accent-red)" }}>/qa</Link> (201
             sztuk, 11 modułów). Część ma już realne, klikające testy; reszta jest w pliku{" "}
-            <Code>e2e/specs/coverage.spec.ts</Code> jako udokumentowany backlog (każdy scenariusz widoczny w raporcie
-            z krokami). Raport HTML zobaczysz po <Code>npm run test:e2e:report</Code>.
+            <Code>e2e/specs/coverage.spec.ts</Code> {t("jakoUdokumentowanyBacklogKazdy")} <Code>npm run test:e2e:report</Code>.
           </p>
         </Section>
 
         {/* Gdzie szukać */}
-        <Section title="Gdzie znów to znaleźć" icon={<MousePointerClick size={15} />}>
+        <Section title={t("gdzieZnowToZnalezc")} icon={<MousePointerClick size={15} />}>
           <InfoGrid
             rows={[
               { label: "Ta strona", value: "Panel admina → „Testy klikacze E2E” (adres /admin/e2e)." },

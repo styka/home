@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   wmo,
   observedWmo,
@@ -36,6 +37,7 @@ function currentHour(forecast: Forecast): HourPoint | null {
 
 /** „Teraz" — bieżące warunki + jednolinijkowe podsumowanie dnia. */
 export function ForecastNow({ forecast }: { forecast: Forecast }) {
+  const t = useTranslations("modules.weather.ForecastView");
   const cur = forecast.current;
   const today = forecast.daily[0];
   if (!cur) return null;
@@ -74,7 +76,7 @@ export function ForecastNow({ forecast }: { forecast: Forecast }) {
 
           {today && (
             <div className="text-xs text-[var(--text-muted)]">
-              <span className="font-medium">Dziś</span> {Math.round(today.tMin)}–
+              <span className="font-medium">{t("dzis")}</span> {Math.round(today.tMin)}–
               {Math.round(today.tMax)}°C · opady maks. {today.precipProbMax}%
             </div>
           )}
@@ -86,16 +88,16 @@ export function ForecastNow({ forecast }: { forecast: Forecast }) {
       {today && (today.sunrise || today.sunset) && (
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--border)] pt-3 text-xs text-[var(--text-secondary)]">
           {today.sunrise && (
-            <span className="whitespace-nowrap" title="Wschód słońca">
+            <span className="whitespace-nowrap" title={t("wschodSlonca")}>
               🌅 {hhmm(today.sunrise)}
             </span>
           )}
           {today.sunset && (
-            <span className="whitespace-nowrap" title="Zachód słońca">
+            <span className="whitespace-nowrap" title={t("zachodSlonca")}>
               🌇 {hhmm(today.sunset)}
             </span>
           )}
-          <span className="whitespace-nowrap" title="Faza księżyca">
+          <span className="whitespace-nowrap" title={t("fazaKsiezyca")}>
             {moon.emoji} {moon.name}
           </span>
         </div>
@@ -111,13 +113,14 @@ function hhmm(iso: string): string {
 
 /** „Najbliższe godziny" — poziomy pasek najbliższych 24 godzin. */
 export function ForecastHours({ forecast }: { forecast: Forecast }) {
+  const t = useTranslations("modules.weather.ForecastView");
   const now = Date.now();
   const nextHours = forecast.hourly.filter((h) => new Date(h.time).getTime() >= now).slice(0, 24);
 
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-        Najbliższe godziny
+        {t("najblizszeGodziny")}
       </h3>
       <div className="flex min-w-0 gap-2 overflow-x-auto pb-2">
         {nextHours.map((h) => (
@@ -142,10 +145,11 @@ export function ForecastHours({ forecast }: { forecast: Forecast }) {
 
 /** „Najbliższe dni" — tabela prognozy 7-dniowej. */
 export function ForecastDays({ forecast }: { forecast: Forecast }) {
+  const t = useTranslations("modules.weather.ForecastView");
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-        Najbliższe dni
+        {t("najblizszeDni")}
       </h3>
       <div className="overflow-hidden rounded-lg border border-[var(--border)]">
         {forecast.daily.map((d, i) => (

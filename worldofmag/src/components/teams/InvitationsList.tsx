@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl";
 import { acceptInvitation, rejectInvitation } from "@/actions/invitations"
 import { useState } from "react"
 
@@ -11,12 +12,13 @@ type Invitation = {
 }
 
 export default function InvitationsList({ invitations }: { invitations: Invitation[] }) {
+  const t = useTranslations("components.teams.InvitationsList");
   const [busy, setBusy] = useState<string | null>(null)
 
   if (invitations.length === 0) {
     return (
       <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-        Brak oczekujących zaproszeń.
+        {t("brakOczekujacychZaproszen")}
       </p>
     )
   }
@@ -86,7 +88,7 @@ export default function InvitationsList({ invitations }: { invitations: Invitati
                 opacity: busy === inv.id ? 0.5 : 1,
               }}
             >
-              Odrzuć
+              {t("odrzuc")}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -17,6 +18,7 @@ import {
 } from "../actions/news";
 
 export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged: () => void }) {
+  const t = useTranslations("modules.news.NewsItemCard");
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
   const [summary, setSummary] = useState(item.summary);
@@ -172,7 +174,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
           >
-            <X size={13} /> Odrzuć
+            <X size={13} /> {t("odrzuc")}
           </button>
           <button
             onClick={acknowledge}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, Eye, EyeOff, Loader2, X, Plus, Smartphone } from "lucide-react";
@@ -7,6 +8,7 @@ import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { accessibleModulesInOrder, MAX_TAB_BAR, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 
 export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[]; prefs: MenuPrefs }) {
+  const t = useTranslations("components.settings.MenuPrefsEditor");
   const [rows, setRows] = useState<ModuleDef[]>(() => accessibleModulesInOrder(permissions, prefs));
   const [disabled, setDisabled] = useState<string[]>(prefs.disabled);
   const [isPending, startTransition] = useTransition();
@@ -91,10 +93,10 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
               }}
             >
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <button onClick={() => move(idx, -1)} disabled={idx === 0} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title="W górę">
+                <button onClick={() => move(idx, -1)} disabled={idx === 0} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title={t("wGore")}>
                   <ChevronUp size={14} />
                 </button>
-                <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title="W dół">
+                <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title={t("wDol")}>
                   <ChevronDown size={14} />
                 </button>
               </div>
@@ -123,7 +125,7 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
           Ikony i ich kolejność na dolnym pasku w telefonie — niezależne od menu bocznego (maks. {MAX_TAB_BAR}).
         </p>
         {tabBar.length === 0 ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 12, fontStyle: "italic" }}>Brak ikon — dodaj poniżej.</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, fontStyle: "italic" }}>{t("brakIkonDodajPonizej")}</p>
         ) : (
           tabBar.map((id, idx) => {
             const m = byId.get(id);
@@ -155,7 +157,7 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
                   onClick={() => removeTab(id)}
                   className="focus:outline-none"
                   style={{ display: "flex", alignItems: "center", color: "var(--text-muted)" }}
-                  title="Usuń z dolnego paska"
+                  title={t("usunZDolnegoPaska")}
                 >
                   <X size={15} />
                 </button>

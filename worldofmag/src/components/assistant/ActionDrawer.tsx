@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { X, ShoppingCart, CheckSquare, FileText, PawPrint, Boxes, Wallet, Fuel, ChefHat, Repeat, Wand2, CheckCircle, XCircle, Loader2, Square, CheckSquare2, ChevronDown, ChevronUp, HeartPulse, Languages, Newspaper, CloudSun } from "lucide-react";
 import type { AIAction } from "@/platform/ai/aiAction";
@@ -132,6 +133,7 @@ function moduleLabel(module: string) {
 }
 
 export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results, onRefine, isRefining, isAdmin = false }: ActionDrawerProps) {
+  const t = useTranslations("components.assistant.ActionDrawer");
   const [refineText, setRefineText] = useState("");
   const [included, setIncluded] = useState<Set<string>>(
     new Set(actions.filter((a) => !DESTRUCTIVE_TYPES.has(a.type)).map((a) => a.id))
@@ -551,7 +553,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         {!showResults && onRefine && (
           <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-              Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:
+              {t("edytujSzczegolyWParametry")}
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               <input
@@ -594,7 +596,7 @@ export function ActionDrawer({ actions, onConfirm, onClose, isExecuting, results
         {!showResults && !onRefine && (
           <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-              Kliknij &quot;Parametry&quot; przy akcji, aby edytować szczegóły przed wykonaniem.
+              {t("kliknijQuotParametryQuot")}
             </p>
           </div>
         )}

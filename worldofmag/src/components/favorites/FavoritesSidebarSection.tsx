@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Star, Search, Settings2 } from "lucide-react";
@@ -27,6 +28,7 @@ const VISIBLE_LIMIT = 6;
  * bieżącego widoku (AC-2), zarządzanie (AC-3) i listę.
  */
 export function FavoritesSidebarSection({ favorites, userPermissions }: FavoritesSidebarSectionProps) {
+  const t = useTranslations("components.favorites.FavoritesSidebarSection");
   const pathname = usePathname();
   const accessible = filterAccessibleFavorites(favorites, userPermissions, isPathLocked);
 
@@ -43,8 +45,8 @@ export function FavoritesSidebarSection({ favorites, userPermissions }: Favorite
         <span className="flex-1">Ulubione</span>
         <Link
           href="/settings#ulubione"
-          title="Zarządzaj ulubionymi — nazwa, ikona, kolor, kolejność"
-          aria-label="Zarządzaj ulubionymi"
+          title={t("zarzadzajUlubionymiNazwaIkona")}
+          aria-label={t("zarzadzajUlubionymi")}
           style={{ color: "var(--text-muted)", display: "inline-flex", alignItems: "center" }}
         >
           <Settings2 size={12} />
@@ -59,8 +61,7 @@ export function FavoritesSidebarSection({ favorites, userPermissions }: Favorite
           className="px-4"
           style={{ fontSize: 10.5, color: "var(--text-muted)", lineHeight: 1.45, margin: "6px 0 2px" }}
         >
-          Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją
-          przyciskiem powyżej — wróci tu razem z filtrami.
+          {t("nieMaszJeszczeZapisanych")}
         </p>
       ) : (
         <>

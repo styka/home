@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
@@ -13,6 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
  * identycznie na dotyku (mobile) i myszą (desktop). Skrzynki nie da się usunąć.
  */
 export function ProjectActionsMenu({ project }: { project: TaskProject }) {
+  const t = useTranslations("modules.tasks.ProjectActionsMenu");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -95,7 +97,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
                   style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
                   placeholder="Nazwa projektu…"
                 />
-                <button onClick={handleRename} className="p-1 focus:outline-none" style={{ color: "var(--accent-green)" }} aria-label="Zapisz nazwę">
+                <button onClick={handleRename} className="p-1 focus:outline-none" style={{ color: "var(--accent-green)" }} aria-label={t("zapiszNazwe")}>
                   <Check size={15} />
                 </button>
                 <button onClick={close} className="p-1 focus:outline-none" style={{ color: "var(--text-muted)" }} aria-label="Anuluj">
@@ -112,7 +114,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                   role="menuitem"
                 >
-                  <Pencil size={14} /> Zmień nazwę
+                  <Pencil size={14} /> {t("zmienNazwe")}
                 </button>
                 <button
                   onClick={handleDelete}
@@ -122,7 +124,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
                   role="menuitem"
                 >
-                  <Trash2 size={14} /> Usuń projekt
+                  <Trash2 size={14} /> {t("usunProjekt")}
                 </button>
               </>
             )}

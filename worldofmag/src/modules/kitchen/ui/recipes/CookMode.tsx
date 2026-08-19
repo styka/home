@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X, ChevronLeft, ChevronRight, Play, Pause, Square, List, CheckCircle2 } from "lucide-react";
@@ -30,6 +31,7 @@ function formatMmSs(seconds: number): string {
 }
 
 export function CookMode({ recipe }: CookModeProps) {
+  const t = useTranslations("modules.kitchen.CookMode");
   const router = useRouter();
   const { showToast } = useToast();
   const [stepIdx, setStepIdx] = useState(0);
@@ -172,13 +174,13 @@ export function CookMode({ recipe }: CookModeProps) {
         className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6"
         style={{ backgroundColor: "var(--kitchen-cook-bg, #050505)", color: "var(--on-accent)" }}
       >
-        <p className="text-lg mb-4">Ten przepis nie ma jeszcze kroków.</p>
+        <p className="text-lg mb-4">{t("tenPrzepisNieMa")}</p>
         <button
           onClick={handleExit}
           className="px-4 py-2 rounded text-sm"
           style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
-          Wyjdź
+          {t("wyjdz")}
         </button>
       </div>
     );
@@ -202,7 +204,7 @@ export function CookMode({ recipe }: CookModeProps) {
           className="inline-flex items-center gap-1.5 text-sm"
           style={{ color: "#999" }}
         >
-          <X size={16} /> Wyjdź
+          <X size={16} /> {t("wyjdz")}
         </button>
         <div className="text-xs" style={{ color: "#999" }}>
           {recipe.title} · Krok {stepIdx + 1} / {steps.length}
@@ -211,7 +213,7 @@ export function CookMode({ recipe }: CookModeProps) {
           onClick={() => setIngredientsOpen(true)}
           className="inline-flex items-center gap-1.5 text-sm"
           style={{ color: "#999" }}
-          aria-label="Pokaż składniki"
+          aria-label={t("pokazSkladniki")}
         >
           <List size={16} />
         </button>
@@ -232,7 +234,7 @@ export function CookMode({ recipe }: CookModeProps) {
           onClick={next}
           className="absolute inset-y-0 right-0 w-1/3 z-10"
           style={{ background: "transparent" }}
-          aria-label="Następny krok"
+          aria-label={t("nastepnyKrok")}
         />
 
         <div
@@ -420,7 +422,7 @@ export function CookMode({ recipe }: CookModeProps) {
               {recipe.title}
             </p>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Ile porcji wyszło?</span>
+              <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("ilePorcjiWyszlo")}</span>
               <ServingSelector value={completedServings} onChange={setCompletedServings} />
             </div>
             <div className="flex items-center justify-end gap-2">
@@ -429,7 +431,7 @@ export function CookMode({ recipe }: CookModeProps) {
                 className="px-3 py-1.5 rounded text-sm"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Wróć
+                {t("wroc")}
               </button>
               <button
                 onClick={handleConfirmCooked}

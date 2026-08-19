@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PawPrint, Plus, AlertCircle, Clock, CalendarDays, Sparkles } from "lucide-react";
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
+  const t = useTranslations("modules.pets.PetsHomePage");
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [focused, setFocused] = useState<number>(-1);
@@ -48,7 +50,7 @@ export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
       state="ready"
       icon={<PawPrint size={22} />}
       iconColor="var(--accent-orange)"
-      title="Zwierzęta"
+      title={t("zwierzeta")}
       subtitle="Dobrostan, zdrowie i opieka — w jednym miejscu"
       headerAction={
         <button
@@ -66,10 +68,10 @@ export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
 
       {pets.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
-          <StatTile value={activePets.length} label="Zwierzęta" color="var(--accent-orange)" icon={<PawPrint size={15} />} />
-          <StatTile value={overdue} label="Zaległe" color="var(--accent-red)" icon={<AlertCircle size={15} />} emphasized={overdue > 0} />
-          <StatTile value={today} label="Dziś" color="var(--accent-amber)" icon={<Clock size={15} />} />
-          <StatTile value={upcoming} label="Nadchodzące" color="var(--accent-blue)" icon={<CalendarDays size={15} />} href="/pets/calendar" />
+          <StatTile value={activePets.length} label={t("zwierzeta")} color="var(--accent-orange)" icon={<PawPrint size={15} />} />
+          <StatTile value={overdue} label={t("zalegle")} color="var(--accent-red)" icon={<AlertCircle size={15} />} emphasized={overdue > 0} />
+          <StatTile value={today} label={t("dzis")} color="var(--accent-amber)" icon={<Clock size={15} />} />
+          <StatTile value={upcoming} label={t("nadchodzace")} color="var(--accent-blue)" icon={<CalendarDays size={15} />} href="/pets/calendar" />
         </div>
       )}
 
@@ -99,7 +101,7 @@ export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
           </div>
 
           <div>
-            <SectionHeading>Moje zwierzęta</SectionHeading>
+            <SectionHeading>{t("mojeZwierzeta")}</SectionHeading>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
               {pets.map((pet, i) => <PetCard key={pet.id} pet={pet} focused={focused === i} onFocus={() => setFocused(i)} />)}
             </div>
@@ -115,7 +117,7 @@ export function PetsHomePage({ pets, agenda, suggestions, teams }: Props) {
       >
         <Sparkles size={14} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          Użyj magicznej ikony (✨), aby tekstem lub głosem dodać zwierzę, zważyć je, zaplanować lek czy zapisać karmienie.
+          {t("uzyjMagicznejIkonyAby")}
         </span>
       </div>
     </ModuleView>

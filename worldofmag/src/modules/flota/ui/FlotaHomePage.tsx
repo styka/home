@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function FlotaHomePage({ vehicles, teams }: Props) {
+  const t = useTranslations("modules.flota.FlotaHomePage");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [plate, setPlate] = useState("");
@@ -74,7 +76,7 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
           </select>
           {teams.length > 0 && (
             <select value={ownerTeamId} onChange={(e) => setOwnerTeamId(e.target.value)} style={{ ...inputStyle, maxWidth: 160 }}>
-              <option value="">Mój (prywatny)</option>
+              <option value="">{t("mojPrywatny")}</option>
               {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           )}
@@ -100,6 +102,7 @@ export function FlotaHomePage({ vehicles, teams }: Props) {
 }
 
 function VehicleCard({ v, focused, onFocus }: { v: VehicleWithStats; focused: boolean; onFocus: () => void }) {
+  const t = useTranslations("modules.flota.FlotaHomePage");
   const insp = deadlineStatus(v.inspectionDue);
   const ins = deadlineStatus(v.insuranceDue);
   return (
@@ -117,7 +120,7 @@ function VehicleCard({ v, focused, onFocus }: { v: VehicleWithStats; focused: bo
           <span>{FUEL_LABELS[v.fuelType] ?? v.fuelType}</span>
         </div>
         <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-          {insp && <DeadlineBadge icon={<CalendarClock size={10} />} label="Przegląd" status={insp} />}
+          {insp && <DeadlineBadge icon={<CalendarClock size={10} />} label={t("przeglad")} status={insp} />}
           {ins && <DeadlineBadge icon={<ShieldCheck size={10} />} label="OC" status={ins} />}
         </div>
       </div>

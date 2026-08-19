@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Trash2, RotateCcw, FileText, CheckSquare, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
@@ -13,6 +14,7 @@ const MODULE_META: Record<string, { label: string; icon: React.ReactNode; color:
 };
 
 export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; retentionDays: number }) {
+  const t = useTranslations("components.trash.TrashPage");
   const confirmDialog = useConfirm();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; ret
       headerAction={
         items.length > 0 ? (
           <button onClick={empty} disabled={pending} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--accent-red)", fontSize: 13, cursor: "pointer" }}>
-            <Trash2 size={13} /> Opróżnij kosz
+            <Trash2 size={13} /> {t("oproznijKosz")}
           </button>
         ) : undefined
       }
@@ -65,10 +67,10 @@ export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; ret
                     {meta.label} · usunięto {new Date(it.deletedAt).toLocaleString("pl-PL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
-                <button onClick={() => restore(it.id)} disabled={busy} title="Przywróć" style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                <button onClick={() => restore(it.id)} disabled={busy} title={t("przywroc")} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                   {busy ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />} Przywróć
                 </button>
-                <button onClick={() => purge(it.id)} disabled={busy} title="Usuń trwale" style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 4 }}>
+                <button onClick={() => purge(it.id)} disabled={busy} title={t("usunTrwale")} style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 4 }}>
                   <Trash2 size={14} />
                 </button>
               </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, BookOpen } from "lucide-react";
@@ -12,13 +13,14 @@ interface CookbookListProps {
 }
 
 export function CookbookList({ cookbooks }: CookbookListProps) {
+  const t = useTranslations("modules.kitchen.CookbookList");
   const [creating, setCreating] = useState(false);
 
   return (
     <div className="px-4 md:px-6 py-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          Książki kucharskie
+          {t("ksiazkiKucharskie")}
         </h1>
         <button
           type="button"
@@ -34,10 +36,10 @@ export function CookbookList({ cookbooks }: CookbookListProps) {
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
           <BookOpen size={48} style={{ color: "var(--text-muted)" }} />
           <h2 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-            Brak książek kucharskich
+            {t("brakKsiazekKucharskich")}
           </h2>
           <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-            Twórz kolekcje przepisów według tematu — np. „Mama”, „Włoska klasyka”, „Desery”.
+            {t("tworzKolekcjePrzepisowWedlug")}
           </p>
           <button
             type="button"
@@ -45,7 +47,7 @@ export function CookbookList({ cookbooks }: CookbookListProps) {
             className="mt-6 inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
             style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
-            <Plus size={16} /> Utwórz pierwszą
+            <Plus size={16} /> {t("utworzPierwsza")}
           </button>
         </div>
       ) : (

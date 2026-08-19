@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState, useTransition, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -27,6 +28,7 @@ interface StorageListProps {
 const NO_WAREHOUSE = "Bez magazynu";
 
 export function StorageList({ items, lowStock, expiring = [], shoppingLists, suppliers = [], currency = "PLN", pro = false, viewParams = {} }: StorageListProps) {
+  const t = useTranslations("modules.magazynowanie.StorageList");
   const { showToast } = useToast();
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
   // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
@@ -107,7 +109,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
           Magazyn jest pusty
         </h2>
         <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-          Dodaj pozycje ręcznie albo zeskanuj zdjęcie półki, regału czy szafy — AI rozpozna przedmioty i utworzy listę.
+          {t("dodajPozycjeRecznieAlbo")}
         </p>
         <div className="mt-6 flex items-center gap-2">
           <Link
@@ -115,7 +117,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm border"
             style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
           >
-            <Camera size={16} /> Skanuj zdjęcie
+            <Camera size={16} /> {t("skanujZdjecie")}
           </Link>
           <button
             type="button"
@@ -123,7 +125,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
             style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
           >
-            <Plus size={16} /> Dodaj pozycję
+            <Plus size={16} /> {t("dodajPozycje")}
           </button>
         </div>
         {editing ? <StorageEditSheet open onClose={() => setEditing(null)} item={null} suppliers={suppliers} currency={currency} pro={pro} /> : null}
@@ -153,7 +155,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
           href="/magazynowanie/scan"
           className="inline-flex items-center gap-1 px-2.5 py-2 rounded border text-sm whitespace-nowrap"
           style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-          title="Inwentaryzacja ze zdjęcia"
+          title={t("inwentaryzacjaZeZdjecia")}
         >
           <Camera size={14} /> Skanuj
         </Link>
@@ -237,7 +239,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs disabled:opacity-50"
                 style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}
               >
-                <ShoppingCart size={12} /> Do zakupów
+                <ShoppingCart size={12} /> {t("doZakupow")}
               </button>
             </div>
           </div>
@@ -335,7 +337,7 @@ export function StorageList({ items, lowStock, expiring = [], shoppingLists, sup
                       </span>
                       {belowMin ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}>
-                          poniżej min
+                          {t("ponizejMin")}
                         </span>
                       ) : null}
                     </button>

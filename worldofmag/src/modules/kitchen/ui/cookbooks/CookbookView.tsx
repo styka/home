@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
@@ -15,6 +16,7 @@ interface CookbookViewProps {
 }
 
 export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) {
+  const t = useTranslations("modules.kitchen.CookbookView");
   const [editing, setEditing] = useState(false);
 
   return (
@@ -25,7 +27,7 @@ export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) 
           className="inline-flex items-center gap-1 text-sm"
           style={{ color: "var(--text-secondary)" }}
         >
-          <ArrowLeft size={14} /> Książki
+          <ArrowLeft size={14} /> {t("ksiazki")}
         </Link>
         {canEdit ? (
           <button
@@ -74,7 +76,7 @@ export function CookbookView({ cookbook, recipes, canEdit }: CookbookViewProps) 
       {recipes.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-            W tej książce nie ma jeszcze przepisów.
+            {t("wTejKsiazceNie")}
           </p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
             Dodaj przepis lub edytuj istniejący — w polu „Książka kucharska” wybierz „{cookbook.name}”.

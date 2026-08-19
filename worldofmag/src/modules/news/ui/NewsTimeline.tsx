@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CalendarClock, ExternalLink } from "lucide-react";
 import { sourceColor } from "@/lib/news/sourceColor";
 import type { TimelineEntryDTO } from "../actions/news";
@@ -13,11 +14,11 @@ import type { TimelineEntryDTO } from "../actions/news";
  * pochodzi.
  */
 export function NewsTimeline({ entries }: { entries: TimelineEntryDTO[] }) {
+  const t = useTranslations("modules.news.NewsTimeline");
   if (entries.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-        Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które
-        trafią do tego tematu.
+        {t("liniaCzasuJestJeszcze")}
       </p>
     );
   }
@@ -60,7 +61,7 @@ export function NewsTimeline({ entries }: { entries: TimelineEntryDTO[] }) {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--accent-blue)] hover:underline"
               >
-                <ExternalLink size={11} /> Materiał źródłowy
+                <ExternalLink size={11} /> {t("materialZrodlowy")}
               </a>
             )}
           </div>

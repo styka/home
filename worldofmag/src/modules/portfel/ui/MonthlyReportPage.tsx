@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { BarChart3, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ const CAT_COLORS = [
 ];
 
 export function MonthlyReportPage({ initial }: { initial: MonthlyReport }) {
+  const t = useTranslations("modules.portfel.MonthlyReportPage");
   const [report, setReport] = useState<MonthlyReport>(initial);
   const [pending, startTransition] = useTransition();
 
@@ -38,20 +40,20 @@ export function MonthlyReportPage({ initial }: { initial: MonthlyReport }) {
       }
       icon={<BarChart3 size={22} />}
       iconColor="var(--accent-blue)"
-      title="Raporty miesięczne"
+      title={t("raportyMiesieczne")}
       href="/portfel/raporty"
       subtitle="Gdzie poszły pieniądze — przychody, wydatki i podział na kategorie"
     >
 
       {/* Nawigacja miesiąca */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <button onClick={() => navigate(monthOffset + 1)} disabled={pending || !hasOlder} style={navBtn(pending || !hasOlder)} title="Starszy miesiąc">
+        <button onClick={() => navigate(monthOffset + 1)} disabled={pending || !hasOlder} style={navBtn(pending || !hasOlder)} title={t("starszyMiesiac")}>
           <ChevronLeft size={16} />
         </button>
         <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", textTransform: "capitalize", display: "flex", alignItems: "center", gap: 6 }}>
           {pending && <Loader2 size={13} className="animate-spin" />} {label}
         </span>
-        <button onClick={() => navigate(monthOffset - 1)} disabled={pending || monthOffset === 0} style={navBtn(pending || monthOffset === 0)} title="Nowszy miesiąc">
+        <button onClick={() => navigate(monthOffset - 1)} disabled={pending || monthOffset === 0} style={navBtn(pending || monthOffset === 0)} title={t("nowszyMiesiac")}>
           <ChevronRight size={16} />
         </button>
       </div>

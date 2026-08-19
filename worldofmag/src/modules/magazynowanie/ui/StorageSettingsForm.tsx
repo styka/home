@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Home, Building2, Check } from "lucide-react";
@@ -9,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 const CURRENCIES = ["PLN", "EUR", "USD", "GBP"];
 
 export function StorageSettingsForm({ mode, currency }: { mode: StorageMode; currency: string }) {
+  const t = useTranslations("modules.magazynowanie.StorageSettingsForm");
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -112,7 +114,7 @@ export function StorageSettingsForm({ mode, currency }: { mode: StorageMode; cur
           })}
         </div>
         <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-          Używana w wycenie pozycji, analityce i eksporcie (np. do ubezpieczenia).
+          {t("uzywanaWWyceniePozycji")}
         </p>
       </section>
     </div>

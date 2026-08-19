@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useMemo, useCallback, useRef, useTransition, useEffect } from "react";
 import { FileText, MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, ArchiveRestore } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ interface NotesPageProps {
 }
 
 export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: NotesPageProps) {
+  const t = useTranslations("modules.notes.NotesPage");
   const confirmDialog = useConfirm();
   const param = (key: string): string | undefined => {
     const raw = viewParams[key];
@@ -236,8 +238,8 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
             href="/trash"
             className="flex items-center justify-center p-1.5 rounded"
             style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-muted)" }}
-            title="Kosz — przywróć usunięte"
-            aria-label="Kosz — przywróć usunięte notatki"
+            title={t("koszPrzywrocUsuniete")}
+            aria-label={t("koszPrzywrocUsunieteNotatki")}
           >
             <ArchiveRestore size={13} />
           </Link>

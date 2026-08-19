@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Boxes, CalendarClock } from "lucide-react";
 import { StatTile } from "@/components/ui/home";
 
@@ -49,6 +50,7 @@ export function ModuleSnapshotGrid({
   storageLowStock,
   storageExpiring,
 }: ModuleSnapshotGridProps) {
+  const t = useTranslations("modules.home.ModuleSnapshotGrid");
   const has = (slug: string) => permissions.includes(slug);
 
   const tiles: React.ReactNode[] = [];
@@ -71,7 +73,7 @@ export function ModuleSnapshotGrid({
       <StatTile
         key="tasks-today"
         value={todayTasks}
-        label="Zadania dziś"
+        label={t("zadaniaDzis")}
         color={todayTasks > 0 ? "var(--accent-green)" : "var(--text-muted)"}
         icon={<CheckSquare size={14} />}
         href="/tasks/today"
@@ -82,7 +84,7 @@ export function ModuleSnapshotGrid({
         <StatTile
           key="tasks-overdue"
           value={overdueTasks}
-          label="Zaległe"
+          label={t("zalegle")}
           color="var(--accent-red)"
           icon={<AlertCircle size={14} />}
           href="/tasks/overdue"
@@ -97,7 +99,7 @@ export function ModuleSnapshotGrid({
       <StatTile
         key="notes"
         value={pinnedNotes}
-        label="Przypięte notatki"
+        label={t("przypieteNotatki")}
         color={pinnedNotes > 0 ? "var(--accent-amber)" : "var(--text-muted)"}
         icon={<Pin size={14} />}
         href="/notes/all?pinned=1"
@@ -110,7 +112,7 @@ export function ModuleSnapshotGrid({
       <StatTile
         key="languages"
         value={languagesDue}
-        label="Słówka do powtórki"
+        label={t("slowkaDoPowtorki")}
         color={languagesDue > 0 ? "var(--accent-purple)" : "var(--text-muted)"}
         icon={<GraduationCap size={14} />}
         href="/languages"
@@ -137,7 +139,7 @@ export function ModuleSnapshotGrid({
       <StatTile
         key="pets"
         value={petCareDue}
-        label="Opieka dziś"
+        label={t("opiekaDzis")}
         color={petCareDue > 0 ? "var(--accent-orange)" : "var(--text-muted)"}
         icon={<PawPrint size={14} />}
         href={petCareDue > 0 ? "/pets/calendar" : "/pets"}
@@ -151,7 +153,7 @@ export function ModuleSnapshotGrid({
       <StatTile
         key="kitchen-today"
         value={todayMeals}
-        label="Posiłki dziś"
+        label={t("posilkiDzis")}
         color={todayMeals > 0 ? "var(--accent-orange)" : "var(--text-muted)"}
         icon={<ChefHat size={14} />}
         href="/kitchen/plan"
@@ -162,7 +164,7 @@ export function ModuleSnapshotGrid({
         <StatTile
           key="kitchen-expiring"
           value={expiringSoon}
-          label="Wygasające"
+          label={t("wygasajace")}
           color="var(--accent-red)"
           icon={<AlertCircle size={14} />}
           href="/kitchen/pantry"
@@ -178,7 +180,7 @@ export function ModuleSnapshotGrid({
         <StatTile
           key="flota-alerts"
           value={vehicleAlerts}
-          label="Przegląd / OC wkrótce"
+          label={t("przegladOcWkrotce")}
           color="var(--accent-red)"
           icon={<AlertCircle size={14} />}
           href="/flota"
@@ -205,7 +207,7 @@ export function ModuleSnapshotGrid({
         <StatTile
           key="storage-low"
           value={storageLowStock}
-          label="Magazyn: do uzupełnienia"
+          label={t("magazynDoUzupelnienia")}
           color="var(--accent-amber)"
           icon={<AlertCircle size={14} />}
           href="/magazynowanie"

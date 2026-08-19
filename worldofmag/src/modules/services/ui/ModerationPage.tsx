@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -13,6 +14,7 @@ import type { ModerationDisputeDTO } from "../lib/services";
 type Tab = "OPEN" | "RESOLVED" | "REJECTED";
 
 export function ModerationPage({ disputes: initial, viewParams = {} }: { disputes: ModerationDisputeDTO[]; viewParams?: RawParams }) {
+  const t = useTranslations("modules.services.ModerationPage");
   const [disputes, setDisputes] = useState(initial);
   // 043: zakładka statusu sporu w adresie (AC-8a).
   const viewSpec = useMemo(() => ({ tab: oneOf(["OPEN", "RESOLVED", "REJECTED"] as const, "OPEN") }), []);
@@ -41,9 +43,9 @@ export function ModerationPage({ disputes: initial, viewParams = {} }: { dispute
       state="ready"
       breadcrumb={
         <Link href="/services" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 4 }}>
-      <ChevronLeft size={14} /> Usługi
+      <ChevronLeft size={14} /> {t("uslugi")}
     </Link>
-      } icon={<ShieldAlert size={22} />} iconColor="var(--accent-red)" title="Moderacja sporów" href="/services/moderation" subtitle="Zgłoszenia problemów ze zleceniami marketplace"
+      } icon={<ShieldAlert size={22} />} iconColor="var(--accent-red)" title={t("moderacjaSporow")} href="/services/moderation" subtitle="Zgłoszenia problemów ze zleceniami marketplace"
     >
 
       <div style={{ display: "flex", gap: 6 }}>
@@ -76,8 +78,8 @@ export function ModerationPage({ disputes: initial, viewParams = {} }: { dispute
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                     <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notatka moderatora (opcjonalnie)" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-base)", color: "var(--text-primary)", fontSize: 13, outline: "none" }} />
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => resolve(d.id, "RESOLVED")} disabled={pending} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><Check size={14} /> Rozwiąż</button>
-                      <button onClick={() => resolve(d.id, "REJECTED")} disabled={pending} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--accent-red)", fontSize: 13, cursor: "pointer" }}><X size={14} /> Odrzuć</button>
+                      <button onClick={() => resolve(d.id, "RESOLVED")} disabled={pending} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><Check size={14} /> {t("rozwiaz")}</button>
+                      <button onClick={() => resolve(d.id, "REJECTED")} disabled={pending} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--accent-red)", fontSize: 13, cursor: "pointer" }}><X size={14} /> {t("odrzuc")}</button>
                       <button onClick={() => { setResolvingId(null); setNote(""); }} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }}>Anuluj</button>
                     </div>
                   </div>

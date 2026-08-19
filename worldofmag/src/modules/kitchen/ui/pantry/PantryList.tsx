@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -38,6 +39,7 @@ function formatExpiry(date: Date | null): { text: string; color: string } | null
 }
 
 export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListProps) {
+  const t = useTranslations("modules.kitchen.PantryList");
   // 043: szukajka w adresie (AC-8a). Zapis przez `replace` — inaczej każda wpisana litera
   // byłaby osobnym wpisem w historii i „wstecz" trzeba by naciskać kilkanaście razy.
   const viewSpec = useMemo(() => ({ q: text("") }), []);
@@ -74,10 +76,10 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
       <div className="flex flex-col items-center justify-center h-full px-6 py-16 text-center">
         <Package size={48} style={{ color: "var(--text-muted)" }} />
         <h2 className="mt-4 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          Spiżarnia jest pusta
+          {t("spizarniaJestPusta")}
         </h2>
         <p className="mt-2 max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-          Dodaj pierwszą pozycję, żeby zacząć śledzić swój zapas. Pozycje ze spiżarni będą automatycznie pomijane przy generowaniu listy zakupów.
+          {t("dodajPierwszaPozycjeZeby")}
         </p>
         <button
           type="button"
@@ -85,7 +87,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
           className="mt-6 inline-flex items-center gap-1.5 px-4 py-2 rounded text-sm"
           style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
-          <Plus size={16} /> Dodaj pozycję
+          <Plus size={16} /> {t("dodajPozycje")}
         </button>
         {editing ? <PantryEditSheet open onClose={() => setEditing(null)} item={null} /> : null}
       </div>
@@ -104,7 +106,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Szukaj w spiżarni…"
+            placeholder={t("szukajWSpizarni")}
             className="flex-1 bg-transparent border-none outline-none text-sm"
             style={{ color: "var(--text-primary)" }}
           />
@@ -228,7 +230,7 @@ export function PantryList({ items, expiringSoon, viewParams = {} }: PantryListP
                       </span>
                       {belowMin ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--kitchen-expiring)", color: "var(--on-accent)" }}>
-                          poniżej min
+                          {t("ponizejMin")}
                         </span>
                       ) : null}
                       {exp ? (

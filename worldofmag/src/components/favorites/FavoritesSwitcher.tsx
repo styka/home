@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
@@ -22,6 +23,7 @@ interface FavoritesSwitcherProps {
  * a nie skutek uboczny ulubionych (C-53).
  */
 export function FavoritesSwitcher({ favorites, open, onClose }: FavoritesSwitcherProps) {
+  const t = useTranslations("components.favorites.FavoritesSwitcher");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -110,7 +112,7 @@ export function FavoritesSwitcher({ favorites, open, onClose }: FavoritesSwitche
             className="text-xs"
             style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >
-            Zarządzaj ulubionymi w ustawieniach
+            {t("zarzadzajUlubionymiWUstawieniach")}
           </button>
         </div>
       </div>

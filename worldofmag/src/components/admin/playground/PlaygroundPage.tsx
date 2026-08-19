@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, X, Palette } from "lucide-react";
@@ -33,6 +34,7 @@ interface SkinOption {
 }
 
 export function PlaygroundPage({ skins }: { skins: SkinOption[] }) {
+  const t = useTranslations("components.admin.playground.PlaygroundPage");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -121,7 +123,7 @@ export function PlaygroundPage({ skins }: { skins: SkinOption[] }) {
             <div style={{ display: "flex", justifyContent: "flex-end", padding: 8 }}>
               <button
                 onClick={() => setNavOpen(false)}
-                aria-label="Zamknij nawigację"
+                aria-label={t("zamknijNawigacje")}
                 style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "var(--text-secondary)" }}
               >
                 <X size={18} />
@@ -138,7 +140,7 @@ export function PlaygroundPage({ skins }: { skins: SkinOption[] }) {
           <button
             className="md:hidden"
             onClick={() => setNavOpen(true)}
-            aria-label="Pokaż listę komponentów"
+            aria-label={t("pokazListeKomponentow")}
             style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: "var(--text-secondary)" }}
           >
             <Menu size={18} />
@@ -177,7 +179,7 @@ export function PlaygroundPage({ skins }: { skins: SkinOption[] }) {
                 minHeight: 36,
               }}
             >
-              <option value="">Bieżąca skórka</option>
+              <option value="">{t("biezacaSkorka")}</option>
               {skins.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -206,11 +208,12 @@ function PlaygroundBody({
   onValues: (v: ControlValues) => void;
   previewStyle?: React.CSSProperties;
 }) {
+  const t = useTranslations("components.admin.playground.PlaygroundPage");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 900 }}>
       {entry.controls && entry.controls.length > 0 && (
         <section>
-          <SectionLabel>Właściwości</SectionLabel>
+          <SectionLabel>{t("wlasciwosci")}</SectionLabel>
           <PlaygroundControls controls={entry.controls} values={values} onChange={onValues} />
         </section>
       )}
@@ -286,6 +289,7 @@ function NavContent({
   query: string;
   onQuery: (q: string) => void;
 }) {
+  const t = useTranslations("components.admin.playground.PlaygroundPage");
   return (
     <>
       <div style={{ padding: "10px 12px", position: "sticky", top: 0, background: "var(--bg-surface)", zIndex: 1 }}>

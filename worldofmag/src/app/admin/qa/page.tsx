@@ -5,10 +5,12 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getEpicTreeForAdmin } from "@/modules/qa/contract";
 import { QaAdminTree } from "@/components/admin/qa/QaAdminTree";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function QaAdminPage() {
+  const t = await getTranslations("app.admin.qa.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -36,11 +38,11 @@ export default async function QaAdminPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <FlaskConical size={20} style={{ color: "var(--accent-red)" }} />
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            QA — zarządzanie scenariuszami
+            {t("qaZarzadzanieScenariuszami")}
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "0 0 24px" }}>
-          Hierarchia: <strong>Moduł → Epic → User Story → Scenariusz</strong>. Każdy poziom edytujesz osobno.
+          Hierarchia: <strong>{t("modulEpicUserStory")}</strong>{t("kazdyPoziomEdytujeszOsobno")}
         </p>
 
         <QaAdminTree epics={epics} />

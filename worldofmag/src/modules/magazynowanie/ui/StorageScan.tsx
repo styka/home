@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Loader2, Plus, Trash2, Save } from "lucide-react";
@@ -23,6 +24,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function StorageScan() {
+  const t = useTranslations("modules.magazynowanie.StorageScan");
   const router = useRouter();
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -127,11 +129,10 @@ export function StorageScan() {
       </div>
 
       <h1 className="text-lg font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-        Inwentaryzacja ze zdjęcia
+        {t("inwentaryzacjaZeZdjecia")}
       </h1>
       <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-        Zrób lub wybierz zdjęcie półki, regału, szafy czy garażu. AI rozpozna przedmioty, a Ty
-        poprawisz listę przed zapisem.
+        {t("zrobLubWybierzZdjecie")}
       </p>
 
       <input
@@ -163,7 +164,7 @@ export function StorageScan() {
                 type="text"
                 value={warehouse}
                 onChange={(e) => setWarehouse(e.target.value)}
-                placeholder="garaż, magazyn główny…"
+                placeholder={t("garazMagazynGlowny")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -174,7 +175,7 @@ export function StorageScan() {
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="regał A3, strych…"
+                placeholder={t("regalA3Strych")}
                 className="w-full px-2 py-1.5 rounded border text-sm"
                 style={inputStyle}
               />
@@ -206,7 +207,7 @@ export function StorageScan() {
                   step="any"
                   value={r.quantity}
                   onChange={(e) => updateRow(idx, { quantity: e.target.value })}
-                  placeholder="ilość"
+                  placeholder={t("ilosc")}
                   className="w-16 px-2 py-1 rounded border text-sm text-right tabular-nums"
                   style={inputStyle}
                 />
@@ -221,7 +222,7 @@ export function StorageScan() {
                 <button
                   type="button"
                   onClick={() => removeRow(idx)}
-                  aria-label="Usuń"
+                  aria-label={t("usun")}
                   className="p-1.5"
                   style={{ color: "var(--accent-red)" }}
                 >

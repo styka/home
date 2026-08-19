@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function EditScenarioForm({ mode, storySlug, storyTitle, epicTitle, initial }: Props) {
+  const t = useTranslations("components.admin.qa.EditScenarioForm");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -97,7 +99,7 @@ export function EditScenarioForm({ mode, storySlug, storyTitle, epicTitle, initi
         {error && <div style={errBox}>{error}</div>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Field label="Tytuł">
+          <Field label={t("tytul")}>
             <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} autoFocus />
           </Field>
 
@@ -112,20 +114,20 @@ export function EditScenarioForm({ mode, storySlug, storyTitle, epicTitle, initi
                 {PRIORITIES.map((p) => <option key={p} value={p}>{getPriorityLabel(p)}</option>)}
               </select>
             </Field>
-            <Field label="Kolejność">
+            <Field label={t("kolejnosc")}>
               <input type="number" value={order} onChange={(e) => setOrder(parseInt(e.target.value) || 0)} style={{ ...inputStyle, maxWidth: 90 }} />
             </Field>
           </div>
 
           {mode === "create" && (
-            <Field label="Slug (opcjonalnie — auto z tytułu)">
+            <Field label={t("slugOpcjonalnieAutoZ")}>
               <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="scenario-..." style={inputStyle} />
             </Field>
           )}
 
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <label style={labelStyle}>Treść (Markdown)</label>
+              <label style={labelStyle}>{t("trescMarkdown")}</label>
               <button
                 onClick={togglePreview}
                 style={{
@@ -133,7 +135,7 @@ export function EditScenarioForm({ mode, storySlug, storyTitle, epicTitle, initi
                   border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer",
                 }}
               >
-                {showPreview ? <><Code size={11} /> Edytuj</> : <><Eye size={11} /> Podgląd</>}
+                {showPreview ? <><Code size={11} /> Edytuj</> : <><Eye size={11} /> {t("podglad")}</>}
               </button>
             </div>
             {showPreview ? (

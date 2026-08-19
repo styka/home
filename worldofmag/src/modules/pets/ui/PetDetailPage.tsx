@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -47,6 +48,7 @@ const FEATURE_ORDER: PetFeatureKey[] = [
 ];
 
 export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRelations; teams: Array<{ id: string; name: string }>; viewParams?: RawParams }) {
+  const t = useTranslations("modules.pets.PetDetailPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -130,7 +132,7 @@ export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRel
       state="ready"
       breadcrumb={
         <Link href="/pets" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-          <ChevronLeft size={15} /> Zwierzęta
+          <ChevronLeft size={15} /> {t("zwierzeta")}
         </Link>
       }
       icon={<PawPrint size={22} />}

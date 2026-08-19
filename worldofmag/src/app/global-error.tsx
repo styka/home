@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import "./globals.css";
 import { reportClientError } from "@/platform/observability/report";
@@ -16,6 +17,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("app.global-error");
   useEffect(() => {
     reportClientError(error, { source: "global-error-boundary" });
   }, [error]);
@@ -30,9 +32,9 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: 420, textAlign: "center", display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>Aplikacja napotkała błąd</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>{t("aplikacjaNapotkalaBlad")}</div>
           <div style={{ fontSize: 14, color: "var(--text-secondary, #b0b0b0)", lineHeight: 1.5 }}>
-            Przepraszamy, coś poszło nie tak. Spróbuj ponownie lub odśwież stronę.
+            {t("przepraszamyCosPoszloNie")}
           </div>
           <button
             type="button"
@@ -42,7 +44,7 @@ export default function GlobalError({
               borderRadius: 6, color: "#fff", fontSize: 14, cursor: "pointer",
             }}
           >
-            Spróbuj ponownie
+            {t("sprobujPonownie")}
           </button>
           {error.digest ? <div style={{ fontSize: 11, color: "var(--text-muted, #808080)" }}>Kod błędu: {error.digest}</div> : null}
         </div>

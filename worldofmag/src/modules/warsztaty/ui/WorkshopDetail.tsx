@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -84,11 +85,12 @@ export function WorkshopDetail({ workshop, mode, viewParams = {} }: { workshop: 
 // ─── Usuwanie warsztatu ───────────────────────────────────────────────────────
 
 function DeleteWorkshopButton({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [confirm, setConfirm] = useState(false);
   const [pending, startTransition] = useTransition();
   if (!confirm) {
     return (
-      <button type="button" onClick={() => setConfirm(true)} className="p-2 rounded" style={{ color: "var(--text-muted)" }} title="Usuń warsztat">
+      <button type="button" onClick={() => setConfirm(true)} className="p-2 rounded" style={{ color: "var(--text-muted)" }} title={t("usunWarsztat")}>
         <Trash2 size={16} />
       </button>
     );
@@ -102,7 +104,7 @@ function DeleteWorkshopButton({ id, onDeleted }: { id: string; onDeleted: () => 
         className="px-2 py-1 rounded text-xs disabled:opacity-50"
         style={{ backgroundColor: "var(--accent-red)", color: "var(--on-accent)" }}
       >
-        Usuń
+        {t("usun")}
       </button>
       <button type="button" onClick={() => setConfirm(false)} className="px-2 py-1 rounded text-xs" style={{ color: "var(--text-muted)" }}>
         Anuluj
@@ -120,6 +122,7 @@ const EMPTY_ITEM = {
 type ItemForm = typeof EMPTY_ITEM;
 
 function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: boolean }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -142,7 +145,7 @@ function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: bo
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
           style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border)" }}
         >
-          <Plus size={15} /> Dodaj pozycję
+          <Plus size={15} /> {t("dodajPozycje")}
         </button>
       </div>
 
@@ -152,7 +155,7 @@ function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: bo
 
       {workshop.items.length === 0 && !adding ? (
         <p className="text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>
-          Brak wyposażenia. Dodaj ręcznie lub skorzystaj z zakładki „Podpowiedzi”.
+          {t("brakWyposazeniaDodajRecznie")}
         </p>
       ) : null}
 
@@ -187,6 +190,7 @@ const CONDITION_COLOR: Record<string, string> = {
 };
 
 function EquipmentRow({ item, pro, onEdit }: { item: WorkshopDetailType["items"][number]; pro: boolean; onEdit: () => void }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [pending, startTransition] = useTransition();
   const low = item.minQuantity != null && (item.quantity ?? 0) < item.minQuantity;
   const dueSoon = item.nextServiceAt != null;
@@ -237,7 +241,7 @@ function EquipmentRow({ item, pro, onEdit }: { item: WorkshopDetailType["items"]
         onClick={() => startTransition(async () => { await deleteWorkshopItem(item.id); })}
         className="p-1.5 rounded disabled:opacity-50"
         style={{ color: "var(--text-muted)" }}
-        title="Usuń"
+        title={t("usun")}
       >
         <Trash2 size={14} />
       </button>
@@ -253,6 +257,7 @@ function ItemEditor({
   item?: WorkshopDetailType["items"][number];
   onClose: () => void;
 }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [pending, startTransition] = useTransition();
   const [f, setF] = useState<ItemForm>(() =>
     item
@@ -311,10 +316,10 @@ function ItemEditor({
         </select>
         <input value={f.category} onChange={(e) => set("category", e.target.value)} placeholder="Kategoria" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
         <input value={f.brand} onChange={(e) => set("brand", e.target.value)} placeholder="Marka / model" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
-        <input value={f.quantity} onChange={(e) => set("quantity", e.target.value)} placeholder="Ilość" inputMode="decimal" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
+        <input value={f.quantity} onChange={(e) => set("quantity", e.target.value)} placeholder={t("ilosc")} inputMode="decimal" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
         <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Jednostka (szt, l, m)" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
         <input value={f.minQuantity} onChange={(e) => set("minQuantity", e.target.value)} placeholder="Stan min. (low-stock)" inputMode="decimal" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
-        <input type="date" value={f.nextServiceAt} onChange={(e) => set("nextServiceAt", e.target.value)} title="Następny przegląd" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
+        <input type="date" value={f.nextServiceAt} onChange={(e) => set("nextServiceAt", e.target.value)} title={t("nastepnyPrzeglad")} className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
         {pro ? (
           <>
             <input value={f.station} onChange={(e) => set("station", e.target.value)} placeholder="Stanowisko / miejsce" className="px-2.5 py-1.5 rounded text-sm border outline-none" style={inputStyle} />
@@ -337,6 +342,7 @@ function ItemEditor({
 // ─── Zakładka: Podpowiedzi ────────────────────────────────────────────────────
 
 function SuggestionsTab({ workshop }: { workshop: WorkshopDetailType }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const suggestions = getSuggestions(workshop.type);
@@ -364,7 +370,7 @@ function SuggestionsTab({ workshop }: { workshop: WorkshopDetailType }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-        Sprzęt, który warto mieć w warsztacie typu <strong>{getWorkshopType(workshop.type).label}</strong>. Zaznacz braki i dodaj je do wyposażenia jednym kliknięciem.
+        {t("sprzetKtoryWartoMiec")} <strong>{getWorkshopType(workshop.type).label}</strong>{t("zaznaczBrakiIDodaj")}
       </p>
 
       {TIER_ORDER.map((tier) => {
@@ -437,6 +443,7 @@ const PROJECT_STATUS_LABELS: Record<string, string> = { planned: "Planowany", ac
 const PROJECT_STATUS_COLOR: Record<string, string> = { planned: "var(--text-muted)", active: "var(--accent-blue)", done: "var(--accent-green)" };
 
 function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
+  const t = useTranslations("modules.warsztaty.WorkshopDetail");
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
@@ -463,7 +470,7 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
       </div>
 
       {workshop.projects.length === 0 ? (
-        <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>Brak projektów. Dodaj zlecenie realizowane w tym warsztacie.</p>
+        <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>{t("brakProjektowDodajZlecenie")}</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {workshop.projects.map((p) => (
@@ -482,7 +489,7 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
               >
                 {Object.entries(PROJECT_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <button type="button" onClick={() => startTransition(async () => { await deleteWorkshopProject(p.id); })} className="p-1.5 rounded" style={{ color: "var(--text-muted)" }} title="Usuń">
+              <button type="button" onClick={() => startTransition(async () => { await deleteWorkshopProject(p.id); })} className="p-1.5 rounded" style={{ color: "var(--text-muted)" }} title={t("usun")}>
                 <Trash2 size={14} />
               </button>
             </div>

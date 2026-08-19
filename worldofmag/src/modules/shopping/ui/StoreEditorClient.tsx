@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
 import { StoreWizard } from "./StoreWizard";
@@ -11,6 +12,7 @@ interface StoreEditorClientProps {
 }
 
 export function StoreEditorClient({ store }: StoreEditorClientProps) {
+  const t = useTranslations("modules.shopping.StoreEditorClient");
   const [showWizard, setShowWizard] = useState(store.nodes.length === 0);
 
   return (
@@ -40,7 +42,7 @@ export function StoreEditorClient({ store }: StoreEditorClientProps) {
               cursor: "pointer",
             }}
           >
-            🔄 Przebuduj mapę
+            {t("przebudujMape")}
           </button>
         )}
       </div>

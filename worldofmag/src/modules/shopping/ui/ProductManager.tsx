@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useId } from "react";
 import { Pencil, Trash2, Plus, Check, X, Copy, Loader2 } from "lucide-react";
 import type { Product } from "@/types";
@@ -21,6 +22,7 @@ interface EditState {
 }
 
 export function ProductManager({ products, userId, categoryNames }: ProductManagerProps) {
+  const t = useTranslations("modules.shopping.ProductManager");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditState | null>(null);
   const [adding, setAdding] = useState(false);
@@ -202,6 +204,7 @@ interface SectionProps {
 }
 
 function Section({ title, subtitle, products, editing, editable, unitDatalistId, categoryNames, onEdit, onSave, onCancel, onDelete, onChange, onCopy, alreadyCopied }: SectionProps) {
+  const t = useTranslations("modules.shopping.ProductManager");
   return (
     <div className="mb-8">
       <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
@@ -212,7 +215,7 @@ function Section({ title, subtitle, products, editing, editable, unitDatalistId,
       )}
 
       {products.length === 0 ? (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Brak produktów.</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("brakProduktow")}</p>
       ) : (
         <div style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
           {products.map((p, i) => {

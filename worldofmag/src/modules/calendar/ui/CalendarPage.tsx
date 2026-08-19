@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useMemo, useCallback, useTransition } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewParams = {} }: Props) {
+  const t = useTranslations("modules.calendar.CalendarPage");
   const [year, setYear] = useState(initialYear);
   const [month0, setMonth0] = useState(initialMonth0);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
@@ -76,11 +78,11 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
       subtitle="Terminy ze wszystkich modułów w jednym miejscu"
       headerAction={
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={() => go(-1)} style={navBtn} aria-label="Poprzedni miesiąc"><ChevronLeft size={16} /></button>
+          <button onClick={() => go(-1)} style={navBtn} aria-label={t("poprzedniMiesiac")}><ChevronLeft size={16} /></button>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", minWidth: 130, textAlign: "center" }}>
             {MONTHS[month0]} {year}
           </span>
-          <button onClick={() => go(1)} style={navBtn} aria-label="Następny miesiąc"><ChevronRight size={16} /></button>
+          <button onClick={() => go(1)} style={navBtn} aria-label={t("nastepnyMiesiac")}><ChevronRight size={16} /></button>
         </div>
       }
     >
@@ -106,7 +108,7 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
           })}
           {filter && (
             <button onClick={() => setFilter(null)} style={{ fontSize: 11, color: "var(--accent-blue)", background: "none", border: "none", cursor: "pointer" }}>
-              Pokaż wszystkie
+              {t("pokazWszystkie")}
             </button>
           )}
         </div>

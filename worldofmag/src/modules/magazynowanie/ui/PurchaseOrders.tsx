@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Plus, ShoppingBag, Sparkles, Loader2, Copy, Mail, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import {
@@ -30,6 +31,7 @@ export function PurchaseOrders({
   suppliers: StorageSupplier[];
   lowStock: LowItem[];
 }) {
+  const t = useTranslations("modules.magazynowanie.PurchaseOrders");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [creating, setCreating] = useState(false);
@@ -39,7 +41,7 @@ export function PurchaseOrders({
     <div className="px-4 md:px-6 py-4 max-w-2xl mx-auto flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          <ShoppingBag size={20} style={{ color: "var(--accent-blue)" }} /> Zamówienia
+          <ShoppingBag size={20} style={{ color: "var(--accent-blue)" }} /> {t("zamowienia")}
         </h2>
         <button type="button" onClick={() => setCreating(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>
           <Plus size={16} /> Nowe
@@ -47,7 +49,7 @@ export function PurchaseOrders({
       </div>
 
       {orders.length === 0 ? (
-        <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>Brak zamówień. Utwórz pierwsze — możesz zasiać je brakami magazynowymi.</p>
+        <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>{t("brakZamowienUtworzPierwsze")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {orders.map((o) => (
@@ -74,6 +76,7 @@ function OrderRow({
   onToggle: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const t = useTranslations("modules.magazynowanie.PurchaseOrders");
   const confirmDialog = useConfirm();
   const [draft, setDraft] = useState(order.draftText ?? "");
   const [drafting, setDrafting] = useState(false);
@@ -158,7 +161,7 @@ function OrderRow({
               {drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Redaguj AI
             </button>
             <button type="button" onClick={remove} disabled={pending} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs" style={{ color: "var(--accent-red)" }}>
-              <Trash2 size={12} /> Usuń
+              <Trash2 size={12} /> {t("usun")}
             </button>
           </div>
 
@@ -171,7 +174,7 @@ function OrderRow({
                 </button>
                 {mailto ? (
                   <a href={mailto} className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
-                    <Mail size={12} /> Wyślij mailem
+                    <Mail size={12} /> {t("wyslijMailem")}
                   </a>
                 ) : null}
                 {aiUsage && <AiCostBadge usage={aiUsage} />}
@@ -195,6 +198,7 @@ function OrderCreator({
   onClose: () => void;
   onToast: (m: string, t: "success" | "error") => void;
 }) {
+  const t = useTranslations("modules.magazynowanie.PurchaseOrders");
   const [supplierId, setSupplierId] = useState("");
   const [lines, setLines] = useState<Array<{ name: string; quantity: string; unit: string }>>([{ name: "", quantity: "1", unit: "" }]);
   const [pending, startTransition] = useTransition();
@@ -231,11 +235,11 @@ function OrderCreator({
   return (
     <Modal
       onClose={onClose}
-      title="Nowe zamówienie"
+      title={t("noweZamowienie")}
       footer={
         <>
           <button onClick={onClose} className="px-3 py-1.5 rounded text-sm" style={{ color: "var(--text-secondary)" }}>Anuluj</button>
-          <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>Utwórz</button>
+          <button onClick={save} disabled={pending} className="px-3 py-1.5 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}>{t("utworz")}</button>
         </>
       }
     >
@@ -257,7 +261,7 @@ function OrderCreator({
           </div>
         ))}
         <button type="button" onClick={() => setLines((ls) => [...ls, { name: "", quantity: "1", unit: "" }])} className="self-start inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent-blue)" }}>
-          <Plus size={13} /> Dodaj pozycję
+          <Plus size={13} /> {t("dodajPozycje")}
         </button>
       </div>
     </Modal>

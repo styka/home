@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { Check, Volume2, KeyRound, Loader2 } from "lucide-react";
 import { applySpeechProvider, type SpeechConfigDTO } from "@/actions/llmConfig";
@@ -40,6 +41,7 @@ export function SpeechAssignmentRow({
   description: string;
   config: SpeechConfigDTO;
 }) {
+  const t = useTranslations("components.admin.SpeechAssignmentRow");
   const [isPending, startTransition] = useTransition();
   const [catalogId, setCatalogId] = useState(config.currentCatalogId ?? config.catalog[0]?.id ?? "");
   const entry = useMemo(() => config.catalog.find((c) => c.id === catalogId), [config.catalog, catalogId]);
@@ -154,7 +156,7 @@ export function SpeechAssignmentRow({
           </select>
         </div>
         <div>
-          <label style={labelStyle}>Domyślny głos</label>
+          <label style={labelStyle}>{t("domyslnyGlos")}</label>
           <select style={inputStyle} value={effectiveVoice} onChange={(e) => setVoiceId(e.target.value)}>
             {entry?.voices.map((v) => (
               <option key={v.id} value={v.id}>{v.label} — {v.description}</option>
@@ -209,7 +211,7 @@ export function SpeechAssignmentRow({
           Azure) — dla pozostałych bierzemy go z katalogu i nie zawracamy nim głowy. */}
       {entry?.kind === "azure_tts" && (
         <div style={{ marginBottom: 10 }}>
-          <label style={labelStyle}>Adres bazowy (podmień region)</label>
+          <label style={labelStyle}>{t("adresBazowyPodmienRegion")}</label>
           <input style={inputStyle} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={entry.baseUrl} />
         </div>
       )}
@@ -219,7 +221,7 @@ export function SpeechAssignmentRow({
         <div style={{ marginBottom: 10 }}>
           <label style={labelStyle}>
             <KeyRound size={11} style={{ display: "inline", verticalAlign: "-1px", marginRight: 4 }} />
-            Klucz API — bez niego lektor nie zadziała
+            {t("kluczApiBezNiego")}
           </label>
           <input
             style={inputStyle}

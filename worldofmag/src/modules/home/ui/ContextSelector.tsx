@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ShoppingCart, CheckSquare, FileText } from "lucide-react";
 
 const MODULES = [
@@ -14,6 +15,7 @@ interface ContextSelectorProps {
 }
 
 export function ContextSelector({ selected, onChange }: ContextSelectorProps) {
+  const t = useTranslations("modules.home.ContextSelector");
   const allSelected = selected.length === MODULES.length;
 
   function toggle(id: string) {

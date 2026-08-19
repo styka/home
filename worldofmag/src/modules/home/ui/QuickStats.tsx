@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ShoppingCart, CheckSquare, AlertCircle, Lock } from "lucide-react";
 
@@ -75,6 +76,7 @@ function StatPill({ href, icon, count, label, accentColor, dimColor, disabled }:
 }
 
 export function QuickStats({ pendingItems, todayTasks, overdueTasks, locked }: QuickStatsProps) {
+  const t = useTranslations("modules.home.QuickStats");
   return (
     <div style={{ display: "flex", gap: 10 }}>
       <StatPill
@@ -89,7 +91,7 @@ export function QuickStats({ pendingItems, todayTasks, overdueTasks, locked }: Q
         href="/tasks"
         icon={<CheckSquare size={18} />}
         count={todayTasks}
-        label="zadań dziś"
+        label={t("zadanDzis")}
         accentColor="var(--accent-green)"
         dimColor="var(--text-secondary)"
         disabled={locked}
@@ -98,7 +100,7 @@ export function QuickStats({ pendingItems, todayTasks, overdueTasks, locked }: Q
         href="/tasks"
         icon={<AlertCircle size={18} />}
         count={overdueTasks}
-        label="zaległych"
+        label={t("zaleglych")}
         accentColor="var(--accent-red)"
         dimColor="var(--text-secondary)"
         disabled={locked}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Plus, Trash2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +25,7 @@ export function NewsSettings({
   defaultLength: SummaryLength;
   onChanged: () => void;
 }) {
+  const t = useTranslations("modules.news.NewsSettings");
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
@@ -63,7 +65,7 @@ export function NewsSettings({
     <div className="space-y-6">
       <div>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
-          <Settings2 size={18} /> Źródła wiadomości
+          <Settings2 size={18} /> {t("zrodlaWiadomosci")}
         </h2>
         <div className="space-y-2">
           {sources.map((s) => (
@@ -96,7 +98,7 @@ export function NewsSettings({
               <button
                 onClick={() => run(() => deleteSource(s.id), "Usunięto źródło")}
                 className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
-                title="Usuń źródło"
+                title={t("usunZrodlo")}
               >
                 <Trash2 size={15} />
               </button>
@@ -109,7 +111,7 @@ export function NewsSettings({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nazwa źródła (np. TVN24)"
+              placeholder={t("nazwaZrodlaNpTvn24")}
               className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
             />
             <input
@@ -142,14 +144,14 @@ export function NewsSettings({
           </div>
         ) : (
           <Button variant="secondary" size="sm" className="mt-3" onClick={() => setShowAdd(true)}>
-            <Plus size={14} /> Dodaj źródło
+            <Plus size={14} /> {t("dodajZrodlo")}
           </Button>
         )}
       </div>
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
-          Domyślna długość streszczeń
+          {t("domyslnaDlugoscStreszczen")}
         </h2>
         <div className="flex gap-2">
           {SUMMARY_LENGTHS.map((l) => (
@@ -186,6 +188,7 @@ function SourceDescriptorInput({
   value: string;
   onSave: (next: string) => void;
 }) {
+  const t = useTranslations("modules.news.NewsSettings");
   const [draft, setDraft] = useState(value);
 
   // Wartość z serwera wygrywa, gdy zmieni się poza tym polem (np. po odświeżeniu listy).
@@ -209,8 +212,8 @@ function SourceDescriptorInput({
         if (e.key === "Escape") setDraft(value);
       }}
       maxLength={60}
-      placeholder="Opis źródła"
-      aria-label="Opis źródła"
+      placeholder={t("opisZrodla")}
+      aria-label={t("opisZrodla")}
       className="w-32 min-w-0 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-primary)]"
     />
   );

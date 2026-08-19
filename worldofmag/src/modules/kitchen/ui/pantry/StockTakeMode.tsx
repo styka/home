@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
@@ -20,6 +21,7 @@ const LOCATION_ICON: Record<string, string> = {
 };
 
 export function StockTakeMode({ items }: StockTakeModeProps) {
+  const t = useTranslations("modules.kitchen.StockTakeMode");
   const router = useRouter();
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -82,7 +84,7 @@ export function StockTakeMode({ items }: StockTakeModeProps) {
         Inwentaryzacja
       </h1>
       <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-        Wpisz aktualną ilość każdego produktu. Tab/Enter przechodzi do kolejnego pola.
+        {t("wpiszAktualnaIloscKazdego")}
       </p>
 
       <div className="flex flex-col gap-4">

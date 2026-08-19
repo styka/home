@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, ArrowLeft, Plus, Loader2, Trash2, ArrowUpCircle, ArrowDownCircle, Pencil, Upload } from "lucide-react";
@@ -13,6 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 
 export function ElementDetailPage({ element }: { element: ElementWithEntries }) {
+  const t = useTranslations("modules.portfel.ElementDetailPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -87,7 +89,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
       width="narrow"
       state="ready"
       breadcrumb={
-        <button onClick={() => router.push("/portfel")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title="Wróć do portfela">
+        <button onClick={() => router.push("/portfel")} style={{ ...iconBtn, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12 }} title={t("wrocDoPortfela")}>
           <ArrowLeft size={14} /> Portfel
         </button>
       }
@@ -98,7 +100,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
       headerAction={
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 20, fontWeight: 700, color: isDebt ? "var(--accent-red)" : "var(--text-primary)" }}>{isDebt ? "−" : ""}{formatMoney(element.balance, element.currency)}</span>
-          <button onClick={remove} style={{ ...iconBtn, color: "var(--accent-red)" }} title="Usuń element"><Trash2 size={16} /></button>
+          <button onClick={remove} style={{ ...iconBtn, color: "var(--accent-red)" }} title={t("usunElement")}><Trash2 size={16} /></button>
         </div>
       }
     >
@@ -159,7 +161,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
         <Modal
           open
           onClose={() => setPreview(null)}
-          title="Podgląd importu CSV"
+          title={t("podgladImportuCsv")}
           footer={
             <>
               <button onClick={() => setPreview(null)} style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Anuluj</button>

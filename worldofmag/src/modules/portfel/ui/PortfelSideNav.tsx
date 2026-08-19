@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -7,6 +8,7 @@ import { Wallet, Target, BarChart3, Settings } from "lucide-react";
 import { getWalletElements } from "../actions/portfel";
 
 export function PortfelSideNav() {
+  const t = useTranslations("modules.portfel.PortfelSideNav");
   const pathname = usePathname();
   const [elements, setElements] = useState<{ id: string; name: string }[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function PortfelSideNav() {
         className="flex items-center gap-2 mx-2 rounded text-xs"
         style={itemStyle(pathname === "/portfel/budzety", "__budzety")}
       >
-        <Target size={12} /> Budżety i cele
+        <Target size={12} /> {t("budzetyICele")}
       </Link>
       <Link
         href="/portfel/raporty"
@@ -43,7 +45,7 @@ export function PortfelSideNav() {
         className="flex items-center gap-2 mx-2 rounded text-xs"
         style={itemStyle(pathname === "/portfel/raporty", "__raporty")}
       >
-        <BarChart3 size={12} /> Raporty miesięczne
+        <BarChart3 size={12} /> {t("raportyMiesieczne")}
       </Link>
       <Link
         href="/portfel/ustawienia"

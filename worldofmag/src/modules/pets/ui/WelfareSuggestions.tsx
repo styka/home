@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Sparkles, Info, AlertTriangle, ShieldAlert, Loader2 } from "lucide-react";
 import { runJob } from "@/platform/jobs/client";
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
+  const t = useTranslations("modules.pets.WelfareSuggestions");
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
@@ -101,7 +103,7 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
         <AiContentPending
           busy={loadingTips}
           onGenerate={() => load(true)}
-          title="Porady AI powstaną po kliknięciu"
+          title={t("poradyAiPowstanaPo")}
           hint="Ta sekcja jest ustawiona na „na żądanie”, więc wejście na stronę nic nie kosztuje."
           actionLabel="Poproś o porady"
           sectionKind="pets.insights"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { X, Loader2, CameraOff } from "lucide-react";
 
@@ -16,6 +17,7 @@ interface BarcodeScannerProps {
  * Bibliotekę ładujemy dynamicznie (tylko po stronie klienta, mniejszy bundle).
  */
 export function BarcodeScanner({ onDetected, onClose, hint }: BarcodeScannerProps) {
+  const t = useTranslations("modules.magazynowanie.BarcodeScanner");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
@@ -71,7 +73,7 @@ export function BarcodeScanner({ onDetected, onClose, hint }: BarcodeScannerProp
         {status === "loading" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ color: "var(--on-accent)" }}>
             <Loader2 size={28} className="animate-spin" />
-            <span className="text-sm">Uruchamiam kamerę…</span>
+            <span className="text-sm">{t("uruchamiamKamere")}</span>
           </div>
         ) : null}
 

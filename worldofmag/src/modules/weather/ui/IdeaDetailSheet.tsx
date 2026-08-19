@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { ArrowLeft, Loader2, RefreshCw, Star, ListPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +42,7 @@ export function IdeaDetailSheet({
   onSave: () => void;
   onAddToTasks: () => void;
 }) {
+  const t = useTranslations("modules.weather.IdeaDetailSheet");
   // Esc zamyka — spójnie z resztą aplikacji (skróty klawiszowe, C-31).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -70,7 +72,7 @@ export function IdeaDetailSheet({
             onClick={onClose}
             className="mb-1 flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] md:hidden"
           >
-            <ArrowLeft size={13} /> Wróć do listy
+            <ArrowLeft size={13} /> {t("wrocDoListy")}
           </button>
           <h3 className="truncate text-sm font-semibold text-[var(--text-primary)]">{idea.title}</h3>
           {idea.summary && (
@@ -79,7 +81,7 @@ export function IdeaDetailSheet({
         </div>
         <button
           onClick={onClose}
-          aria-label="Zamknij szczegóły"
+          aria-label={t("zamknijSzczegoly")}
           className="hidden shrink-0 rounded p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:block"
         >
           <X size={15} />
@@ -89,7 +91,7 @@ export function IdeaDetailSheet({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {loading ? (
           <p className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-            <Loader2 size={14} className="animate-spin" /> Układam plan…
+            <Loader2 size={14} className="animate-spin" /> {t("ukladamPlan")}
           </p>
         ) : detail ? (
           <>
@@ -106,7 +108,7 @@ export function IdeaDetailSheet({
           </>
         ) : (
           <p className="text-sm text-[var(--text-muted)]">
-            Nie udało się przygotować planu. Spróbuj wygenerować go ponownie.
+            {t("nieUdaloSiePrzygotowac")}
           </p>
         )}
       </div>
@@ -128,7 +130,7 @@ export function IdeaDetailSheet({
         </Button>
         {canAddToTasks && (
           <Button size="sm" variant="ghost" className="py-3" onClick={onAddToTasks} disabled={!idea.id}>
-            <ListPlus size={14} /> Dodaj do zadań
+            <ListPlus size={14} /> {t("dodajDoZadan")}
           </Button>
         )}
         <AiCostBadge usage={usage} rate={usdPlnRate} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect } from "react";
 import { ArrowUpDown } from "lucide-react";
 import type { SortMode, StoreWithGraph } from "@/types";
@@ -17,6 +18,7 @@ function sortLabel(mode: SortMode): string {
 }
 
 export function SortControl({ sortMode, stores, onChange }: SortControlProps) {
+  const t = useTranslations("modules.shopping.SortControl");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -82,21 +84,21 @@ export function SortControl({ sortMode, stores, onChange }: SortControlProps) {
           ) : (
             <div className="px-3 py-2">
               <p className="text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>
-                Brak map sklepów
+                {t("brakMapSklepow")}
               </p>
               <a
                 href="/shopping/stores"
                 className="block text-xs px-2 py-1 rounded text-center"
                 style={{ backgroundColor: "var(--bg-hover)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
               >
-                + Dodaj mapę sklepu
+                {t("dodajMapeSklepu")}
               </a>
               <a
                 href="/shopping/stores/guide"
                 className="block text-xs mt-1 text-center"
                 style={{ color: "var(--text-muted)" }}
               >
-                Jak to działa? →
+                {t("jakToDziala")}
               </a>
             </div>
           )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition, type ComponentType } from "react";
@@ -51,6 +52,7 @@ function moduleSideNav(id: string): ComponentType | null {
 
 /** Sub-nawigacja danego modułu (renderowana, gdy moduł jest aktywny). */
 function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
+  const t = useTranslations("components.shell.ModuleSidebar");
   const FromDeclaration = moduleSideNav(id);
 
   switch (id) {
@@ -80,8 +82,8 @@ function ModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
         <div className="mb-1">
           <NavSubItem href="/kitchen/recipes" label="Przepisy" icon={<BookMarked size={12} />} pathname={pathname} />
           <NavSubItem href="/kitchen/plan" label="Plan" icon={<CalendarDays size={12} />} pathname={pathname} />
-          <NavSubItem href="/kitchen/pantry" label="Spiżarnia" icon={<Package size={12} />} pathname={pathname} />
-          <NavSubItem href="/kitchen/cookbooks" label="Książki" icon={<BookOpen size={12} />} pathname={pathname} />
+          <NavSubItem href="/kitchen/pantry" label={t("spizarnia")} icon={<Package size={12} />} pathname={pathname} />
+          <NavSubItem href="/kitchen/cookbooks" label={t("ksiazki")} icon={<BookOpen size={12} />} pathname={pathname} />
         </div>
       );
     case "languages":
@@ -125,6 +127,7 @@ function NavItem({
   locked?: boolean;
   children?: React.ReactNode;
 }) {
+  const t = useTranslations("components.shell.ModuleSidebar");
   const isActive = exact ? pathname === href : pathname.startsWith(href);
   const activeColor = accentColor ?? "var(--text-primary)";
 
@@ -133,7 +136,7 @@ function NavItem({
       <div
         className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
         style={{ opacity: 0.35, cursor: "not-allowed", color: "var(--text-secondary)" }}
-        title="Niedostępne dla Twojej roli"
+        title={t("niedostepneDlaTwojejRoli")}
       >
         {iconColor ? <span style={{ color: iconColor, flexShrink: 0, display: "flex" }}>{icon}</span> : icon}
         <span>{label}</span>
@@ -221,6 +224,7 @@ function NavSubItem({
 }
 
 export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), favoriteViews = [] }: ModuleSidebarProps) {
+  const t = useTranslations("components.shell.ModuleSidebar");
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -266,7 +270,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         href="/"
         className="flex items-center gap-2 px-4 h-12 border-b"
         style={{ borderColor: "var(--border)", textDecoration: "none" }}
-        title="Strona główna"
+        title={t("stronaGlowna")}
       >
         <BrandLogo px={20} />
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
@@ -291,7 +295,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
               style={{ color: "var(--text-muted)" }}
             >
               <MoreHorizontal size={18} />
-              <span>Więcej…</span>
+              <span>{t("wiecej")}</span>
             </button>
             {moreOpen && more.map((m) => (
               <button

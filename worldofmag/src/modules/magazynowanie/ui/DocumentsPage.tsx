@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { FileText, Camera, Plus, Loader2, Trash2, FileScan } from "lucide-react";
 import { createDocument, deleteDocument, type StorageDocumentWithLines } from "../actions/storage";
@@ -26,6 +27,7 @@ export function DocumentsPage({
   suppliers: StorageSupplier[];
   currency: string;
 }) {
+  const t = useTranslations("modules.magazynowanie.DocumentsPage");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [editorOpen, setEditorOpen] = useState(false);
@@ -133,11 +135,11 @@ export function DocumentsPage({
       }
     >
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Zeskanuj zdjęcie faktury lub WZ — AI odczyta pozycje, a Ty jednym kliknięciem zaksięgujesz je na stan.
+        {t("zeskanujZdjecieFakturyLub")}
       </p>
 
       {documents.length === 0 ? (
-        <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>Brak dokumentów.</p>
+        <p className="text-sm py-8 text-center" style={{ color: "var(--text-muted)" }}>{t("brakDokumentow")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {documents.map((d) => (
@@ -151,7 +153,7 @@ export function DocumentsPage({
                   {d.date.toISOString().slice(0, 10)} · {d.lines.length} poz.{d.totalCost ? ` · ${d.totalCost.toFixed(2)} ${currency}` : ""}
                 </div>
               </div>
-              <button type="button" onClick={() => remove(d.id)} aria-label="Usuń" style={{ color: "var(--text-muted)" }}><Trash2 size={15} /></button>
+              <button type="button" onClick={() => remove(d.id)} aria-label={t("usun")} style={{ color: "var(--text-muted)" }}><Trash2 size={15} /></button>
             </li>
           ))}
         </ul>
@@ -189,7 +191,7 @@ export function DocumentsPage({
 
           <div className="flex flex-col gap-1.5">
             <div className="grid grid-cols-[1fr_3.5rem_3rem_4rem] gap-1.5 text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-              <span>Nazwa</span><span className="text-right">Ilość</span><span>Jedn.</span><span className="text-right">Cena</span>
+              <span>Nazwa</span><span className="text-right">{t("ilosc")}</span><span>Jedn.</span><span className="text-right">Cena</span>
             </div>
             {aiUsage && (
               <div className="flex justify-end">

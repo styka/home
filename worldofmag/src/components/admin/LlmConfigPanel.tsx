@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Check, Plus, Trash2, Cpu, Sparkles, DollarSign } from "lucide-react";
 import {
@@ -91,6 +92,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function ProviderEditor({ providers }: { providers: ProviderDTO[] }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState("");
@@ -178,7 +180,7 @@ function ProviderEditor({ providers }: { providers: ProviderDTO[] }) {
           className="flex items-center gap-2 px-3 py-2 rounded text-sm mt-3"
           style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}
         >
-          <Plus size={14} /> Dodaj dostawcę
+          <Plus size={14} /> {t("dodajDostawce")}
         </button>
       )}
     </section>
@@ -186,6 +188,7 @@ function ProviderEditor({ providers }: { providers: ProviderDTO[] }) {
 }
 
 function ProviderRow({ provider }: { provider: ProviderDTO }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [editingKey, setEditingKey] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -234,7 +237,7 @@ function ProviderRow({ provider }: { provider: ProviderDTO }) {
         <button onClick={() => setEditingKey((v) => !v)} className="text-xs px-2 py-1 rounded" style={{ color: "var(--text-secondary)" }}>
           Klucz
         </button>
-        <button onClick={remove} disabled={isPending} className="p-1 rounded" style={{ color: "var(--accent-red)" }} title="Usuń">
+        <button onClick={remove} disabled={isPending} className="p-1 rounded" style={{ color: "var(--accent-red)" }} title={t("usun")}>
           <Trash2 size={14} />
         </button>
       </div>
@@ -264,6 +267,7 @@ function ProviderRow({ provider }: { provider: ProviderDTO }) {
 }
 
 function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; providers: ProviderDTO[] }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [providerId, setProviderId] = useState(assignment.providerId ?? providers[0]?.id ?? "");
   // 034: pusty model na poziomie innym niż standardowy = świadome dziedziczenie ze standardowego,
@@ -322,7 +326,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
         <div>
           <label style={labelStyle}>Dostawca</label>
           <select style={inputStyle} value={providerId} onChange={(e) => setProviderId(e.target.value)}>
-            {providers.length === 0 && <option value="">— brak dostawców —</option>}
+            {providers.length === 0 && <option value="">{t("brakDostawcow")}</option>}
             {providers.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
@@ -351,7 +355,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
       {/* 033: parametry modelu. Na telefonie jedna kolumna (C-31). */}
       <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 8, marginTop: 10 }}>
         <div style={{ opacity: canEffort ? 1 : 0.55 }}>
-          <label style={labelStyle}>Wysiłek modelu</label>
+          <label style={labelStyle}>{t("wysilekModelu")}</label>
           <select style={inputStyle} value={effort} onChange={(e) => setEffort(e.target.value as LlmEffort)}>
             {LLM_EFFORT_LEVELS.map((lvl) => (
               <option key={lvl} value={lvl}>{LLM_EFFORT_LABELS[lvl]}</option>
@@ -368,7 +372,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
             max={2}
             value={temperature}
             onChange={(e) => setTemperature(e.target.value)}
-            placeholder="domyślna"
+            placeholder={t("domyslna")}
           />
         </div>
         <div>
@@ -380,7 +384,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
             max={32000}
             value={maxTokens}
             onChange={(e) => setMaxTokens(e.target.value)}
-            placeholder="domyślny"
+            placeholder={t("domyslny")}
           />
         </div>
       </div>
@@ -398,8 +402,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
           )}
           {temperature.trim() !== "" && !canTemperature && (
             <div>
-              Dostawca Anthropic ignoruje temperaturę (nowsze modele Claude odrzucają ten parametr) —
-              nie zostanie wysłana.
+              {t("dostawcaAnthropicIgnorujeTemperature")}
             </div>
           )}
         </div>
@@ -415,6 +418,7 @@ function AssignmentRow({ assignment, providers }: { assignment: AssignmentDTO; p
 // Jednoklikowy profil rekomendowany: Anthropic Sonnet (rozumowanie/generowanie/
 // wizja) + Haiku (klasyfikacja). Groq zostaje jako fallback.
 function AnthropicProfileCard() {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [apiKey, setApiKey] = useState("");
   const [done, setDone] = useState(false);
@@ -451,9 +455,7 @@ function AnthropicProfileCard() {
         <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
           Ustaw jednym kliknięciem zestaw modeli z rekomendacji architektury:{" "}
           <strong>Claude Sonnet</strong> do rozumowania/generowania/wizji i{" "}
-          <strong>Claude Haiku</strong> do szybkiej klasyfikacji (dispatch). Domyślny dostawca (Groq)
-          pozostaje jako zapas — środowisko bez klucza Anthropic działa dalej. Modele możesz potem
-          zmienić w tabeli przypisań poniżej.
+          <strong>Claude Haiku</strong> {t("doSzybkiejKlasyfikacjiDispatch")}
         </p>
         <div>
           <label style={labelStyle}>Klucz API Anthropic</label>
@@ -501,6 +503,7 @@ const thStyle: React.CSSProperties = { padding: "8px 10px", fontSize: 11, color:
  *   * „twardy" — czy przekroczenie kwoty ma ZATRZYMAĆ wywołania, czy tylko powiadomić.
  */
 function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [wylaczone, setWylaczone] = useState(stan.wylaczone);
   const [budzet, setBudzet] = useState(stan.budzetUsd > 0 ? String(stan.budzetUsd) : "");
@@ -539,7 +542,7 @@ function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number })
 
   return (
     <section style={{ marginBottom: 32 }}>
-      <SectionTitle>Budżet AI i wyłącznik awaryjny</SectionTitle>
+      <SectionTitle>{t("budzetAiIWylacznik")}</SectionTitle>
 
       <label
         className="py-3"
@@ -558,19 +561,17 @@ function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number })
         />
         <span style={{ minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
-            Wyłącz AI w całym systemie
+            {t("wylaczAiWCalym")}
           </span>
           <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
-            Hamulec bezpieczeństwa. Zatrzymuje <strong>wszystkie</strong> wywołania modelu — także
-            zadania w tle (wiadomości, OCR, generowanie skórek), które nie mają zalogowanego
-            użytkownika. Działa natychmiast; użytkownicy dostają uprzejmy komunikat, nie błąd.
+            {t("hamulecBezpieczenstwaZatrzymuje")} <strong>wszystkie</strong> {t("wywolaniaModeluTakzeZadania")}
           </span>
         </span>
       </label>
 
       <div style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}>
         <div style={{ fontSize: 13, color: "var(--text-primary)", marginBottom: 8 }}>
-          Miesięczny budżet instalacji
+          {t("miesiecznyBudzetInstalacji")}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>$</span>
@@ -580,7 +581,7 @@ function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number })
             step="0.01"
             value={budzet}
             onChange={(e) => { setBudzet(e.target.value); setZapisano(false); }}
-            placeholder="0 = bez budżetu"
+            placeholder={t("0BezBudzetu")}
             style={{
               width: 130, padding: "6px 8px", fontSize: 13, borderRadius: 6,
               border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)",
@@ -610,12 +611,10 @@ function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number })
           />
           <span style={{ minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 12.5, color: "var(--text-primary)" }}>
-              Po wyczerpaniu budżetu <strong>zatrzymaj</strong> wywołania
+              {t("poWyczerpaniuBudzetu")} <strong>zatrzymaj</strong> {t("wywolania")}
             </span>
             <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
-              Wyłączone = budżet jest tylko alarmem (powiadomienia przy 50 %, 80 % i 100 %), a wydatki
-              rosną dalej. Włączone = po przekroczeniu kwoty AI zachowuje się jak przy wyłączniku,
-              do końca miesiąca albo do podniesienia budżetu.
+              {t("wylaczoneBudzetJestTylko")}
             </span>
           </span>
         </label>
@@ -649,6 +648,7 @@ function AiBudgetSection({ stan, rate }: { stan: StanBudzetuDTO; rate: number })
  * patrzy się na koszty.
  */
 function FollowupsSection({ enabled }: { enabled: boolean }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [value, setValue] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
@@ -668,7 +668,7 @@ function FollowupsSection({ enabled }: { enabled: boolean }) {
 
   return (
     <section style={{ marginBottom: 32 }}>
-      <SectionTitle>Propozycje kolejnych pytań</SectionTitle>
+      <SectionTitle>{t("propozycjeKolejnychPytan")}</SectionTitle>
       <label
         className="py-3"
         style={{
@@ -686,11 +686,10 @@ function FollowupsSection({ enabled }: { enabled: boolean }) {
         />
         <span style={{ minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
-            Podpowiadaj kolejne pytania pod odpowiedzią
+            {t("podpowiadajKolejnePytaniaPod")}
           </span>
           <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
-            Asystent dopisuje 2–3 propozycje następnego pytania do <strong>każdej</strong> odpowiedzi —
-            a każda z nich to dodatkowe tokeny wyjścia. Wyłącz, jeśli wolisz krótsze i tańsze odpowiedzi.
+            {t("asystentDopisuje23")} <strong>{t("kazdej")}</strong> {t("odpowiedziAKazdaZ")}
           </span>
         </span>
       </label>
@@ -704,6 +703,7 @@ function FollowupsSection({ enabled }: { enabled: boolean }) {
  * wszystkich modułach. Przełącznik siedzi obok follow-upów, czyli tam, gdzie patrzy się na koszty.
  */
 function CostBadgeSection({ enabled }: { enabled: boolean }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [value, setValue] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
@@ -723,7 +723,7 @@ function CostBadgeSection({ enabled }: { enabled: boolean }) {
 
   return (
     <section style={{ marginBottom: 32 }}>
-      <SectionTitle>Licznik kosztu przy treściach AI</SectionTitle>
+      <SectionTitle>{t("licznikKosztuPrzyTresciach")}</SectionTitle>
       <label
         className="py-3"
         style={{
@@ -741,13 +741,10 @@ function CostBadgeSection({ enabled }: { enabled: boolean }) {
         />
         <span style={{ minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
-            Pokazuj koszt przy treściach wygenerowanych przez AI
+            {t("pokazujKosztPrzyTresciach")}
           </span>
           <span style={{ display: "block", fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, marginTop: 2 }}>
-            Ten sam wskaźnik co w oknie asystenta pojawia się przy każdej treści generowanej przez
-            model — w Pogodzie, Kuchni, Notatkach, Magazynie i pozostałych modułach. Rozwinięcie
-            (modele, tokeny, koszt każdego promptu) widzi <strong>wyłącznie administrator</strong>.
-            Wyłączenie gasi wskaźnik w całej aplikacji, łącznie z asystentem.
+            {t("tenSamWskaznikCo")} <strong>{t("wylacznieAdministrator")}</strong>{t("wylaczenieGasiWskaznikW")}
           </span>
         </span>
       </label>
@@ -765,6 +762,7 @@ function CostBadgeSection({ enabled }: { enabled: boolean }) {
  * sam z siebie i ile to kosztuje.
  */
 function SectionModesSection({ modes }: { modes: Record<string, AiSectionMode> }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [value, setValue] = useState(modes);
   const [error, setError] = useState<string | null>(null);
@@ -785,10 +783,9 @@ function SectionModesSection({ modes }: { modes: Record<string, AiSectionMode> }
 
   return (
     <section style={{ marginBottom: 32 }}>
-      <SectionTitle>Domyślne odświeżanie sekcji AI</SectionTitle>
+      <SectionTitle>{t("domyslneOdswiezanieSekcjiAi")}</SectionTitle>
       <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.5, margin: "0 0 10px" }}>
-        Dotyczy użytkowników, którzy <strong>nie wybrali</strong> własnego trybu w module. Kto raz
-        wybrał swój, przestaje dziedziczyć stąd — zmiana poniżej go nie dotknie.
+        {t("dotyczyUzytkownikowKtorzy")} <strong>nie wybrali</strong> {t("wlasnegoTrybuWModule")}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {AI_SECTION_KINDS.map((kind) => (
@@ -833,6 +830,7 @@ function SectionModesSection({ modes }: { modes: Record<string, AiSectionMode> }
  * identyfikatory bywają z sufiksami wersji („claude-haiku-4-5-20251001").
  */
 function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [prefix, setPrefix] = useState("");
   const [label, setLabel] = useState("");
@@ -861,9 +859,7 @@ function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
     <section style={{ marginBottom: 32 }}>
       <SectionTitle>Cennik modeli</SectionTitle>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
-        Stawki w dolarach za milion tokenów. Na ich podstawie liczymy koszt pokazywany użytkownikowi.
-        Model, którego tu nie ma, ma koszt <strong>nieznany</strong> — nie zerowy. Wysiłek modelu i
-        temperatura nie zmieniają ceny za token (wysiłek podnosi jednak liczbę tokenów odpowiedzi).
+        {t("stawkiWDolarachZa")} <strong>nieznany</strong> {t("nieZerowyWysilekModelu")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
@@ -885,7 +881,7 @@ function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
             </div>
             <button
               onClick={() => startTransition(async () => { await deleteModelPrice(p.id); })}
-              title="Usuń stawkę"
+              title={t("usunStawke")}
               aria-label={`Usuń stawkę ${p.modelPrefix}`}
               style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}
             >
@@ -895,26 +891,26 @@ function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
         ))}
         {prices.length === 0 && (
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-            Cennik jest pusty — koszty liczymy wtedy z wartości wbudowanych w aplikację.
+            {t("cennikJestPustyKoszty")}
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 8, alignItems: "end" }}>
         <div>
-          <label style={labelStyle}>Początek nazwy modelu</label>
+          <label style={labelStyle}>{t("poczatekNazwyModelu")}</label>
           <input style={inputStyle} value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="claude-haiku-4-5" />
         </div>
         <div>
-          <label style={labelStyle}>Nazwa własna (opcjonalnie)</label>
+          <label style={labelStyle}>{t("nazwaWlasnaOpcjonalnie")}</label>
           <input style={inputStyle} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Claude Haiku 4.5" />
         </div>
         <div>
-          <label style={labelStyle}>Wejście (USD / 1M)</label>
+          <label style={labelStyle}>{t("wejscieUsd1m")}</label>
           <input style={inputStyle} value={input} onChange={(e) => setInput(e.target.value)} placeholder="1.0" inputMode="decimal" />
         </div>
         <div>
-          <label style={labelStyle}>Wyjście (USD / 1M)</label>
+          <label style={labelStyle}>{t("wyjscieUsd1m")}</label>
           <input style={inputStyle} value={output} onChange={(e) => setOutput(e.target.value)} placeholder="5.0" inputMode="decimal" />
         </div>
       </div>
@@ -924,7 +920,7 @@ function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
         className="flex items-center gap-1 px-3 py-2 rounded text-sm font-medium disabled:opacity-40"
         style={{ background: "var(--accent-blue)", color: "var(--on-accent)", marginTop: 10 }}
       >
-        <Plus size={14} /> Zapisz stawkę
+        <Plus size={14} /> {t("zapiszStawke")}
       </button>
       {error && <p style={{ fontSize: 12, color: "var(--accent-red)", marginTop: 8 }}>{error}</p>}
     </section>
@@ -932,6 +928,7 @@ function ModelPricesSection({ prices }: { prices: ModelPriceDTO[] }) {
 }
 
 function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; threshold: number; usdPlnRate: number }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   const [isPending, startTransition] = useTransition();
   const [value, setValue] = useState(String(threshold || ""));
   const [saved, setSaved] = useState(false);
@@ -963,9 +960,9 @@ function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; t
       <SectionTitle>Zużycie i koszty (ostatnie {cost.days} dni)</SectionTitle>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 12, fontSize: 13, color: "var(--text-secondary)" }}>
-        <span>Wywołań: <strong style={{ color: "var(--text-primary)" }}>{cost.totalCalls}</strong></span>
+        <span>{t("wywolan")} <strong style={{ color: "var(--text-primary)" }}>{cost.totalCalls}</strong></span>
         <span>Koszt (szac.): <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.totalCostUsd, usdPlnRate)}</strong></span>
-        <span>Dziś: <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.todayCostUsd, usdPlnRate)}</strong></span>
+        <span>{t("dzis")} <strong style={{ color: "var(--text-primary)" }}>{fmtUsd(cost.todayCostUsd, usdPlnRate)}</strong></span>
       </div>
 
       <div
@@ -982,17 +979,17 @@ function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; t
             <tr>
               <th style={thStyle}>Model</th>
               <th style={thStyle}>Operacja</th>
-              <th style={thStyle}>Wywołań</th>
+              <th style={thStyle}>{t("wywolan2")}</th>
               <th style={thStyle}>Tokeny (we/wy)</th>
               <th style={thStyle}>Cache (odczyt)</th>
               <th style={thStyle}>Koszt (szac.)</th>
-              <th style={thStyle}>Śr. czas</th>
+              <th style={thStyle}>{t("srCzas")}</th>
             </tr>
           </thead>
           <tbody>
             {cost.rows.length === 0 ? (
               <tr>
-                <td style={tdStyle} colSpan={7}>Brak zarejestrowanych wywołań w tym okresie.</td>
+                <td style={tdStyle} colSpan={7}>{t("brakZarejestrowanychWywolanW")}</td>
               </tr>
             ) : (
               cost.rows.map((r, i) => (
@@ -1019,10 +1016,9 @@ function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; t
           background: "var(--bg-surface)",
         }}
       >
-        <label style={labelStyle}>Dzienny próg alertu kosztowego (USD, 0 = wyłączony)</label>
+        <label style={labelStyle}>{t("dziennyProgAlertuKosztowego")}</label>
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>
-          Po przekroczeniu szacowanego dziennego kosztu administratorzy dostają powiadomienie (raz na dobę).
-          Alert nie blokuje asystenta.
+          {t("poPrzekroczeniuSzacowanegoDziennego")}
         </p>
         <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 320 }}>
           <div style={{ position: "relative", flex: 1 }}>
@@ -1061,8 +1057,7 @@ function CostSection({ cost, threshold, usdPlnRate }: { cost: AiCostBreakdown; t
       >
         <label style={labelStyle}>Przelicznik USD → PLN</label>
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>
-          Ile złotych za 1 USD. Wszędzie, gdzie pokazujemy kwotę w USD, doklejamy w nawiasie
-          równowartość w PLN wg tego przelicznika (domyślnie 1 USD = 3,81 PLN).
+          {t("ileZlotychZa1")}
         </p>
         <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 320 }}>
           <div style={{ position: "relative", flex: 1 }}>
@@ -1117,6 +1112,7 @@ export function LlmConfigPanel({
   sectionModes: Record<string, AiSectionMode>;
   budzet: StanBudzetuDTO;
 }) {
+  const t = useTranslations("components.admin.LlmConfigPanel");
   // 034: poziom pracy asystenta wybierany zakładką nad siatką typów operacji. Wcześniej admin
   // konfigurował wyłącznie poziom standardowy, a dwa pozostałe były regułami zaszytymi w kodzie.
   const [level, setLevel] = useState<ConfigLevel>("standard");
@@ -1129,7 +1125,7 @@ export function LlmConfigPanel({
       <ProviderEditor providers={providers} />
 
       <section style={{ marginBottom: 32 }}>
-        <SectionTitle>Przypisanie modeli do typów operacji</SectionTitle>
+        <SectionTitle>{t("przypisanieModeliDoTypow")}</SectionTitle>
 
         {/* Zakładki poziomów. Na telefonie zawijają się w kolejny wiersz (C-31). */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>

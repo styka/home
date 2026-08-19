@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { FileText, ChevronRight, Pin, FolderOpen, Tag, Plus, LayoutList } from "lucide-react";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
@@ -38,6 +39,7 @@ export function NotesHomePage({
   groupCount,
   tagCount,
 }: NotesHomePageProps) {
+  const t = useTranslations("modules.notes.NotesHomePage");
   const subtitle =
     totalCount === 0
       ? "Zacznij od stworzenia pierwszej notatki"
@@ -80,7 +82,7 @@ export function NotesHomePage({
         <StatTile value={totalCount} label="Notatki" color="var(--accent-amber)" href="/notes/all" />
         <StatTile
           value={pinnedCount}
-          label="Przypięte"
+          label={t("przypiete")}
           color={pinnedCount > 0 ? "var(--accent-blue)" : "var(--text-muted)"}
           icon={<Pin size={14} />}
           href="/notes/all?pinned=1"
@@ -92,7 +94,7 @@ export function NotesHomePage({
       {/* Pinned notes */}
       {pinnedNotes.length > 0 && (
         <div>
-          <SectionHeading>Przypięte</SectionHeading>
+          <SectionHeading>{t("przypiete")}</SectionHeading>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {pinnedNotes.map((note) => (
               <NoteRow key={note.id} id={note.id} title={note.title} content={note.content} group={note.group} pinned />
@@ -147,7 +149,7 @@ export function NotesHomePage({
 
       {/* Management */}
       <div>
-        <SectionHeading>Zarządzanie</SectionHeading>
+        <SectionHeading>{t("zarzadzanie")}</SectionHeading>
         <ManagementGrid
           items={[
             { href: "/notes/all", icon: <LayoutList size={16} />, label: "Wszystkie", color: "var(--accent-amber)" },

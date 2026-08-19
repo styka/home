@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,6 +12,7 @@ import { getListSummaries, createList, renameList, deleteList, setAutoReplenishL
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 export function ShoppingSideNav() {
+  const t = useTranslations("modules.shopping.ShoppingSideNav");
   const confirmDialog = useConfirm();
   const pathname = usePathname();
   const router = useRouter();
@@ -152,7 +154,7 @@ export function ShoppingSideNav() {
                   <PackagePlus
                     size={10}
                     style={{ color: "var(--accent-green)", flexShrink: 0 }}
-                    aria-label="Trafiają tu braki z Magazynu"
+                    aria-label={t("trafiajaTuBrakiZ")}
                   />
                 )}
                 {list.pendingCount > 0 && hovered !== list.id && (
@@ -177,7 +179,7 @@ export function ShoppingSideNav() {
                     onClick={(e) => { e.preventDefault(); setEditingId(list.id); setEditName(list.name); }}
                     className="focus:outline-none hover:opacity-70"
                     style={{ color: "var(--text-muted)" }}
-                    title="Zmień nazwę"
+                    title={t("zmienNazwe")}
                   >
                     <Pencil size={10} />
                   </button>
@@ -186,7 +188,7 @@ export function ShoppingSideNav() {
                       onClick={(e) => handleDelete(list.id, e)}
                       className="focus:outline-none hover:opacity-70"
                       style={{ color: "var(--accent-red)" }}
-                      title="Usuń listę"
+                      title={t("usunListe")}
                     >
                       <Trash2 size={10} />
                     </button>
@@ -245,7 +247,7 @@ export function ShoppingSideNav() {
         style={itemStyle(isSubActive("/shopping/stores"), hovered === "__stores__")}
       >
         <Map size={12} />
-        Mapy sklepów
+        {t("mapySklepow")}
       </Link>
 
       <Link

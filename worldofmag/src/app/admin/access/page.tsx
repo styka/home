@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation"
+
+import { getTranslations } from "next-intl/server";import { redirect } from "next/navigation"
 import { auth } from "@/platform/auth/session"
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
 import { Shield } from "lucide-react"
@@ -8,6 +9,7 @@ import { PermissionManager } from "@/components/admin/PermissionManager"
 export const dynamic = "force-dynamic"
 
 export default async function AccessPage() {
+  const t = await getTranslations("app.admin.access.page");
   const session = await auth()
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/")
 
@@ -24,7 +26,7 @@ export default async function AccessPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
           <Shield size={20} style={{ color: "var(--accent-purple)" }} />
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Zarządzanie dostępem
+            {t("zarzadzanieDostepem")}
           </h1>
         </div>
         <PermissionManager

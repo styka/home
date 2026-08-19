@@ -978,12 +978,21 @@ the table/paragraph merge).
   scrubbing** (e-mails → `[e-mail]`, objects flattened to their size). Client components and tests
   are out of scope on purpose; the pattern requires a parenthesis after the method name, so
   `console.groq.com` inside an admin hint is not a call.
-- **`check-i18n.js`** (also `npm run check:i18n`) — 089: **ratchet on texts hard-coded in
-  components.** Counts user-visible literals (JSX text + `placeholder`/`title`/`aria-label`/`alt`/
-  `label`) recognised by Polish diacritics; fails on growth **and on a drop** (record the progress in
-  `src/lib/ui/i18n-baseline.json`, otherwise the slack hides the next regression). A one-off
-  extraction pass would solve half the problem and lose the other half — the cost grows because new
-  code puts literals back.
+- **`check-i18n.js`** (also `npm run check:i18n`) — 089 → **097: no longer a ratchet, an absolute
+  rule.** Zero Polish-diacritic literals may sit in components; 1358 texts now live in
+  `messages/pl.json` under a namespace derived from the file path (`modules.tasks.TaskDetail`) with
+  translator-readable keys. Two files carry a reasoned exception (`src/lib/ui/i18n-wyjatki.json`):
+  the component gallery (demo *content*, not product UI) and one `dynamic()` `loading` prop computed
+  at module level, where no hook can run. The gate also verifies that **every `t("key")` resolves to
+  an existing entry** — it walks back to the nearest `useTranslations` declaration above the call,
+  because one file often holds several components each with its own namespace under the same `t`.
+  That check found a pre-existing miss (`ui.error.loading`) on its first run. Message *values* are
+  validated separately by `src/platform/i18n/__tests__/komunikaty.test.ts` (every value must be
+  parseable ICU). **What is deliberately still hard-coded**: ~780 technical tokens (URLs, field
+  names, example ids — nothing to translate) and ~820 **sentence fragments** split by inline
+  `<strong>`; extracting fragments as separate keys is *worse* for a translator than leaving the
+  sentence in code, so they need `t.rich(...)` — a per-sentence rewrite, recorded as the next step.
+
 - **`check-perf-budget.js`** (also `npm run check:perf`) — 091: **performance budget**, run AFTER
   `next build` (there is nothing to measure before). Measures the JS bytes a route makes the browser
   download, per route and in total, from `.next/app-build-manifest.json`. Unlike the other ratchets it
@@ -1243,10 +1252,14 @@ The flow is **`feature → develop → master`**:
   runs on a paid Render tier (does not sleep). Test env (`develop` →
   `worldofmag.onrender.com`) stays on the free tier.
 - [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
-- [ ] **Pay down the two remaining ratchets** — texts hard-coded in components (`check:i18n`) and
-  JS bytes per route (`check:perf`). Lower the threshold in the manifest with every module you
-  finish; the gate fails on a drop precisely so the progress gets recorded. *(The pagination ratchet
-  is gone — 096 turned it into an absolute rule: every `findMany` carries an explicit bound.)*
+- [ ] **Pay down the last ratchet** — JS bytes per route (`check:perf`). Lower the threshold in the
+  manifest with every module you finish; the gate fails on a drop precisely so the progress gets
+  recorded. *(The other two are gone: 096 turned pagination into an absolute rule — every `findMany`
+  carries an explicit bound — and 097 did the same for i18n.)*
+- [ ] **Rewrite sentences split by inline markup to `t.rich(...)`** — ~820 fragments („Opcjonalny,
+  ale" + `<strong>zalecany</strong>`). They are the remaining reason adding English is not purely
+  translator work; extracting them as separate keys would make translation *worse*, so each sentence
+  needs rewriting with a tag placeholder.
 - [ ] **Move list filtering/grouping to the server**, then give those views cursor pagination. Today
   every module list filters, groups and counts **client-side over the full set** (Notes shows
   `filtered / all` and builds `[[wikilink]]` backlinks from it; Tasks counts per tab), so a page

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Check, X } from "lucide-react";
@@ -30,6 +31,7 @@ function accentFor(module: string): string {
  *  - `placement="topbar"` → kompaktowa ikona w górnym pasku (mobile); panel rozwija się W DÓŁ.
  */
 export function NotificationBell({ placement = "topbar" }: { placement?: "topbar" | "sidebar" }) {
+  const t = useTranslations("components.shell.NotificationBell");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -166,10 +168,10 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
           </div>
 
           {loading && items.length === 0 ? (
-            <div style={{ padding: 16, fontSize: 12, color: "var(--text-muted)" }}>Ładowanie…</div>
+            <div style={{ padding: 16, fontSize: 12, color: "var(--text-muted)" }}>{t("ladowanie")}</div>
           ) : items.length === 0 ? (
             <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>
-              Brak powiadomień. Przypomnienia o terminach pojawią się tutaj.
+              {t("brakPowiadomienPrzypomnieniaO")}
             </div>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>

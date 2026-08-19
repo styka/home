@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Minus, Plus } from "lucide-react";
 
 interface ServingSelectorProps {
@@ -12,6 +13,7 @@ interface ServingSelectorProps {
 }
 
 export function ServingSelector({ value, onChange, min = 1, max = 99, className, label }: ServingSelectorProps) {
+  const t = useTranslations("modules.kitchen.ServingSelector");
   return (
     <div
       className={className}
@@ -40,7 +42,7 @@ export function ServingSelector({ value, onChange, min = 1, max = 99, className,
         onClick={() => onChange(Math.min(max, value + 1))}
         className="w-7 h-7 rounded flex items-center justify-center"
         style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
-        aria-label="Zwiększ porcje"
+        aria-label={t("zwiekszPorcje")}
       >
         <Plus size={14} />
       </button>

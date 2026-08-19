@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl";
 import { useState } from "react"
 import { Plus, Trash2, Check, X } from "lucide-react"
 import type { PermissionData, RoleWithPermissions, UserData } from "@/actions/access"
@@ -102,6 +103,7 @@ function RoleBadge({ role }: { role: string }) {
 
 // ---------- Permissions Tab ----------
 function PermissionsTab({ permissions, users, rolePermissions }: { permissions: PermissionData[]; users: UserData[]; rolePermissions: RoleWithPermissions[] }) {
+  const t = useTranslations("components.admin.PermissionManager");
   const confirmDialog = useConfirm();
   const [adding, setAdding] = useState(false)
   const [slug, setSlug] = useState("")
@@ -166,7 +168,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
               {p.description && <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{p.description}</p>}
             </div>
             {p.slug === ADMIN_PERM && adminLocked ? (
-              <span title="To brama dostępu do panelu administratora — nie można jej usunąć, dopóki ktoś z niej korzysta."
+              <span title={t("toBramaDostepuDo")}
                 style={{ flexShrink: 0, padding: 4, color: "var(--text-muted)", opacity: 0.4, display: "flex", cursor: "not-allowed" }}>
                 <Trash2 size={13} />
               </span>
@@ -181,7 +183,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
           </div>
         ))}
         {permissions.length === 0 && (
-          <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Brak uprawnień</div>
+          <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>{t("brakUprawnien")}</div>
         )}
       </SectionCard>
     </div>
@@ -190,6 +192,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
 
 // ---------- Roles Tab ----------
 function RolesTab({ rolePermissions, permissions, users }: { rolePermissions: RoleWithPermissions[]; permissions: PermissionData[]; users: UserData[] }) {
+  const t = useTranslations("components.admin.PermissionManager");
   const [toggling, setToggling] = useState<string | null>(null)
 
   // Czy odznaczenie module.admin dla tej roli zostawiłoby nikogo bez dostępu do /admin?
@@ -247,7 +250,7 @@ function RolesTab({ rolePermissions, permissions, users }: { rolePermissions: Ro
         </div>
       ))}
       {rolePermissions.length === 0 && (
-        <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: 24 }}>Brak zdefiniowanych ról</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: 24 }}>{t("brakZdefiniowanychRol")}</p>
       )}
     </div>
   )
@@ -255,6 +258,7 @@ function RolesTab({ rolePermissions, permissions, users }: { rolePermissions: Ro
 
 // ---------- Users Tab ----------
 function UsersTab({ users, availableRoles, rolePermissions }: { users: UserData[]; availableRoles: string[]; rolePermissions: RoleWithPermissions[] }) {
+  const t = useTranslations("components.admin.PermissionManager");
   const [adding, setAdding] = useState<string | null>(null) // userId being edited
   const [newRole, setNewRole] = useState("")
   const [saving, setSaving] = useState(false)
@@ -292,7 +296,7 @@ function UsersTab({ users, availableRoles, rolePermissions }: { users: UserData[
                     <div key={role} style={{ display: "flex", alignItems: "center", gap: 3 }}>
                       <RoleBadge role={role} />
                       {locked ? (
-                        <span title="Ostatnia rola dająca dostęp do panelu administratora — nie można jej usunąć."
+                        <span title={t("ostatniaRolaDajacaDostep")}
                           style={{ padding: 2, color: "var(--text-muted)", opacity: 0.4, display: "flex", cursor: "not-allowed" }}>
                           <X size={10} />
                         </span>
@@ -314,7 +318,7 @@ function UsersTab({ users, availableRoles, rolePermissions }: { users: UserData[
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     <select value={newRole} onChange={(e) => setNewRole(e.target.value)}
                       style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", outline: "none" }}>
-                      <option value="">Wybierz rolę</option>
+                      <option value="">{t("wybierzRole")}</option>
                       {availableRoles.filter((r) => !user.roles.includes(r)).map((r) => (
                         <option key={r} value={r}>{r}</option>
                       ))}

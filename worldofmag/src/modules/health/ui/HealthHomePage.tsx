@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -62,6 +63,7 @@ const emptyForm = (kind: HealthKind): FormState => ({
 });
 
 function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: (f: FormState) => Promise<void>; onCancel: () => void }) {
+  const t = useTranslations("modules.health.HealthHomePage");
   const [form, setForm] = useState<FormState>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +147,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Wartość liczbowa (do trendu)</label>
+              <label style={labelStyle}>{t("wartoscLiczbowaDoTrendu")}</label>
               <input style={inputStyle} type="number" step="any" inputMode="decimal" value={form.numericValue} onChange={(e) => set("numericValue", e.target.value)} placeholder="np. 5.2" />
             </div>
             <div style={{ flex: 1 }}>
@@ -167,6 +169,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
 }
 
 function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { ev: HealthEvent; focused: boolean; onEdit: () => void; onCycleStatus: () => void; onDelete: () => void; onFocus: () => void }) {
+  const t = useTranslations("modules.health.HealthHomePage");
   const status = STATUS_META[ev.status];
   const isTest = ev.kind === "TEST";
 
@@ -188,7 +191,7 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
         <HealthAttachments eventId={ev.id} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-        <button onClick={onCycleStatus} className="text-xs px-2 py-1 rounded" style={{ color: status.color, border: `1px solid ${status.color}`, background: "transparent" }} title="Zmień status">
+        <button onClick={onCycleStatus} className="text-xs px-2 py-1 rounded" style={{ color: status.color, border: `1px solid ${status.color}`, background: "transparent" }} title={t("zmienStatus")}>
           {status.label}
         </button>
         <div style={{ display: "flex", gap: 4 }}>
@@ -203,6 +206,7 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
 type Tab = "ALL" | "VISIT" | "TEST";
 
 export function HealthHomePage({ events, trends = [], viewParams = {} }: { events: HealthEvent[]; trends?: TestTrend[]; viewParams?: RawParams }) {
+  const t = useTranslations("modules.health.HealthHomePage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   // 043: zakładka w adresie — zapisany ulubiony widok Zdrowia wraca na tę samą zakładkę (AC-8a).
@@ -327,7 +331,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
       {/* Z2: trendy badań */}
       {(tab === "ALL" || tab === "TEST") && trends.length > 0 && (
         <section>
-          <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Trendy badań</h2>
+          <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>{t("trendyBadan")}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {trends.map((t) => <TrendRow key={t.title} trend={t} />)}
           </div>
@@ -345,7 +349,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
         <>
           {upcoming.length > 0 && (
             <section>
-              <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Nadchodzące</h2>
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>{t("nadchodzace")}</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />)}
               </div>
@@ -401,6 +405,7 @@ function TrendRow({ trend }: { trend: TestTrend }) {
 }
 
 function HealthAttachments({ eventId }: { eventId: string }) {
+  const t = useTranslations("modules.health.HealthHomePage");
   const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<HealthAttachmentDTO[] | null>(null);
@@ -441,7 +446,7 @@ function HealthAttachments({ eventId }: { eventId: string }) {
           {(items ?? []).map((a) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ color: "var(--accent-blue)", textDecoration: "none", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (await confirmDialog("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title="Usuń"><Trash2 size={12} /></button>
+              <button onClick={async () => { if (await confirmDialog("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={12} /></button>
             </div>
           ))}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", cursor: busy ? "wait" : "pointer" }}>

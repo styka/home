@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -296,6 +297,7 @@ function newId(): string {
 }
 
 export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_RATE }: { isAdmin?: boolean; usdPlnRate?: number } = {}) {
+  const t = useTranslations("components.assistant.AICommandSheet");
   const pathname = usePathname();
   const router = useRouter();
   const { context, placeholder, routeHint, activeListId, activeProjectId } = deriveContextFromPath(pathname);
@@ -1544,7 +1546,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         <button
           onClick={() => setIsOpen(true)}
           title="Asystent AI"
-          aria-label="Otwórz asystenta AI"
+          aria-label={t("otworzAsystentaAi")}
           className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
           // Nad pełnoekranowym panelem roboczym (mobilny podgląd zadania, z-50) FAB musi
           // stać wyżej niż panel, ale niżej niż toasty (z-60). Poza panelem zostaje na 41.
@@ -1636,7 +1638,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     tam, gdzie widać go PRZEZ CAŁĄ rozmowę — a nie tylko w chwili przełączania. */}
                 {autoApprove && (
                   <span
-                    title="Bezpieczne akcje wykonują się bez pytania. Akcje nieodwracalne nadal wymagają potwierdzenia."
+                    title={t("bezpieczneAkcjeWykonujaSie")}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0,
                       fontSize: 10.5, padding: "2px 6px", borderRadius: 999,
@@ -1651,8 +1653,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
                 <button onClick={() => togglePanel("prefs")} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
-                <button onClick={() => togglePanel("report")} title="Zgłoś problem z Asystentem AI" aria-label="Zgłoś problem z Asystentem AI" aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
-                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label="Historia rozmów" aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
+                <button onClick={() => togglePanel("report")} title={t("zglosProblemZAsystentem")} aria-label={t("zglosProblemZAsystentem")} aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
+                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
@@ -1681,13 +1683,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   }}
                 >
                   <CornerUpLeft size={13} style={{ flexShrink: 0 }} />
-                  <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>Wróć do:</span>
+                  <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>{t("wrocDo")}</span>
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastConversationLabel}</span>
                 </button>
                 <button
                   onClick={() => setLastConversationDismissed(true)}
-                  title="Ukryj ten skrót"
-                  aria-label="Ukryj skrót do poprzedniej rozmowy"
+                  title={t("ukryjTenSkrot")}
+                  aria-label={t("ukryjSkrotDoPoprzedniej")}
                   style={{
                     flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                     width: 40, minHeight: 40, border: "none", background: "none",
@@ -1711,7 +1713,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     <div style={{ display: "flex", gap: 8 }}>
                       {/* 031: przejście do zadania proponujemy TYLKO, gdy użytkownik ma dostęp do skrzynki. */}
                       {reportDone.canRead && (
-                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>Otwórz w zadaniach</button>
+                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>{t("otworzWZadaniach")}</button>
                       )}
                       <button onClick={() => setHeaderPanel("none")} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>
@@ -1719,7 +1721,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 ) : (
                   <>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                      Zgłoś problem z Asystentem AI (opis opcjonalny)
+                      {t("zglosProblemZAsystentem2")}
                     </label>
                     <textarea
                       value={reportDesc}
@@ -1737,7 +1739,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         {reportBusy ? <Loader2 size={14} className="animate-spin" /> : <Bug size={14} />} Zgłoś problem
                       </button>
                       <button onClick={() => { setHeaderPanel("none"); setReportDesc(""); }} style={{ fontSize: 12.5, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Anuluj</button>
-                      {!canReport && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Brak treści do zgłoszenia.</span>}
+                      {!canReport && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("brakTresciDoZgloszenia")}</span>}
                     </div>
                   </>
                 )}
@@ -1748,7 +1750,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
             {showPrefs && (
               <div className="flex-1 overflow-y-auto px-5 py-4" style={{ background: "var(--bg-base)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                  Stałe preferencje (asystent uwzględnia je w każdym poleceniu)
+                  {t("stalePreferencjeAsystentUwzglednia")}
                 </label>
                 <textarea
                   value={prefs}
@@ -1765,7 +1767,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {(ttsSupported() || serverVoices.length > 0) && (
                   <div style={{ marginTop: 12 }}>
                     <label htmlFor="ai-voice-select" style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-                      Głos lektora (odczyt na głos)
+                      {t("glosLektoraOdczytNa")}
                     </label>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <select
@@ -1774,16 +1776,16 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         onChange={(e) => changeVoice(e.target.value)}
                         style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)", outline: "none" }}
                       >
-                        <option value="">(domyślny przeglądarki)</option>
+                        <option value="">{t("domyslnyPrzegladarki")}</option>
                         {serverVoices.length > 0 && (
-                          <optgroup label="Głosy Omnii (działają wszędzie)">
+                          <optgroup label={t("glosyOmniiDzialajaWszedzie")}>
                             {serverVoices.map((v) => (
                               <option key={v.id} value={toServerVoiceValue(v.id)}>{v.label} — {v.description}</option>
                             ))}
                           </optgroup>
                         )}
                         {voices.length > 0 && (
-                          <optgroup label="Głosy tego urządzenia">
+                          <optgroup label={t("glosyTegoUrzadzenia")}>
                             {voices.map((v) => (
                               <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
                             ))}
@@ -1792,11 +1794,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       </select>
                       <button
                         onClick={() => speak("Dzień dobry, Wielki Magu. Tak brzmi wybrany głos lektora.", "pl")}
-                        title="Posłuchaj próbki"
-                        aria-label="Posłuchaj próbki głosu"
+                        title={t("posluchajProbki")}
+                        aria-label={t("posluchajProbkiGlosu")}
                         style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-secondary)", cursor: "pointer" }}
                       >
-                        <Volume2 size={14} /> Próbka
+                        <Volume2 size={14} /> {t("probka")}
                       </button>
                     </div>
                     <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "5px 0 0", lineHeight: 1.5 }}>
@@ -1826,7 +1828,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 więc nie miały własnego przewijania i dłuższa treść była po prostu ucinana. */}
             {showHistory ? (
               <div className="flex-1 overflow-y-auto px-3 py-3" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>Brak zapisanych rozmów.</p>}
+                {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>{t("brakZapisanychRozmow")}</p>}
                 {conversations.map((c) => (
                   // 031: `minWidth: 0` na wierszu ORAZ na przycisku tytułu — bez tego dziecko flexboxa
                   // ma domyślnie `min-width: auto` i długi tytuł rozpycha wiersz poza szerokość ekranu
@@ -1846,8 +1848,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         <span style={{ fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowWrap: "anywhere" }}>{c.title}</span>
                       </button>
                     )}
-                    <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title="Zmień nazwę" aria-label="Zmień nazwę rozmowy" style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
-                    <button onClick={() => removeConversation(c.id)} title="Usuń" aria-label="Usuń rozmowę" style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
+                    <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title={t("zmienNazwe")} aria-label={t("zmienNazweRozmowy")} style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
+                    <button onClick={() => removeConversation(c.id)} title={t("usun")} aria-label={t("usunRozmowe")} style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -1867,7 +1869,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {turns.length === 0 && !busy && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
                     <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
-                      Cześć! Mam dostęp do wszystkich Twoich danych i internetu. Zapytaj o cokolwiek, wydaj polecenie albo poproś o raport.
+                      {t("czescMamDostepDo")}
                     </p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {/* 043: akcje pochodzą ze wspólnego katalogu — ta sama lista zasila widget
@@ -1928,7 +1930,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{error}</p>
                     {lastPayloadRef.current && (
                       <button onClick={retryLast} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}>
-                        <RefreshCw size={11} /> Ponów
+                        <RefreshCw size={11} /> {t("ponow")}
                       </button>
                     )}
                   </div>
@@ -1966,12 +1968,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     </span>
                     <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexShrink: 0 }}>
                       {voiceState === "speaking" && (
-                        <button onClick={() => startListening()} title="Przerwij i mów" style={voicePillBtn}>
+                        <button onClick={() => startListening()} title={t("przerwijIMow")} style={voicePillBtn}>
                           <Square size={11} /> Przerwij
                         </button>
                       )}
-                      <button onClick={stopVoice} title="Zakończ rozmowę głosową" style={voicePillBtn}>
-                        <MicOff size={11} /> Zakończ
+                      <button onClick={stopVoice} title={t("zakonczRozmoweGlosowa")} style={voicePillBtn}>
+                        <MicOff size={11} /> {t("zakoncz")}
                       </button>
                     </div>
                   </div>
@@ -1979,9 +1981,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {attachedImage && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={attachedImage} alt="załącznik" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
-                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Zdjęcie gotowe — opisz (np. „do zakupów”) i wyślij, by rozpoznać przedmioty.</span>
-                    <button onClick={() => setAttachedImage(null)} title="Usuń zdjęcie" style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
+                    <img src={attachedImage} alt={t("zalacznik")} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
+                    <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t("zdjecieGotoweOpiszNp")}</span>
+                    <button onClick={() => setAttachedImage(null)} title={t("usunZdjecie")} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -2002,7 +2004,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     placeholder={attachedImage ? 'Opcjonalny opis, np. „do zakupów"' : placeholder}
                     rows={1}
                     disabled={busy}
-                    aria-label="Wiadomość do asystenta"
+                    aria-label={t("wiadomoscDoAsystenta")}
                     style={{
                       width: "100%", resize: "none", background: "transparent", border: "none", outline: "none",
                       color: "var(--text-primary)", fontSize: 16, lineHeight: 1.4, padding: "6px 4px",
@@ -2013,10 +2015,10 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                   {/* Wiersz 2 — akcje: lewo (aparat, galeria) · prawo (mikrofon, główny przycisk) */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <button onClick={() => cameraRef.current?.click()} disabled={busy} title="Zrób zdjęcie" aria-label="Zrób zdjęcie" style={composerActionBtn}>
+                      <button onClick={() => cameraRef.current?.click()} disabled={busy} title={t("zrobZdjecie")} aria-label={t("zrobZdjecie")} style={composerActionBtn}>
                         <Camera size={20} />
                       </button>
-                      <button onClick={() => fileRef.current?.click()} disabled={busy} title="Dodaj zdjęcie" aria-label="Dodaj zdjęcie" style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
+                      <button onClick={() => fileRef.current?.click()} disabled={busy} title={t("dodajZdjecie")} aria-label={t("dodajZdjecie")} style={{ ...composerActionBtn, color: attachedImage ? "var(--accent-blue)" : "var(--text-muted)" }}>
                         <ImagePlus size={20} />
                       </button>
                     </div>
@@ -2080,8 +2082,8 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                                 {lvl === "custom" && (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); openLevelSettings(); }}
-                                    title="Ustawienia własnego poziomu"
-                                    aria-label="Ustawienia własnego poziomu"
+                                    title={t("ustawieniaWlasnegoPoziomu")}
+                                    aria-label={t("ustawieniaWlasnegoPoziomu")}
                                     style={{
                                       flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                                       width: 38, minHeight: 38, marginRight: 4, borderRadius: 8, border: "none",
@@ -2116,7 +2118,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                                   {autoApprove && <Check size={12} style={{ color: "var(--accent-green)" }} />}
                                 </span>
                                 <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                  Akcje nieodwracalne (usuwanie, czyszczenie) nadal wymagają potwierdzenia.
+                                  {t("akcjeNieodwracalneUsuwanieCzyszczenie")}
                                 </span>
                               </button>
                             </div>
@@ -2144,7 +2146,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         // 032: jedno dotknięcie ma WYSŁAĆ i zamknąć klawiaturę. `preventDefault` na
                         // pointerdown chroni przed zgubieniem dotknięcia (klawiatura zwija się,
                         // układ skacze), a klawiaturę zamykamy jawnym `blur()` po wysłaniu.
-                        <button onClick={() => { dictation.stop(); handleSend(); composerRef.current?.blur(); }} title="Wyślij" aria-label="Wyślij" style={composerPrimaryBtn}>
+                        <button onClick={() => { dictation.stop(); handleSend(); composerRef.current?.blur(); }} title={t("wyslij")} aria-label={t("wyslij")} style={composerPrimaryBtn}>
                           <ArrowUp size={18} />
                         </button>
                       ) : voiceSupported ? (
@@ -2164,7 +2166,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 {/* 031: podpowiedź skrótu wysyłania. Tylko desktop (`hidden md:block`) — na telefonie
                     nie ma klawiatury sprzętowej, a wiersz zabierałby miejsce nad klawiaturą ekranową. */}
                 <p className="hidden md:block" style={{ margin: "4px 2px 0", fontSize: 10.5, color: "var(--text-muted)" }}>
-                  <kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Ctrl</kbd>+<kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Enter</kbd> wysyła wiadomość
+                  <kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Ctrl</kbd>+<kbd style={{ fontFamily: "inherit", fontWeight: 600 }}>Enter</kbd> {t("wysylaWiadomosc")}
                 </p>
               </div>
             )}
@@ -2262,6 +2264,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function RegenerateButton({ onClick }: { onClick: () => void }) {
+  const t = useTranslations("components.assistant.AICommandSheet");
   return (
     <button onClick={onClick} title="Generuj ponownie" aria-label="Generuj ponownie" style={{ ...footerIconBtn, color: "var(--text-muted)" }}>
       <RefreshCw size={13} />
@@ -2335,6 +2338,7 @@ function TurnView({
   speakingId?: string | null;
   onToggleSpeak?: (id: string, text: string) => void;
 }) {
+  const t = useTranslations("components.assistant.AICommandSheet");
   const [clarifyInput, setClarifyInput] = useState("");
   const speaking = speakingId === turn.id;
 
@@ -2387,7 +2391,7 @@ function TurnView({
               </div>
             )}
             <div style={{ marginTop: 8 }}>
-              <SmartTextarea value={clarifyInput} onChange={setClarifyInput} placeholder="Twoja odpowiedź…" rows={2} onSubmit={() => onClarifySubmit(turn, clarifyInput)} />
+              <SmartTextarea value={clarifyInput} onChange={setClarifyInput} placeholder={t("twojaOdpowiedz")} rows={2} onSubmit={() => onClarifySubmit(turn, clarifyInput)} />
             </div>
             {/* 025: widoczny przycisk wysyłki — na mobile brak skrótu klawiszowego, więc
                 bez tego przycisku nie dało się zatwierdzić odpowiedzi na pytanie clarify. */}
@@ -2403,7 +2407,7 @@ function TurnView({
                   opacity: clarifyInput.trim() ? 1 : 0.5,
                 }}
               >
-                <ArrowUp size={15} /> Wyślij
+                <ArrowUp size={15} /> {t("wyslij")}
               </button>
             </div>
           </>
@@ -2463,7 +2467,7 @@ function TurnView({
                 )}
                 {turn.undone && (
                   <span style={{ fontSize: 11.5, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <RotateCcw size={11} /> cofnięte
+                    <RotateCcw size={11} /> {t("cofniete")}
                   </span>
                 )}
               </div>
@@ -2477,15 +2481,15 @@ function TurnView({
           <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
             {onQuickConfirm && turn.actions.some((a) => !isDestructiveAction(a)) && (
               <button onClick={() => onQuickConfirm(turn)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                <CheckCircle size={14} /> Zatwierdź
+                <CheckCircle size={14} /> {t("zatwierdz")}
               </button>
             )}
             <button onClick={() => onOpenPlan(turn)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
               Przejrzyj / popraw
             </button>
             {onQuickDismiss && (
-              <button onClick={() => onQuickDismiss(turn)} title="Odrzuć akcje" aria-label="Odrzuć akcje" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: "none", background: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>
-                <X size={14} /> Odrzuć
+              <button onClick={() => onQuickDismiss(turn)} title={t("odrzucAkcje")} aria-label={t("odrzucAkcje")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: "none", background: "none", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>
+                <X size={14} /> {t("odrzuc")}
               </button>
             )}
           </div>
@@ -2514,7 +2518,7 @@ function TurnView({
         </div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            <ArrowRight size={15} /> Otwórz raport
+            <ArrowRight size={15} /> {t("otworzRaport")}
           </button>
         ) : (
           <button onClick={() => onSaveReport(turn)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>

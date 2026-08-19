@@ -5,10 +5,12 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { listAvailableSkins } from "@/actions/skins";
 import { SystemSkinManager } from "@/components/admin/SystemSkinManager";
 import { ChevronLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSkinsPage() {
+  const t = await getTranslations("app.admin.skins.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 

@@ -9,8 +9,10 @@ import { CONFIG_LEVELS, type ConfigLevel } from "@/platform/llm/operationTypes";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
 import { ChevronLeft, Cpu } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminLlmPage() {
+  const t = await getTranslations("app.admin.llm.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -50,9 +52,7 @@ export default async function AdminLlmPage() {
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 24, maxWidth: 620 }}>
-          Dodaj dostawców (każdy z własnym tokenem) i przypisz model do każdego typu operacji.
-          Typy odpowiadają charakterowi zadania, nie modułowi. Każdy z trzech poziomów pracy
-          asystenta konfigurujesz osobno — pola zostawione puste dziedziczą z poziomu standardowego.
+          {t("dodajDostawcowKazdyZ")}
         </p>
 
         <LlmConfigPanel

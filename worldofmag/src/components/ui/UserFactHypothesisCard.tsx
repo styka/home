@@ -61,7 +61,7 @@ export function UserFactHypothesisCard() {
           disabled={busy}
           className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
         >
-          <X size={13} /> Nie o mnie
+          <X size={13} /> {t("nieOMnie")}
         </button>
       </div>
     </div>

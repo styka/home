@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation"
+
+import { getTranslations } from "next-intl/server";import { redirect } from "next/navigation"
 import { auth } from "@/platform/auth/session"
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
 import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug, Compass } from "lucide-react"
@@ -28,6 +29,7 @@ interface Row {
 }
 
 export default async function AdminPage() {
+  const t = await getTranslations("app.admin.page");
   const session = await auth()
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/")
   const safeSession = session!
@@ -170,7 +172,7 @@ export default async function AdminPage() {
             textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12,
             display: "flex", alignItems: "center", gap: 7,
           }}>
-            <Boxes size={13} /> Metryki — zawartość
+            <Boxes size={13} /> {t("metrykiZawartosc")}
           </h2>
           <div style={{
             display: "grid",
@@ -218,14 +220,14 @@ export default async function AdminPage() {
         {/* Tools links */}
         <section style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 12 }}>
-            Narzędzia
+            {t("narzedzia")}
           </h2>
           <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
             <style>{`.admin-tool-link:hover { background-color: var(--bg-hover); }`}</style>
             <FeedbackTriggerButton />
             <Link href="/admin/access" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Zarządzanie dostępem (role & uprawnienia)</span>
+              <span style={{ fontSize: 13 }}>{t("zarzadzanieDostepemRoleUprawnienia")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/audit" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
@@ -250,22 +252,22 @@ export default async function AdminPage() {
             </Link>
             <Link href="/admin/user-facts" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Sparkles size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Wiedza o użytkownikach (fakty do podpowiedzi)</span>
+              <span style={{ fontSize: 13 }}>{t("wiedzaOUzytkownikachFakty")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/ai-calls" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Bug size={15} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Diagnostyka asystenta AI (log wywołań / rozmowa)</span>
+              <span style={{ fontSize: 13 }}>{t("diagnostykaAsystentaAiLog")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/jobs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <ListChecks size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Kolejka zadań (OCR / AI w tle)</span>
+              <span style={{ fontSize: 13 }}>{t("kolejkaZadanOcrAi")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/services/moderation" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Shield size={15} style={{ color: "var(--accent-red)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Moderacja sporów (Usługi)</span>
+              <span style={{ fontSize: 13 }}>{t("moderacjaSporowUslugi")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/playground" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
@@ -280,7 +282,7 @@ export default async function AdminPage() {
             </Link>
             <Link href="/admin/docs" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <FileText size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Dokumentacja projektu (CLAUDE.md, doświadczenia.md)</span>
+              <span style={{ fontSize: 13 }}>{t("dokumentacjaProjektuClaudeMd")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/audyt" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
@@ -290,7 +292,7 @@ export default async function AdminPage() {
             </Link>
             <Link href="/admin/audyt-podsumowanie" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <ClipboardList size={15} style={{ color: "var(--accent-green)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Audyt — podsumowanie zmian (wykonane / pozostałe)</span>
+              <span style={{ fontSize: 13 }}>{t("audytPodsumowanieZmianWykonane")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/architektura-docelowa" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
@@ -310,7 +312,7 @@ export default async function AdminPage() {
             </Link>
             <Link href="/admin/skins" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <Palette size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Skórki systemowe</span>
+              <span style={{ fontSize: 13 }}>{t("skorkiSystemowe")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/reports" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
@@ -320,7 +322,7 @@ export default async function AdminPage() {
             </Link>
             <Link href="/admin/e2e" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none" }}>
               <MousePointerClick size={15} style={{ color: "var(--accent-red)", flexShrink: 0 }} />
-              <span style={{ fontSize: 13 }}>Testy klikacze E2E — jak uruchomić</span>
+              <span style={{ fontSize: 13 }}>{t("testyKlikaczeE2eJak")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
           </div>

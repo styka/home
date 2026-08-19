@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,6 +51,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
 ];
 
 export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [] }: AppShellProps) {
+  const t = useTranslations("components.shell.AppShell");
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -131,7 +133,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             onClick={() => setMenuOpen(true)}
             className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
             style={{ color: "var(--text-secondary)", position: "relative" }}
-            aria-label="Otwórz menu"
+            aria-label={t("otworzMenu")}
           >
             <Menu size={18} />
             {invitationCount > 0 && (
@@ -218,7 +220,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                     className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    <MoreHorizontal size={20} /><span>Więcej…</span>
+                    <MoreHorizontal size={20} /><span>{t("wiecej")}</span>
                   </button>
                   {moreOpen && more.map((m) => (
                     <button
@@ -267,9 +269,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
         <ViewChromeProvider
           value={{
-            favorite: <FavoriteStarButton favorites={favoriteViews} placement="viewbar-inline" />,
-            freshness: <FreshnessIndicator />,
-            shortcuts: <ShortcutsButton />,
+            favorite: <FavoriteStarButton favorites={favoriteViews} placement="viewbar-inline" />, freshness: <FreshnessIndicator />, shortcuts: <ShortcutsButton />,
           }}
         >
           {children}
@@ -319,10 +319,11 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
 /** Mobilna sub-nawigacja modułu (tylko tam, gdzie miała sens w drawerze). */
 function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) {
+  const t = useTranslations("components.shell.AppShell");
   if (id === "shopping") {
     return (
       <>
-        <MobileSub href="/shopping/stores" pathname={pathname}><Map size={13} />Mapy sklepów</MobileSub>
+        <MobileSub href="/shopping/stores" pathname={pathname}><Map size={13} />{t("mapySklepow")}</MobileSub>
         <MobileSub href="/shopping/icons" pathname={pathname}><ImageIcon size={13} />Biblioteka ikon</MobileSub>
         <MobileSub href="/shopping/icons/categories" pathname={pathname}>Przypisania ikon</MobileSub>
       </>
@@ -355,10 +356,11 @@ function MobileModuleSubNav({ id, pathname }: { id: string; pathname: string }) 
 }
 
 function MobileItem({ href, exact, pathname, locked, children }: { href: string; exact?: boolean; pathname: string; locked?: boolean; children: React.ReactNode }) {
+  const t = useTranslations("components.shell.AppShell");
   const isActive = exact ? pathname === href : pathname.startsWith(href);
   if (locked) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm" style={{ opacity: 0.35, cursor: "not-allowed", color: "var(--text-secondary)" }} title="Niedostępne dla Twojej roli">
+      <div className="flex items-center gap-3 px-4 py-3 mx-2 rounded text-sm" style={{ opacity: 0.35, cursor: "not-allowed", color: "var(--text-secondary)" }} title={t("niedostepneDlaTwojejRoli")}>
         {children}<Lock size={11} style={{ marginLeft: "auto", flexShrink: 0, color: "var(--text-muted)" }} />
       </div>
     );

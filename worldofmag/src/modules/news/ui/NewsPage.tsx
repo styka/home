@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -73,6 +74,7 @@ export function NewsPage({
   /** 043: parametry adresu z serwera — zakładkę widoku czytamy stąd, nie z `window`. */
   viewParams?: RawParams;
 }) {
+  const t = useTranslations("modules.news.NewsPage");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -249,7 +251,7 @@ export function NewsPage({
     <ModuleView
       icon={<Newspaper size={22} />}
       iconColor="var(--accent-blue)"
-      title="Wiadomości"
+      title={t("wiadomosci")}
       href="/wiadomosci"
       state="ready"
       headerAction={
@@ -295,7 +297,7 @@ export function NewsPage({
               zgłoszenie — ale skupienie na jednym temacie zostaje jako osobna potrzeba. */}
           <div className="mb-3 flex gap-1">
             <ContentTab
-              label="Strumień"
+              label={t("strumien")}
               active={browseMode === "stream"}
               onClick={() => setBrowseMode("stream")}
             />
@@ -349,7 +351,7 @@ export function NewsPage({
             />
           ) : !selectedTopic ? (
             <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-              Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.
+              {t("dodajPierwszyTematDo")}
             </div>
           ) : (
             <>
@@ -382,8 +384,7 @@ export function NewsPage({
                 <NewsTimeline entries={filteredTimeline} />
               ) : filteredItems.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-                  Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać
-                  najświeższe materiały (tylko z ostatnich 24 godzin).
+                  {t("brakNowychIstotnychWiadomosci")}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -415,11 +416,12 @@ const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper }> = [
  * czego brakowało, gdy widoki przełączały się przyciskami zmieniającymi tylko swój wariant.
  */
 function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void }) {
+  const t = useTranslations("modules.news.NewsPage");
   return (
     <div
       className="mb-4 flex gap-1 border-b border-[var(--border)]"
       role="tablist"
-      aria-label="Widoki modułu Wiadomości"
+      aria-label={t("widokiModuluWiadomosci")}
     >
       {VIEW_TABS.map((t) => {
         const Icon = t.icon;
@@ -456,6 +458,7 @@ function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void 
  * mylenie ich każe mu bez sensu ponawiać (lekcja z 038).
  */
 function RefreshStatus({ state, running }: { state: NewsRefreshState | null; running: boolean }) {
+  const t = useTranslations("modules.news.NewsPage");
   if (!state) return null;
 
   if (running) {
@@ -473,7 +476,7 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
         className="mb-4 rounded-lg border bg-[var(--bg-surface)] px-3 py-2 text-sm"
         style={{ borderColor: "var(--accent-red)" }}
       >
-        <span className="text-[var(--text-primary)]">Ostatnie odświeżanie nie powiodło się.</span>
+        <span className="text-[var(--text-primary)]">{t("ostatnieOdswiezanieNiePowiodlo")}</span>
         {state.error && <span className="ml-2 text-xs text-[var(--text-muted)]">{state.error}</span>}
       </div>
     );
@@ -490,7 +493,7 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
       </span>
       {r.llmUnconfigured && (
         <span className="text-[var(--accent-amber)]">
-          model nieskonfigurowany — materiał pobrany, analiza pominięta
+          {t("modelNieskonfigurowanyMaterialPobrany")}
         </span>
       )}
       <AiCostBadge usage={r.usage} align="left" />
@@ -506,6 +509,7 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
  * a nie taka, którą się śledzi.
  */
 function RefreshHistory() {
+  const t = useTranslations("modules.news.NewsPage");
   const [open, setOpen] = useState(false);
   const [runs, setRuns] = useState<NewsRefreshRunDTO[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -530,16 +534,16 @@ function RefreshHistory() {
         aria-expanded={open}
         className="inline-flex items-center gap-1 py-1 text-[11px] text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
       >
-        <History size={12} /> Historia odświeżeń
+        <History size={12} /> {t("historiaOdswiezen")}
       </button>
 
       {open && (
         <div className="mt-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-2">
           {loading ? (
-            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">Wczytuję…</p>
+            <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">{t("wczytuje")}</p>
           ) : !runs || runs.length === 0 ? (
             <p className="px-1 py-2 text-[11px] text-[var(--text-muted)]">
-              Brak zapisanych przebiegów. Pierwszy pojawi się tu po najbliższym odświeżeniu.
+              {t("brakZapisanychPrzebiegowPierwszy")}
             </p>
           ) : (
             <ul className="flex flex-col gap-1">
@@ -626,6 +630,7 @@ function TopicBar({
   onSelect: (id: string) => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations("modules.news.NewsPage");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
@@ -664,7 +669,7 @@ function TopicBar({
               <button
                 onClick={() => remove(selected)}
                 className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-                title="Usuń temat"
+                title={t("usunTemat")}
                 aria-label={`Usuń temat: ${selected.title}`}
               >
                 <Trash2 size={16} />
@@ -737,6 +742,7 @@ function TopicModal({
   onClose: () => void;
   onSaved: (id?: string) => void;
 }) {
+  const t = useTranslations("modules.news.NewsPage");
   const { showToast } = useToast();
   const [title, setTitle] = useState(topic?.title ?? "");
   const [filter, setFilter] = useState(topic?.semanticFilter ?? "");
@@ -779,7 +785,7 @@ function TopicModal({
       }
     >
       <div>
-        <label className="mb-1 block text-xs text-[var(--text-secondary)]">Tytuł tematu</label>
+        <label className="mb-1 block text-xs text-[var(--text-secondary)]">{t("tytulTematu")}</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -789,13 +795,13 @@ function TopicModal({
       </div>
       <div>
         <label className="mb-1 block text-xs text-[var(--text-secondary)]">
-          Filtr semantyczny (opisz dokładnie, co Cię interesuje)
+          {t("filtrSemantycznyOpiszDokladnie")}
         </label>
         <textarea
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           rows={3}
-          placeholder="np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych"
+          placeholder={t("npPerypetieZbigniewaZiobry")}
           className="w-full rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
         />
       </div>

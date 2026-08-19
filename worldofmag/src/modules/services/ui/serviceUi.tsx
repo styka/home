@@ -1,9 +1,11 @@
+import { useTranslations } from "next-intl";
 import { Star, BadgeCheck } from "lucide-react";
 import type { RequestStatus, PriceModel } from "../lib/services";
 import { REQUEST_STATUS_LABELS, PRICE_MODEL_LABELS } from "../lib/services";
 
 /** Plakietka „zweryfikowany wykonawca" (M7). */
 export function VerifiedBadge({ size = 13, withLabel = false }: { size?: number; withLabel?: boolean }) {
+  const t = useTranslations("modules.services.serviceUi");
   return (
     <span title="Zweryfikowany wykonawca" style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--accent-green)", fontSize: 11, fontWeight: 600 }}>
       <BadgeCheck size={size} />
@@ -53,6 +55,7 @@ export function formatPrice(priceModel: PriceModel, amount: number | null, curre
 }
 
 export function RatingStars({ avg, count, size = 13 }: { avg: number; count: number; size?: number }) {
+  const t = useTranslations("modules.services.serviceUi");
   if (count === 0) {
     return <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Brak ocen</span>;
   }

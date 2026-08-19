@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-18T23:46:04.493Z",
+  "wygenerowano": "2026-08-19T01:02:40.820Z",
   "zdolnosciPlatformy": [
     "ai",
     "audit",
@@ -168,11 +168,6 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "DomainEvent"
   ],
   "zapadki": [
-    {
-      "nazwa": "Teksty zaszyte w komponentach",
-      "wartosc": 1416,
-      "bramka": "check:i18n"
-    },
     {
       "nazwa": "Najcięższa trasa (bajty JS)",
       "wartosc": 1191000,

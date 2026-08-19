@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { resolveTokens, tokensToStyle, type SkinTokens } from "@/lib/skins";
 
 /** Miniatura skórki — renderuje przykładowy „chrom" aplikacji ze zmiennymi danej
@@ -10,6 +11,7 @@ import { resolveTokens, tokensToStyle, type SkinTokens } from "@/lib/skins";
  *  prostokątów pokazywałaby ułamek tego, co użytkownik właśnie zmienia — i wybór skórki
  *  z listy byłby zgadywaniem. */
 export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; compact?: boolean }) {
+  const t = useTranslations("components.skins.SkinPreview");
   const full = resolveTokens(tokens);
   const style = tokensToStyle(full);
 
@@ -60,7 +62,7 @@ export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; c
             fontSize: compact ? 12 : 14,
           }}
         >
-          Nagłówek
+          {t("naglowek")}
         </div>
         <div
           style={{
@@ -70,7 +72,7 @@ export function SkinPreview({ tokens, compact = false }: { tokens: SkinTokens; c
             lineHeight: "var(--line-height-base)",
           }}
         >
-          Tekst drugorzędny
+          {t("tekstDrugorzedny")}
         </div>
         <div style={{ display: "flex", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
           <span style={{ background: "var(--accent-blue)", color: "var(--on-accent)", padding: "3px 8px", borderRadius: "var(--radius)", fontSize: 10, fontWeight: 500 }}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { FileText, AlertTriangle } from "lucide-react";
@@ -19,13 +20,14 @@ function fmtDate(iso: string | null): string {
 }
 
 export function AdminDocsViewer({ docs, generatedAt }: { docs: AdminDoc[]; generatedAt: string }) {
+  const t = useTranslations("components.admin.AdminDocsViewer");
   const [active, setActive] = useState(docs[0]?.key ?? "");
   const doc = docs.find((d) => d.key === active) ?? docs[0];
 
   if (!doc) {
     return (
       <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-        Brak dokumentów do wyświetlenia.
+        {t("brakDokumentowDoWyswietlenia")}
       </p>
     );
   }
@@ -83,7 +85,7 @@ export function AdminDocsViewer({ docs, generatedAt }: { docs: AdminDoc[]; gener
           color: "var(--accent-amber)", fontSize: 12,
         }}>
           <AlertTriangle size={14} />
-          Pliku nie znaleziono podczas builda — wyświetlana jest treść zastępcza.
+          {t("plikuNieZnalezionoPodczas")}
         </div>
       )}
 

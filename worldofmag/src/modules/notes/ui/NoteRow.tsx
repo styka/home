@@ -54,6 +54,7 @@ function highlightMatch(text: string, query: string) {
 export function NoteRow({
   note, allNotes, allTags, allGroups, isFocused, isEditing, onFocus, onStartEdit, onStopEdit, onNavigateToNote, onTagsChanged, rowRef, searchQuery = "",
 }: NoteRowProps) {
+  const t = useTranslations("modules.notes.NoteRow");
   const confirmDialog = useConfirm();
   const [, startTransition] = useTransition();
   const [editTitle, setEditTitle] = useState(note.title);
@@ -266,7 +267,7 @@ export function NoteRow({
           onKeyDown={(e) => { if (e.key === "Escape") onStopEdit(); }}
           className="flex-1 bg-transparent text-sm font-semibold focus:outline-none"
           style={{ color: "var(--text-primary)" }}
-          placeholder="Tytuł..."
+          placeholder={t("tytul")}
         />
 
         {/* Content — edytor + opcjonalny live-preview markdown (N1) */}
@@ -278,14 +279,14 @@ export function NoteRow({
               rows={8}
               className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
               style={{ color: "var(--text-primary)", lineHeight: 1.7, border: "1px solid var(--border)", borderRadius: 6, padding: 8 }}
-              placeholder="Treść notatki (markdown)..."
+              placeholder={t("trescNotatkiMarkdown")}
             />
             <div style={{ border: "1px solid var(--border)", borderRadius: 6, padding: 8, overflow: "auto", maxHeight: 240 }}>
               <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
               <div
                 className="markdown-body"
                 style={{ fontSize: 13 }}
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(editContent) || '<p style="color:var(--text-muted);font-size:12px">Podgląd…</p>' }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(editContent) || '<p style="color:var(--text-muted);font-size:12px">{t("podglad")}</p>' }}
               />
             </div>
           </div>
@@ -296,7 +297,7 @@ export function NoteRow({
             rows={5}
             className="w-full bg-transparent text-xs focus:outline-none resize-none font-mono"
             style={{ color: "var(--text-primary)", lineHeight: 1.7 }}
-            placeholder="Treść notatki..."
+            placeholder={t("trescNotatki")}
           />
         )}
 
@@ -306,7 +307,7 @@ export function NoteRow({
             onClick={() => setShowPreview((v) => !v)}
             className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
             style={{ backgroundColor: "var(--bg-hover)", color: showPreview ? "#8b5cf6" : "var(--text-muted)" }}
-            title="Podgląd markdown na żywo"
+            title={t("podgladMarkdownNaZywo")}
           >
             {showPreview ? <EyeOff size={11} /> : <Eye size={11} />}
             Podgląd
@@ -347,7 +348,7 @@ export function NoteRow({
             disabled={rewriting || isVoiceEditing}
             className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
             style={{ backgroundColor: "var(--bg-hover)", color: isVoiceEditing ? "#ef4444" : "var(--text-muted)" }}
-            title="Powiedz co zmienić"
+            title={t("powiedzCoZmienic")}
           >
             <Mic size={10} className={isVoiceEditing ? "animate-pulse" : ""} />
             {isVoiceEditing ? "Słucham..." : "Powiedz co zmienić"}
@@ -358,7 +359,7 @@ export function NoteRow({
               className="text-xs px-2 py-0.5 rounded"
               style={{ color: "var(--accent-amber)", backgroundColor: "rgba(245,158,11,0.1)" }}
             >
-              ↩ Przywróć
+              {t("przywroc")}
             </button>
           )}
         </div>
@@ -504,7 +505,7 @@ export function NoteRow({
     >
       {/* Pin indicator */}
       {note.pinned && (
-        <span style={{ color: "var(--accent-amber)", flexShrink: 0 }} title="Przypięta">
+        <span style={{ color: "var(--accent-amber)", flexShrink: 0 }} title={t("przypieta")}>
           <Pin size={12} />
         </span>
       )}
@@ -585,7 +586,7 @@ export function NoteRow({
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-              title="Usuń (d)"
+              title={t("usunD")}
             >
               <Trash2 size={13} />
             </button>
@@ -613,6 +614,7 @@ export function NoteRow({
 }
 
 function NoteAttachments({ noteId }: { noteId: string }) {
+  const t = useTranslations("modules.notes.NoteRow");
   const [items, setItems] = useState<NoteAttachmentDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -651,7 +653,7 @@ function NoteAttachments({ noteId }: { noteId: string }) {
             ) : (
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} className="flex items-center justify-center" style={{ width: 64, height: 64, fontSize: 10, color: "var(--accent-blue)", textAlign: "center", padding: 4 }}>{a.name.slice(0, 18)}</a>
             )}
-            <button onClick={async () => { await deleteNoteAttachment(a.id); setItems(await getNoteAttachments(noteId)); }} title="Usuń"
+            <button onClick={async () => { await deleteNoteAttachment(a.id); setItems(await getNoteAttachments(noteId)); }} title={t("usun")}
               style={{ position: "absolute", top: 1, right: 1, width: 18, height: 18, borderRadius: 4, background: "rgba(0,0,0,0.6)", color: "var(--on-accent)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Trash2 size={11} />
             </button>
@@ -668,6 +670,7 @@ function NoteAttachments({ noteId }: { noteId: string }) {
 }
 
 function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () => void }) {
+  const t = useTranslations("modules.notes.NoteRow");
   const confirmDialog = useConfirm();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NoteRevisionDTO[] | null>(null);
@@ -708,7 +711,7 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
         <div className="flex flex-col gap-1" style={{ borderLeft: "2px solid var(--border)", paddingLeft: 8 }}>
           {items === null && <Loader2 size={12} className="animate-spin" style={{ color: "var(--text-muted)" }} />}
           {items !== null && items.length === 0 && (
-            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Brak wcześniejszych wersji.</span>
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("brakWczesniejszychWersji")}</span>
           )}
           {(items ?? []).map((r) => (
             <div key={r.id} className="flex flex-col gap-0.5">
@@ -730,9 +733,9 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
                   disabled={busy}
                   className="flex items-center gap-1 text-[11px] px-1.5 py-0 rounded"
                   style={{ color: "var(--accent-amber)", backgroundColor: "rgba(245,158,11,0.1)" }}
-                  title="Przywróć tę wersję"
+                  title={t("przywrocTeWersje")}
                 >
-                  <RotateCcw size={10} /> Przywróć
+                  <RotateCcw size={10} /> {t("przywroc")}
                 </button>
               </div>
               {preview?.id === r.id && (
@@ -749,6 +752,7 @@ function NoteHistory({ noteId, onRestored }: { noteId: string; onRestored: () =>
 }
 
 function NoteLinks({ note, allNotes, onNavigate }: { note: Note; allNotes: Note[]; onNavigate?: (id: string) => void }) {
+  const t = useTranslations("modules.notes.NoteRow");
   const { resolved, unresolved } = outgoingLinks(note, allNotes);
   const back = backlinks(note, allNotes);
   if (resolved.length === 0 && unresolved.length === 0 && back.length === 0) return null;
@@ -785,7 +789,7 @@ function NoteLinks({ note, allNotes, onNavigate }: { note: Note; allNotes: Note[
       {back.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
-            <Link2 size={11} /> Linkują tu:
+            <Link2 size={11} /> {t("linkujaTu")}
           </span>
           {back.map((n) => chip(n.title, onNavigate ? () => onNavigate(n.id) : undefined))}
         </div>

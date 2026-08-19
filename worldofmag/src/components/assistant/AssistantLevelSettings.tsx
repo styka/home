@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { RotateCcw } from "lucide-react";
 import {
@@ -46,6 +47,7 @@ function capabilitiesFor(config: AssistantLevelConfigDTO, op: AssistantOperation
 }
 
 export function AssistantLevelSettings() {
+  const t = useTranslations("components.assistant.AssistantLevelSettings");
   const [config, setConfig] = useState<AssistantLevelConfigDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -87,14 +89,13 @@ export function AssistantLevelSettings() {
   }
 
   if (!config) {
-    return <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Wczytuję ustawienia…</p>;
+    return <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("wczytujeUstawienia")}</p>;
   }
 
   if (config.choices.length === 0) {
     return (
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
-        Administrator nie skonfigurował jeszcze żadnego modelu, więc nie ma z czego wybierać. Poziom
-        własny zacznie działać, gdy modele się pojawią.
+        {t("administratorNieSkonfigurowalJeszcze")}
       </p>
     );
   }
@@ -102,8 +103,7 @@ export function AssistantLevelSettings() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
-        Ustaw model, wysiłek i temperaturę osobno dla każdego rodzaju działania asystenta. Wartości
-        startowe pochodzą z poziomu standardowego — zmieniasz tylko to, co chcesz mieć inaczej.
+        {t("ustawModelWysilekI")}
       </p>
 
       {config.operations.map((op) => {
@@ -123,8 +123,7 @@ export function AssistantLevelSettings() {
 
             {modelValue === "" ? (
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
-                Administrator nie przypisał modelu do tego rodzaju działania, więc nie ma tu czego
-                ustawiać. Pojawi się, gdy przypisanie powstanie w panelu LLM.
+                {t("administratorNiePrzypisalModelu")}
               </p>
             ) : (
               <>
@@ -143,7 +142,7 @@ export function AssistantLevelSettings() {
                   </div>
 
                   <div style={{ minWidth: 0, opacity: caps.effort ? 1 : 0.55 }}>
-                    <label style={labelStyle}>Wysiłek</label>
+                    <label style={labelStyle}>{t("wysilek")}</label>
                     <select
                       style={inputStyle}
                       value={effort}
@@ -194,7 +193,7 @@ export function AssistantLevelSettings() {
           border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer",
         }}
       >
-        <RotateCcw size={13} /> Przywróć ustawienia administratora
+        <RotateCcw size={13} /> {t("przywrocUstawieniaAdministratora")}
       </button>
 
       {error && <p style={{ fontSize: 11.5, color: "var(--accent-red)", margin: 0 }}>{error}</p>}

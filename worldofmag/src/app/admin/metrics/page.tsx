@@ -8,8 +8,10 @@ import { getUnitEconomics } from "@/actions/metrics";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { withPln } from "@/lib/usdPln";
 import { ChevronLeft, LineChart } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminMetricsPage() {
+  const t = await getTranslations("app.admin.metrics.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -67,9 +69,9 @@ export default async function AdminMetricsPage() {
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>{m.revenue.note}</p>
         </div>
 
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>Zużycie AI dzień po dniu</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 8 }}>{t("zuzycieAiDzienPo")}</div>
         {m.perDay.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Brak danych zużycia AI w oknie.</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("brakDanychZuzyciaAi")}</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {m.perDay.map((d) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Search, Trash2, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -43,6 +44,7 @@ export function SlotEditorSheet({
   recipes,
   teamId,
 }: SlotEditorSheetProps) {
+  const t = useTranslations("modules.kitchen.SlotEditorSheet");
   const confirmDialog = useConfirm();
   const [query, setQuery] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(entry?.recipeId ?? null);
@@ -152,7 +154,7 @@ export function SlotEditorSheet({
                   <CheckCircle2 size={14} /> Ugotowane
                 </button>
                 <button type="button" onClick={handleDelete} disabled={pending} className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs disabled:opacity-50" style={{ color: "var(--accent-red)" }}>
-                  <Trash2 size={14} /> Usuń
+                  <Trash2 size={14} /> {t("usun")}
                 </button>
               </>
             ) : null}
@@ -190,7 +192,7 @@ export function SlotEditorSheet({
           >
             {filteredRecipes.length === 0 ? (
               <div className="px-3 py-3 text-sm" style={{ color: "var(--text-muted)" }}>
-                Brak pasujących przepisów.
+                {t("brakPasujacychPrzepisow")}
               </div>
             ) : (
               filteredRecipes.map((r) => {
@@ -215,7 +217,7 @@ export function SlotEditorSheet({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>lub własny tytuł:</span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("lubWlasnyTytul")}</span>
             <input
               type="text"
               value={customTitle}
@@ -223,7 +225,7 @@ export function SlotEditorSheet({
                 setCustomTitle(e.target.value);
                 if (e.target.value.trim()) setSelectedRecipeId(null);
               }}
-              placeholder="np. obiad u rodziców"
+              placeholder={t("npObiadURodzicow")}
               className="flex-1 px-2 py-1 rounded border text-sm"
               style={{
                 backgroundColor: "var(--bg-elevated)",

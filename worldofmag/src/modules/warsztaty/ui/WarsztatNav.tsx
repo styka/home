@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -20,6 +21,7 @@ const TABS: Tab[] = [
 ];
 
 export function WarsztatNav({ mode, children }: { mode: WarsztatMode; children: React.ReactNode }) {
+  const t = useTranslations("modules.warsztaty.WarsztatNav");
   const pathname = usePathname();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -57,7 +59,7 @@ export function WarsztatNav({ mode, children }: { mode: WarsztatMode; children: 
               backgroundColor: "var(--bg-elevated)",
               color: mode === "pro" ? "var(--accent-purple)" : "var(--accent-green)",
             }}
-            title="Przełącz tryb Dom ↔ Profesjonalny"
+            title={t("przelaczTrybDomProfesjonalny")}
           >
             {mode === "pro" ? <Building2 size={13} /> : <Home size={13} />}
             {mode === "pro" ? "Profesjonalny" : "Dom"}

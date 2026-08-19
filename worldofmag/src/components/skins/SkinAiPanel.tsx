@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Sparkles, AlertTriangle } from "lucide-react";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
@@ -37,6 +38,7 @@ const EXAMPLES = [
 ];
 
 export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => void }) {
+  const t = useTranslations("components.skins.SkinAiPanel");
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -89,7 +91,7 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
         }}
       >
         <Sparkles size={15} style={{ color: "var(--accent-purple)" }} />
-        Opisz skórkę słowami
+        {t("opiszSkorkeSlowami")}
       </button>
     );
   }
@@ -106,13 +108,13 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Sparkles size={15} style={{ color: "var(--accent-purple)" }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Opisz skórkę słowami</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t("opiszSkorkeSlowami")}</span>
         <button
           type="button"
           onClick={() => setOpen(false)}
           style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}
         >
-          Zwiń
+          {t("zwin")}
         </button>
       </div>
 
@@ -121,7 +123,7 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
         onChange={(e) => setPrompt(e.target.value)}
         rows={2}
         maxLength={600}
-        placeholder="np. konsola statku kosmicznego — bursztyn i granat, wersaliki w nagłówkach"
+        placeholder={t("npKonsolaStatkuKosmicznego")}
         style={{
           background: "var(--bg-base)",
           border: "var(--border-width) var(--border-style) var(--border)",
@@ -230,10 +232,10 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
                 cursor: "pointer",
               }}
             >
-              Użyj tej propozycji
+              {t("uzyjTejPropozycji")}
             </button>
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              Nic nie zostało jeszcze zapisane — po wstawieniu możesz dostroić każdy token ręcznie.
+              {t("nicNieZostaloJeszcze")}
             </span>
           </div>
 

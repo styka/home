@@ -4,6 +4,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { getReportsMeta } from "@/modules/reports/contract";
 import { BookOpen, ChevronRight, ChevronLeft, Calendar, Plus, User, HardDrive, Database } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   refactoring: { label: "Refaktoryzacja", color: "var(--accent-purple)" },
@@ -27,6 +28,7 @@ function formatDateTime(date: Date): string {
 }
 
 export default async function ReportsPage() {
+  const t = await getTranslations("app.admin.reports.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -71,7 +73,7 @@ export default async function ReportsPage() {
           </Link>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 32, marginTop: 4 }}>
-          Archiwum raportów technicznych, analiz i dokumentacji projektowej.
+          {t("archiwumRaportowTechnicznychAnaliz")}
         </p>
 
         {/* Reports list */}
@@ -86,7 +88,7 @@ export default async function ReportsPage() {
               fontSize: 13,
             }}
           >
-            Brak raportów. Dodaj pierwszy raport przez seed lub bezpośrednio do bazy danych.
+            {t("brakRaportowDodajPierwszy")}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

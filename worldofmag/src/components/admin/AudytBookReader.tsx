@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
@@ -93,6 +94,7 @@ export function AudytBookReader({
   copyPrompt?: string;
   copyPromptLabel?: string;
 }) {
+  const t = useTranslations("components.admin.AudytBookReader");
   const [theme, setTheme] = useState<ReadingTheme>("dark");
   const [copied, setCopied] = useState(false);
   const [tocOpen, setTocOpen] = useState(false); // mobile drawer
@@ -494,7 +496,7 @@ export function AudytBookReader({
                   style={{ ...navBtnStyle, justifyContent: "flex-end", textAlign: "right" }}
                 >
                   <span style={{ minWidth: 0 }}>
-                    <span style={navBtnEyebrow}>Następny</span>
+                    <span style={navBtnEyebrow}>{t("nastepny")}</span>
                     <span style={navBtnTitle}>{next.title}</span>
                   </span>
                   <ChevronRight size={15} style={{ flexShrink: 0 }} />

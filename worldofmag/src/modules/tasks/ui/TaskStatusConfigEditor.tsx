@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
@@ -61,6 +62,7 @@ type FormState = { label: string; color: string; icon: string; isTerminal: boole
 const EMPTY_FORM: FormState = { label: "", color: "var(--accent-blue)", icon: "circle", isTerminal: false };
 
 export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
+  const t = useTranslations("modules.tasks.TaskStatusConfigEditor");
   const [rows, setRows] = useState<Row[]>(() => buildRows(config));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -176,8 +178,8 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
     >
       <div>
         <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--text-secondary)" }}>Włączony</strong> — status widoczny jako zakładka i cel zmiany.{" "}
-            <strong style={{ color: "var(--text-secondary)" }}>W ścieżce</strong> — bierze udział w przechodzeniu przód/tył (klik checkboxa, klawisz x). Kolejność wyznacza zakładki i kierunek ścieżki. Statusy systemowe można tylko włączać/wyłączać; własne można edytować i usuwać.
+            <strong style={{ color: "var(--text-secondary)" }}>{t("wlaczony")}</strong> — status widoczny jako zakładka i cel zmiany.{" "}
+            <strong style={{ color: "var(--text-secondary)" }}>{t("wSciezce")}</strong> {t("bierzeUdzialWPrzechodzeniu")}
           </p>
 
           <div className="flex flex-col gap-1">
@@ -188,10 +190,10 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
                 style={{ backgroundColor: "var(--bg-elevated)", opacity: r.enabled ? 1 : 0.55 }}
               >
                 <div className="flex flex-col">
-                  <button onClick={() => move(idx, -1)} disabled={idx === 0} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title="W górę">
+                  <button onClick={() => move(idx, -1)} disabled={idx === 0} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title={t("wGore")}>
                     <ChevronUp size={13} />
                   </button>
-                  <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title="W dół">
+                  <button onClick={() => move(idx, 1)} disabled={idx === rows.length - 1} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--text-muted)" }} title={t("wDol")}>
                     <ChevronDown size={13} />
                   </button>
                 </div>
@@ -204,7 +206,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
                     <button onClick={() => openEdit(r)} className="focus:outline-none" style={{ color: "var(--text-muted)" }} title="Edytuj status">
                       <Pencil size={13} />
                     </button>
-                    <button onClick={() => removeCustom(r.key)} className="focus:outline-none" style={{ color: "var(--accent-red)" }} title="Usuń status">
+                    <button onClick={() => removeCustom(r.key)} className="focus:outline-none" style={{ color: "var(--accent-red)" }} title={t("usunStatus")}>
                       <Trash2 size={13} />
                     </button>
                   </>
@@ -212,11 +214,11 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
 
                 <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
                   <input type="checkbox" checked={r.enabled} onChange={() => toggleEnabled(idx)} style={{ accentColor: "var(--accent-blue)" }} />
-                  Włączony
+                  {t("wlaczony")}
                 </label>
                 <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: r.enabled ? "var(--text-secondary)" : "var(--text-muted)" }}>
                   <input type="checkbox" checked={r.inChain} disabled={!r.enabled} onChange={() => toggleChain(idx)} style={{ accentColor: "var(--accent-green)" }} />
-                  W ścieżce
+                  {t("wSciezce")}
                 </label>
               </div>
             ))}
@@ -266,7 +268,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
               </div>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: "var(--text-secondary)" }}>
                 <input type="checkbox" checked={form.isTerminal} onChange={(e) => setForm((f) => ({ ...f, isTerminal: e.target.checked }))} style={{ accentColor: "var(--accent-green)" }} />
-                Status „zamykający” (chowany w widoku aktywnych, jak Zrobione)
+                {t("statusZamykajacyChowanyW")}
               </label>
               <div className="flex items-center justify-end gap-2 mt-1">
                 <button onClick={() => setFormOpen(false)} className="text-xs px-2.5 py-1 rounded focus:outline-none" style={{ color: "var(--text-secondary)" }}>
@@ -283,7 +285,7 @@ export function TaskStatusConfigEditor({ projectId, config, onClose }: Props) {
               className="flex items-center gap-1.5 text-xs mt-3 px-2 py-1.5 rounded focus:outline-none"
               style={{ color: "var(--accent-blue)" }}
             >
-              <Plus size={14} /> Dodaj własny status
+              <Plus size={14} /> {t("dodajWlasnyStatus")}
             </button>
           )}
 

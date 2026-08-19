@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -38,6 +39,7 @@ export function LocationMapPicker({
   busy?: boolean;
   onSave: (point: MapPoint) => void;
 }) {
+  const t = useTranslations("modules.weather.LocationMapPicker");
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<LeafletMarker | null>(null);
@@ -134,13 +136,13 @@ export function LocationMapPicker({
 
       {!ready && (
         <p className="mt-2 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <Loader2 size={13} className="animate-spin" /> Wczytuję mapę…
+          <Loader2 size={13} className="animate-spin" /> {t("wczytujeMape")}
         </p>
       )}
 
       {tilesFailed && (
         <p className="mt-2 text-xs text-[var(--accent-amber)]">
-          Nie udało się wczytać mapy. Wskaż lokalizację po nazwie lub przez GPS.
+          {t("nieUdaloSieWczytac")}
         </p>
       )}
 

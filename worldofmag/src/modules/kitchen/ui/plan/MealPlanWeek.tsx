@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
@@ -70,6 +71,7 @@ function entryLabel(e: MealPlanEntryWithRecipe): string {
 const DRAWER_KEY = "kitchen.plan.drawerOpen";
 
 export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, weekCost }: MealPlanWeekProps) {
+  const t = useTranslations("modules.kitchen.MealPlanWeek");
   const router = useRouter();
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date(`${initialWeek}T12:00:00`));
   const [editing, setEditing] = useState<{ date: Date; slot: MealSlot; entry?: MealPlanEntryWithRecipe | null } | null>(null);
@@ -204,7 +206,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
             onClick={goPrev}
             className="w-8 h-8 rounded flex items-center justify-center"
             style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
-            aria-label="Poprzedni tydzień"
+            aria-label={t("poprzedniTydzien")}
           >
             <ChevronLeft size={16} />
           </button>
@@ -214,14 +216,14 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
             className="px-3 h-8 rounded text-sm"
             style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
           >
-            Dziś
+            {t("dzis")}
           </button>
           <button
             type="button"
             onClick={goNext}
             className="w-8 h-8 rounded flex items-center justify-center"
             style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
-            aria-label="Następny tydzień"
+            aria-label={t("nastepnyTydzien")}
           >
             <ChevronRight size={16} />
           </button>
@@ -265,7 +267,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
             style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
           >
-            <ShoppingCart size={14} /> Lista zakupów z planu
+            <ShoppingCart size={14} /> {t("listaZakupowZPlanu")}
           </button>
         </div>
       </div>
@@ -408,7 +410,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
 
       {pending ? (
         <div className="fixed bottom-4 right-4 text-xs px-3 py-1.5 rounded" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-          Synchronizuję…
+          {t("synchronizuje")}
         </div>
       ) : null}
     </div>

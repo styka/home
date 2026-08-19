@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 // 041: wybór tematu jako rozwijana lista zamiast poziomego paska zakładek.
 //
 // Historia tego miejsca to trzecie podejście. Kolumna (do 039) zabierała jedną trzecią szerokości i
@@ -27,6 +28,7 @@ export function TopicPicker({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const t = useTranslations("modules.news.TopicPicker");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);

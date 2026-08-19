@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef } from "react";
 import { Trash2, Plus, RefreshCw, FolderOpen, FolderSymlink, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +25,7 @@ function SvgTile({
   onDelete: () => void;
   onAssigned: (categoryName: string) => void;
 }) {
+  const t = useTranslations("modules.shopping.IconLibrary");
   const [hovered, setHovered] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assigning, setAssigning] = useState(false);
@@ -83,7 +85,7 @@ function SvgTile({
             }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-red)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-            aria-label="Usuń"
+            aria-label={t("usun")}
           >
             <Trash2 size={10} />
           </button>
@@ -157,6 +159,7 @@ function SkeletonTile() {
 }
 
 function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData) => void }) {
+  const t = useTranslations("modules.shopping.IconLibrary");
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("");
   const [additionalText, setAdditionalText] = useState("");
@@ -242,7 +245,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
           title={
             <span className="flex flex-col">
               <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Generuj ikony</span>
-              <span className="text-xs mt-0.5 font-normal" style={{ color: "var(--text-muted)" }}>Kliknij wygenerowaną ikonę by zapisać do biblioteki</span>
+              <span className="text-xs mt-0.5 font-normal" style={{ color: "var(--text-muted)" }}>{t("kliknijWygenerowanaIkoneBy")}</span>
             </span>
           }
         >
@@ -273,7 +276,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
               <input
                 value={additionalText}
                 onChange={(e) => setAdditionalText(e.target.value)}
-                placeholder="Dodatkowe wskazówki (opcjonalnie)…"
+                placeholder={t("dodatkoweWskazowkiOpcjonalnie")}
                 className="flex-1 text-xs focus:outline-none rounded-lg px-2.5 py-1.5"
                 style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-primary)", caretColor: "var(--accent-blue)" }}
               />
@@ -321,7 +324,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
               </div>
             ) : !loading && !error ? (
               <p className="text-xs text-center py-6" style={{ color: "var(--text-muted)" }}>
-                Wpisz temat lub wskazówki i kliknij „Generuj”
+                {t("wpiszTematLubWskazowki")}
               </p>
             ) : null}
           </div>
@@ -332,6 +335,7 @@ function GeneratorDialog({ onSaved }: { onSaved: (icon: CategoryIconVariantData)
 }
 
 export function IconLibrary({ initialIcons, allCategories }: IconLibraryProps) {
+  const t = useTranslations("modules.shopping.IconLibrary");
   const [icons, setIcons] = useState(initialIcons);
 
   function handleDelete(id: string) {
@@ -374,7 +378,7 @@ export function IconLibrary({ initialIcons, allCategories }: IconLibraryProps) {
       {icons.length === 0 ? (
         <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
           <p className="text-sm mb-1">Brak ikon w bibliotece</p>
-          <p className="text-xs">Kliknij „Generuj nowe” by dodać pierwsze ikony</p>
+          <p className="text-xs">{t("kliknijGenerujNoweBy")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">

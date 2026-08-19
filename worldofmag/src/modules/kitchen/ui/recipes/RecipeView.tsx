@@ -28,6 +28,7 @@ function scaleQuantity(qty: number | null, factor: number): number | null {
 }
 
 export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
+  const t = useTranslations("modules.kitchen.RecipeView");
   const confirmDialog = useConfirm();
   const router = useRouter();
   const { showToast } = useToast();
@@ -127,7 +128,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
               className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm disabled:opacity-50"
               style={{ color: "var(--accent-red)" }}
             >
-              <Trash2 size={14} /> Usuń
+              <Trash2 size={14} /> {t("usun")}
             </button>
           ) : null}
         </div>
@@ -165,7 +166,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
         ) : null}
         {(recipe.kcal != null || recipe.protein != null || recipe.carbs != null || recipe.fat != null) && (
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-            <span style={{ fontWeight: 600 }}>Na porcję:</span>
+            <span style={{ fontWeight: 600 }}>{t("naPorcje")}</span>
             {recipe.kcal != null && <span>{recipe.kcal} kcal</span>}
             {recipe.protein != null && <span>· B {recipe.protein} g</span>}
             {recipe.carbs != null && <span>· W {recipe.carbs} g</span>}
@@ -207,7 +208,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
           style={{ backgroundColor: "var(--accent-orange)", color: "var(--on-accent)" }}
         >
-          <ShoppingCart size={14} /> Do listy zakupów
+          <ShoppingCart size={14} /> {t("doListyZakupow")}
         </button>
         <button
           type="button"
@@ -216,14 +217,14 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border disabled:opacity-50"
           style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
         >
-          <CheckCircle2 size={14} /> Ugotowałem
+          <CheckCircle2 size={14} /> {t("ugotowalem")}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[280px,1fr] gap-6">
         <section>
           <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-            Składniki
+            {t("skladniki")}
           </h2>
           {cost.pricedCount > 0 && (
             <p className="text-xs mb-2" style={{ color: "var(--accent-green)" }}>
@@ -235,7 +236,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           )}
           {recipe.ingredients.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Brak składników.
+              {t("brakSkladnikow")}
             </p>
           ) : (
             <div className="flex flex-col gap-3">
@@ -281,7 +282,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
           </h2>
           {recipe.steps.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Brak kroków.
+              {t("brakKrokow")}
             </p>
           ) : (
             <ol className="flex flex-col gap-3">
@@ -324,7 +325,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
         <section className="mt-6">
           <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
           <h2 className="text-sm font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-            Zdjęcia z przepisu
+            {t("zdjeciaZPrzepisu")}
           </h2>
           <div className="flex flex-col gap-3">
             {recipe.images.map((img, idx) => {
@@ -362,7 +363,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
                       </>
                     ) : (
                       <p className="text-xs italic mt-1" style={{ color: "var(--text-muted)" }}>
-                        Brak odczytanego tekstu z tego zdjęcia.
+                        {t("brakOdczytanegoTekstuZ")}
                       </p>
                     )}
                   </div>

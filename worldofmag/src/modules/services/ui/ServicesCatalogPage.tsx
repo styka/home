@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useMemo, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, text, type RawParams } from "@/platform/viewState/viewState";
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function ServicesCatalogPage({ initialListings, categories, hasProviderProfile, favorites = [], viewParams = {} }: Props) {
+  const t = useTranslations("modules.services.ServicesCatalogPage");
   const [listings, setListings] = useState<ListingDTO[]>(initialListings);
   // 043: szukajka, kategoria i sortowanie w adresie (AC-8a). Panel filtrów zaawansowanych
   // (ocena, ceny, rezerwacja, weryfikacja, geolokalizacja) zostaje poza adresem — jego wartości
@@ -114,7 +116,7 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
       state="ready"
       icon={<Handshake size={22} />}
       iconColor="var(--accent-blue)"
-      title="Usługi"
+      title={t("uslugi")}
       subtitle="Znajdź wykonawcę lub zaoferuj swoje usługi"
       headerAction={
         <div style={{ display: "flex", gap: 8 }}>
@@ -135,7 +137,7 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Szukaj usługi lub wykonawcy…"
+            placeholder={t("szukajUslugiLubWykonawcy")}
             style={{ ...fieldInputStyle, paddingLeft: 32 }}
           />
         </div>
@@ -154,8 +156,8 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
             <label style={fieldLabelStyle}>Sortuj</label>
             <select value={sort} onChange={(e) => { const v = e.target.value as ListingSort; setSort(v); applyFilters(activeCat, query, { sort: v }); }} style={{ ...fieldInputStyle, width: 160 }}>
               <option value="rating">Najlepiej oceniani</option>
-              <option value="priceAsc">Cena rosnąco</option>
-              <option value="priceDesc">Cena malejąco</option>
+              <option value="priceAsc">{t("cenaRosnaco")}</option>
+              <option value="priceDesc">{t("cenaMalejaco")}</option>
               <option value="newest">Najnowsze</option>
             </select>
           </div>
@@ -178,7 +180,7 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
             <input type="checkbox" checked={bookingOnly} onChange={(e) => { setBookingOnly(e.target.checked); applyFilters(activeCat, query, { bookingOnly: e.target.checked }); }} />
-            Z rezerwacją online
+            {t("zRezerwacjaOnline")}
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", cursor: "pointer", paddingBottom: 8 }}>
             <input type="checkbox" checked={verifiedOnly} onChange={(e) => { setVerifiedOnly(e.target.checked); applyFilters(activeCat, query, { verifiedOnly: e.target.checked }); }} />
@@ -190,7 +192,7 @@ export function ServicesCatalogPage({ initialListings, categories, hasProviderPr
             </button>
             {nearPos && (
               <div>
-                <label style={fieldLabelStyle}>Promień</label>
+                <label style={fieldLabelStyle}>{t("promien")}</label>
                 <select value={radiusKm} onChange={(e) => { const v = Number(e.target.value); setRadiusKm(v); applyFilters(activeCat, query, { radiusKm: v }); }} style={{ ...fieldInputStyle, width: 110 }}>
                   {[2, 5, 10, 25, 50].map((r) => <option key={r} value={r}>{r} km</option>)}
                 </select>

@@ -5,8 +5,10 @@ import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { FileText, ChevronLeft } from "lucide-react";
 import { ADMIN_DOCS, ADMIN_DOCS_GENERATED_AT } from "@/generated/admin-docs";
 import { AdminDocsViewer } from "@/components/admin/AdminDocsViewer";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminDocsPage() {
+  const t = await getTranslations("app.admin.docs.page");
   const session = await auth();
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
@@ -26,9 +28,8 @@ export default async function AdminDocsPage() {
           </h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 28, marginTop: 4 }}>
-          Najnowsza wersja plików <code style={{ fontFamily: "monospace" }}>CLAUDE.md</code> oraz{" "}
-          <code style={{ fontFamily: "monospace" }}>doświadczenia.md</code> z katalogu głównego repozytorium,
-          aktualizowana automatycznie przy każdym buildzie.
+          {t("najnowszaWersjaPlikow")} <code style={{ fontFamily: "monospace" }}>CLAUDE.md</code> oraz{" "}
+          <code style={{ fontFamily: "monospace" }}>{t("doswiadczeniaMd")}</code> {t("zKataloguGlownegoRepozytorium")}
         </p>
 
         <AdminDocsViewer docs={ADMIN_DOCS} generatedAt={ADMIN_DOCS_GENERATED_AT} />

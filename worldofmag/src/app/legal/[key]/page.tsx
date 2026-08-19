@@ -6,8 +6,10 @@ import { auth } from "@/platform/auth/session";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { getLegalDoc } from "@/lib/legal/documents";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function LegalDocPage({ params }: { params: { key: string } }) {
+  const t = await getTranslations("app.legal.key.page");
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
