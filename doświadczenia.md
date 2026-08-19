@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Commit scalający na `master` rozjeżdżał gałęzie przy każdej promocji
+**Problem:** Pipeline promował produkcję przez `git merge --no-ff develop -m "... [produkcja]"`.
+Ten commit scalający powstaje **wyłącznie na `master`** — `develop` nigdy go nie dostaje. Od tej
+sekundy `develop` nie zawiera produkcji, kontrola integralności z C-52
+(`git merge-base --is-ancestor origin/master develop`) wypadała fałszywie, więc każdy następny
+przebieg musiał zacząć od merge'a synchronizującego `master → develop` (`68ce01c` „commit scalający
+promocji 080"). Stąd powtarzalne komunikaty o commicie scalającym na gałęzi docelowej i puste
+merge'e w historii. W chwili naprawy `origin/master` był o 1 commit przed `origin/develop` przy
+**zerowej różnicy treści**.
+**Rozwiązanie:** Promocja `develop → master` to teraz zawsze `git merge --ff-only develop` (odbicie =
+stop i zgłoszenie, nigdy `--no-ff` ani force-push), a widoczny ślad wydania daje **adnotowany tag**
+`prod-<NNN>-<slug>` pushowany razem z `master`. Reguła zapisana w trzech miejscach, którymi steruje
+się pipeline: `CLAUDE.md` (Git workflow), `.claude/spec-pipeline/constitution.md` (**C-52a**) i
+`.claude/commands/review.md` (krok promocji).
+**Lekcja:** Commit scalający ma sens **tylko na gałęzi, do której coś się jeszcze merguje z powrotem**.
+`master` jest końcem drogi — commit powstały tam jest niewidoczny dla `develop` i zamienia jednorazowy
+merge w stały narzut. Dodatkowo `--no-ff` na produkcji stawia tam commit, którego **nikt nie
+testował**: `--ff-only` gwarantuje, że na produkcji stoi dokładnie to, co przeszło testy na
+`develop`. Potrzeba „widocznego znacznika wydania" to zadanie dla taga, nie dla topologii historii.
+
 ## 2026-08-19 — Tryb JSON, który nic nie robi u połowy dostawców
 **Problem:** `chatComplete({ json: true })` ustawiało `response_format: {type:"json_object"}`
 WYŁĄCZNIE w ciele żądania zgodnym z OpenAI. `anthropicBody` nie czytało `opts.json` w ogóle, więc

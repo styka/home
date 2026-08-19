@@ -1274,7 +1274,21 @@ The flow is **`feature → develop → master`**:
   integrity check so it never rewinds production. **Outside the pipeline**, promote
   `develop → master` **only on the user's explicit request**, and only after confirming
   everything works on the test env (`develop`).
-- Prefer fast-forward; if the target branch has diverged, do a normal merge (no force-push).
+- **`develop → master` is ALWAYS `git merge --ff-only`, and a release is marked with a TAG, not a
+  merge commit** (`C-52a`). `--no-ff` there creates a commit that exists **only on `master`**: from
+  that moment `develop` no longer contains production, the `C-52` integrity check
+  (`git merge-base --is-ancestor origin/master develop`) reads false, and every later run has to open
+  with a `master → develop` sync merge — that is where the recurring "the target branch has a merge
+  commit" messages and the empty merges in the graph come from. So: promote with `--ff-only`; if it
+  is refused, **stop and report** (never `--no-ff`, never force-push); record the release with
+  `git tag -a prod-<NNN>-<slug> -m "<feature> [produkcja]"` + `git push origin prod-<NNN>-<slug>`.
+  The point of the rule is that production runs **exactly** the commit that was tested on `develop`.
+- **Merge commits belong on the TARGET branch only.** `claude/* → develop` may create one (it lands
+  on `develop` and travels onward to `master` with it) — that is fine and unchanged. What is
+  forbidden is creating one on `master`, which no branch ever merges back from.
+- If `develop` genuinely does not contain production (a hotfix committed straight to `master`), merge
+  `origin/master` into `develop` **once**, push `develop`, and only then promote fast-forward. Never
+  force-push either branch.
 
 ---
 

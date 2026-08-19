@@ -59,23 +59,34 @@ sugerowana poprawka. Na końcu **werdykt**: APPROVE / APPROVE Z UWAGAMI / ZMIANY
 - Jeśli werdykt to **APPROVE / APPROVE Z UWAGAMI**:
   1. Domknij zadanie zgodnie ze **STANDING AUTHORIZATION** z `CLAUDE.md` — commit → merge brancha
      roboczego (`claude/*`) do `develop` → push `develop` (po zielonym buildzie; C-50/C-52). Nie pytaj
-     o zgodę na to — to jest ta zgoda.
-  2. **Automatyczna promocja `develop → master` (C-52) — bez pytania.** Właściciel z góry autoryzował
-     merge na produkcję na koniec pipeline'u. Wykonaj to od razu po pushu `develop`, pod warunkiem
-     APPROVE/APPROVE Z UWAGAMI i zielonego buildu (C-50):
-     - `git fetch origin master` → `git checkout master`.
+     o zgodę na to — to jest ta zgoda. Tu commit scalający jest w porządku: powstaje na gałęzi
+     **docelowej** (`develop`), więc jedzie dalej na `master` razem z resztą.
+  2. **Automatyczna promocja `develop → master` (C-52) — bez pytania i ZAWSZE fast-forward.**
+     Właściciel z góry autoryzował merge na produkcję na koniec pipeline'u. Wykonaj to od razu po
+     pushu `develop`, pod warunkiem APPROVE/APPROVE Z UWAGAMI i zielonego buildu (C-50):
+     - `git fetch origin master develop` → `git checkout -B master origin/master` (lokalny `master`
+       zawsze bierz z `origin/master`, nigdy ze starego trackingu).
      - **Kontrola integralności (obowiązkowo, żeby nie cofnąć produkcji):**
-       `git merge-base --is-ancestor origin/master develop` — jeśli **fałsz**, to `develop` nie zawiera
-       aktualnej produkcji: **NIE merguj**, zawróć: zsynchronizuj (`git merge origin/master` do develop
-       albo rebase) i dopiero wtedy promuj. Lokalny `master` zawsze ustaw z `origin/master`
-       (`git reset --hard origin/master` na świeżo checkoutowanej gałęzi, jeśli tracking jest za nią).
-     - `git merge --no-ff develop -m "Merge develop → master: <feature> [produkcja]"`.
-     - Po merge ponownie potwierdź: `git merge-base --is-ancestor origin/master HEAD` (musi być prawda)
-       oraz że HEAD dokłada tylko oczekiwane commity feature'a ponad `origin/master`.
+       `git merge-base --is-ancestor origin/master develop` — jeśli **fałsz**, to `develop` nie
+       zawiera aktualnej produkcji (np. ktoś zrobił hotfix wprost na `master`): **NIE promuj**,
+       zawróć — `git merge origin/master` na `develop`, rozwiąż konflikty, push `develop`, i dopiero
+       wtedy promuj.
+     - `git merge --ff-only develop` — **nigdy `--no-ff`.** Commit scalający powstały tutaj zostaje
+       **wyłącznie na `master`**, więc `develop` w tej samej sekundzie przestaje zawierać produkcję i
+       każdy następny przebieg zaczyna się od merge'a synchronizującego `master → develop` (to jest
+       źródło komunikatów „na docelowym branchu jest commit scalający"). Fast-forward gwarantuje, że
+       `master` to **dokładnie** to, co przeszło testy na `develop` — bit w bit, bez commita, którego
+       nikt nie testował.
+     - **Znacznik wydania zamiast commita scalającego** — ślad „co i kiedy poszło na produkcję" daje
+       tag, nie merge: `git tag -a prod-<NNN>-<slug> -m "<feature> [produkcja]"` oraz
+       `git push origin prod-<NNN>-<slug>`. Tag jest datowany, opisany i **nie rozjeżdża historii**.
+     - Po merge potwierdź: `git merge-base --is-ancestor origin/master HEAD` (musi być prawda) oraz że
+       HEAD dokłada tylko oczekiwane commity feature'a ponad `origin/master`.
      - `git push origin master` (z retry/backoff wg `CLAUDE.md`).
-     - Jeśli którakolwiek kontrola integralności zawiedzie albo push odbije (np. równoległa zmiana na
-       `master`) — **zatrzymaj się i zgłoś to właścicielowi** zamiast forsować `master`. To jedyny
-       moment, w którym auto-promocja ustępuje.
+     - Jeśli kontrola integralności zawiedzie, `--ff-only` odbije albo push odbije (np. równoległa
+       zmiana na `master`) — **zatrzymaj się i zgłoś to właścicielowi** zamiast forsować `master`.
+       Nie ratuj tego przez `--no-ff` ani force-push. To jedyny moment, w którym auto-promocja
+       ustępuje.
   3. Wypisz jednym akapitem podsumowanie całego przebiegu (spec → review) oraz co trafiło na
      środowisko testowe (`develop` → `worldofmag.onrender.com`) **i na produkcję**
      (`master` → `omnia-prod.onrender.com`). Potwierdź, że produkcja została zaktualizowana. Koniec —

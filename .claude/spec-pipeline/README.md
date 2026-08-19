@@ -56,7 +56,10 @@ domyślnym. Wszystkie sześć etapów odpala się **jedną komendą** `/specify`
 Na **samym końcu** pipeline **automatycznie** promuje `develop → master` (produkcja) i pushuje — bez
 pytania, z góry autoryzowane (`C-52`). Promocja wykonuje się tylko przy APPROVE i zielonym buildzie
 oraz po kontroli integralności (nigdy nie cofa produkcji); przy nieudanej kontroli lub odbitym pushu
-do `master` pipeline zatrzymuje się i Cię o tym informuje.
+do `master` pipeline zatrzymuje się i Cię o tym informuje. Sama promocja jest **zawsze
+fast-forward** (`--ff-only`), a wydanie znaczy **adnotowany tag** `prod-<NNN>-<slug>`, nie commit
+scalający (`C-52a`) — dzięki temu `master` i `develop` nigdy się nie rozjeżdżają i nie pojawiają się
+merge'e synchronizujące produkcję z powrotem do `develop`.
 
 ## Artefakty — układ katalogów
 ```
@@ -99,7 +102,8 @@ z wąską furtką). Każdy etap sprawdza zgodność — złamanie którejś to b
    (`tasks.md`), implementuje z commitami, weryfikuje (`verify.md`), recenzuje (`review.md` — **bez
    twojego approve**) i po APPROVE robi merge do `develop` (deploy na środowisko testowe).
 5. Na końcu pipeline **automatycznie** promuje `develop → master` (produkcja) i pushuje — bez pytania,
-   z góry autoryzowane. Robi to tylko przy APPROVE i zielonym buildzie oraz po kontroli integralności;
+   z góry autoryzowane. Robi to tylko przy APPROVE i zielonym buildzie oraz po kontroli integralności,
+   **fast-forwardem** i z tagiem wydania `prod-<NNN>-<slug>` zamiast commita scalającego (`C-52a`);
    gdyby coś było nie tak (np. `develop` nie zawiera aktualnej produkcji albo push odbije) — zatrzyma
    się i Cię poinformuje, zamiast forsować `master`.
 6. Efekt oglądasz w `specs/001-portfel-csv-export/` (komplet artefaktów), na `worldofmag.onrender.com`

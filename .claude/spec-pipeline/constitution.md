@@ -183,13 +183,23 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 - **C-52 — Merge do `develop`, a na koniec automatyczna promocja `develop → master`** (gdy `build`
   zielony), zgodnie ze STANDING AUTHORIZATION w `CLAUDE.md` — **automatycznie, bez pytania**.
   Właściciel z góry i trwale autoryzował na koniec pipeline'u sekwencję: merge brancha roboczego
-  (`claude/*`) → `develop` → push `develop`, a następnie merge `develop → master` → push `master`
+  (`claude/*`) → `develop` → push `develop`, a następnie promocja `develop → master` → push `master`
   (produkcja, Render auto-deploy na `omnia-prod.onrender.com`). Pipeline **nie zadaje już pytania
   domykającego** o produkcję. Promocja na `master` odbywa się **wyłącznie** przy werdykcie
   APPROVE/APPROVE Z UWAGAMI i zielonym buildzie, i **musi** przejść kontrolę integralności
   (`git merge-base --is-ancestor origin/master develop` oraz ponowne sprawdzenie po merge), żeby nigdy
   nie cofnąć produkcji; jeśli kontrola zawiedzie albo push do `master` odbije — **zatrzymaj się i zgłoś
   właścicielowi** zamiast forsować `master`.
+- **C-52a — `develop → master` to ZAWSZE `--ff-only`; wydanie znaczy tag, nie commit scalający.**
+  `git merge --no-ff develop` na `master` tworzy commit, który **istnieje tylko na `master`** — od tej
+  chwili `develop` nie zawiera produkcji, kontrola integralności z C-52 wypada fałszywie i każdy
+  kolejny przebieg musi zacząć od merge'a synchronizującego `master → develop`. Stąd biorą się
+  powtarzalne komunikaty o „commicie scalającym na gałęzi docelowej" i puste merge'e w historii.
+  Dlatego: promocja to `git merge --ff-only develop` (a gdy odbije — **stop i zgłoszenie**, nigdy
+  `--no-ff` ani force-push), a widoczny ślad wydania daje **adnotowany tag** `prod-<NNN>-<slug>`
+  wypchnięty razem z `master`. Efekt uboczny, który jest właściwym celem: na produkcji stoi commit
+  **dokładnie** ten, który przeszedł testy na `develop`. Merge commit z brancha roboczego do
+  `develop` jest w porządku — powstaje na gałęzi docelowej i jedzie dalej razem z nią.
 - **C-53 — Minimalizm.** Rozwiązanie najmniejsze z możliwych: bez nadmiarowych abstrakcji, nowych
   zależności i „przy okazji" refaktorów. Zgodność ze stylem otoczenia > osobiste preferencje.
 
