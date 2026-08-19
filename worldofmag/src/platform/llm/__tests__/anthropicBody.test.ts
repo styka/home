@@ -73,3 +73,55 @@ test("openAiBody: json → response_format tylko w wariancie jednorazowym; strea
   assert.equal(streamed.stream, true);
   assert.equal("response_format" in streamed, false);
 });
+
+// ── 081: tryb JSON u Anthropic ──────────────────────────────────────────────
+//
+// `opts.json` ustawiało `response_format` tylko na ścieżce zgodnej z OpenAI. Ciało Anthropic
+// nie czytało tego pola w ogóle, więc dla dostawcy, którego używa właściciel, tryb JSON był
+// po cichu bezczynny — a osiemnaście miejsc w aplikacji o niego prosi. Objawiło się to przy
+// generowaniu skórek („model nie odesłał żadnych tokenów"), ale dotyczyło wszystkich.
+
+type BlokSystemowy = { type: string; text: string; cache_control?: unknown };
+
+function blokiSystemowe(body: Record<string, unknown>): BlokSystemowy[] {
+  return (body.system as BlokSystemowy[] | undefined) ?? [];
+}
+
+test("anthropicBody: json:true dokłada dyrektywę JSON do bloków systemowych", () => {
+  const body = anthropicBody(anthropicCfg, baseOpts({ json: true }), false);
+  const teksty = blokiSystemowe(body).map((b) => b.text).join("\n");
+  assert.match(teksty, /WYŁĄCZNIE poprawnym dokumentem JSON/);
+  assert.match(teksty, /Pierwszy znak odpowiedzi to `\{`/);
+});
+
+test("anthropicBody: bez json:true nic się nie zmienia", () => {
+  const body = anthropicBody(anthropicCfg, baseOpts(), false);
+  const teksty = blokiSystemowe(body).map((b) => b.text).join("\n");
+  assert.doesNotMatch(teksty, /dokumentem JSON/);
+  assert.equal(blokiSystemowe(body).length, 1, "sam prompt użytkownika, bez doklejek");
+});
+
+test("anthropicBody: dyrektywa NIE narusza bloku oznaczonego do pamięci podręcznej", () => {
+  // Doklejenie jej do treści promptu zmieniłoby blok z `cache_control` i unieważniło cache
+  // przy każdym wywołaniu — dlatego idzie osobnym blokiem na końcu.
+  const opts = baseOpts({
+    json: true,
+    systemBlocks: { stable: "Jesteś ", variable: "asystentem." },
+  });
+  const bloki = blokiSystemowe(anthropicBody(anthropicCfg, opts, false));
+  assert.equal(bloki[0].text, "Jesteś ", "blok cache'owany zostaje bez zmian");
+  assert.ok(bloki[0].cache_control, "…i zachowuje oznaczenie pamięci podręcznej");
+  assert.match(bloki[bloki.length - 1].text, /dokumentem JSON/, "dyrektywa jest na końcu");
+});
+
+test("anthropicBody: przy strumieniowaniu dyrektywy nie dokładamy", () => {
+  // Strumień obsługuje rozmowę asystenta, gdzie odpowiedź ma być tekstem dla człowieka.
+  const body = anthropicBody(anthropicCfg, baseOpts({ json: true }), true);
+  const teksty = blokiSystemowe(body).map((b) => b.text).join("\n");
+  assert.doesNotMatch(teksty, /dokumentem JSON/);
+});
+
+test("openAiBody: ścieżka zgodna z OpenAI dalej używa response_format", () => {
+  const body = openAiBody(openAiCfg, baseOpts({ json: true }), false);
+  assert.deepEqual(body.response_format, { type: "json_object" });
+});

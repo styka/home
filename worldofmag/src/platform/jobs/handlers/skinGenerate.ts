@@ -5,6 +5,8 @@
 // JSON. To nie jest funkcja asystenta czatowego — katalog `AIAction` zostaje nietknięty.
 
 import { chatComplete } from "@/platform/llm/chat";
+import { parseJsonLoose } from "@/platform/llm/json";
+import { wyodrebnijTokeny } from "@/lib/skins/mapowanie";
 import { JobError, type JobContext } from "@/platform/jobs/types";
 import { usageFromChat } from "@/platform/ai/usage";
 import {
@@ -95,8 +97,12 @@ const RULES = `ZASADY, KTÓRE MUSISZ SPEŁNIĆ (skórka niespełniająca ich jes
    i rozstrzelenie nagłówków, stosunek zaokrągleń powierzchni do kontrolek, obecność
    lub brak poświaty — to one odróżniają motywy od siebie.
 
-5. ŻADNYCH ZNAKÓW TOWAROWYCH w "name" i "description". Jeśli użytkownik poda nazwę
-   marki lub tytuł dzieła, oddaj ESTETYKĘ, ale nazwij skórkę własnymi słowami.`;
+5. ZNAK TOWAROWY DOTYCZY NAZWY, NIE ZADANIA. Tytuł dzieła, marka albo uniwersum to
+   POPRAWNY i wystarczający opis estetyki — masz go rozpoznać i przełożyć na kolory,
+   krój i kształty (np. „kosmiczna saga" → chłodny granat, bursztynowe akcenty,
+   wersaliki, cienkie ramki, brak ciepłych beży). Nie odmawiaj i NIE zwracaj wtedy
+   "error". Ograniczenie dotyczy wyłącznie NAZWANIA skórki: w "name" i "description"
+   użyj własnych słów, bez znaku towarowego.`;
 
 function systemPrompt(): string {
   return `Jesteś projektantem interfejsów. Tworzysz skórkę (motyw) aplikacji Omnia na podstawie opisu po polsku.
@@ -116,7 +122,29 @@ Zwróć WYŁĄCZNIE JSON (bez markdown, bez komentarza) w schemacie:
   "tokens": { "--nazwa-tokenu": "wartość", ... }
 }
 
-Jeśli opis nie da się przełożyć na wygląd interfejsu — zwróć {"error":"not-a-theme"}.`;
+KSZTAŁT ODPOWIEDZI — trzymaj się go co do znaku:
+- "tokens" jest OBIEKTEM (mapa klucz→wartość), nie tablicą i nie listą par.
+- Klucze są dokładnie takie jak w katalogu, z dwoma myślnikami na początku.
+- KAŻDA wartość jest NAPISEM — także liczby: "700", nie 700; "1.5", nie 1.5.
+
+Przykład poprawnej odpowiedzi (skrócony — Ty wypisz wszystkie tokeny z katalogu):
+{
+  "name": "Mostek",
+  "description": "Chłodny granat z bursztynowym akcentem.",
+  "colorScheme": "dark",
+  "rationale": "Granat i bursztyn budują wrażenie konsoli; wersaliki w nagłówkach dokładają rygor.",
+  "tokens": {
+    "--bg-base": "#050a18",
+    "--text-primary": "#dbe9ff",
+    "--accent-amber": "#f0a830",
+    "--on-accent": "#1a1206",
+    "--font-weight-heading": "700"
+  }
+}
+
+Zwróć {"error":"not-a-theme"} WYŁĄCZNIE wtedy, gdy opis nie niesie ŻADNEJ informacji o wyglądzie
+(np. „zrób mi kanapkę", „nie wiem"). Nastrój, pora dnia, materiał, miejsce, epoka, gatunek, dzieło
+kultury albo marka — to wszystko SĄ opisy wyglądu i masz je przełożyć na tokeny.`;
 }
 
 /** 080 (Z10): łącznie tyle podejść do wygenerowania skórki (pierwsze + jedno ponowienie). */
@@ -147,6 +175,8 @@ export function korekta(odrzucone: string[]): string {
     `${co}\n\n` +
     "Popraw odpowiedź. Klucze MUSZĄ pochodzić dokładnie z poniższego katalogu (co do znaku), " +
     "a wartości muszą mieć podany tam format. Nie wymyślaj własnych nazw i nie tłumacz ich.\n\n" +
+    "Przypomnienie kształtu: `tokens` to OBIEKT (mapa klucz→wartość), klucze z dwoma myślnikami " +
+    "na początku, każda wartość jako NAPIS (\"700\", nie 700).\n\n" +
     `${buildTokenCatalog()}\n\n` +
     "Zwróć wyłącznie JSON w ustalonym kształcie."
   );
@@ -162,7 +192,15 @@ export function korekta(odrzucone: string[]): string {
  */
 export function opisPorazki(przyslanych: number, odrzucone: string[]): string {
   if (przyslanych === 0) {
-    return "Model nie odesłał żadnych tokenów — spróbuj opisać skórkę konkretniej (kolory, nastrój, kontrast).";
+    // 081: po dołożeniu warstwy mapowania ten stan znaczy coś WĘŻSZEGO niż przedtem — przeszukaliśmy
+    // wszystkie znane pojemniki, przetłumaczyliśmy konwencje kluczy i liczby na napisy, i dalej nic.
+    // Komunikat ma to mówić, żeby nie sugerować użytkownikowi, że to on źle opisał skórkę.
+    return (
+      "Model odpowiedział, ale w odpowiedzi nie było mapy tokenów — nawet po przeszukaniu " +
+      "wszystkich znanych kształtów. To wygląda na problem z modelem, nie z opisem: spróbuj " +
+      "ponownie, a jeśli powtarza się przy każdym opisie, sprawdź model przypisany do operacji " +
+      "„generation” w panelu LLM."
+    );
   }
   return (
     `Model odesłał ${przyslanych} kluczy i żaden nie przeszedł walidacji ` +
@@ -217,7 +255,10 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
       // Dobór palety to zadanie twórcze — przy niskiej temperaturze model zwraca
       // wariacje tej samej szarości niezależnie od opisu.
       temperature: 0.7,
-      maxTokens: 3000,
+      // 081 (Z10): katalog ma 53 tokeny, a zasada 3 żąda kompletu — sama mapa to ~1200 tokenów
+      // wyjścia, plus uzasadnienie. Przy modelu rozumującym tokeny myślenia wliczają się do TEGO
+      // SAMEGO budżetu (lekcja z 038), więc 3000 bywało na styk i odpowiedź wracała ucięta.
+      maxTokens: 4500,
       json: true,
     });
     if (!result.ok) throw new JobError(result.message, result.status);
