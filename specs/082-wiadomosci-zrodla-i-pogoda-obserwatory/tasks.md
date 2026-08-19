@@ -232,3 +232,18 @@ Równoległe: `T-10 ∥ T-11` (różne pliki), `T-13 ∥ T-14` (różne moduły)
 - **T-7/T-8**: adresy kanałów pisane z wiedzy modelu — część może być nieaktualna. To jest świadomie
   przyjęte ryzyko wyboru właściciela („400+, maksymalnie szeroko"); ratunkiem jest akcja **Sprawdź**
   i wyłączenie wpisu (T-10/T-17), a nie odchudzanie katalogu.
+
+- **Żywotność kanałów NIE została zweryfikowana z tego środowiska.** Piaskownica przepuszcza ruch
+  wyłącznie przez pośrednik, który odbija `CONNECT` do serwisów zewnętrznych błędem 403 — sprawdzone
+  `curl`-em na dwóch adresach, więc `fetchRss` zwraca zero pozycji dla **każdego** wpisu, także
+  ewidentnie żywego (BBC, Hacker News). To jest ograniczenie środowiska, nie wynik pomiaru katalogu:
+  z tych zer nie wolno wyciągać wniosku, że wpisy są martwe. Sprawdzenie należy wykonać z panelu
+  administratora po wdrożeniu (`/admin/zrodla-rss` → „Sprawdź"), i po to ta akcja powstała.
+
+- **Weryfikacja na żywej bazie (poza testami jednostkowymi):** lokalny Postgres z zaaplikowanymi
+  migracjami — `newsArticle.createMany` zapisuje wiersze (2), powtórzenie zapisuje 0 (unikalność
+  `[workspaceId, sourceId, url]`), dodanie z katalogu działa, powtórne dodanie odbija się o
+  `@@unique([workspaceId, key])`, `WeatherPref` wstaje z domyślnym `status`/pustym filtrem,
+  a skasowanie konta czyści artykuły kaskadą przez `Workspace`. Wyszukiwarka katalogu trafia także
+  po opisie („kosmos" → Space.com, Space24); filtry kraj/język/kategoria zwracają sensowne liczby.
+
