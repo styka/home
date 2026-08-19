@@ -113,28 +113,28 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
 
 ## Faza 4 — Wspólna warstwa przyklejona (sedno fali)
 
-- [ ] **T-13** — **Z7: komponent `AnchoredLayer`.** `src/components/ui/AnchoredLayer.tsx` — portal do
+- [x] **T-13** — **Z7: komponent `AnchoredLayer`.** `src/components/ui/AnchoredLayer.tsx` — portal do
   `document.body`, pozycja z `getBoundingClientRect()` wyzwalacza i zmierzonego panelu, **odbicie
   w pionie** + **przesunięcie w poziomie**, przeliczenie przy przewijaniu i zmianie rozmiaru;
   `Esc`, klik poza obszarem, `aria-expanded`, zwrot ogniskowania (C-31); wyłącznie zmienne CSS
   (C-30); `z-index` uzgodniony z `useOverlayState`.
   **Gotowe, gdy:** test jednostkowy pozycjonowania — wyzwalacz przy **górnej** i przy **dolnej**
   krawędzi, panel w obu wypadkach mieści się w oknie. *(AC-14 — mechanizm)*
-- [ ] **T-14** — **Z7: wpis do galerii komponentów.** `src/lib/ui/playground/registry.tsx` —
+- [x] **T-14** — **Z7: wpis do galerii komponentów.** `src/lib/ui/playground/registry.tsx` —
   warianty brzegowe (wyzwalacz u góry / u dołu) i podgląd pod skórką „Terminal".
   **Gotowe, gdy:** komponent widoczny w `/admin/playground`, a warianty brzegowe dają się obejrzeć
   bez czytania kodu. — **zależy od T-13**
-- [ ] **T-15** — **Z7: konsument zgłoszony — koszt LLM.** `src/components/ui/AiCostBadge.tsx` traci
+- [x] **T-15** — **Z7: konsument zgłoszony — koszt LLM.** `src/components/ui/AiCostBadge.tsx` traci
   własne `position:absolute` i `bottom: calc(100% + 6px)`, przechodzi na `AnchoredLayer`.
   **Gotowe, gdy:** popover na `/wiadomosci` otwiera się w widoku niezależnie od pozycji przycisku.
   *(AC-14 — miejsce zgłoszone)* — **zależy od T-13**
-- [ ] **T-16** — **Z2: panele paska zbiorczego + układ desktop.**
+- [x] **T-16** — **Z2: panele paska zbiorczego + układ desktop.**
   `src/modules/tasks/ui/BulkActionBar.tsx`: sześć paneli na `AnchoredLayer`; pasek na desktopie
   ograniczony szerokością i wyśrodkowany (mobile bez zmian, `env(safe-area-inset-bottom)` zostaje).
   **Najpierw odtwórz błąd**, potem naprawiaj — przyczyny nie ustalono z kodu (plan §5.1).
   **Gotowe, gdy:** okienka statusu i daty są w całości widoczne przy każdej pozycji przewinięcia,
   a pasek nie rozciąga się na całą szerokość okna. *(AC-2, AC-3)* — **zależy od T-13**
-- [ ] **T-17** `[P]` — **Z7: pozostali trzej konsumenci.** `NotificationBell.tsx`,
+- [x] **T-17** `[P]` — **Z7: pozostali trzej konsumenci.** `NotificationBell.tsx`,
   `ProjectActionsMenu.tsx`, `RecipeList.tsx` — każdy traci własne `absolute`.
   **Gotowe, gdy:** żadne z pięciu miejsc nie ma już własnego pozycjonowania warstwy, a wszystkie
   zamykają się `Esc` i kliknięciem poza obszarem. *(AC-15)* — **zależy od T-13**

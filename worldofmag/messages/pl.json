@@ -1073,7 +1073,8 @@
         "importZeZdjeciaOcr": "Import ze zdjęcia (OCR)",
         "brakPrzepisowSpelniajacychFiltry": "Brak przepisów spełniających filtry.",
         "brakPrzepisow": "Brak przepisów",
-        "zacznijOdStworzeniaSwojego": "Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów."
+        "zacznijOdStworzeniaSwojego": "Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów.",
+        "nowyPrzepis": "Nowy przepis — sposób dodania"
       },
       "RecipeView": {
         "usun": "Usuń",
@@ -1741,12 +1742,14 @@
         "ustawKategorie": "Ustaw kategorię",
         "usun": "usuń",
         "brakTagow": "Brak tagów",
-        "usun2": "Usuń"
+        "usun2": "Usuń",
+        "opcjeAkcjiZbiorczej": "Opcje akcji zbiorczej"
       },
       "ProjectActionsMenu": {
         "zapiszNazwe": "Zapisz nazwę",
         "zmienNazwe": "Zmień nazwę",
-        "usunProjekt": "Usuń projekt"
+        "usunProjekt": "Usuń projekt",
+        "akcjeProjektu": "Akcje projektu"
       },
       "TaskDetail": {
         "wrocDoListyZadan": "Wróć do listy zadań",

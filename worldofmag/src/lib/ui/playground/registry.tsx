@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Inbox, ListTodo, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LineChart } from "@/components/ui/LineChart";
 import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useToast } from "@/components/ui/Toast";
 import { ViewEmpty, ViewLoading, ViewError, ViewNoAccess } from "@/components/ui/view/ViewState";
 import { ViewBar } from "@/components/ui/view/ViewBar";
@@ -89,6 +90,48 @@ const LONG_TEXT =
   "Bardzo długi tytuł pozycji, który nie mieści się w jednej linii i sprawdza, czy komponent go przycina, zawija, czy rozpycha układ w bok";
 
 // ─── Demonstracje wymagające stanu ───────────────────────────────────────────
+
+/**
+ * 080 (Z7): demo warstwy przyklejonej — z WARIANTAMI BRZEGOWYMI, bo tylko one były zepsute.
+ *
+ * Wyzwalacz da się przestawić na górę i na dół obszaru demonstracji: to jest dokładnie ta
+ * sytuacja, w której poprzednie rozwiązania wychodziły poza ekran. Przypadek środkowy wyglądał
+ * dobrze zawsze i właśnie dlatego usterka przetrwała tak długo.
+ */
+function AnchoredLayerDemo({ side, align }: { side: "gora" | "dol"; align: "start" | "srodek" | "koniec" }) {
+  const [open, setOpen] = useState(false);
+  const kotwica = useRef<HTMLButtonElement | null>(null);
+  return (
+    <>
+      <button
+        ref={kotwica}
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "8px 12px", borderRadius: 6, fontSize: 13,
+          background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-primary)",
+        }}
+      >
+        {open ? "Zamknij warstwę" : "Otwórz warstwę"}
+      </button>
+      <AnchoredLayer
+        anchorRef={kotwica}
+        open={open}
+        onClose={() => setOpen(false)}
+        side={side}
+        align={align}
+        width={260}
+        ariaLabel="Przykładowa warstwa"
+        style={{ padding: 10 }}
+      >
+        <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>
+          Warstwa zawsze mieści się w oknie: przy braku miejsca po preferowanej stronie odbija się
+          na drugą, a w poziomie dosuwa się do wnętrza ekranu. Esc i klik poza obszarem zamykają.
+        </p>
+      </AnchoredLayer>
+    </>
+  );
+}
+
 
 function ModalDemo() {
   const [open, setOpen] = useState(false);
@@ -247,6 +290,61 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
         <Surface><span style={{ fontSize: 13 }}>Surface</span></Surface>
       </div>
     ),
+  },
+  {
+    id: "anchored-layer",
+    name: "AnchoredLayer",
+    category: "powloka-i-nawigacja",
+    summary:
+      "Warstwa przyklejona do elementu: portal do body, odbicie w pionie, dosunięcie w poziomie, Esc i klik poza obszarem. Zastąpiła pięć własnych implementacji, z których żadna nie sprawdzała pionu.",
+    importPath: 'import { AnchoredLayer } from "@/components/ui/AnchoredLayer";',
+    controls: [
+      {
+        key: "side",
+        label: "Preferowana strona",
+        kind: "select",
+        default: "dol",
+        options: [
+          { value: "dol", label: "W dół" },
+          { value: "gora", label: "W górę" },
+        ],
+      },
+      {
+        key: "align",
+        label: "Wyrównanie",
+        kind: "select",
+        default: "start",
+        options: [
+          { value: "start", label: "Do początku" },
+          { value: "srodek", label: "Do środka" },
+          { value: "koniec", label: "Do końca" },
+        ],
+      },
+    ],
+    render: (v) => (
+      <AnchoredLayerDemo
+        side={v.side as "gora" | "dol"}
+        align={v.align as "start" | "srodek" | "koniec"}
+      />
+    ),
+    variants: [
+      {
+        label: "Wyzwalacz przy GÓRNEJ krawędzi okna (dawniej: panel wychodził ponad ekran)",
+        render: () => (
+          <div style={{ position: "relative", height: 60 }}>
+            <AnchoredLayerDemo side="gora" align="start" />
+          </div>
+        ),
+      },
+      {
+        label: "Wyzwalacz przy DOLNEJ krawędzi okna (przypadek paska akcji zbiorczych)",
+        render: () => (
+          <div style={{ position: "relative", height: 60 }}>
+            <AnchoredLayerDemo side="dol" align="srodek" />
+          </div>
+        ),
+      },
+    ],
   },
   {
     id: "modal",
