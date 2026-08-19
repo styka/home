@@ -92,17 +92,22 @@ export function TasksSideNav() {
   // Projekty wybieralne w edytorze grupy: Skrzynka + zwykłe projekty.
   const selectableProjects = [...(inbox ? [inbox] : []), ...regularProjects];
 
-  const activeGroupId = pathname === "/tasks/multi" ? (searchParams.get("group") ?? searchParams.get("view")) : null;
+  // 080 (Z3): zestaw ma teraz własny adres z zakresem w ŚCIEŻCE — stąd czytamy id z `pathname`,
+  // a nie z parametru zapytania. To ta sama zmiana, która naprawiła pustoszejący widok: parametry
+  // zapytania potrafią nie dotrzeć przy ponownym renderze, segment ścieżki jest zawsze.
+  const activeGroupId = pathname.startsWith("/tasks/zestaw/")
+    ? pathname.slice("/tasks/zestaw/".length).split("/")[0] || null
+    : null;
 
   /** Grupy, do których należy dany projekt (kierunek projekt → grupy). */
   function groupsForProject(projectId: string): ProjectGroup[] {
     return groups.filter((g) => g.projectIds.includes(projectId));
   }
 
-  // Wejście z „ołówka" na pasku zakresu: /tasks/multi?group=<id>&edit=1 → otwórz edytor (raz na id).
+  // Wejście z „ołówka" na pasku zakresu: /tasks/zestaw/<id>?edit=1 → otwórz edytor (raz na id).
   useEffect(() => {
     if (searchParams.get("edit") !== "1") { setAutoEditedId(null); return; }
-    const id = searchParams.get("group") ?? searchParams.get("view");
+    const id = activeGroupId ?? searchParams.get("group") ?? searchParams.get("view");
     if (!id || groups.length === 0 || id === autoEditedId) return;
     const g = groups.find((x) => x.id === id);
     if (g) {
@@ -324,7 +329,7 @@ export function TasksSideNav() {
                 <ChevronRight size={12} style={{ transition: "transform 0.12s", transform: isOpen ? "rotate(90deg)" : "none" }} />
               </button>
               <Link
-                href={`/tasks/multi?group=${g.id}`}
+                href={`/tasks/zestaw/${g.id}`}
                 className="flex items-center gap-2 flex-1 text-xs py-1 min-w-0"
                 style={{ color: active ? "var(--text-primary)" : "var(--text-muted)" }}
                 title={`${g.projectIds.length} projekty — otwórz wspólny widok`}

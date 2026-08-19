@@ -2,6 +2,7 @@ import { prisma } from "@/platform/db/prisma";
 import { resolveLlmChain } from "@/platform/llm/resolver";
 import { buildSpeechRequest, parseSpeechResponse } from "@/lib/tts/adapters";
 import { defaultVoiceFor, isVoiceOf, voicesFor } from "@/lib/tts/catalog";
+import { readForceBrowserVoice } from "@/lib/tts/forceBrowser";
 import type { ServerVoice } from "@/lib/tts/serverVoices";
 
 // Klucz `Config` z domyślnym głosem wybranym przez administratora (ustawiany w /admin/llm).
@@ -34,6 +35,10 @@ export async function synthesizeSpeech(input: { text: string; voiceId?: string |
   const text = input.text.trim().slice(0, SPEECH_MAX_CHARS);
   if (!text) return null;
 
+  // 080 (Z4): administrator może świadomie wybrać głos systemowy. Wyłączamy warstwę serwerową,
+  // nie kasując konfiguracji dostawcy — wybór jest odwracalny jednym przełącznikiem.
+  if (await readForceBrowserVoice()) return null;
+
   const chain = await resolveLlmChain("speech");
   const cfg = chain[0];
   if (!cfg) return null; // brak przypisania → funkcja wyłączona
@@ -48,14 +53,59 @@ export async function synthesizeSpeech(input: { text: string; voiceId?: string |
   if (!voiceId) return null; // dostawca bez znanych głosów — traktujemy jak nieskonfigurowany
 
   const req = buildSpeechRequest(cfg, { text, voiceId });
-  const res = await fetch(req.url, req.init);
+
+  let res: Response;
+  try {
+    res = await fetch(req.url, req.init);
+  } catch (e) {
+    throw new SpeechError("network", e instanceof Error ? e.message : undefined);
+  }
 
   if (!res.ok) {
     // Treść błędu dostawcy może zawierać fragmenty konfiguracji — nie przepuszczamy jej do klienta.
-    throw new Error(`Synteza mowy nie odpowiedziała poprawnie (status ${res.status}).`);
+    // Wychodzi wyłącznie POWÓD wyprowadzony ze statusu (C-41).
+    throw new SpeechError(powodZeStatusu(res.status));
   }
 
   return parseSpeechResponse(cfg.kind, res, req.contentTypeFallback);
+}
+
+/**
+ * 080 (Z4): POWÓD ODMOWY, a nie „coś nie zadziałało".
+ *
+ * Do zgłoszenia doprowadził brak właśnie tego rozróżnienia: trasa zwracała zawsze 502, a panel
+ * administratora zawsze zdanie „Sprawdź klucz API i wybrany model". Właściciel wygenerował nowy
+ * klucz — na darmo, bo komunikat nie opisywał tego, co się naprawdę stało.
+ *
+ * Kody są celowo GRUBE. Mają odpowiadać na pytanie „co mam z tym zrobić", a nie odwzorowywać
+ * dokumentację dostawcy — każdy dostawca numeruje swoje błędy inaczej.
+ */
+export type SpeechFailureReason = "auth" | "model" | "quota" | "provider" | "network";
+
+export const SPEECH_FAILURE_REASONS: SpeechFailureReason[] = ["auth", "model", "quota", "provider", "network"];
+
+export function powodZeStatusu(status: number): SpeechFailureReason {
+  if (status === 401 || status === 403) return "auth";
+  if (status === 429) return "quota";
+  // 402 (payment required) to u części dostawców sposób na powiedzenie „skończył się limit".
+  if (status === 402) return "quota";
+  if (status === 400 || status === 404 || status === 422) return "model";
+  if (status >= 500) return "provider";
+  return "provider";
+}
+
+/**
+ * Błąd syntezy niosący powód. `detail` zostaje NA SERWERZE — służy logowi, nie odpowiedzi:
+ * komunikat dostawcy potrafi zawierać fragment konfiguracji albo sam klucz (C-41).
+ */
+export class SpeechError extends Error {
+  constructor(
+    readonly reason: SpeechFailureReason,
+    readonly detail?: string
+  ) {
+    super(`Synteza mowy odmówiła (${reason}).`);
+    this.name = "SpeechError";
+  }
 }
 
 /** Domyślny głos ustawiony przez administratora — o ile należy do obecnego dostawcy. */

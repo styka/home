@@ -5,7 +5,7 @@
   },
   "src/modules/weather/actions/weather.ts": {
     "mode": "remembered",
-    "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę."
+    "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę. 080 (Z11): tą samą drogą idzie teraz ocena obserwatorów (kind weather.watchers). Wcześniej była jedyną sekcją AI wołaną z useEffect przy każdym wejściu na moduł — bez pamięci i bez trybu, więc każde wejście płaciło za wywołanie modelu, a każda odmowa kończyła się pustą listą i wiecznym spinnerem."
   },
   "src/app/api/llm/category-hints/route.ts": {
     "mode": "on-demand",

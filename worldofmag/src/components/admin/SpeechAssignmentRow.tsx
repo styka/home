@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { Check, Volume2, KeyRound, Loader2 } from "lucide-react";
-import { applySpeechProvider, type SpeechConfigDTO } from "@/actions/llmConfig";
+import { applySpeechProvider, setForceBrowserVoice, type SpeechConfigDTO } from "@/actions/llmConfig";
 
 // 032: wiersz przypisania dla typu operacji „Synteza mowy (lektor)". Reszta typów operacji dalej
 // używa `AssignmentRow` z ręcznie wpisywanym modelem — tutaj administrator NIE MA znać z pamięci
@@ -44,6 +44,8 @@ export function SpeechAssignmentRow({
   const t = useTranslations("components.admin.SpeechAssignmentRow");
   const [isPending, startTransition] = useTransition();
   const [catalogId, setCatalogId] = useState(config.currentCatalogId ?? config.catalog[0]?.id ?? "");
+  // 080 (Z4): wymuszenie lektora systemowego. Trzymamy lokalnie, żeby przełącznik reagował od razu.
+  const [forceBrowser, setForceBrowserState] = useState(config.forceBrowser);
   const entry = useMemo(() => config.catalog.find((c) => c.id === catalogId), [config.catalog, catalogId]);
 
   // Model i głos trzymamy w stanie razem z dostawcą: zmiana dostawcy musi przełączyć OBIE listy,
@@ -104,11 +106,23 @@ export function SpeechAssignmentRow({
         body: JSON.stringify({ text: SAMPLE_TEXT, voiceId: effectiveVoice || null }),
       });
       if (res.status === 501) {
-        setSample({ kind: "error", message: "Lektor nie jest jeszcze skonfigurowany — zapisz wybór dostawcy i klucz." });
+        setSample({
+          kind: "error",
+          message: forceBrowser
+            ? t("probkaWymuszonyGlosSystemowy")
+            : t("probkaBrakKonfiguracji"),
+        });
+        return;
+      }
+      if (res.status === 429) {
+        setSample({ kind: "error", message: t("probkaLimitOmnii") });
         return;
       }
       if (!res.ok) {
-        setSample({ kind: "error", message: "Nie udało się odtworzyć próbki. Sprawdź klucz API i wybrany model." });
+        // 080 (Z4): PRAWDZIWA przyczyna zamiast jednego zdania o kluczu API. Poprzednia wersja
+        // mówiła „Sprawdź klucz API i wybrany model" niezależnie od tego, co się stało — właściciel
+        // wygenerował przez to nowy klucz na darmo, bo problem był gdzie indziej.
+        setSample({ kind: "error", message: t(komunikatPowodu(await odczytajPowod(res))) });
         return;
       }
       const blob = await res.blob();
@@ -133,6 +147,47 @@ export function SpeechAssignmentRow({
     >
       <div style={{ fontSize: 14, color: "var(--text-primary)", marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>{description}</div>
+
+      {/* 080 (Z4): świadomy wybór lektora systemowego. Do tej pory jedynym sposobem na wyłączenie
+          płatnego lektora było skasowanie przypisania modelu — czyli zniszczenie konfiguracji,
+          żeby wyłączyć warstwę. Przełącznik jest odwracalny i audytowany (C-25). */}
+      <label
+        className="flex items-start gap-3 py-3"
+        style={{
+          padding: "10px 12px",
+          borderRadius: 8,
+          background: "var(--bg-base)",
+          border: `1px solid ${forceBrowser ? "var(--accent-amber)" : "var(--border)"}`,
+          marginBottom: 10,
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={forceBrowser}
+          disabled={isPending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setForceBrowserState(next);
+            startTransition(async () => {
+              try {
+                await setForceBrowserVoice(next);
+              } catch {
+                setForceBrowserState(!next); // zapis się nie udał — przełącznik nie może kłamać
+              }
+            });
+          }}
+          style={{ width: 20, height: 20, flexShrink: 0, marginTop: 1, accentColor: "var(--accent-amber)" }}
+        />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 13, color: "var(--text-primary)" }}>
+            {t("wymusGlosSystemowy")}
+          </span>
+          <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+            {t("wymusGlosSystemowyOpis")}
+          </span>
+        </span>
+      </label>
 
       {/* Jedna kolumna na wąskim ekranie, trzy od `md` — panel admina jest desktopowy, ale nie może
           się rozjeżdżać na telefonie (C-31). */}
@@ -261,4 +316,28 @@ export function SpeechAssignmentRow({
       </div>
     </div>
   );
+}
+
+
+/**
+ * 080 (Z4): kod powodu z `/api/tts` → klucz komunikatu. Trasa zwraca WYŁĄCZNIE kod, nigdy treści
+ * od dostawcy (C-41) — zdanie dla człowieka powstaje dopiero tutaj.
+ */
+function komunikatPowodu(reason: string | null): string {
+  switch (reason) {
+    case "auth": return "probkaPowodKlucz";
+    case "model": return "probkaPowodModel";
+    case "quota": return "probkaPowodLimit";
+    case "network": return "probkaPowodSiec";
+    default: return "probkaPowodDostawca";
+  }
+}
+
+async function odczytajPowod(res: Response): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { reason?: string };
+    return typeof body.reason === "string" ? body.reason : null;
+  } catch {
+    return null;
+  }
 }

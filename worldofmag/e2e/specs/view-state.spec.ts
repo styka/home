@@ -159,6 +159,11 @@ test.describe("043 — stan widoku w adresie", () => {
     // Wyjście gdzie indziej i powrót przez ulubione — adres musi nieść komplet ustawień.
     await page.goto("/notes/all");
     await page.waitForLoadState("load").catch(() => {});
+    // 080 (Z8): sekcja ulubionych startuje zwinięta — rozwijamy ją, tak jak zrobiłby użytkownik.
+    const naglowekUlubionych = page.getByRole("button", { name: /rozwiń ulubione/i }).first();
+    if (await naglowekUlubionych.count() > 0 && await naglowekUlubionych.isVisible().catch(() => false)) {
+      await naglowekUlubionych.click();
+    }
     await page.getByRole("link", { name: "Kanban wszystkich" }).first().click();
 
     await expect.poll(() => new URL(page.url()).searchParams.get("layout"), { timeout: 15_000 }).toBe("kanban");

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState, useCallback } from "react";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
@@ -49,6 +50,8 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
   const [imageImportOpen, setImageImportOpen] = useState(false);
   const [aiImportOpen, setAiImportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // 080 (Z7): kotwica menu „Nowy" — pozycję liczy wspólna warstwa.
+  const kotwicaNowy = useRef<HTMLButtonElement | null>(null);
 
   // Z-232: wspólny hub zamiast własnego listenera. Karty są nawigacyjne (link do
   // detalu), więc tylko / = szukaj i a/n = nowy; skróty nieaktywne, gdy otwarty
@@ -129,6 +132,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
         {hasAI ? (
           <div className="relative">
             <button
+              ref={kotwicaNowy}
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm whitespace-nowrap"
@@ -136,13 +140,19 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
             >
               <Plus size={16} /> Nowy <ChevronDown size={12} />
             </button>
-            {menuOpen ? (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div
-                  className="absolute right-0 mt-1 w-52 z-50 rounded border shadow-lg"
-                  style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
-                >
+            {/* 080 (Z7): wspólna warstwa zamiast własnego `absolute` i nakładki `fixed inset-0`. */}
+            <AnchoredLayer
+              anchorRef={kotwicaNowy}
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              side="dol"
+              align="koniec"
+              role="menu"
+              ariaLabel={t("nowyPrzepis")}
+              width={208}
+              style={{ background: "var(--bg-surface)" }}
+            >
+                <div>
                   <Link
                     href="/kitchen/recipes/new"
                     className="flex items-center gap-2 px-3 py-2 text-sm"
@@ -185,8 +195,7 @@ export function RecipeList({ recipes, tags, cookbooks, hasAI, viewParams = {} }:
                     <Sparkles size={14} style={{ color: "var(--accent-purple)" }} /> Wygeneruj z AI
                   </button>
                 </div>
-              </>
-            ) : null}
+            </AnchoredLayer>
           </div>
         ) : (
           <Link

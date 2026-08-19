@@ -15,6 +15,7 @@ import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
+import { SpeechFallbackNotice } from "@/components/shell/SpeechFallbackNotice";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { ConflictProvider } from "@/components/ui/ConflictProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
@@ -109,6 +110,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         pierwszeństwo przed globalnymi). */}
     <ShortcutsProvider>
     <DataFreshness />
+    {/* 080 (Z4): informacja o zejściu lektora na głos systemowy — dotyczy każdego lektora w aplikacji. */}
+    <SpeechFallbackNotice />
     <div
       // 036: `h-screen`, NIE `h-full`. Próba z `h-full` (=100% wysokości `body`) miała zapobiec
       // przewijaniu dokumentu przy klawiaturze, ale pomiar na urządzeniu pokazał, że nie zapobiega

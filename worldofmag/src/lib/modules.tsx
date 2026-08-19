@@ -62,13 +62,24 @@ export const MAX_TAB_BAR = 5;
 // Wymaganie właściciela: Strona główna, Zadania, Zakupy.
 export const DEFAULT_TAB_BAR = ["home", "tasks", "shopping"];
 
-export type MenuPrefs = { order: string[]; disabled: string[]; tabBar: string[] };
+export type MenuPrefs = {
+  order: string[];
+  disabled: string[];
+  tabBar: string[];
+  /**
+   * 080 (Z8): czy sekcja ulubionych w menu jest ZWINIĘTA. Domyślnie tak — rozwinięta spychała
+   * pozycje modułów poniżej pierwszego ekranu, więc wejście na stronę główną albo do notatek
+   * wymagało przewinięcia przez obszar, którego użytkownik w tym momencie nie potrzebował.
+   */
+  favoritesCollapsed: boolean;
+};
 
 export function defaultMenuPrefs(): MenuPrefs {
   return {
     order: MODULES.map((m) => m.id),
     disabled: MODULES.filter((m) => !m.defaultEnabled).map((m) => m.id),
     tabBar: [...DEFAULT_TAB_BAR],
+    favoritesCollapsed: true,
   };
 }
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Star, Search, Settings2 } from "lucide-react";
+import { Star, Search, Settings2, ChevronRight, ChevronDown } from "lucide-react";
+import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
@@ -12,6 +14,8 @@ import { isPathLocked } from "@/lib/pathPermissions";
 interface FavoritesSidebarSectionProps {
   favorites: FavoriteViewDTO[];
   userPermissions: string[];
+  /** 080 (Z8): stan zwinięcia z `UserMenuPref` — zapamiętany, a nie liczony od nowa na stronę. */
+  collapsed?: boolean;
 }
 
 const VISIBLE_LIMIT = 6;
@@ -27,7 +31,7 @@ const VISIBLE_LIMIT = 6;
  * że ulubione w ogóle istnieją. Teraz sekcja niesie trzy rzeczy w stałej kolejności: punkt zapisu
  * bieżącego widoku (AC-2), zarządzanie (AC-3) i listę.
  */
-export function FavoritesSidebarSection({ favorites, userPermissions }: FavoritesSidebarSectionProps) {
+export function FavoritesSidebarSection({ favorites, userPermissions, collapsed = true }: FavoritesSidebarSectionProps) {
   const t = useTranslations("components.favorites.FavoritesSidebarSection");
   const pathname = usePathname();
   const accessible = filterAccessibleFavorites(favorites, userPermissions, isPathLocked);
@@ -35,14 +39,68 @@ export function FavoritesSidebarSection({ favorites, userPermissions }: Favorite
   const visible = accessible.slice(0, VISIBLE_LIMIT);
   const hiddenCount = accessible.length - visible.length;
 
+  /**
+   * 080 (Z8): sekcja zwija się do JEDNEGO wiersza z licznikiem.
+   *
+   * Zgłoszenie właściciela: „zawsze ma w tym menu najpierw do pokonania szum w postaci dużego
+   * obszaru ulubione" — żeby wejść na stronę główną albo do notatek. Rozwinięta sekcja to
+   * nagłówek, punkt zapisu widoku i do sześciu pozycji, czyli u góry menu potrafiło stać osiem
+   * wierszy, zanim zaczynały się moduły.
+   *
+   * Stan trzymamy optymistycznie w komponencie i zapisujemy w tle. Czekanie na odpowiedź serwera
+   * przy rozwijaniu listy byłoby widoczne jako zacinanie się menu, a koszt pomyłki to jedno
+   * kliknięcie.
+   */
+  const [zwinieta, setZwinieta] = useState(collapsed);
+  const [, startTransition] = useTransition();
+
+  function przelacz() {
+    const next = !zwinieta;
+    setZwinieta(next);
+    startTransition(async () => {
+      try {
+        await updateMenuPrefs({ favoritesCollapsed: next });
+      } catch {
+        setZwinieta(!next); // zapis się nie udał — stan nie może kłamać po przeładowaniu
+      }
+    });
+  }
+
   return (
     <div style={{ paddingBottom: 6, marginBottom: 6, borderBottom: "1px solid var(--border)" }}>
       <div
         className="flex items-center gap-2 px-4"
         style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}
       >
-        <Star size={11} style={{ color: "var(--accent-amber)" }} />
-        <span className="flex-1">Ulubione</span>
+        {/* Cały nagłówek jest przełącznikiem — mały trójkącik obok tekstu byłby celem dotyku
+            poniżej minimum z C-31, a nagłówek i tak nie robił dotąd nic innego. */}
+        <button
+          onClick={przelacz}
+          aria-expanded={!zwinieta}
+          // `aria-label` jest tu KONIECZNE, a nie ozdobne: nazwą dostępną przycisku byłaby inaczej
+          // jego treść („Ulubione · 4"), czyli nazwa sekcji, a nie czynność. Czytnik ekranu (i test
+          // klikacza) nie miałby z czego wywnioskować, że kliknięcie rozwija listę.
+          aria-label={
+            zwinieta
+              ? `${t("rozwinUlubione")}${accessible.length > 0 ? ` (${accessible.length})` : ""}`
+              : t("zwinUlubione")
+          }
+          title={zwinieta ? t("rozwinUlubione") : t("zwinUlubione")}
+          className="flex flex-1 items-center gap-2 py-3 text-left focus:outline-none"
+          style={{
+            background: "none", border: "none", cursor: "pointer", color: "inherit",
+            font: "inherit", letterSpacing: "inherit", textTransform: "inherit", padding: 0,
+            minWidth: 0,
+          }}
+        >
+          {zwinieta ? <ChevronRight size={11} style={{ flexShrink: 0 }} /> : <ChevronDown size={11} style={{ flexShrink: 0 }} />}
+          <Star size={11} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+          <span className="truncate">Ulubione</span>
+          {/* Licznik w zwiniętym wierszu: sekcja ma być mała, ale nie niewidoczna. */}
+          {zwinieta && accessible.length > 0 && (
+            <span style={{ color: "var(--text-muted)", opacity: 0.8 }}>· {accessible.length}</span>
+          )}
+        </button>
         <Link
           href="/settings#ulubione"
           title={t("zarzadzajUlubionymiNazwaIkona")}
@@ -53,10 +111,12 @@ export function FavoritesSidebarSection({ favorites, userPermissions }: Favorite
         </Link>
       </div>
 
-      {/* Punkt zapisu bieżącego widoku — pierwszy element sekcji (AC-2). */}
-      <FavoriteStarButton favorites={favorites} placement="viewbar" />
+      {/* Punkt zapisu bieżącego widoku — pierwszy element sekcji (AC-2 z 043). W stanie zwiniętym
+          też chowany: to on i lista dawały ten „duży obszar", na który skarżył się właściciel.
+          Zapis widoku zostaje dostępny gwiazdką w pasku widoku modułu. */}
+      {!zwinieta && <FavoriteStarButton favorites={favorites} placement="viewbar" />}
 
-      {accessible.length === 0 ? (
+      {zwinieta ? null : accessible.length === 0 ? (
         <p
           className="px-4"
           style={{ fontSize: 10.5, color: "var(--text-muted)", lineHeight: 1.45, margin: "6px 0 2px" }}

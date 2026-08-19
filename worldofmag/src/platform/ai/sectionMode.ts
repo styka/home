@@ -27,6 +27,7 @@ export const DEFAULT_SECTION_MODE: AiSectionMode = "onDemand";
 /** Sekcje AI objęte trybem. Kolejność jest kolejnością wyświetlania w ustawieniach. */
 export const AI_SECTION_KINDS: AiContentKind[] = [
   "weather.ideas",
+  "weather.watchers",
   "news.hotTopics",
   "storage.insights",
   "pets.insights",
@@ -36,6 +37,7 @@ export const AI_SECTION_KINDS: AiContentKind[] = [
 /** Nazwy sekcji po polsku (C-32) — do ustawień użytkownika i administratora. */
 export const AI_SECTION_LABELS: Record<AiContentKind, string> = {
   "weather.ideas": "Pogoda — „Co robić?”",
+  "weather.watchers": "Pogoda — obserwatory",
   "news.hotTopics": "Wiadomości — gorące tematy",
   "storage.insights": "Magazynowanie — wnioski",
   "pets.insights": "Pety — wnioski",

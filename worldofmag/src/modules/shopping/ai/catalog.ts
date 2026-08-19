@@ -7,6 +7,9 @@
  */
 export const actionCatalog = `ZAKUPY (module "shopping"):
 - add_item { rawText, listName?, listId? } — rawText to TYLKO nazwa i ilość ("2 kg jabłek"), bez nazwy listy.
+- add_items { rawText, listName?, listId? } — WIELE pozycji naraz: rawText to jedna pozycja W KAŻDEJ LINII.
+  UŻYJ TEGO zawsze, gdy pozycji jest więcej niż jedna. NIE powtarzaj add_item dziesiątki razy —
+  plan z kilkudziesięcioma akcjami nie zmieści się w odpowiedzi i całe zlecenie przepadnie.
 - update_item_status { status:"NEEDED"|"IN_CART"|"DONE", itemId? } (searchQuery jako fallback)
 - update_item { name?, quantity?, unit?, itemId? }
 - delete_item { itemId? } (searchQuery fallback) — DESTRUKCYJNE

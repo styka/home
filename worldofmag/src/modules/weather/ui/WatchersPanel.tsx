@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { type AiCostUsage } from "@/components/ui/AiCostBadge";
+import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
+import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "../lib/presets";
 import {
   evaluateWatchers,
@@ -66,31 +68,60 @@ export function WatchersPanel({
   const [verdicts, setVerdicts] = useState<WatcherVerdict[] | null>(null);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [loading, setLoading] = useState(false);
+  // 080 (Z11): stan sekcji AI — dokładnie ten sam zestaw, co w „Co robić?".
+  const [pending, setPending] = useState(true);
+  const [generatedAt, setGeneratedAt] = useState<string | undefined>();
+  const [stale, setStale] = useState(false);
+  const [mode, setMode] = useState<AiSectionMode>("onDemand");
   const [, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
   // 037: ten sam formularz obsługuje dodawanie i edycję — `editing` trzyma obserwatora do poprawy.
   const [editing, setEditing] = useState<WatcherDTO | null>(null);
 
-  const evaluate = useCallback(() => {
-    if (!coords || watchers.filter((w) => w.enabled).length === 0) {
-      setVerdicts([]);
-      return;
-    }
-    setLoading(true);
-    evaluateWatchers(coords.lat, coords.lon, coords.label)
-      .then((r) => {
-        setVerdicts(r.verdicts);
-        setUsage(r.usage);
-      })
-      .catch((e) => {
-        showToast(e.message ?? "Nie udało się ocenić obserwatorów", "error");
+  /**
+   * 080 (Z11): `force` znaczy „użytkownik właśnie o to poprosił".
+   *
+   * Bez niego wołanie tylko ODCZYTUJE stan sekcji: jeśli ocena już istnieje, wraca z pamięci,
+   * a jeśli nie i tryb jest „na żądanie" — serwer odpowiada `pending` i nic nie kosztuje.
+   * Kliknięcie w „Oceń" albo w odświeżenie jest wyraźną prośbą, więc idzie z `force`.
+   */
+  const evaluate = useCallback(
+    (force = false) => {
+      if (!coords || watchers.filter((w) => w.enabled).length === 0) {
         setVerdicts([]);
-      })
-      .finally(() => setLoading(false));
-  }, [coords, watchers, showToast]);
+        setPending(false);
+        return;
+      }
+      setLoading(true);
+      evaluateWatchers(coords.lat, coords.lon, coords.label, { force })
+        .then((r) => {
+          setPending(r.pending);
+          setMode(r.mode);
+          setGeneratedAt(r.generatedAt ?? undefined);
+          setStale(r.stale);
+          if (!r.pending) {
+            setVerdicts(r.verdicts);
+            setUsage(r.usage);
+          }
+        })
+        .catch((e) => {
+          showToast(e.message ?? "Nie udało się ocenić obserwatorów", "error");
+          setVerdicts([]);
+          setPending(false);
+        })
+        .finally(() => setLoading(false));
+    },
+    [coords, watchers, showToast]
+  );
 
+  // 080 (Z11): to NIE jest generowanie przy wejściu — to odczyt stanu sekcji.
+  //
+  // Przed tą zmianą dokładnie ten efekt wołał model przy każdym wejściu na moduł Pogoda: bez
+  // pamięci, bez trybu i bez możliwości powstrzymania. Stąd wieczny spinner i „bardzo często
+  // w ogóle nie działają" — każda odmowa modelu kończyła się pustą listą. Teraz wywołanie bez
+  // `force` odpowiada z pamięci albo mówi `pending`, więc wejście na stronę nic nie kosztuje.
   useEffect(() => {
-    evaluate();
+    evaluate(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coords?.lat, coords?.lon, watchers.length]);
 
@@ -120,10 +151,12 @@ export function WatchersPanel({
         await fn();
         showToast("Zapisano obserwator", "success");
         router.refresh();
-        evaluate();
+        // Zapis zmienia WARUNEK obserwatora, więc dotychczasowa ocena opisuje już nieistniejące
+        // pytanie. To jawna prośba użytkownika, więc liczymy od nowa (`force`), a nie czekamy.
+        evaluate(true);
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
-        evaluate();
+        evaluate(false);
       }
     });
   }
@@ -139,7 +172,7 @@ export function WatchersPanel({
         <div className="flex gap-2">
           {watchers.length > 0 && (
             <button
-              onClick={evaluate}
+              onClick={() => evaluate(true)}
               disabled={loading}
               className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
               title="Przelicz oceny"
@@ -157,6 +190,19 @@ export function WatchersPanel({
         <p className="text-sm text-[var(--text-muted)]">
           {t("brakObserwatorowDodajGotowy")}
         </p>
+      ) : pending ? (
+        /* 080 (Z11): sekcja CZEKA na kliknięcie. To nie jest błąd ani pusta lista — i dlatego ma
+           własny stan, a nie ten sam szary komunikat, co awaria (lekcja z 038). */
+        <AiContentPending
+          title={t("obserwatoryCzekaja")}
+          hint={t("obserwatoryCzekajaOpis")}
+          actionLabel={t("ocenObserwatory")}
+          busy={loading}
+          onGenerate={() => evaluate(true)}
+          sectionKind="weather.watchers"
+          mode={mode}
+          onModeChange={setMode}
+        />
       ) : loading && verdicts === null ? (
         <div className="flex justify-center py-6">
           <Loader2 className="animate-spin text-[var(--text-muted)]" />
@@ -233,9 +279,22 @@ export function WatchersPanel({
         </div>
       )}
 
-      {usage && (
-        <div className="mt-3 flex justify-end border-t border-[var(--border)] pt-2">
-          <AiCostBadge usage={usage} rate={usdPlnRate} />
+      {/* 080 (Z11): pasek sekcji AI — kiedy ocena powstała, czy jest nieaktualna, ile kosztowała
+          i kiedy ma powstawać sama. Ten sam komponent, co w pozostałych sekcjach AI. */}
+      {!pending && watchers.length > 0 && (
+        <div className="mt-3 border-t border-[var(--border)] pt-2">
+          <AiContentMeta
+            generatedAt={generatedAt}
+            stale={stale}
+            busy={loading}
+            onRefresh={() => evaluate(true)}
+            refreshLabel={t("ocenPonownie")}
+            staleHint={t("prognozaAlboObserwatoryZmienily")}
+            usage={usage}
+            sectionKind="weather.watchers"
+            mode={mode}
+            onModeChange={setMode}
+          />
         </div>
       )}
 

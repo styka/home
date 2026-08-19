@@ -13,7 +13,14 @@ export type ResilientOpts = RequestInit & {
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
-const backoff = (attempt: number) => 200 * 2 ** attempt // 200, 400, 800…
+/**
+ * Odstęp między próbami: 200, 400, 800 ms…
+ *
+ * Eksportowany, bo ponowienie bywa potrzebne o piętro WYŻEJ niż transport — np. odpowiedź 200,
+ * z której nie dało się wyciągnąć treści, jest dla `resilientFetch` sukcesem, a dla wołającego
+ * porażką (080/Z5). Taki wołający ma użyć tej samej krzywej, a nie napisać drugiej obok.
+ */
+export const backoff = (attempt: number) => 200 * 2 ** attempt // 200, 400, 800…
 
 /**
  * Wykonuje fetch z timeoutem per próba i retry. Zwraca ostatnią odpowiedź (także

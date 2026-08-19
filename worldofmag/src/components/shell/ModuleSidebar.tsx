@@ -282,7 +282,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
       <nav className="flex-1 py-2 overflow-y-auto">
         {/* 042: własne miejsca użytkownika stoją NAD nawigacją modułów — to do nich wraca
             najczęściej, a sekcja znika całkowicie, gdy nie ma ani jednego ulubionego (AC-6). */}
-        <FavoritesSidebarSection favorites={favoriteViews} userPermissions={userPermissions} />
+        <FavoritesSidebarSection favorites={favoriteViews} userPermissions={userPermissions} collapsed={menuPrefs.favoritesCollapsed} />
 
         {enabled.map(renderModule)}
 

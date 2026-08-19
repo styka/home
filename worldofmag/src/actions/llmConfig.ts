@@ -17,6 +17,7 @@ import {
 import { PROVIDER_KINDS, isSpeechOnlyKind, type ProviderKind } from "@/platform/llm/resolver";
 import { invalidatePriceCache } from "@/platform/llm/pricing";
 import { FOLLOWUPS_CONFIG_KEY, readFollowupsEnabled } from "@/platform/ai/followups";
+import { SPEECH_FORCE_BROWSER_KEY, readForceBrowserVoice } from "@/lib/tts/forceBrowser";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
 import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
 import { logAudit } from "@/platform/audit/audit";
@@ -303,6 +304,8 @@ export interface SpeechConfigDTO {
   currentCatalogId: string | null;
   currentModel: string | null;
   currentVoiceId: string | null;
+  /** 080 (Z4): administrator świadomie wymusił lektora systemowego (przeglądarki). */
+  forceBrowser: boolean;
 }
 
 export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
@@ -339,6 +342,7 @@ export async function getSpeechConfig(): Promise<SpeechConfigDTO> {
     currentCatalogId: current?.id ?? null,
     currentModel: assignment?.model ?? null,
     currentVoiceId: voiceRow?.value ?? null,
+    forceBrowser: await readForceBrowserVoice(),
   };
 }
 
@@ -679,6 +683,37 @@ export async function setFollowupsEnabled(enabled: boolean): Promise<void> {
     "assistant_followups.set",
     FOLLOWUPS_CONFIG_KEY,
     `${enabled ? "Włączono" : "Wyłączono"} propozycje kolejnych pytań w odpowiedziach asystenta`
+  );
+  revalidatePath("/admin/llm");
+}
+
+// ─── 080 (Z4): głos systemowy jako wybór administratora ─────────────────────
+//
+// Do tej pory jedynym sposobem na wyłączenie płatnego lektora było skasowanie przypisania modelu —
+// czyli zniszczenie konfiguracji, żeby wyłączyć warstwę. Gdy dostawca odmawiał, administrator
+// zostawał z wyborem „albo cisza, albo kasuję ustawienia". Przełącznik jest odwracalny i, jak
+// każda zmiana konfiguracji, audytowany (C-25).
+
+export async function getForceBrowserVoice(): Promise<boolean> {
+  await requireAdmin();
+  return readForceBrowserVoice();
+}
+
+export async function setForceBrowserVoice(enabled: boolean): Promise<void> {
+  await requireAdmin();
+  const value = enabled ? "1" : "0";
+  await prisma.config.upsert({
+    where: { key: SPEECH_FORCE_BROWSER_KEY },
+    update: { value },
+    create: { key: SPEECH_FORCE_BROWSER_KEY, value },
+  });
+  await logAudit(
+    "config",
+    "speech_force_browser.set",
+    SPEECH_FORCE_BROWSER_KEY,
+    enabled
+      ? "Wymuszono lektora systemowego (przeglądarki) — synteza serwerowa wyłączona"
+      : "Przywrócono lektora serwerowego zgodnie z przypisaniem modelu"
   );
   revalidatePath("/admin/llm");
 }

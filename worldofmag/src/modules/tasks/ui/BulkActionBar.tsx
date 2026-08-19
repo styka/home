@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CheckSquare, Flag, Calendar, Tag as TagIcon, FolderInput, Trash2, X, Circle } from "lucide-react";
 import { StatusIcon } from "./StatusIcon";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import type { TaskProject, TaskTagDef, TaskPriority, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, TASK_PRIORITY_LABELS, TASK_PRIORITY_COLORS, DEFAULT_STATUS_CONFIG } from "@/types";
 
@@ -42,6 +43,9 @@ export function BulkActionBar({
   allProjects, allTags, onSelectAll, onClear, onApply, onDelete,
 }: BulkActionBarProps) {
   const t = useTranslations("modules.tasks.BulkActionBar");
+  // 080 (Z2): panele kotwiczymy do CAŁEGO paska, nie do pojedynczych przycisków — przyciski
+  // przewijają się w poziomie na wąskim ekranie, więc kotwica na przycisku skakałaby razem z nimi.
+  const barRef = useRef<HTMLDivElement | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [dueValue, setDueValue] = useState("");
   const [categoryValue, setCategoryValue] = useState("");
@@ -78,9 +82,11 @@ export function BulkActionBar({
 
   const actionBtn =
     "flex flex-col items-center justify-center gap-0.5 px-2.5 py-2 rounded text-xs focus:outline-none min-w-[52px]";
-  const panelWrap =
-    "absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-[min(92vw,320px)] max-h-[50vh] overflow-y-auto rounded-lg p-2 shadow-lg";
-  const panelStyle = { backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" };
+  // 080 (Z2): tło, ramkę, warstwę i POZYCJĘ daje `AnchoredLayer`. Zostało samo wypełnienie treści.
+  // Wcześniej stało tu `absolute bottom-full` — czyli „zawsze w górę", bez sprawdzania, czy jest
+  // tam miejsce, i bez odporności na przycięcie przez przewijany kontener.
+  const panelWrap = "w-full";
+  const panelStyle: React.CSSProperties = {};
   const itemBtn =
     "flex items-center gap-2 w-full px-2.5 py-2 rounded text-sm text-left focus:outline-none";
 
@@ -90,10 +96,24 @@ export function BulkActionBar({
       style={{ bottom: "calc(env(safe-area-inset-bottom, 0px))" }}
     >
       <div
-        className="pointer-events-auto relative w-full md:w-auto mb-16 md:mb-4 rounded-xl shadow-xl"
+        // 080 (Z2): na komputerze pasek jest OBIEKTEM, nie belką przez cały ekran. `md:w-auto`
+        // było, ale rząd akcji potrafi urosnąć szerzej niż okno, więc dokładamy sufit szerokości;
+        // zewnętrzny kontener już centruje. Na telefonie bez zmian — tam pełna szerokość jest
+        // właściwa, a `mb-16` omija dolny pasek zakładek.
+        className="pointer-events-auto relative w-full md:w-auto md:max-w-2xl mb-16 md:mb-4 rounded-xl shadow-xl"
         style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
       >
-        {/* Popover aktywnej akcji */}
+        {/* Popover aktywnej akcji — jedna warstwa na wszystkie sześć paneli (080/Z7). */}
+        <AnchoredLayer
+          anchorRef={barRef}
+          open={panel !== null}
+          onClose={() => setPanel(null)}
+          side="gora"
+          align="srodek"
+          width={320}
+          ariaLabel={t("opcjeAkcjiZbiorczej")}
+          style={{ padding: 8 }}
+        >
         {panel === "status" && (
           <div className={panelWrap} style={panelStyle}>
             {/* Opcjonalna data wykonania — stosowana przy przejściu na status „zamykający". */}
@@ -195,9 +215,11 @@ export function BulkActionBar({
           </div>
         )}
 
+        </AnchoredLayer>
+
         {/* Główny pasek — przewijalny poziomo na mobile, żeby wszystkie akcje były osiągalne
             na wąskim ekranie (wzorzec z paska narzędzi TasksPage). */}
-        <div className="flex items-center gap-1 p-2 overflow-x-auto [&>*]:flex-shrink-0" style={{ opacity: pending ? 0.6 : 1 }}>
+        <div ref={barRef} className="flex items-center gap-1 p-2 overflow-x-auto [&>*]:flex-shrink-0" style={{ opacity: pending ? 0.6 : 1 }}>
           <div className="flex flex-col items-start pr-1 pl-1">
             <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{count}</span>
             <button onClick={onSelectAll} className="text-xs focus:outline-none hover:underline" style={{ color: "var(--accent-blue)" }}>

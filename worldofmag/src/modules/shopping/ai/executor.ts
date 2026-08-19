@@ -2,7 +2,7 @@ import { resolveOrCreateList } from "../contract";
 // Z-010: handler akcji asystenta dla modułu Zakupy (listy + pozycje).
 // Scala oba dawne bloki `module === "shopping"` z execute/route.ts.
 import { prisma } from "@/platform/db/prisma";
-import { addItem, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart, moveItem } from "../actions/items";
+import { addItem, addItems, updateItem, updateItemStatus, deleteItem, clearDoneItems, markAllInCart, moveItem } from "../actions/items";
 import { createList, renameList, archiveList, deleteList, unarchiveList, completeShopping } from "../actions/lists";
 import { asStr, undoAction, resolveListId, resolveItemId, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
@@ -25,6 +25,33 @@ export async function executeShoppingAction(action: AIAction, userId: string, ac
       return { message: msg, undo, navigateTo: `/shopping/${list.id}`, navigateLabel: `Otwórz „${list.name}”` };
     }
     return { message: msg, undo };
+  }
+
+  if (type === "add_items") {
+    // 080 (Z6): JEDNA akcja na całą listę zakupów. Sto pozycji jako sto osobnych akcji nie mieściło
+    // się w limicie wyjścia modelu — plan wracał ucięty i pętla kończyła się „zabrakło kroków".
+    // Model może przysłać albo tekst wielolinijkowy, albo tablicę; przyjmujemy oba, bo wymuszanie
+    // jednego kształtu kosztowałoby kolejne nieudane podejście.
+    const surowe = params.rawTexts ?? params.rawText ?? params.items;
+    const linie = Array.isArray(surowe)
+      ? surowe.map((x) => String(x))
+      : String(surowe ?? "").split(/\r?\n/);
+    // „- mleko" i „* mleko" to naturalny sposób, w jaki model wypisuje listę — punktor nie jest
+    // częścią nazwy produktu.
+    const pozycje = linie.map((l) => l.replace(/^\s*[-*•]\s*/, "").trim()).filter(Boolean);
+    if (pozycje.length === 0) return "Nie podano żadnej pozycji do dodania";
+
+    const list = await resolveOrCreateList(userId, {
+      listId: asStr(params.listId),
+      listName: asStr(params.listName),
+      activeListId,
+    });
+    const wynik = await addItems(list.id, pozycje);
+    return {
+      message: `Dodano ${wynik.added} ${wynik.added === 1 ? "pozycję" : "pozycji"} do listy „${list.name}”`,
+      navigateTo: `/shopping/${list.id}`,
+      navigateLabel: `Otwórz „${list.name}”`,
+    };
   }
 
   if (type === "update_item_status") {
