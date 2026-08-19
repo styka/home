@@ -49,14 +49,14 @@ Wszystkie cztery zadania tej fazy dotykają rozłącznych plików i nie zależą
   > byłoby konstrukcją większą niż sama zmiana (C-53). Weryfikacja idzie przez przegląd kodu
   > i ścieżkę Wiadomości w `/verify`. Ponowienie na poziomie pobierania treści (T-3), gdzie
   > zależności są wstrzykiwalne, **jest** pokryte testem.
-- [ ] **T-5** `[P]` — **Z10: ponowienie i uczciwy komunikat generatora skórek.**
+- [x] **T-5** `[P]` — **Z10: ponowienie i uczciwy komunikat generatora skórek.**
   `src/platform/jobs/handlers/skinGenerate.ts`: przy zerze poprawnych tokenów **jedno automatyczne
   ponowienie** z komunikatem korygującym wymieniającym odrzucone klucze; komunikat porażki podaje
   liczbę i nazwy odrzuconych kluczy. **`validateTokens` bez zmian** — nie ruszamy bramki
   bezpieczeństwa (whitelist chroni przed wstrzyknięciem CSS).
   **Gotowe, gdy:** test jednostkowy — pierwsza odpowiedź bez poprawnych tokenów wyzwala ponowienie,
   a komunikat po porażce zawiera liczbę i nazwy kluczy. *(AC-19)*
-- [ ] **T-6** `[P]` — **Z4: kod przyczyny odmowy lektora.** `src/lib/tts/serverTts.ts` niesie kod
+- [x] **T-6** `[P]` — **Z4: kod przyczyny odmowy lektora.** `src/lib/tts/serverTts.ts` niesie kod
   wyprowadzony ze statusu dostawcy (`auth`/`model`/`quota`/`provider`/`network`);
   `src/app/api/tts/route.ts` zwraca **kod**, nigdy treści od dostawcy.
   **Gotowe, gdy:** test odwzorowania statusów **plus asercja negatywna: klucz API nie występuje
