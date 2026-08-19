@@ -32,17 +32,23 @@
 
 Wszystkie cztery zadania tej fazy dotykają rozłącznych plików i nie zależą od Fazy 0.
 
-- [ ] **T-3** `[P]` — **Z5: ponowienie semantyczne przy pobieraniu treści.** `src/lib/news/article.ts`:
+- [x] **T-3** `[P]` — **Z5: ponowienie semantyczne przy pobieraniu treści.** `src/lib/news/article.ts`:
   pętla do 3 prób na poziomie artykułu; odpowiedź 200 z tekstem krótszym od progu użyteczności liczy
   się jako **nieudana** i jest ponawiana z narastającym odstępem (wspólny helper odstępu, nie druga
   implementacja obok `resilientFetch`).
   **Gotowe, gdy:** test jednostkowy z podstawionym `fetch` pokazuje **3 próby** dla 200+pusta treść
   i 1 próbę dla sukcesu. *(AC-11, część 1)*
-- [ ] **T-4** `[P]` — **Z5: ponowienie streszczeń.** `src/modules/news/jobs/newsRefresh.ts`
+- [x] **T-4** `[P]` — **Z5: ponowienie streszczeń.** `src/modules/news/jobs/newsRefresh.ts`
   (`summarizeItems`): pozycje bez streszczenia po pierwszym przebiegu wracają do modelu, łącznie do
   3 prób; postęp przez `ctx.progress`.
-  **Gotowe, gdy:** test jednostkowy z modelem gubiącym część pozycji kończy się kompletem po ≤3
-  przebiegach; „Brak treści materiału." dopiero po wyczerpaniu prób. *(AC-11, część 2)*
+  **Gotowe, gdy:** przegląd kodu potwierdza, że do kolejnego podejścia idą **wyłącznie** pozycje
+  bez streszczenia, a podejście, które nie ruszyło ani jednej, **przerywa pętlę** (kolejne
+  wyglądałoby identycznie i kosztowało tyle samo). *(AC-11, część 2)*
+  > **Zmiana wobec planu (C-54):** planowany test jednostkowy odpada. `summarizeItems` jest funkcją
+  > prywatną, która pisze do bazy i woła model przez `llmJson` — podstawienie Prismy i kanału LLM
+  > byłoby konstrukcją większą niż sama zmiana (C-53). Weryfikacja idzie przez przegląd kodu
+  > i ścieżkę Wiadomości w `/verify`. Ponowienie na poziomie pobierania treści (T-3), gdzie
+  > zależności są wstrzykiwalne, **jest** pokryte testem.
 - [ ] **T-5** `[P]` — **Z10: ponowienie i uczciwy komunikat generatora skórek.**
   `src/platform/jobs/handlers/skinGenerate.ts`: przy zerze poprawnych tokenów **jedno automatyczne
   ponowienie** z komunikatem korygującym wymieniającym odrzucone klucze; komunikat porażki podaje

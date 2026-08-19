@@ -2,7 +2,7 @@
 // którzy przeszli wstępne dopasowanie). Zwracamy oczyszczony tekst + og:image.
 // Brak biblioteki — prosta ekstrakcja: usuwamy skrypty/style/nawigację, zostawiamy
 // tekst. To wystarcza LLM-owi do oceny trafności/nowości i streszczenia.
-import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
+import { backoff, resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157
 
 const UA =
   "Mozilla/5.0 (compatible; OmniaNewsBot/1.0; +https://worldofmag.onrender.com)";
@@ -72,15 +72,63 @@ export function extractText(html: string): string {
   return text.slice(0, 6000);
 }
 
-/** Pobiera artykuł. Przy błędzie zwraca pusty tekst (caller użyje opisu z RSS). */
-export async function fetchArticle(url: string): Promise<FetchedArticle> {
+/**
+ * 080 (Z5): PRÓG UŻYTECZNOŚCI TREŚCI. Poniżej tej długości uznajemy, że dociągnięcie się nie
+ * udało — nawet jeśli serwer odpowiedział 200. Tyle zwykle zostaje po wycięciu znaczników ze
+ * strony, która pokazała ścianę zgody na ciasteczka albo dopiero doładowuje treść skryptem.
+ */
+const MIN_USEFUL_TEXT = 200;
+
+/** 080 (Z5): łącznie tyle podejść do jednego artykułu (pierwsze + dwa ponowienia). */
+export const ARTICLE_MAX_ATTEMPTS = 3;
+
+/** Wstrzykiwalne zależności — wyłącznie po to, żeby ponowienia dało się przetestować bez sieci. */
+export interface FetchArticleDeps {
+  fetchImpl?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const EMPTY: FetchedArticle = { text: "", imageUrl: null, publishedAt: null };
+
+/**
+ * Pobiera artykuł. Przy błędzie zwraca pusty tekst (caller użyje opisu z RSS).
+ *
+ * 080 (Z5) — PONOWIENIE SEMANTYCZNE, ponad transportowym. `resilientFetch` ponawia awarie sieci
+ * i statusy 429/5xx, i to zostaje bez zmian. Ale najczęstsza porażka dociągania treści wygląda
+ * dla transportu jak **sukces**: serwer zwraca 200, a po wycięciu znaczników zostaje nic albo
+ * kilka słów. Tego `resilientFetch` z definicji nie ponowi, bo on nie wie, po co pobieramy stronę.
+ * Dlatego pętla jest TUTAJ, na poziomie „czy naprawdę mamy treść", a nie „czy przyszła odpowiedź".
+ *
+ * Zwracamy NAJLEPSZĄ z prób, nie ostatnią: sto znaków to mniej niż próg, ale wciąż więcej niż nic,
+ * a użytkownik woli krótki opis od komunikatu „Brak treści materiału.".
+ */
+export async function fetchArticle(url: string, deps: FetchArticleDeps = {}): Promise<FetchedArticle> {
+  let best: FetchedArticle = EMPTY;
+
+  for (let attempt = 0; attempt < ARTICLE_MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) await (deps.sleep ?? defaultSleep)(backoff(attempt - 1));
+
+    const got = await fetchOnce(url, deps);
+    if (got.text.length > best.text.length) best = got;
+    if (best.text.length >= MIN_USEFUL_TEXT) return best;
+  }
+
+  return best;
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Jedno podejście do strony. Każda porażka — sieciowa czy treściowa — wychodzi jako pusty wynik. */
+async function fetchOnce(url: string, deps: FetchArticleDeps): Promise<FetchedArticle> {
   try {
     const res = await resilientFetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html,*/*" },
       cache: "no-store",
       timeoutMs: 12_000,
+      ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
+      ...(deps.sleep ? { sleep: deps.sleep } : {}),
     });
-    if (!res.ok) return { text: "", imageUrl: null, publishedAt: null };
+    if (!res.ok) return EMPTY;
     const html = await res.text();
     return {
       text: extractText(html),
@@ -88,6 +136,6 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
       publishedAt: extractPublishedAt(html),
     };
   } catch {
-    return { text: "", imageUrl: null, publishedAt: null };
+    return EMPTY;
   }
 }
