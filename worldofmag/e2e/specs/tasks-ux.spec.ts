@@ -15,8 +15,13 @@ async function seedTask(title: string, description?: string) {
   const prisma = new PrismaClient();
   try {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: E2E_ADMIN.email } });
+    const przestrzen = await prisma.workspace.findUniqueOrThrow({ where: { personalUserId: user.id } });
     const project = await prisma.taskProject.create({
-      data: { name: `UX ${Date.now()}`, ownerId: user.id },
+      // 098: przestrzeń bierzemy zapytaniem, a NIE przez `wlasnoscOsobistaDoZapisu` z aplikacji.
+      // Spec Playwrighta jest transpilowany, ale moduł zaimportowany z niego dynamicznie już nie —
+      // `await import("@/platform/...")` kończy się „Cannot use import statement outside a module".
+      // Fikstura ma być samowystarczalna: zna schemat, nie kod aplikacji.
+      data: { name: `UX ${Date.now()}`, workspaceId: przestrzen.id },
     });
     const task = await prisma.task.create({
       data: { title, description: description ?? null, projectId: project.id, createdById: user.id },
@@ -56,7 +61,9 @@ test.describe("042 — usterki w Zadaniach", () => {
     const touchPage = await touchCtx.newPage();
     try {
       await touchPage.goto(`/tasks/${projectId}`);
-      await touchPage.waitForLoadState("networkidle").catch(() => {});
+      // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
+      // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
+      await touchPage.waitForLoadState("load").catch(() => {});
       const row = touchPage.getByText("Zadanie testowe A").first();
       await expect(row).toBeVisible({ timeout: 15_000 });
 
@@ -77,7 +84,7 @@ test.describe("042 — usterki w Zadaniach", () => {
 
     // --- Wariant MYSZY (AC-21) — zachowanie ma zostać jak było ---
     await page.goto(`/tasks/${projectId}`);
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
     await page.getByText("Zadanie testowe A").first().hover();
     await page.waitForTimeout(400);
 
@@ -94,7 +101,7 @@ test.describe("042 — usterki w Zadaniach", () => {
     const { projectId, taskId } = await seedTask("Zadanie z dlugim opisem", longText);
 
     await page.goto(`/tasks/${projectId}?task=${taskId}`);
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     // Otwieramy szczegóły zadania i wchodzimy w edycję opisu (klik w wyrenderowany markdown).
     await page.getByText("Zadanie z dlugim opisem").first().click();

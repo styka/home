@@ -28,7 +28,11 @@ test.describe("Ustawienia", () => {
   test("[scenario-settings-profile-display] profil w ustawieniach", async ({ page, settings }) => {
     await settings.open();
     await expect(page).toHaveURL(/\/settings/);
-    await expect(page.getByText(/Ustawienia|Wyloguj|team/i).first()).toBeVisible();
+    // 098: było `getByText(/Ustawienia|Wyloguj|team/i).first()` — wzorzec trafiał najpierw
+    // w element UKRYTY (pozycja nawigacji mobilnej), więc `.first()` zawsze wskazywał coś
+    // niewidocznego. Sprawdzamy nagłówek strony w treści, czyli to, po czym człowiek poznaje,
+    // że ustawienia się otworzyły.
+    await expect(page.getByRole("main").getByRole("heading", { name: /Ustawienia/i }).first()).toBeVisible();
   });
 
   test("[scenario-settings-logout] wylogowanie przekierowuje do logowania", async ({ page, settings }) => {

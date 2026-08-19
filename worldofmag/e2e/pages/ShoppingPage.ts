@@ -23,10 +23,24 @@ export class ShoppingPage extends BasePage {
   }
 
   /** Create a list via the "Nowa lista" inline form. */
+  /**
+   * 098: tworzenie z POTWIERDZENIEM i ponowieniem.
+   *
+   * Klik w „Utwórz" przed hydracją nic nie robi — formularz jest już w DOM (renderuje go serwer),
+   * więc `fill` przechodzi, przycisk daje się kliknąć, a akcja nie leci. Test padał dopiero
+   * kilkanaście linijek dalej, na klikaniu listy, której nie było, i wyglądał na błąd nawigacji.
+   * Sprawdzamy najpierw, czy lista już istnieje, żeby ponowienie nie tworzyło duplikatów.
+   */
   async createList(name: string) {
-    await this.newListButton.click();
-    await this.page.getByPlaceholder(/Nazwa listy/).fill(name);
-    await this.page.getByRole("main").getByRole("button", { name: /Utwórz/ }).first().click();
+    const widoczna = this.page.getByRole("main").getByText(name, { exact: false }).first();
+    await expect(async () => {
+      if (!(await widoczna.isVisible().catch(() => false))) {
+        await this.newListButton.click();
+        await this.page.getByPlaceholder(/Nazwa listy/).fill(name);
+        await this.page.getByRole("main").getByRole("button", { name: /Utwórz/ }).first().click();
+      }
+      await expect(widoczna).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 25_000 });
   }
 
   /** Otwiera sam formularz (bez wypełniania) — dla scenariuszy walidacji. */

@@ -39,7 +39,11 @@ test.describe("Zakupy — listy", () => {
     await shopping.createList(b);
     await shopping.open();
     await test.step("Kliknij pierwszą listę", async () => {
-      await page.getByText(a).first().click();
+      // 098: dwie pułapki naraz. `getByText(a).first()` trafiał w `<option>` mobilnego
+      // przełącznika (w DOM, ale ukryty przy szerokości desktopu), a nazwa w bocznym pasku jest
+      // OBCINANA wielokropkiem, więc dopasowanie po pełnej nazwie tam nie zadziała. Klikamy pozycję
+      // w treści strony, gdzie nazwa stoi w całości.
+      await page.getByRole("main").getByText(a, { exact: false }).first().click();
     });
     await expect(page).toHaveURL(/\/shopping\//);
   });

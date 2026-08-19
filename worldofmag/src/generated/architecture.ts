@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-19T01:02:40.820Z",
+  "wygenerowano": "2026-08-19T03:50:56.534Z",
   "zdolnosciPlatformy": [
     "ai",
     "audit",
@@ -77,9 +77,11 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "check-ai-access",
     "check-ai-coverage",
     "check-boundaries",
+    "check-client-safe",
     "check-content-memory",
     "check-cost-badge",
     "check-domain",
+    "check-e2e-waits",
     "check-events",
     "check-grant-mirror",
     "check-i18n",
@@ -91,8 +93,10 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "check-pagination",
     "check-perf-budget",
     "check-realtime",
+    "check-route-gating",
     "check-schema-drift",
     "check-subscribers",
+    "check-tailwind-content",
     "check-ui-contract",
     "check-versioning",
     "check-workspace-fill",

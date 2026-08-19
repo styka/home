@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { ALL_PERMISSIONS, ROLE_PERMISSIONS, E2E_ADMIN, E2E_LIMITED } from "./users";
+import { CONSENT_DOCUMENTS } from "../../src/lib/legal/documents";
 
 const prisma = new PrismaClient();
 
@@ -43,6 +44,22 @@ export async function ensureE2EFixtures(): Promise<void> {
         where: { userId_role: { userId: user.id, role } },
         create: { userId: user.id, role },
         update: {},
+      });
+    }
+
+    // 098: ZGODY PRAWNE zaakceptowane z góry.
+    //
+    // Baner „Zaktualizowaliśmy dokumenty" jest przyklejony do dołu ekranu i przechwytuje
+    // kliknięcia w to, co pod nim leży. Testy padały wtedy nie na swojej treści, tylko na
+    // jednorazowym oknie: „przełączanie list w sidebarze" nie mogło kliknąć listy, która
+    // wylądowała za banerem. Zgoda w danych startowych usuwa go z drogi raz, zamiast kazać
+    // każdemu testowi go zamykać — i nie udaje, że go nie ma: samego banera pilnuje osobny
+    // scenariusz zgód.
+    for (const dokument of CONSENT_DOCUMENTS) {
+      await prisma.userConsent.upsert({
+        where: { userId_documentKey: { userId: user.id, documentKey: dokument.key } },
+        create: { userId: user.id, documentKey: dokument.key, version: dokument.version },
+        update: { version: dokument.version },
       });
     }
   }

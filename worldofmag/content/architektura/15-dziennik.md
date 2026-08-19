@@ -3249,3 +3249,82 @@ nie wyraża języka o innej liczbie form niż polski.
 
 **Stan:** build **exit 0**, `test:unit` 1049/1049, `check:i18n` **0**, `check:pagination` 0 bez
 granicy, klikacz e2e zielony.
+
+---
+
+## 098 — Siatka bezpieczeństwa z Fazy 0 nie istniała. Naprawa odsłoniła cztery błędy produkcyjne
+
+Checklista stawia punkt 1 — klikacz ścieżki szczęśliwej — jako **blokujący wszystko**, „bo refaktor
+bez siatki bezpieczeństwa to nie refaktor, tylko przepisywanie z nadzieją". Uruchomienie go po
+zmianach 097 dało **61 czerwonych na 120**. Pomiar na commicie sprzed tych zmian dał **61 czerwonych
+na 120** — czyli identycznie. Siatka nie mierzyła niczego od dawna; „czerwony" przestał znaczyć
+„regresja", więc nikt nie patrzył. To jest cena zepsutego miernika: rzeczy poniżej leżały
+w widocznym miejscu przez wiele przebiegów.
+
+### Przyczyna pierwsza: pusta strona zamiast aplikacji
+
+`new AsyncLocalStorage()` stało w **zasięgu modułu** w `platform/sharing/cache.ts`
+i `platform/observability/log.ts`. W grafie klienta `async_hooks` jest podmieniony na pusty moduł
+(alias z 084 — i to jest poprawne, bo w przeglądarce ten zakres nie ma sensu), więc klasa jest tam
+`undefined`. Konstrukcja przy **imporcie** wykonuje się jednak zawsze, także gdy nikt zmiennej nie
+użyje — i wywalała hydrację CAŁEJ strony. W produkcji ratowało nas wytrząsanie martwego kodu;
+w trybie deweloperskim, w którym chodził klikacz, nie ratowało nic. Przeglądarka pokazywała **pustą
+stronę**, a 8 z 9 testów nawigacji padało „bo nie znalazły linku".
+
+Poprawka: magazyn tworzony leniwie, brak magazynu jako **poprawny stan** (bez memoizacji, bez pól
+żądania w logu), nie jako wyjątek. Bramka `check:client-safe` nie pozwala tego cofnąć.
+
+### Przyczyna druga: oczekiwanie, które nie może nastąpić
+
+35 miejsc w siedmiu specach czekało na `networkidle`. Od 072 aplikacja trzyma otwarty strumień
+zdarzeń, więc sieć **nigdy** nie jest bezczynna. Testy padały na „Test timeout of 60000ms" w miejscu
+niezwiązanym z ich treścią, więc wyglądały na wolne, a były niewykonalne. Bramka
+`check:e2e-waits` pilnuje, żeby nie wróciło.
+
+### Przyczyna trzecia: klikacz chodził na serwerze deweloperskim
+
+W trybie dev Next kompiluje trasę przy pierwszym wejściu, a Playwright puszcza kilku pracowników
+naraz. Te same testy przechodziły uruchomione osobno (12/12 smoke) i padały w pełnym zestawie —
+wynik zależał od tego, co robił sąsiedni pracownik. Klikacz buduje teraz aplikację raz i chodzi na
+`next start`: **czas przebiegu spadł z ~18 do ~2 minut**, a testowany jest ten sam kod, który jedzie
+na produkcję. Przy okazji wyszło, że NextAuth v5 w trybie produkcyjnym odmawia obsługi nieznanego
+hosta — w dev ufa localhostowi z automatu, więc tego nie było widać.
+
+### Cztery błędy PRODUKCYJNE, które zielony klikacz natychmiast pokazał
+
+| Błąd | Skutek dla użytkownika |
+|---|---|
+| `tailwind.config.ts` nie obejmował `src/modules` | **Klasy używane tylko w modułach były wycinane z arkusza** — od przebudowy 046, czyli od przeniesienia interfejsów wszystkich 21 modułów. Tygodniowy plan posiłków (`hidden md:grid`) był na desktopie **niewidoczny**. |
+| `/kitchen`, `/notes`, `/shopping`, `/tasks` bez kontroli uprawnienia | Adres wpisany z ręki otwierał moduł, do którego użytkownik nie ma prawa. Nawigacja go wygaszała — ale to jest wygląd, nie kontrola. |
+| `prisma.job.findFirst({ where: { ...filtrMoichRekordow() } })` | `Job` przestrzeni nie ma (jest wśród pięciu tabel z `ownerId`), więc Prisma odrzucała każde wywołanie: **stan odświeżania Wiadomości nie wczytywał się ani razu**. |
+| Fikstury e2e tworzące projekt z `ownerId` | Kolumna skasowana migracją 0244 — dwa scenariusze padały na błędzie Prismy zamiast testować. |
+
+Pierwszy z nich jest najciekawszy, bo objaw był **niejednorodny**: klasa, która trafiła się też
+gdzieś w `components/`, dalej działała. Nie widać było „modułów bez stylów", tylko pojedyncze,
+losowo wyglądające braki — i żadnego sygnału, że mają wspólną przyczynę.
+
+### Nowe bramki (28 w buildzie)
+
+`check-client-safe` (konstrukcja modułu Node przy imporcie), `check-e2e-waits` (`networkidle`),
+`check-route-gating` (uprawnienie na trasie modułu, 19 tras), `check-tailwind-content` (globy
+obejmują wszystkie 168 katalogów z komponentami). `check-owner-columns` rozszerzona o `workspaceId`,
+o rozpoznawanie relacji zagnieżdżonych i o skanowanie `e2e/` oraz `prisma/`.
+
+Dwie z nich miały w pierwszej wersji **fałszywie zielony wynik** i wyszło to dopiero w próbie
+mutacyjnej: `check-route-gating` dopasowywała samą nazwę funkcji, więc wystarczał sam `import`;
+`check-tailwind-content` budowała wyrażenie z globu łańcuchem `replace` i kreska alternatywy
+z `{js,ts,…}` trafiała do wzorca niezasłonięta, przez co **każda** ścieżka pasowała do każdego globu.
+Obie przeszłyby do repozytorium jako ozdoby.
+
+### Reszta: dwanaście poprawek w samych testach
+
+Lokatory trafiające w element ukryty (`<option>` mobilnego przełącznika, wariant `md:hidden` planu),
+dwa elementy o tej samej nazwie dostępnej (gwiazdka „zapisz widok" jest w pasku widoku **i**
+w nawigacji), test nawigacji, który nigdy nie otwierał strony, oraz — najczęstsze — **wyścig
+z hydracją**: skrót klawiszowy albo kliknięcie przed uruchomieniem Reacta nie robi nic, a wcześniej
+maskowało to czekanie na `networkidle`. Te miejsca dostały ponowienie (`toPass`), a nie dłuższy
+limit czasu: dłuższy limit ukrywa wyścig, ponowienie go nazywa. Zgody prawne trafiły do danych
+startowych, bo baner „Zaktualizowaliśmy dokumenty" przechwytywał kliknięcia w to, co pod nim leżało.
+
+**Stan:** klikacz **145/145 zielonych** (było 59 zielonych i 61 czerwonych), czas przebiegu ~2 min,
+build **exit 0**, `test:unit` 1049/1049.

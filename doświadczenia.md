@@ -4,6 +4,72 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-20 — Konstrukcja obiektu Node w zasięgu modułu wywala hydrację CAŁEJ strony
+**Problem:** `const x = new AsyncLocalStorage()` stało w zasięgu modułu w dwóch plikach platformy.
+W grafie klienta `async_hooks` jest podmieniony na pusty moduł (świadomie — w przeglądarce ten
+zakres nie ma sensu), więc klasa jest tam `undefined`. „Nie używamy tego w przeglądarce" dotyczy
+WYWOŁANIA, nie IMPORTU: konstrukcja przy imporcie wykonuje się zawsze. Wyjątek przy starcie modułu
+przerywa hydrację całej strony — użytkownik dostawał **pustą stronę**, a nie zepsuty widżet.
+W produkcji ratowało wytrząsanie martwego kodu; w trybie deweloperskim, w którym chodzi klikacz,
+nie ratowało nic i 61 ze 120 testów padało bez związku ze swoją treścią.
+**Rozwiązanie:** Magazyn tworzony leniwie w funkcji; brak magazynu to POPRAWNY stan (brak
+memoizacji, log bez pól żądania), nie wyjątek. Bramka `check:client-safe` pilnuje reguły.
+**Lekcja:** Jeżeli moduł wbudowany Node może trafić do grafu klienta, nie wolno w zasięgu modułu
+niczego z niego KONSTRUOWAĆ. Alias na pusty moduł chroni przed brakiem pliku, nie przed
+„undefined is not a constructor" — a cena pomyłki jest nieproporcjonalna: biała strona.
+
+## 2026-08-20 — Zepsuty miernik jest gorszy niż brak miernika
+**Problem:** Klikacz e2e miał 61 czerwonych na 120 — dokładnie tyle samo przed moimi zmianami, co
+po nich. Skoro „czerwony" nie znaczył „regresja", nikt tam nie patrzył. Pod tym szumem leżały:
+niewidoczna siatka planu posiłków (Tailwind nie widział `src/modules` od przebudowy 046), cztery
+moduły bez kontroli uprawnienia na trasie, zapytanie Wiadomości padające przy każdym wejściu
+i dwie fikstury odwołujące się do skasowanej kolumny. Każda z tych rzeczy była w logu.
+**Rozwiązanie:** Najpierw pomiar punktu odniesienia (ten sam zestaw na commicie sprzed zmian), potem
+naprawa PRZYCZYN systemowych (hydracja, `networkidle`, serwer produkcyjny zamiast deweloperskiego),
+a dopiero na końcu pojedynczych testów. 145/145 zielonych, przebieg 18 min → 2 min.
+**Lekcja:** Zanim uwierzysz, że czerwony test to twoja wina — albo że nie jest — zmierz punkt
+odniesienia. A jeżeli zestaw testów jest trwale czerwony, to nie jest „dług do posprzątania", tylko
+**wyłączony alarm**: naprawa jest pilniejsza niż to, co akurat robisz.
+
+## 2026-08-20 — Po przeniesieniu katalogów sprawdź konfiguracje, które wyliczają katalogi
+**Problem:** `tailwind.config.ts` wyliczał `content` jako trzy katalogi (`pages`, `components`,
+`app`). Przebudowa 046 przeniosła interfejsy wszystkich 21 modułów do `src/modules/` i tego pliku
+nikt nie ruszył — więc Tailwind przestał widzieć klasy używane tylko w modułach i wycinał je
+z arkusza. Objaw był NIEJEDNORODNY: klasa, która trafiła się też w `components/`, dalej działała.
+Tak zniknęło `md:grid` w tygodniowym planie posiłków: `hidden md:grid` zostało bez reguły
+przywracającej widoczność i cała siatka była na desktopie niewidoczna.
+**Rozwiązanie:** Jeden glob `./src/**`, bo wyliczanie katalogów to ta sama równoległa lista, którą ta
+przebudowa usuwała z aplikacji. Bramka `check:tailwind-content` sprawdza POKRYCIE: każdy katalog pod
+`src/` z plikami `.tsx` musi być objęty którymś globem.
+**Lekcja:** Duże przenosiny plików to nie tylko importy. Przejrzyj wszystko, co wymienia katalogi
+z nazwy: konfiguracje narzędzi, globy, `include`/`exclude`, `content`, wzorce w skryptach. Te miejsca
+nie krzyczą — po prostu przestają obejmować część kodu.
+
+## 2026-08-20 — Bramka wymaga próby mutacyjnej: dwie z czterech były fałszywie zielone
+**Problem:** Z czterech bramek dopisanych w jednym przebiegu **dwie** przechodziły na zielono także
+wtedy, gdy błąd był obecny. `check-route-gating` dopasowywała samą nazwę funkcji, więc do przejścia
+wystarczał sam `import` — po usunięciu wywołania bramka milczała. `check-tailwind-content` budowała
+wyrażenie regularne z globu łańcuchem `replace`: kreska alternatywy z `{js,ts,…}` trafiała do wzorca
+niezasłonięta i całe wyrażenie stawało się alternatywą najwyższego poziomu, więc **każda** ścieżka
+pasowała do **każdego** globu.
+**Rozwiązanie:** Do każdej bramki co najmniej jedna próba: zepsuj dokładnie to, czego bramka ma
+pilnować, i sprawdź, że czerwieni. Obie wady wyszły natychmiast.
+**Lekcja:** Bramka bez próby mutacyjnej to nie zabezpieczenie, tylko jego wygląd — i to gorszy niż
+brak, bo daje poczucie pokrycia. Zielona bramka na zdrowym kodzie nie dowodzi niczego.
+
+## 2026-08-20 — Wyścig z hydracją: ponowienie nazywa problem, dłuższy limit go ukrywa
+**Problem:** Po usunięciu czekania na `networkidle` (które przy otwartym SSE trwało do limitu czasu
+i przypadkiem dawało czas na hydrację) posypały się testy klikające i naciskające klawisze zaraz po
+`load`. Formularz jest już w DOM (renderuje go serwer), więc `fill` przechodzi i przycisk daje się
+kliknąć — tylko akcja nie leci, bo React jeszcze nie przejął strony. Objaw pojawiał się kilkanaście
+linijek dalej: test padał na klikaniu listy, której nie utworzył.
+**Rozwiązanie:** `expect(async () => { …akcja…; …asercja… }).toPass()` — ponowienie z krótkim limitem
+wewnątrz. Przy tworzeniu danych ponowienie najpierw sprawdza, czy rekord już istnieje, żeby nie
+robić duplikatów.
+**Lekcja:** Na wyścig z hydracją nie odpowiada się dłuższym limitem czasu (ukrywa i spowalnia), tylko
+ponowieniem akcji. I szukaj przyczyny WYŻEJ niż linia, w której test padł — brakujące dane zwykle
+znaczą, że wcześniejsza akcja nie doszła.
+
 ## 2026-08-20 — Kodmod na JSX: pięć pułapek, z których każda wygląda jak jedno wyrażenie regularne
 **Problem:** Wyciągnięcie 1358 tekstów z komponentów do `messages/pl.json` wydawało się zadaniem na
 jeden regex. Kodmod trzeba było poprawiać pięć razy, za każdym razem po błędzie z `tsc`:

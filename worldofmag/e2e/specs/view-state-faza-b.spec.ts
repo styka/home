@@ -33,7 +33,9 @@ test.describe("043 — faza B: stan widoku w pozostałych modułach", () => {
     test(`[vsb-${m.param}-${m.path.replace(/\//g, "-")}] ${m.name}: bez parametrów czysto, z parametrem odtworzony`, async ({ page }) => {
       // AC-8 — wejście „gołe" nie dokłada niczego do adresu.
       await page.goto(m.path);
-      await page.waitForLoadState("networkidle").catch(() => {});
+      // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
+      // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
+      await page.waitForLoadState("load").catch(() => {});
 
       // Konto testowe nie ma uprawnień do KAŻDEGO modułu — wtedy strona przekierowuje na pulpit
       // i test nie miałby czego sprawdzać. Pomijamy z jawnym powodem, zamiast udawać zieloną
@@ -45,7 +47,7 @@ test.describe("043 — faza B: stan widoku w pozostałych modułach", () => {
 
       // AC-8a — adres z parametrem otwiera się i parametr NIE ginie przy starcie widoku.
       await page.goto(`${m.path}?${m.param}=${m.value}`);
-      await page.waitForLoadState("networkidle").catch(() => {});
+      await page.waitForLoadState("load").catch(() => {});
       await expect
         .poll(() => new URL(page.url()).searchParams.get(m.param), { timeout: 10_000 })
         .toBe(m.value);

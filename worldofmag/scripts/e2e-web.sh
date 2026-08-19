@@ -86,6 +86,11 @@ export DATABASE_URL="postgresql://e2e:e2e@localhost:5432/worldofmag_e2e"
 export DIRECT_URL="$DATABASE_URL"
 export AUTH_SECRET="${AUTH_SECRET:-e2e-local-secret-not-for-prod}"
 export E2E_TEST_MODE=1
+# 098: NextAuth v5 w trybie produkcyjnym odmawia obsluzenia nieznanego hosta ("UntrustedHost") —
+# w trybie deweloperskim ufa localhostowi z automatu, wiec do 098 tego nie bylo widac. Serwer
+# produkcyjny w klikaczu potrzebuje jawnego adresu bazowego.
+export AUTH_URL="${AUTH_URL:-http://localhost:3000}"
+export AUTH_TRUST_HOST=1
 export DEMO=0
 
 echo "▶ 4/6 Migracje Prisma…"
@@ -111,7 +116,25 @@ npx tsx prisma/seed.ts >/dev/null \
 npx tsx prisma/seeds/qa-all.ts >/dev/null \
   || echo "  ⚠ seed scenariuszy QA nie przeszedł (powód wyżej) — specy QA mogą być czerwone"
 
-echo "▶ 6/6 Testy E2E (headless Chromium)…"
+# 098: SERWER PRODUKCYJNY, NIE DEWELOPERSKI.
+#
+# Do 098 klikacz chodził na `npm run dev`. W trybie deweloperskim Next kompiluje trasę przy
+# PIERWSZYM wejściu — a Playwright puszcza kilka pracowników naraz, więc kilka tras kompiluje się
+# jednocześnie. Pomiar: te same testy przechodziły uruchomione osobno (12/12 smoke) i padały
+# w pełnym zestawie z „Test timeout of 60000ms" — czyli wynik zależał od tego, co akurat robił
+# sąsiedni pracownik. Czerwony przestawał znaczyć „regresja".
+#
+# Build kosztuje kilka minut RAZ, zamiast kompilacji przy każdym pierwszym wejściu, i dodatkowo
+# testujemy to, co faktycznie jedzie na produkcję (wytrząśnięty kod, prawdziwe granice klient/serwer).
+echo "▶ 6/7 Build produkcyjny (raz, zamiast kompilacji per trasa)…"
+if [ "${E2E_DEV:-0}" = "1" ]; then
+  echo "  ℹ E2E_DEV=1 — pomijam build, serwer deweloperski (wolniejszy, znane limity czasu)"
+else
+  npx next build >/tmp/e2e-build.log 2>&1 || { echo "  ✖ build padł — patrz /tmp/e2e-build.log"; tail -20 /tmp/e2e-build.log; exit 1; }
+  export E2E_SERVER_CMD="npx next start -p 3000"
+fi
+
+echo "▶ 7/7 Testy E2E (headless Chromium)…"
 ARGS=("$@")
 # Bez jawnego --project ograniczamy się do desktop (mobile=WebKit niedostępny).
 if ! printf '%s\n' "${ARGS[@]:-}" | grep -q -- '--project'; then

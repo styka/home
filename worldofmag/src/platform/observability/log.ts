@@ -37,19 +37,33 @@ export type KontekstLogu = {
   module?: string;
 };
 
-const kontekst = new AsyncLocalStorage<KontekstLogu>();
+/**
+ * 098 — jak w `platform/sharing/cache.ts`: magazyn powstaje LENIWIE. `new AsyncLocalStorage()`
+ * w zasięgu modułu wykonuje się przy imporcie, a w grafie klienta `async_hooks` jest pustym
+ * modułem, więc ta linijka wywracała hydrację całej strony. Brak magazynu = brak kontekstu, czyli
+ * log bez pól żądania — a nie wyjątek.
+ */
+let kontekst: AsyncLocalStorage<KontekstLogu> | null = null;
+function magazynKontekstu(): AsyncLocalStorage<KontekstLogu> | null {
+  if (kontekst) return kontekst;
+  if (typeof AsyncLocalStorage !== "function") return null;
+  kontekst = new AsyncLocalStorage<KontekstLogu>();
+  return kontekst;
+}
 
 /**
  * Ustawia kontekst dla całego drzewa wywołań. Zagnieżdżenie **scala** — trasa ustawia `requestId`,
  * a akcja w środku dokłada `module`, nie gubiąc tego pierwszego.
  */
 export function wKontekscieLogu<T>(pola: KontekstLogu, f: () => T): T {
-  const biezacy = kontekst.getStore() ?? {};
-  return kontekst.run({ ...biezacy, ...pola }, f);
+  const magazyn = magazynKontekstu();
+  if (!magazyn) return f();
+  const biezacy = magazyn.getStore() ?? {};
+  return magazyn.run({ ...biezacy, ...pola }, f);
 }
 
 export function biezacyKontekstLogu(): KontekstLogu {
-  return kontekst.getStore() ?? {};
+  return magazynKontekstu()?.getStore() ?? {};
 }
 
 /** Adres e-mail w logu to PII — najczęstsze i najłatwiejsze do przeoczenia. */

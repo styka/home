@@ -9,7 +9,7 @@
 
 | # | Zadanie | Rozdział | Blokuje |
 |---|---------|----------|---------|
-| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów | 13.F0 | **wszystko** |
+| 1 | Klikacz ścieżki szczęśliwej dla 21/21 modułów — ✅ **145/145** (098) | 13.F0 | **wszystko** |
 | 2 | Generowany test izolacji najemcy z manifestu 545 akcji | 13.F0, 12.2 | **wszystko** |
 | 3 | Bramka rozjazdu `schema.prisma` ↔ migracje | 13.F0 | 12 |
 
@@ -117,6 +117,13 @@
 ## Weryfikacja końcowa — pytania kontrolne
 
 Po ukończeniu wszystkich faz odpowiedz na te pytania **kodem, nie deklaracją**:
+
+> **Klikacz (098).** Zestaw e2e jest zielony w całości (145/145, ~2 min) i chodzi na serwerze
+> **produkcyjnym**. Przez wiele przebiegów miał 61 czerwonych na 120 — tyle samo przed zmianami,
+> co po nich — więc „czerwony" nie znaczył „regresja" i nikt tam nie patrzył. Pod tym szumem
+> leżały cztery błędy produkcyjne (niewidoczna siatka planu posiłków, cztery moduły bez kontroli
+> uprawnienia na trasie, padające zapytanie Wiadomości, fikstury na skasowanej kolumnie).
+> Szczegóły i przyczyny systemowe: dziennik, wpis 098.
 
 > **Odpowiedzi (095).** Sprawdzone kodem, nie deklaracją. Trzy pozycje nie osiągnęły celu i są tu
 > wypisane jako niedomknięte — razem z tym, czym są pilnowane, żeby nie wyglądały na przeoczenie.

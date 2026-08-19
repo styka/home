@@ -22,12 +22,14 @@ test.describe("Kuchnia — nawigacja", () => {
     // 048: zawężone do `<main>` (plan renderuje dwa warianty — siatkę `hidden md:grid` i listę
     // `md:hidden` — więc etykiety pór posiłków są w DOM dwukrotnie).
     //
-    // UWAGA, nierozstrzygnięte: w środowisku klikaczy ten scenariusz bywa czerwony mimo poprawnie
-    // wyrenderowanej strony (nagłówek, nawigacja tygodni i przyciski są obecne, a sąsiedni test
-    // `kitchen-plan-week-nav` przechodzi). W migawce błędu widać region `status`, czyli siatka
-    // planu **wciąż się doczytuje** po 10 s. Nie ustalono, czy to wolne ładowanie w tym środowisku,
-    // czy brak wpisów planu na bieżący tydzień w danych z seeda. Opisane w 048/verify.md.
-    await expect(page.getByRole("main").getByText(/Śniadanie|Obiad|Kolacja|Przekąska/).first()).toBeVisible();
+    // 098: ROZSTRZYGNIĘTE. Nie było to ani wolne ładowanie, ani brak danych: `.first()` trafiał
+    // w wariant MOBILNY (`md:hidden`), który przy 1280 px jest w DOM, ale ukryty — więc test czekał
+    // na widoczność elementu, który z założenia widoczny nie jest. Playwright mówił to wprost
+    // („locator resolved to … unexpected value hidden"), tylko że komunikat ginął wśród
+    // sześćdziesięciu innych czerwonych.
+    await expect(
+      page.getByRole("main").getByText(/Śniadanie|Obiad|Kolacja|Przekąska/).filter({ visible: true }).first(),
+    ).toBeVisible();
   });
 
   // Regresja: nawigacja tygodni MUSI zmieniać URL (?week=) → serwer przeładowuje

@@ -525,7 +525,11 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
   // (na wolnym tierze usypia po 15 min), zaległe zadanie czekałoby, aż ktoś trafi w `/api/jobs`.
   ensureJobWorker();
   const job = await prisma.job.findFirst({
-    where: { ...(await filtrMoichRekordow(user.id)), type: "news.refresh" },
+    // 098: `Job` należy do PIĘCIU tabel, które zostały przy `ownerId` (`workspace-nullable.json`) —
+    // zadanie w tle bywa systemowe, więc przestrzeni nie ma. `filtrMoichRekordow` zwraca
+    // `{ workspaceId }`, czyli kolumnę, której ta tabela nie ma; Prisma odrzucała każde wywołanie
+    // („Unknown argument workspaceId"), a stan odświeżania Wiadomości nie wczytywał się nigdy.
+    where: { ownerId: user.id, type: "news.refresh" },
     orderBy: { createdAt: "desc" },
   });
   if (!job) return null;

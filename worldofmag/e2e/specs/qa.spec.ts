@@ -30,7 +30,11 @@ test.describe("Dział QA", () => {
     await expect(page.getByRole("heading", { name: /zarządzanie scenariuszami/i })).toBeVisible();
   });
 
-  test("[scenario-qa-tester-access] QA dostępne w nawigacji dla uprawnionego", async ({ app }) => {
+  test("[scenario-qa-tester-access] QA dostępne w nawigacji dla uprawnionego", async ({ page, app }) => {
+    // 098: test nigdy nie otwierał strony — sprawdzał nawigację na `about:blank`, więc padał
+    // zawsze, niezależnie od uprawnień. Był czerwony wśród sześćdziesięciu innych, więc nikt
+    // nie zauważył, że nie sprawdza niczego.
+    await page.goto("/");
     await app.expectNavVisible("qa");
   });
 

@@ -11,7 +11,9 @@ import { test, expect } from "../fixtures/test";
 test.describe("043 — widget asystenta na pulpicie", () => {
   test("[ha-AC14-AC15] widget jest pierwszy i nie ma pola tekstowego (desktop)", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
+    // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
+    await page.waitForLoadState("load").catch(() => {});
 
     const widget = page.locator("[data-omnia-assistant-widget]");
     await expect(widget).toBeVisible({ timeout: 15_000 });
@@ -32,7 +34,7 @@ test.describe("043 — widget asystenta na pulpicie", () => {
 
   test("[ha-AC16] klik akcji otwiera asystenta i od razu ją wysyła", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     const widget = page.locator("[data-omnia-assistant-widget]");
     await expect(widget).toBeVisible({ timeout: 15_000 });
@@ -53,7 +55,7 @@ test.describe("043 — widget asystenta na pulpicie", () => {
     for (const width of [360, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/");
-      await page.waitForLoadState("networkidle").catch(() => {});
+      await page.waitForLoadState("load").catch(() => {});
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, `szerokość ${width}px nie może dawać poziomego przewijania`).toBeLessThanOrEqual(1);
     }
@@ -62,7 +64,7 @@ test.describe("043 — widget asystenta na pulpicie", () => {
   test("[ha-AC18] kafelki pulpitu pakują się bez pustych dziur", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     // Układ wielokolumnowy CSS: kafelki jednej kolumny mają stykać się pionowo z dokładnością
     // do odstępu (16 px). W siatce (przed 043) pod niższym kafelkiem zostawała dziura na całą
@@ -105,7 +107,7 @@ test.describe("043 — widget asystenta na telefonie", () => {
 
   test("[ha-AC13] widget widoczny bez przewijania i jako pierwszy", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     const widget = page.locator("[data-omnia-assistant-widget]");
     await expect(widget).toBeVisible({ timeout: 20_000 });

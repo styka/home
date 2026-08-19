@@ -18,16 +18,23 @@ const STAR_REMOVE = /Usuń to miejsce z ulubionych/i;
 /**
  * Otwiera popover gwiazdki na BIEZACEJ stronie i zapisuje widok pod podana nazwa.
  *
- * `waitForLoadState("networkidle")` przed klikiem jest istotny: po `router.refresh()` z poprzedniego
+ // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
+ // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
+ * `waitForLoadState("load")` przed klikiem jest istotny: po `router.refresh()` z poprzedniego
  * kroku drzewo bywa jeszcze przemontowywane, a popover trzyma stan lokalnie — klik trafiony w to
  * okno gubil otwarty popover.
  */
 async function saveCurrentAs(page: import("@playwright/test").Page, name: string) {
-  await page.waitForLoadState("networkidle").catch(() => {});
-  await page.getByRole("button", { name: /Zapisz to miejsce w ulubionych/i }).click();
+  await page.waitForLoadState("load").catch(() => {});
+  // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
+  // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
+  // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
+  await page.getByRole("main").getByRole("button", { name: /Zapisz to miejsce w ulubionych/i }).click();
   await page.getByPlaceholder("Nazwa widoku…").fill(name);
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-  await page.getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
+  // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
+  // i w nawigacji. Sprawdzamy tę z paska widoku.
+  await page.getByRole("main").getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
 }
 
 /** Sprząta ulubione przez interfejs ustawień, żeby testy nie zależały od kolejności. */
@@ -35,7 +42,7 @@ async function clearFavorites(page: import("@playwright/test").Page) {
   const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]';
   for (let i = 0; i < 40; i++) {
     await page.goto("/settings");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
     const n = await page.locator(sel).count();
     if (n === 0) return;
     await page.locator(sel).first().click();
@@ -62,8 +69,8 @@ test.describe("042 — ulubione widoki", () => {
     await expect(page).toHaveURL(/\/tasks\?status=DONE&x=1/);
 
     // AC-3: ponowny klik gwiazdki usuwa wpis.
-    await page.getByRole("button", { name: STAR_REMOVE }).click();
-    await expect(page.getByRole("button", { name: STAR_SAVE })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole("main").getByRole("button", { name: STAR_REMOVE }).click();
+    await expect(page.getByRole("main").getByRole("button", { name: STAR_SAVE })).toBeVisible({ timeout: 10_000 });
   });
 
   test("[fav-AC9] ponowny zapis tego samego adresu nie tworzy duplikatu", async ({ page }) => {
@@ -155,8 +162,13 @@ test.describe("042 — poprawki UX", () => {
     let listId = "";
     try {
       const user = await prisma.user.findUniqueOrThrow({ where: { email: E2E_ADMIN.email } });
+      const przestrzen = await prisma.workspace.findUniqueOrThrow({ where: { personalUserId: user.id } });
       const list = await prisma.shoppingList.create({
-        data: { name: `AC24 ${Date.now()}`, ownerId: user.id },
+        // 098: przestrzeń bierzemy zapytaniem, a NIE przez `wlasnoscOsobistaDoZapisu` z aplikacji.
+        // Spec Playwrighta jest transpilowany, ale moduł zaimportowany z niego dynamicznie już nie —
+        // `await import("@/platform/...")` kończy się „Cannot use import statement outside a module".
+        // Fikstura ma być samowystarczalna: zna schemat, nie kod aplikacji.
+        data: { name: `AC24 ${Date.now()}`, workspaceId: przestrzen.id },
       });
       listId = list.id;
       await prisma.item.create({ data: { listId: list.id, name: "mleko", status: "DONE" } });
@@ -165,7 +177,7 @@ test.describe("042 — poprawki UX", () => {
     }
 
     await page.goto(`/shopping/${listId}`);
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     const clear = page.getByTitle(/Wyczyść zakończone elementy/);
     await expect(clear).toBeVisible({ timeout: 15_000 });
@@ -215,7 +227,7 @@ test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
 
   test("[fav043-AC1-AC2] sekcja, zachęta i punkt zapisu widoczne bez ani jednego ulubionego", async ({ page }) => {
     await page.goto("/tasks/all");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     // AC-1: nagłówek sekcji jest w nawigacji mimo pustej listy.
     await expect(page.getByText("Ulubione", { exact: true })).toBeVisible({ timeout: 15_000 });
@@ -228,7 +240,7 @@ test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
 
   test("[fav043-AC3] zarządzanie ulubionymi dostępne wprost z nawigacji", async ({ page }) => {
     await page.goto("/tasks/all");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     await page.getByRole("link", { name: /Zarządzaj ulubionymi/i }).click();
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe("/settings");

@@ -16,7 +16,9 @@ test.describe("042 — układ strony głównej", () => {
     test(`[home-AC16-${w}] brak przewijania poziomego przy ${w}px — ${kolumny}`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto("/");
-      await page.waitForLoadState("networkidle").catch(() => {});
+      // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
+      // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
+      await page.waitForLoadState("load").catch(() => {});
 
       const m = await page.evaluate(() => {
         const el = document.scrollingElement ?? document.documentElement;
@@ -39,7 +41,7 @@ test.describe("042 — układ strony głównej", () => {
   test("[home-AC11→043] widget asystenta zamiast dokowanej kolumny przy 1440px", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     await expect(page.locator("[data-omnia-assistant-widget]")).toBeVisible({ timeout: 15_000 });
     // Dokowana kolumna z 042 ma NIE istnieć — zastąpił ją widget bez pola tekstowego.
@@ -49,7 +51,7 @@ test.describe("042 — układ strony głównej", () => {
   test("[home-AC12→043] przy 390px widget asystenta JEST widoczny", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForLoadState("load").catch(() => {});
 
     // Odwrotnie niż w 042: na telefonie widget musi być, i to nad zgięciem.
     await expect(page.locator("[data-omnia-assistant-widget]")).toBeVisible({ timeout: 15_000 });
@@ -60,7 +62,7 @@ test.describe("042 — układ strony głównej", () => {
 
     for (const scheme of ["dark", "light"] as const) {
       await page.goto("/");
-      await page.waitForLoadState("networkidle").catch(() => {});
+      await page.waitForLoadState("load").catch(() => {});
 
       // Wymuszamy schemat przez zmienne motywu na <html> — tak jak robi to warstwa skorek.
       await page.evaluate((s) => {

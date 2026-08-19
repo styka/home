@@ -1,0 +1,4 @@
+{
+  "_opis": "098: moduły, których trasa jest Z ZAŁOŻENIA dostępna dla każdego zalogowanego, mimo zadeklarowanego uprawnienia. Wyjątek wymaga powodu; martwy wpis wywala build. Dziś pusty — Raporty nie potrzebują wpisu, bo nie deklarują uprawnienia modułowego w ogóle (CLAUDE.md: authenticated-only), więc bramka ich nie dotyczy.",
+  "moduly": {}
+}

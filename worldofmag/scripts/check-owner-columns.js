@@ -40,7 +40,13 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.join(__dirname, "..");
-const KOLUMNY = ["ownerId", "ownerTeamId"];
+/**
+ * 098: doszła `workspaceId` — ten sam błąd, tylko w drugą stronę. Pięć tabel (`Job`, `Skin`, `Tag`,
+ * `ItemHistory`, `NoteGroup`) zostało przy `ownerId` i przestrzeni NIE MA; `filtrMoichRekordow`
+ * zwraca `{ workspaceId }`, więc wstawiony tam odruchowo dawał „Unknown argument workspaceId".
+ * Tak przestał działać stan odświeżania Wiadomości — zapytanie padało przy każdym wejściu na moduł.
+ */
+const KOLUMNY = ["ownerId", "ownerTeamId", "workspaceId"];
 
 // ── Które modele NADAL mają te kolumny (jedyne źródło prawdy: schemat) ──────
 const schema = fs.readFileSync(path.join(root, "prisma/schema.prisma"), "utf8");
@@ -56,7 +62,7 @@ function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (["node_modules", "generated"].includes(e.name)) continue;
+      if (["node_modules", "generated", "test-results", "playwright-report", "migrations"].includes(e.name)) continue;
       walk(p, out);
     } else if (/\.tsx?$/.test(e.name)) out.push(p);
   }
@@ -86,10 +92,56 @@ function zbalansowany(t, i, otw, zam) {
 const OPERACJE =
   "findMany|findUnique|findUniqueOrThrow|findFirst|findFirstOrThrow|update|updateMany|create|createMany|upsert|delete|deleteMany|count|aggregate|groupBy";
 
+/**
+ * Klucze „przezroczyste" — takie, które NIE zmieniają modelu, o który pytamy. Wszystko inne
+ * (`project:`, `topic:`, `workspace:`) to zejście do INNEJ tabeli, więc pole pod spodem należy już
+ * do niej. Bez tego rozróżnienia `select: { project: { select: { workspaceId: true } } }` wyglądało
+ * jak pytanie o `Task.workspaceId` — czyli bramka oskarżała cztery poprawne zapytania.
+ */
+const PRZEZROCZYSTE = new Set([
+  "where", "data", "select", "include", "AND", "OR", "NOT", "some", "every", "none",
+  "is", "isNot", "create", "update", "upsert", "connect", "connectOrCreate", "orderBy", "_count",
+]);
+
+/** Łańcuch kluczy obejmujących pozycję — od najbliższego w górę. */
+function przodkowie(tekst, poz) {
+  const out = [];
+  let glebokosc = 0;
+  for (let i = poz - 1; i >= 0; i--) {
+    const c = tekst[i];
+    if (c === "}" || c === "]") glebokosc++;
+    else if (c === "{" || c === "[") {
+      if (glebokosc === 0) {
+        const m = /([A-Za-z_$][\w$]*)\s*:\s*$/.exec(tekst.slice(Math.max(0, i - 80), i));
+        if (m) out.push(m[1]);
+      } else glebokosc--;
+    }
+  }
+  return out;
+}
+
+/**
+ * Pomocniki, które WNOSZĄ `workspaceId` do zapytania. Bramka nie widzi typu zwracanego, a to
+ * właśnie tędy wszedł błąd produkcyjny znaleziony przez klikacz: `prisma.job.findFirst({ where:
+ * { ...(await filtrMoichRekordow(user.id)), type } })` — a `Job` przestrzeni nie ma i nigdy nie
+ * miał, bo zadanie w tle bywa systemowe. Prisma odrzucała każde wywołanie, więc stan odświeżania
+ * Wiadomości nie wczytywał się ani razu.
+ */
+const WNOSZA_PRZESTRZEN = ["filtrMoichRekordow", "ownedWhereAsync", "wlasnoscDoZapisu", "wlasnoscOsobistaDoZapisu"];
+
 const bledy = [];
 let sprawdzonych = 0;
 
-for (const plik of walk(path.join(root, "src"))) {
+/**
+ * 098: skanujemy też `e2e/` i `prisma/`. Fikstura testu jest kodem jak każdy inny — dwie z nich
+ * tworzyły projekt z `ownerId`, czyli kolumną skasowaną migracją 0244, i przewracały klikacz
+ * błędem Prismy zamiast wynikiem testu. Bramka pilnująca tylko `src/` przepuszczała to bez słowa.
+ */
+for (const plik of [
+  ...walk(path.join(root, "src")),
+  ...walk(path.join(root, "e2e")),
+  ...walk(path.join(root, "prisma")),
+]) {
   const rel = path.relative(root, plik).split(path.sep).join("/");
   const t = bezKomentarzy(fs.readFileSync(plik, "utf8"));
   if (!/\b(?:prisma|tx)\.\w+\./.test(t)) continue;
@@ -111,7 +163,13 @@ for (const plik of walk(path.join(root, "src"))) {
     function identyfikatoryW(frag) {
       const zbior = new Set();
       for (const i of frag.matchAll(/(?:where|data|OR|AND|NOT|some|every|none)\s*:\s*([A-Za-z_$][\w$]*)/g)) zbior.add(i[1]);
-      for (const i of frag.matchAll(/\.\.\.\(?\s*(?:await\s+)?([A-Za-z_$][\w$]*)\b/g)) zbior.add(i[1]);
+      // `...(x ? [...] : [])` — `x` jest WARUNKIEM, nie rozlewaną wartością. Wciągnięcie jego
+      // definicji kazało bramce sprawdzać pole, które w tym zapytaniu w ogóle nie występuje
+      // (`{ project: moje }` w `purge.ts`: `moje` opisuje TaskProject, nie Task).
+      for (const i of frag.matchAll(/\.\.\.\(?\s*(?:await\s+)?([A-Za-z_$][\w$]*)\s*([?)\s,\].]|$)/g)) {
+        if (i[2] === "?") continue;
+        zbior.add(i[1]);
+      }
       for (const i of frag.matchAll(/[{,]\s*(where|data)\s*[},]/g)) zbior.add(i[1]);
       return zbior;
     }
@@ -159,6 +217,20 @@ for (const plik of walk(path.join(root, "src"))) {
       doRozwiazania = nastepne;
     }
 
+    if (!ma.has("workspaceId")) {
+      for (const pomocnik of WNOSZA_PRZESTRZEN) {
+        const re2 = new RegExp(`\\.\\.\\.\\(?\\s*(?:await\\s+)?${pomocnik}\\s*\\(`, "g");
+        for (const t of argument.matchAll(re2)) {
+          if (przodkowie(argument, t.index).some((a) => !PRZEZROCZYSTE.has(a))) continue;
+          bledy.push(
+            `${rel}:${linia(m.index + t.index)} — \`${pomocnik}(...)\` wnosi \`workspaceId\` do ` +
+              `zapytania o \`${model}\`, a ten model przestrzeni NIE MA (jest wśród pięciu tabel ` +
+              `z \`workspace-nullable.json\`, gdzie własność wyraża \`ownerId\`).`,
+          );
+        }
+      }
+    }
+
     for (const kolumna of KOLUMNY) {
       if (ma.has(kolumna)) continue;
       const kluczRe = new RegExp(`(?<![\\w$])${kolumna}\\s*:`, "g");
@@ -166,6 +238,8 @@ for (const plik of walk(path.join(root, "src"))) {
         const trafienie = kluczRe.exec(frag);
         kluczRe.lastIndex = 0;
         if (!trafienie) continue;
+        // Pole pod kluczem relacji należy do INNEJ tabeli — o niej ta bramka nic nie twierdzi.
+        if (przodkowie(frag, trafienie.index).some((a) => !PRZEZROCZYSTE.has(a))) continue;
         bledy.push(
           `${rel}:${linia(offset + trafienie.index)} — \`${kolumna}\` trafia do zapytania o ` +
             `\`${model}\`, a ten model nie ma tej kolumny od migracji 0244. Własność wyraża ` +

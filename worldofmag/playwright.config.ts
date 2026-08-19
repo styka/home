@@ -69,13 +69,20 @@ export default defineConfig({
 
   // One command starts the app with E2E auth enabled and runs the suite.
   webServer: {
-    command: "npm run dev",
+    // 098: domyślnie serwer PRODUKCYJNY (`scripts/e2e-web.sh` buduje i ustawia `E2E_SERVER_CMD`).
+    // W trybie deweloperskim Next kompiluje trasę przy pierwszym wejściu, a przy kilku pracownikach
+    // naraz te kompilacje wchodziły sobie w drogę i test padał z limitu czasu, choć aplikacja była
+    // sprawna. Wynik zależał wtedy od sąsiedniego pracownika, czyli przestawał być sygnałem.
+    command: process.env.E2E_SERVER_CMD ?? "npm run dev",
     url: BASE_URL,
-    timeout: 120_000,
+    timeout: 180_000,
     reuseExistingServer: !process.env.CI,
     env: {
       E2E_TEST_MODE: "1",
-      NODE_ENV: "development",
+      // 098: `NODE_ENV` narzucane tylko dla serwera deweloperskiego. Przy `next start` wymuszenie
+      // „development" na zbudowanej aplikacji jest sprzecznością — Next ostrzega i część zachowań
+      // (cache tras, granice klient/serwer) przestaje odpowiadać temu, co jedzie na produkcję.
+      ...(process.env.E2E_SERVER_CMD ? {} : { NODE_ENV: "development" }),
     },
   },
 });

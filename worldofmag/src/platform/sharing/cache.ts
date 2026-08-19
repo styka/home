@@ -53,15 +53,39 @@ import type { AccessContext } from "./types";
  * Kolejność jest istotna: `React.cache` ma pierwszeństwo, bo w żądaniu to ON jest nośnikiem stanu
  * i to jego obietnicę koryguje `dopiszPrzestrzenDoKontekstu`.
  */
-const zakresOperacji = new AsyncLocalStorage<Map<string, Promise<unknown>>>();
+/**
+ * 098 — MAGAZYN TWORZONY LENIWIE, NIE PRZY IMPORCIE.
+ *
+ * `new AsyncLocalStorage()` w zasięgu modułu wykonuje się w chwili zaimportowania pliku. W grafie
+ * KLIENTA `async_hooks` jest podmieniony na pusty moduł (alias w `next.config.mjs`), więc
+ * `AsyncLocalStorage` jest tam `undefined` — i ta jedna linijka wywracała się komunikatem
+ * „AsyncLocalStorage is not a constructor". Nie w produkcji, gdzie martwy kod jest wytrząsany, ale
+ * **w trybie deweloperskim, gdzie nie jest** — czyli dokładnie w tym, w którym chodzi klikacz e2e.
+ * Skutek był nieproporcjonalny do przyczyny: wyjątek przy starcie modułu przerywa hydrację CAŁEJ
+ * strony, więc przeglądarka pokazywała **pustą stronę**, a 61 ze 120 testów e2e padało bez związku
+ * ze swoją treścią.
+ *
+ * Leniwe utworzenie + brak magazynu jako **poprawny stan** (a nie błąd) sprowadza zachowanie
+ * w przeglądarce do tego samego, co poza żądaniem: brak memoizacji, zero ryzyka. Sprawdzenie
+ * `typeof` zamiast `try/catch`, bo to nie jest awaria — to informacja o środowisku.
+ */
+let zakresOperacji: AsyncLocalStorage<Map<string, Promise<unknown>>> | null = null;
+function magazynZakresu(): AsyncLocalStorage<Map<string, Promise<unknown>>> | null {
+  if (zakresOperacji) return zakresOperacji;
+  if (typeof AsyncLocalStorage !== "function") return null;
+  zakresOperacji = new AsyncLocalStorage<Map<string, Promise<unknown>>>();
+  return zakresOperacji;
+}
 
 /**
  * Wyznacza zakres memoizacji dla kodu spoza żądania (worker, zadanie w tle, skrypt, pomiar).
  * Zagnieżdżenie jest bezpieczne — wewnętrzne wywołanie po prostu korzysta z zewnętrznej mapy.
  */
 export function wZakresieOperacji<T>(f: () => Promise<T>): Promise<T> {
-  const istniejacy = zakresOperacji.getStore();
-  return istniejacy ? f() : zakresOperacji.run(new Map(), f);
+  const magazyn = magazynZakresu();
+  if (!magazyn) return f();
+  const istniejacy = magazyn.getStore();
+  return istniejacy ? f() : magazyn.run(new Map(), f);
 }
 
 /**
@@ -75,7 +99,7 @@ function perRequest<A, R>(fn: (a: A) => Promise<R>): (a: A) => Promise<R> {
   const nazwa = fn.name || "anon";
   return (a: A) => {
     if (wZadaniu) return wZadaniu(a);
-    const mapa = zakresOperacji.getStore();
+    const mapa = magazynZakresu()?.getStore();
     if (!mapa) return fn(a);
     const klucz = `${nazwa}:${String(a)}`;
     const gotowe = mapa.get(klucz) as Promise<R> | undefined;

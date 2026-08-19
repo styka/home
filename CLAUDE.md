@@ -168,7 +168,12 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
 **When asked to "run e2e / klikacze":**
 - **Claude on web (remote sandbox)** — the network blocks downloading browsers and
   Docker, so `npm run test:e2e:local` does NOT work. Use the prepared script and
-  runbook that work around this (preinstalled Chromium + local Postgres, no Docker):
+  runbook that work around this (preinstalled Chromium + local Postgres, no Docker).
+  **098: the script builds the app and serves it with `next start`** instead of `npm run dev` —
+  in dev Next compiles a route on first hit and parallel workers tripped over each other, so the
+  result depended on what the neighbouring worker was doing (the same tests passed alone and failed
+  in the full run). The suite went from ~18 min to ~2 min and now exercises the code that actually
+  ships. `E2E_DEV=1` restores the dev server if you need it.
   ```bash
   cd worldofmag
   nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &   # background; then: tail -40 /tmp/e2e.log
@@ -949,7 +954,7 @@ survives) — do **not** move escaping into `inlineFormat` (it opened an XSS hol
 the table/paragraph merge).
 
 **Build pipeline**: `npm run build` runs
-`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
+`node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-tailwind-content.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-route-gating.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-client-safe.js && node scripts/check-e2e-waits.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js`.
 - **`check-pagination.js`** (also `npm run check:pagination`) — 068 → **096: no longer a ratchet, an
   absolute rule.** Every `findMany` must carry an explicit bound: `take` (ceiling `SUFIT_LISTY`), a
   spread of `...zapytanieKursorowe({ kursor, rozmiar })`, or a `paginacja: kompletny — <reason>`
@@ -969,6 +974,12 @@ the table/paragraph merge).
   file** — the one-level version caught three of the four (the fourth had the filter one substitution
   further away), which is why it ships with five mutation probes. No manifest and no exceptions: the
   first, syntax-only version demanded a reason for 37 files, which is noise, not a decision.
+  **098 widened it three ways**: `workspaceId` is checked too (the five tables that kept `ownerId`
+  have no workspace — `prisma.job.findFirst({ where: { ...filtrMoichRekordow() } })` was rejected by
+  Prisma on every call, so the News refresh state never loaded); a key under a **relation** key
+  (`project: { select: { workspaceId } }`) belongs to that other model and is skipped; and the scan
+  now covers `e2e/` and `prisma/`, where two fixtures were still creating rows with a column
+  migration 0244 had dropped.
 
 - **`check-logs.js`** (also `npm run check:logs`) — 086: **no raw `console.*` in server code.** One
   `console.warn` breaks more than it looks: half the stream stops being parseable and the aggregator
@@ -992,6 +1003,40 @@ the table/paragraph merge).
   names, example ids — nothing to translate) and ~820 **sentence fragments** split by inline
   `<strong>`; extracting fragments as separate keys is *worse* for a translator than leaving the
   sentence in code, so they need `t.rich(...)` — a per-sentence rewrite, recorded as the next step.
+
+- **`check-tailwind-content.js`** (also `npm run check:tailwind`) — 098: **Tailwind's `content` globs
+  must cover every directory under `src/` that holds components.** The globs listed three directories
+  (`pages`, `components`, `app`); the 046 rebuild moved all 21 modules' UI into `src/modules/` and
+  nobody touched this file, so any class used *only* inside a module was purged from the stylesheet.
+  The symptom was non-uniform and therefore invisible: a class that also appeared somewhere in
+  `components/` kept working. That is how `md:grid` vanished from the weekly meal plan — `hidden
+  md:grid` lost the rule that restores visibility and **the whole plan grid was invisible on
+  desktop**, so the page looked like it was still loading. The gate checks coverage, not a specific
+  glob, and its own glob→regex conversion is written character by character: the first `replace`-chain
+  version let the `{js,ts,…}` alternation escape into the pattern, so every path matched every glob
+  and the gate was green with `src/modules` genuinely uncovered.
+- **`check-route-gating.js`** (also `npm run check:route-gating`) — 098: **every module route must
+  check its module permission.** The sidebar greys out locked entries, but that is appearance only —
+  a hand-typed URL bypasses the menu. Fifteen of nineteen routes checked; `/kitchen`, `/notes`,
+  `/shopping` and `/tasks` — the four most-used modules — verified only that you were signed in.
+  Data was still scoped by ownership, so this was a gating failure, not a leak. The guard belongs in
+  `layout.tsx` (it covers sub-routes too) and goes through `wymagajDostepuDoModulu` in
+  `src/lib/gatingTrasy.ts`. The gate matches a **call**, not the name: its first version was
+  satisfied by a leftover `import`.
+- **`check-client-safe.js`** (also `npm run check:client-safe`) — 098: **no `new AsyncLocalStorage()`
+  at module scope.** `next.config.mjs` aliases `async_hooks` to an empty module in the client graph
+  (correct — that scope is meaningless in a browser), so the class is `undefined` there. "We never
+  call it in the browser" covers the *call*, not the *import*: a module-scope construction runs the
+  moment the file is imported and throws, which aborts hydration of the **entire page** — a blank
+  screen, not a broken widget. Production is saved by tree-shaking; dev mode, where the e2e clicker
+  runs, is not, which is why 61 of 120 e2e tests failed for reasons unrelated to their content.
+  Create such objects lazily and treat "no store" as a valid state (no memoization, log without
+  request fields), never as an error.
+- **`check-e2e-waits.js`** (also `npm run check:e2e-waits`) — 098: **no `networkidle` in the clicker.**
+  Since 072 the app holds an open event stream (`/api/events`), so the network is never idle and that
+  wait can only ever end in a timeout — not sometimes, never. Thirty-five such waits across seven
+  specs failed with "Test timeout of 60000ms" at a line unrelated to what the test was checking.
+  Use `"load"` or, better, wait for the element the test is actually about.
 
 - **`check-perf-budget.js`** (also `npm run check:perf`) — 091: **performance budget**, run AFTER
   `next build` (there is nothing to measure before). Measures the JS bytes a route makes the browser
