@@ -172,20 +172,20 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
 
 ## Faza 6 — Lektor Wiadomości: przewijanie i nawigacja
 
-- [ ] **T-21** — **Z12: jeden właściciel przewijania.** `NewsReader.tsx` — przewijanie do zdania
+- [x] **T-21** — **Z12: jeden właściciel przewijania.** `NewsReader.tsx` — przewijanie do zdania
   ograniczone do **własnego kontenera** (jawny `scrollTop`, nie `scrollIntoView` na elemencie);
   `NewsStream.tsx` — przewijanie strony wyłącznie w `handleBlockChange`. Oba pod przełącznikiem
   `readerFollow`; wyłączony ⇒ strona nie rusza się wcale.
   **Gotowe, gdy:** przy wyłączonym „podążaj" pozycja przewinięcia strony **nie zmienia się** przy
   przejściu do kolejnej wiadomości; przy włączonym widok jedzie do wiadomości **i tam zostaje**.
   *(AC-23)* — **zależy od T-9**
-- [ ] **T-22** — **Z12: pasek sterowania lektora.** `NewsReader.tsx` — jeden rząd z grupami
+- [x] **T-22** — **Z12: pasek sterowania lektora.** `NewsReader.tsx` — jeden rząd z grupami
   (nawigacja | odtwarzanie | prędkość | podążanie), zawijanie tylko na wąskim ekranie (dzisiejszy
   `flex-wrap` rozbija pasek na kilka rzędów na desktopie). Suwak prędkości i przełącznik zapisywane
   w `AssistantPref`.
   **Gotowe, gdy:** wybrana prędkość wraca po przeładowaniu; pasek na desktopie mieści się w jednym
   rzędzie. *(AC-22, część 2)* — **zależy od T-9, T-21**
-- [ ] **T-23** — **Z12: nawigacja tematów.** `NewsStream.tsx` — łagodniejszy próg gestu
+- [x] **T-23** — **Z12: nawigacja tematów.** `NewsStream.tsx` — łagodniejszy próg gestu
   (`SWIPE_MIN_PX` 60→40, `SWIPE_DOMINANCE` 1.5→1.2); `TopicPicker.tsx` — **widoczne** strzałki ‹ ›
   przy nazwie tematu wołające tę samą funkcję skoku co gest (jedna implementacja, dwie drogi).
   **Gotowe, gdy:** temat da się zmienić bez znajomości gestu; test progu na wartościach granicznych.

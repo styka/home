@@ -1267,7 +1267,10 @@
         "poprzedniaWiadomosc": "Poprzednia wiadomość",
         "czytajNaGlos": "Czytaj na głos",
         "nastepneZdanie": "Następne zdanie",
-        "nastepnaWiadomosc": "Następna wiadomość"
+        "nastepnaWiadomosc": "Następna wiadomość",
+        "predkoscCzytania": "Prędkość czytania",
+        "wlaczPodazanie": "Podążaj za czytaniem (przewijaj stronę do czytanej wiadomości)",
+        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)"
       },
       "NewsSettings": {
         "zrodlaWiadomosci": "Źródła wiadomości",
@@ -1286,6 +1289,10 @@
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",
         "materialZrodlowy": "Materiał źródłowy"
+      },
+      "TopicPicker": {
+        "poprzedniTemat": "Poprzedni temat",
+        "nastepnyTemat": "Następny temat"
       }
     },
     "notes": {

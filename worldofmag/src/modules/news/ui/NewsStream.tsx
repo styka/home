@@ -41,8 +41,15 @@ type ReaderScope =
 /** Ile milisekund po skoku ignorujemy obserwatora — tyle mniej więcej trwa płynne przewinięcie. */
 const PROGRAMMATIC_SCROLL_MS = 700;
 /** Gest w bok liczy się od tylu pikseli i musi być tyle razy bardziej poziomy niż pionowy. */
-const SWIPE_MIN_PX = 60;
-const SWIPE_DOMINANCE = 1.5;
+// 080 (Z12): próg obniżony z 60 px / 1.5. Zgłoszenie: „zmiana tematów gestem w lewo prawo jest
+// jakby zbyt trudna do wykonania, jakieś zbyt wyostrzona weryfikacja". 60 px to na telefonie
+// wyraźny, świadomy ruch — a gest ma być SKRÓTEM, nie ćwiczeniem. Dominacja 1.2 zamiast 1.5
+// nadal odróżnia ruch w bok od przewijania w pionie, ale wybacza naturalny łuk kciuka.
+//
+// Gest przestał być też JEDYNĄ drogą: nazwa tematu ma teraz widoczne strzałki (TopicPicker),
+// bo o istnieniu gestu nie da się dowiedzieć inaczej niż przypadkiem.
+const SWIPE_MIN_PX = 40;
+const SWIPE_DOMINANCE = 1.2;
 
 export function NewsStream({
   topics,

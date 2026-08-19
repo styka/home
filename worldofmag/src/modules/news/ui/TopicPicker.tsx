@@ -15,7 +15,7 @@ import { useTranslations } from "next-intl";
 // kolumnie o rozsądnej maksymalnej szerokości.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { TopicDTO } from "../actions/news";
 
@@ -77,8 +77,43 @@ export function TopicPicker({
     setOpen(false);
   }
 
+  /**
+   * 080 (Z12): WIDOCZNE przełączanie tematów.
+   *
+   * Zgłoszenie właściciela miało dwie części i ta jest ważniejsza od progu gestu: „użytkownik
+   * nawet nie podejrzewa, że może zmieniać tematy, bo jak nie wie o tym geście, to może się nie
+   * domyśleć". Gest zostaje jako skrót, ale przestaje być jedyną drogą — strzałki wołają tę samą
+   * funkcję wyboru, więc obie drogi mają jedną implementację i nie mogą się rozjechać.
+   *
+   * Strzałki pokazują się dopiero przy DWÓCH tematach: przy jednym byłyby dwoma wyłączonymi
+   * przyciskami, czyli szumem w miejscu, w którym walczymy o miejsce.
+   */
+  const indeks = selected ? topics.findIndex((x) => x.id === selected.id) : -1;
+  const mogeWstecz = indeks > 0;
+  const mogeDalej = indeks >= 0 && indeks < topics.length - 1;
+
+  function skok(kierunek: -1 | 1) {
+    const cel = topics[indeks + kierunek];
+    if (cel) onSelect(cel.id);
+  }
+
+  const strzalka =
+    "flex shrink-0 items-center justify-center rounded-md border border-[var(--border)] px-1.5 py-3 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:hover:bg-transparent";
+
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1">
+    <div ref={rootRef} className="relative flex min-w-0 flex-1 items-center gap-1">
+      {topics.length > 1 && (
+        <button
+          type="button"
+          onClick={() => skok(-1)}
+          disabled={!mogeWstecz}
+          aria-label={t("poprzedniTemat")}
+          title={t("poprzedniTemat")}
+          className={strzalka}
+        >
+          <ChevronLeft size={16} />
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -86,7 +121,7 @@ export function TopicPicker({
         aria-expanded={open}
         className={cn(
           // `py-3` = cel dotyku na telefonie (C-31). Pełna szerokość, bo to główna nawigacja widoku.
-          "flex w-full items-center gap-2 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+          "flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-3 text-left text-sm transition-colors",
           open
             ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
             : "border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
@@ -162,6 +197,19 @@ export function TopicPicker({
             )}
           </div>
         </div>
+      )}
+
+      {topics.length > 1 && (
+        <button
+          type="button"
+          onClick={() => skok(1)}
+          disabled={!mogeDalej}
+          aria-label={t("nastepnyTemat")}
+          title={t("nastepnyTemat")}
+          className={strzalka}
+        >
+          <ChevronRight size={16} />
+        </button>
       )}
     </div>
   );
