@@ -111,3 +111,54 @@ export function etykietaJezyka(kod: string): string {
 export function etykietaKategorii(kod: string): string {
   return NEWS_CATALOG_CATEGORIES.find((c) => c.key === kod)?.label ?? kod;
 }
+
+// ─── Reguły wpisu katalogu ────────────────────────────────────────────────
+//
+// Mieszkają TUTAJ, a nie w pliku akcji administratora, bo plik `"use server"` nie eksportuje
+// funkcji synchronicznych — reguły w nim zapisane są niesprawdzalne testem (bramka
+// `check:domain`). To są jedyne miejsca, w których rozstrzyga się, co wolno wpisać do katalogu,
+// więc muszą dać się wywołać bez sesji i bez bazy.
+
+/** Maksymalna długość pól tekstowych wpisu. */
+export const MAX_TEKST_KATALOGU = 200;
+
+export function przytnijPole(s: string | undefined | null): string {
+  return (s ?? "").trim().slice(0, MAX_TEKST_KATALOGU);
+}
+
+/** Adres kanału musi być http(s) — inaczej `fetchRss` i tak nic nie pobierze, tylko po cichu. */
+export function sprawdzAdresKanalu(url: string): string {
+  const u = (url ?? "").trim();
+  if (!/^https?:\/\//i.test(u)) {
+    throw new Error("Adres kanału musi zaczynać się od http:// lub https://");
+  }
+  return u;
+}
+
+/**
+ * Klucz jest identyfikatorem naturalnym wpisu: idzie do `ON CONFLICT`, do rozpoznania „już
+ * dodane" i do `NewsSource.key`. Dlatego zawężony do bezpiecznego alfabetu i normalizowany do
+ * małych liter — „PL-Onet" i „pl-onet" muszą być tym samym wpisem, nie dwoma.
+ */
+export function sprawdzKluczKatalogu(key: string): string {
+  const k = (key ?? "").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(k)) {
+    throw new Error("Klucz może zawierać tylko małe litery, cyfry i myślniki (2–64 znaki)");
+  }
+  return k;
+}
+
+/** Kod kraju zawsze wielkimi literami, kod języka zawsze małymi — filtr porównuje dosłownie. */
+export function normalizujKraj(s: string | undefined | null): string {
+  return przytnijPole(s).toUpperCase();
+}
+
+export function normalizujJezyk(s: string | undefined | null): string {
+  return przytnijPole(s).toLowerCase();
+}
+
+/** Kategoria spoza słownika → "inne". Wartość bywa z importu, czyli z pliku spoza aplikacji. */
+export function normalizujKategorie(s: string | undefined | null): NewsCatalogCategory {
+  const k = przytnijPole(s);
+  return NEWS_CATALOG_CATEGORIES.some((c) => c.key === k) ? (k as NewsCatalogCategory) : "inne";
+}

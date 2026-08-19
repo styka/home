@@ -16,6 +16,12 @@ import {
 } from "../lib/openMeteo";
 import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "../lib/presets";
 import {
+  czytajUklad,
+  czytajFiltr,
+  zapiszFiltr,
+  type WatchersLayout,
+} from "../lib/uklad";
+import {
   fingerprintOf,
   parseIdeaCategory,
   parseIdeaState,
@@ -241,6 +247,52 @@ export async function getWatchers(): Promise<WatcherDTO[]> {
     horizon: w.horizon as Horizon,
     enabled: w.enabled,
   }));
+}
+
+/**
+ * 082 — preferencja UKŁADU listy obserwatorów, per użytkownik.
+ *
+ * Odpowiednik `NewsPref` po stronie Pogody: jedna preferencja na przestrzeń osobistą, tworzona
+ * przy pierwszym odczycie. Trzymanie tego w adresie strony (wzorzec `platform/viewState`) nie
+ * wystarcza — właściciel ma zastać swój układ po prostu wchodząc na `/pogoda`, także z innego
+ * urządzenia, a nie po otwarciu zapisanego widoku.
+ */
+export interface WeatherPrefDTO {
+  watchersLayout: WatchersLayout;
+  watchersFilter: WatcherStatus[];
+}
+
+export async function getWeatherPref(): Promise<WeatherPrefDTO> {
+  const user = await requireAuth();
+  const row = await prisma.weatherPref.upsert({
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)) },
+    update: {},
+  });
+  return {
+    watchersLayout: czytajUklad(row.watchersLayout),
+    watchersFilter: czytajFiltr(row.watchersFilter),
+  };
+}
+
+/**
+ * Jedna akcja na obie preferencje, bo w interfejsie stoją w jednym pasku i zmieniają się razem
+ * (włączenie filtra po kliknięciu w licznik często idzie w parze ze zmianą układu).
+ */
+export async function setWatchersView(patch: {
+  layout?: WatchersLayout;
+  filter?: WatcherStatus[];
+}): Promise<void> {
+  const user = await requireAuth();
+  const data: { watchersLayout?: string; watchersFilter?: string } = {};
+  if (patch.layout !== undefined) data.watchersLayout = czytajUklad(patch.layout);
+  if (patch.filter !== undefined) data.watchersFilter = zapiszFiltr(patch.filter);
+  await prisma.weatherPref.upsert({
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), ...data },
+    update: data,
+  });
+  revalidatePath("/pogoda");
 }
 
 export async function addPresetWatcher(presetKey: string): Promise<void> {

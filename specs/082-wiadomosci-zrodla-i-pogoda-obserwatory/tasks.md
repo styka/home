@@ -81,7 +81,7 @@ obejrzeć na działających danych.
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-9** — **Akcje katalogu dla użytkownika.** Nowy `src/modules/news/actions/katalog.ts`:
+- [x] **T-9** — **Akcje katalogu dla użytkownika.** Nowy `src/modules/news/actions/katalog.ts`:
   `getSourceCatalog(filter?)` (tylko `enabled: true`, `take: SUFIT_LISTY`, filtry serwerowe
   `contains`+`mode:"insensitive"`, pole `added` z jednego zapytania o klucze źródeł użytkownika) i
   `addSourceFromCatalog(catalogId)` (`NewsSource` w przestrzeni osobistej, `key` = klucz katalogu,
@@ -90,7 +90,7 @@ obejrzeć na działających danych.
   `ensureNewsSetup` (AC-7, AC-8). Kontrakt modułu **nie rośnie**.
   *Gotowe, gdy:* `tsc` czysto, `npm run check:pagination` i `npm run check:boundaries` zielone.
 
-- [ ] **T-10** `[P]` — **Akcje katalogu dla administratora.** Nowy `src/actions/adminNewsCatalog.ts`
+- [x] **T-10** `[P]` — **Akcje katalogu dla administratora.** Nowy `src/actions/adminNewsCatalog.ts`
   wzorowany na `adminCategories.ts`: `getCatalogEntries`, `createCatalogEntry`, `updateCatalogEntry`,
   `setCatalogEntryEnabled`, `deleteCatalogEntry`, `checkCatalogEntry` (przez `fetchRss` z
   `@/lib/news/rss`; zapis `checkStatus`/`checkedAt`/`checkNote`), `exportCatalog`,
@@ -99,14 +99,14 @@ obejrzeć na działających danych.
   `/admin/zrodla-rss` + `/wiadomosci`.
   *Gotowe, gdy:* `tsc` czysto, walidacja odrzuca pusty `key` i adres bez `http(s)`.
 
-- [ ] **T-11** `[P]` — **Preferencja obserwatorów pogody.** W
+- [x] **T-11** `[P]` — **Preferencja obserwatorów pogody.** W
   `src/modules/weather/actions/weather.ts`: `getWeatherPref()` (`upsert` po
   `filtrMoichRekordow`, zawężenie nieznanych wartości do domyślnych) i
   `setWatchersView({ layout?, filter? })` z `revalidatePath("/pogoda")`. Unie
   `WatchersLayout = "status" | "grouped" | "manual"` obok istniejących typów modułu.
   *Gotowe, gdy:* `tsc` czysto; test jednostkowy zawężania wartości spoza unii do domyślnej.
 
-- [ ] **T-12** — **Manifest pokrycia AI.** Wpisy w `src/lib/ai/action-coverage.json` dla wszystkich
+- [x] **T-12** — **Manifest pokrycia AI.** Wpisy w `src/lib/ai/action-coverage.json` dla wszystkich
   nowych akcji z T-9/T-10/T-11 (wg planu §3.6): `katalog:*`, `adminNewsCatalog:*`, `weather:*`.
   Każdy z `access` i — dla odczytów — `kind: "read"`; guard musi być **w ciele** funkcji.
   *Gotowe, gdy:* `npm run check:ai-coverage` i `npm run check:actions` zielone.
