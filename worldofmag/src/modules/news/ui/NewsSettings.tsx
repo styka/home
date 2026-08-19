@@ -2,11 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Trash2, Settings2 } from "lucide-react";
+import { Plus, Trash2, Settings2, Library } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { SUMMARY_LENGTHS } from "@/lib/news/format";
+import { SourceCatalogPicker } from "./SourceCatalogPicker";
 import {
   createSource,
   updateSource,
@@ -29,6 +30,8 @@ export function NewsSettings({
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
+  // 082: przeglądarka systemowej biblioteki źródeł — druga, domyślna droga dodania.
+  const [showCatalog, setShowCatalog] = useState(false);
   const [name, setName] = useState("");
   const [rssUrl, setRssUrl] = useState("");
   const [homepageUrl, setHomepageUrl] = useState("");
@@ -143,9 +146,21 @@ export function NewsSettings({
             </div>
           </div>
         ) : (
-          <Button variant="secondary" size="sm" className="mt-3" onClick={() => setShowAdd(true)}>
-            <Plus size={14} /> {t("dodajZrodlo")}
-          </Button>
+          /* 082: dwie drogi obok siebie. Biblioteka stoi PIERWSZA i jest wariantem podstawowym
+             (`primary`), bo dla większości źródeł jest po prostu szybsza — ręczne wpisanie adresu
+             kanału zostaje dla tego, czego w bibliotece nie ma. */
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setShowCatalog(true)}>
+              <Library size={14} /> {t("dodajZBiblioteki")}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowAdd(true)}>
+              <Plus size={14} /> {t("dodajRecznie")}
+            </Button>
+          </div>
+        )}
+
+        {showCatalog && (
+          <SourceCatalogPicker onClose={() => setShowCatalog(false)} onAdded={onChanged} />
         )}
       </div>
 

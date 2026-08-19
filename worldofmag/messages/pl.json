@@ -198,7 +198,8 @@
         "dokumentacjaProjektuClaudeMd": "Dokumentacja projektu (CLAUDE.md, doświadczenia.md)",
         "audytPodsumowanieZmianWykonane": "Audyt — podsumowanie zmian (wykonane / pozostałe)",
         "skorkiSystemowe": "Skórki systemowe",
-        "testyKlikaczeE2eJak": "Testy klikacze E2E — jak uruchomić"
+        "testyKlikaczeE2eJak": "Testy klikacze E2E — jak uruchomić",
+        "bibliotekaZrodelRss": "Biblioteka źródeł RSS"
       },
       "playground": {
         "page": {
@@ -253,6 +254,11 @@
           "wiedzaOUzytkownikach": "Wiedza o użytkownikach",
           "faktyZKtorychKorzystaja": "Fakty, z których korzystają moduły generujące treść „pod użytkownika”. Fakt zapisany tutaj ma pochodzenie „administrator” i nie jest nadpisywany automatycznym wnioskowaniem."
         }
+      },
+      "zrodlaRss": {
+        "panelAdmina": "Panel admina",
+        "tytul": "Biblioteka źródeł RSS",
+        "opis": "Systemowy katalog źródeł, z którego użytkownicy dodają gotowe kanały jednym kliknięciem. Wyłączony wpis znika z biblioteki, ale nie rusza źródeł, które ktoś już z niego dodał."
       }
     },
     "auth": {
@@ -560,6 +566,42 @@
       },
       "RetentionPanel": {
         "daneStarszeNizPodana": "Dane starsze niż podana liczba dni są kasowane raz na dobę. Zmiana działa od następnego przebiegu; wartości poniżej podanego minimum są podnoszone do minimum także wtedy, gdy ktoś zapisze je z pominięciem tego formularza."
+      },
+      "NewsSourceCatalogManager": {
+        "szukaj": "Szukaj po nazwie, kluczu, adresie lub opisie…",
+        "wszystkieKraje": "Wszystkie kraje",
+        "wszystkieJezyki": "Wszystkie języki",
+        "wszystkieKategorie": "Wszystkie kategorie",
+        "wszystkieWpisy": "Włączone i wyłączone",
+        "tylkoWlaczone": "Tylko włączone",
+        "tylkoWylaczone": "Tylko wyłączone",
+        "dodajWpis": "Dodaj wpis",
+        "eksport": "Eksport",
+        "importuj": "Importuj",
+        "nicNieZnaleziono": "Żaden wpis nie pasuje do wyszukiwania.",
+        "wlacz": "Włącz w bibliotece",
+        "wylacz": "Wyłącz w bibliotece",
+        "edytuj": "Edytuj wpis",
+        "sprawdz": "Sprawdź kanał",
+        "usun": "Usuń wpis",
+        "zapisz": "Zapisz",
+        "anuluj": "Anuluj",
+        "nowyWpis": "Nowy wpis biblioteki",
+        "edycjaWpisu": "Edycja wpisu",
+        "klucz": "Klucz (małe litery, cyfry, myślniki)",
+        "nazwa": "Nazwa źródła",
+        "adresKanalu": "Adres kanału RSS",
+        "adresStrony": "Adres strony (opcjonalnie)",
+        "opisZrodla": "Opis (np. „lewica”, „pop-science”)",
+        "kraj": "Kraj",
+        "jezyk": "Język",
+        "kategoria": "Kategoria",
+        "bezKraju": "Międzynarodowe",
+        "nigdyNieSprawdzany": "Kanał nigdy nie sprawdzany",
+        "liczbaWpisow": "Wpisów: {ile}",
+        "potwierdzUsuniecie": "Usunąć „{nazwa}” z biblioteki? Źródła, które ktoś już z tego wpisu dodał, zostaną nietknięte — dodanie kopiuje dane.",
+        "importGotowy": "Import zakończony: dodano {added}, pominięto {skipped}",
+        "wylaczonyWpis": "Wyłączony — niewidoczny dla użytkowników"
       }
     },
     "assistant": {
@@ -1279,7 +1321,9 @@
         "nazwaZrodlaNpTvn24": "Nazwa źródła (np. TVN24)",
         "dodajZrodlo": "Dodaj źródło",
         "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",
-        "opisZrodla": "Opis źródła"
+        "opisZrodla": "Opis źródła",
+        "dodajZBiblioteki": "Dodaj z biblioteki",
+        "dodajRecznie": "Dodaj ręcznie"
       },
       "NewsStream": {
         "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
@@ -1297,6 +1341,17 @@
         "pasekTematow": "Tematy",
         "brakTematow": "Brak tematów",
         "wszystkieTematy": "Wszystkie tematy — szukaj po nazwie"
+      },
+      "SourceCatalogPicker": {
+        "tytul": "Biblioteka źródeł",
+        "szukaj": "Szukaj źródła po nazwie lub opisie…",
+        "wszystkieKraje": "Wszystkie kraje",
+        "wszystkieJezyki": "Wszystkie języki",
+        "wszystkieKategorie": "Wszystkie kategorie",
+        "nicNieZnaleziono": "Żadne źródło nie pasuje do wyszukiwania.",
+        "dodaj": "Dodaj",
+        "dodane": "Dodane",
+        "dodano": "Dodano źródło „{nazwa}”"
       }
     },
     "notes": {

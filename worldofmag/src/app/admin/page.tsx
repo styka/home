@@ -2,7 +2,7 @@
 import { getTranslations } from "next-intl/server";import { redirect } from "next/navigation"
 import { auth } from "@/platform/auth/session"
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions"
-import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug, Compass } from "lucide-react"
+import { Shield, GitBranch, GitCommit, Clock, Hammer, MessageSquare, Settings, BookOpen, Map, Tag, MousePointerClick, FileText, Users, Activity, Database, ListChecks, StickyNote, ShoppingCart, ChefHat, PawPrint, Boxes, Palette, ClipboardList, LineChart, Sparkles, Bug, Compass, Rss } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/platform/db/prisma"
 import { FeedbackTriggerButton } from "@/components/admin/FeedbackTriggerButton"
@@ -303,6 +303,11 @@ export default async function AdminPage() {
             <Link href="/admin/spec-pipeline" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
               <GitBranch size={15} style={{ color: "var(--accent-purple)", flexShrink: 0 }} />
               <span style={{ fontSize: 13 }}>Spec-Driven Pipeline — przewodnik (jak budujemy funkcje)</span>
+              <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
+            </Link>
+            <Link href="/admin/zrodla-rss" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>
+              <Rss size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+              <span style={{ fontSize: 13 }}>{t("bibliotekaZrodelRss")}</span>
               <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--text-muted)" }}>→</span>
             </Link>
             <Link href="/admin/categories" className="admin-tool-link" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "var(--text-primary)", textDecoration: "none", borderBottom: "1px solid var(--border)" }}>

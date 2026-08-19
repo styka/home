@@ -1,7 +1,7 @@
 # Zadania: Wiadomości — odświeżanie, biblioteka źródeł, pasek tematów; Pogoda — obserwatory wg stanu
 
 - **Plan:** ./plan.md (082-wiadomosci-zrodla-i-pogoda-obserwatory)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-19
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -137,7 +137,7 @@ obejrzeć na działających danych.
   woła `setWatchersView` w `startTransition`.
   *Gotowe, gdy:* AC-19 — wybór przeżywa przeładowanie strony.
 
-- [ ] **T-16** — **Przeglądarka biblioteki źródeł.** Nowy
+- [x] **T-16** — **Przeglądarka biblioteki źródeł.** Nowy
   `src/modules/news/ui/SourceCatalogPicker.tsx` (modal na `@/components/ui/Modal`): wyszukiwarka z
   autofokusem i debounce ~250 ms, trzy selekty (kraj/język/kategoria), lista wyników z nazwą, opisem,
   krajem+językiem i kategorią, przycisk **Dodaj** albo etykieta **Dodane**. Stany ładowania/pustki/
@@ -145,7 +145,7 @@ obejrzeć na działających danych.
   dotychczasowego dodawania ręcznego.
   *Gotowe, gdy:* AC-4…AC-7 sprawdzone klikiem; powtórne dodanie tego samego źródła jest zablokowane.
 
-- [ ] **T-17** `[P]` — **Panel administratora katalogu.** Cienka trasa
+- [x] **T-17** `[P]` — **Panel administratora katalogu.** Cienka trasa
   `src/app/admin/zrodla-rss/page.tsx` (wzorzec `admin/categories/page.tsx`: `auth()` →
   `hasPermission(…, PERMISSIONS.ADMIN)` → `redirect("/")`) + komponent
   `src/components/admin/NewsSourceCatalogManager.tsx`: tabela z wyszukiwarką i filtrami, przełącznik
@@ -153,7 +153,7 @@ obejrzeć na działających danych.
   a nad tabelą **Dodaj wpis**, **Eksport**, **Import**. Link „Źródła RSS" na `src/app/admin/page.tsx`.
   *Gotowe, gdy:* AC-9…AC-12, AC-14, AC-15 sprawdzone klikiem i podglądem `/admin/audit`.
 
-- [ ] **T-18** — **Teksty do `messages/pl.json`** (C-32): przestrzenie
+- [x] **T-18** — **Teksty do `messages/pl.json`** (C-32): przestrzenie
   `modules.news.SourceCatalogPicker`, uzupełnienia `modules.news.NewsSettings` i
   `modules.news.TopicPicker`, `modules.weather.WatchersPanel`, `app.admin.zrodlaRss.*`.
   *Gotowe, gdy:* `npm run check:i18n` zielony (zero literałów z diakrytykami w nowych komponentach,
@@ -163,7 +163,7 @@ obejrzeć na działających danych.
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-19** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13 — nigdy prod
+- [x] **T-19** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13 — nigdy prod
   `DATABASE_URL`), wg listy z planu §8, zatrzymanie **przed** `scripts/migrate.js`:
   `check:migrations`, `check:owner-columns`, `check:schema-drift`, `check:ai-coverage`,
   `check:actions`, `check:pagination`, `check:i18n`, `check:ui-contract`, `check:boundaries`,
@@ -171,12 +171,12 @@ obejrzeć na działających danych.
   `check:test-types`, `tsc --noEmit`, `next lint --dir src`, `next build`.
   *Gotowe, gdy:* wszystkie zielone.
 
-- [ ] **T-20** — **Aktualizacja `CLAUDE.md`**: tabela modułów (Wiadomości — biblioteka źródeł;
+- [x] **T-20** — **Aktualizacja `CLAUDE.md`**: tabela modułów (Wiadomości — biblioteka źródeł;
   Pogoda — układ obserwatorów), lista tras `/admin` (`/admin/zrodla-rss`), sekcja schematu bazy
   (`NewsSourceCatalog`, `WeatherPref`), lista Server Actions (`adminNewsCatalog`, `katalog`).
   *Gotowe, gdy:* tabela i listy zgadzają się z kodem („Keep this table honest").
 
-- [ ] **T-21** — **Wpis do `doświadczenia.md`** (C-51, po polsku, format
+- [x] **T-21** — **Wpis do `doświadczenia.md`** (C-51, po polsku, format
   `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` / `**Lekcja:**`): zapis do skasowanej
   kolumny `ownerId` w `createMany` **i** luka w bramce, która go przepuściła (literał obiektu ukryty
   w `.map()` — bramka rozwiązywała tylko literał bezpośrednio po `=`).
