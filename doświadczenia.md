@@ -4,6 +4,39 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Tryb JSON, który nic nie robi u połowy dostawców
+**Problem:** `chatComplete({ json: true })` ustawiało `response_format: {type:"json_object"}`
+WYŁĄCZNIE w ciele żądania zgodnym z OpenAI. `anthropicBody` nie czytało `opts.json` w ogóle, więc
+u dostawcy Anthropic — tego, którego używa właściciel — tryb JSON był bezczynny. Osiemnaście miejsc
+w aplikacji o niego prosi i każde opierało kształt odpowiedzi wyłącznie na uprzejmości modelu.
+Wyszło przy generowaniu skórek, ale dotyczyło wszystkich.
+**Rozwiązanie:** Dla Anthropic dokładamy dyrektywę JSON OSOBNYM blokiem systemowym na końcu.
+Świadomie nie wypełnieniem tury asystenta znakiem `{` (metoda mocniejsza u tego dostawcy), bo
+prefill jest niedozwolony razem z rozszerzonym myśleniem, a to włącza `applyEffort` zależnie od
+konfiguracji administratora. Osobny blok, a nie doklejenie do promptu, bo doklejenie zmieniłoby
+blok oznaczony `cache_control` i unieważniało pamięć podręczną promptu przy każdym wywołaniu.
+**Lekcja:** Opcja wspólna dla wielu dostawców musi mieć **test na każdą ścieżkę**, inaczej działa
+tam, gdzie ją pisano, i milczy wszędzie indziej. Flaga, która nie ma odpowiednika u dostawcy, jest
+gorsza niż jej brak: kod wygląda, jakby wymuszał kształt, więc nikt nie dokłada zabezpieczenia
+po stronie odczytu.
+
+## 2026-08-19 — Między modelem a aplikacją musi być warstwa tłumacząca
+**Problem:** Generator skórek czytał tokeny z JEDNEGO miejsca (`parsed.tokens`) i porównywał klucze
+dokładnie z katalogiem. Każde odstępstwo modelu od tego kształtu dawało zero tokenów i komunikat
+„model nie odesłał żadnych tokenów" — nieprawdziwy, bo model odsyłał je regularnie, tylko inaczej
+opakowane. Cztery realne warianty: inny pojemnik (`variables`, `theme`), tablica par
+`{name,value}` zamiast mapy, inna konwencja klucza (`bgBase`), i najpodstępniejszy — LICZBA zamiast
+napisu (`"--font-weight-heading": 700`), którą walidator odrzucał bez śladu, bo przyjmuje tylko napisy.
+**Rozwiązanie:** `lib/skins/mapowanie.ts` — czysta warstwa, która znajduje mapę gdziekolwiek jest,
+tłumaczy konwencję kluczy i zamienia liczby JSON na napisy. Wybiera kandydata dającego NAJWIĘCEJ
+rozpoznanych tokenów, a nie pierwszego napotkanego. Walidacja została nietknięta.
+**Lekcja:** Model to nie jest API o stałym kontrakcie — to źródło, które ma INTENCJĘ i zmienny
+kształt. Czytanie go „jednym `parsed.x`" jest równie kruche jak parsowanie HTML wyrażeniem
+regularnym. Warstwa mapowania należy do aplikacji i **nie wolno jej mylić z rozluźnieniem
+walidacji**: pierwsza doprowadza dane do postaci, na której druga może się wypowiedzieć. Osobno
+warto pamiętać, że JSON ma liczby, a CSS ich nie ma — granica typów między formatami to klasyczne
+miejsce cichej utraty danych.
+
 ## 2026-08-19 — Klikacz e2e zależy od stanu bazy, którego nie odtwarza żaden seed
 **Problem:** Skasowałem lokalną bazę `omnia_dev`, żeby wykluczyć zabrudzenie danymi z ręcznych
 przebiegów. Po odtworzeniu (migracje + `prisma/seed.ts` + `ensureE2EFixtures`) klikacz przestał

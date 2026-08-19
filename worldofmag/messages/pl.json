@@ -762,7 +762,8 @@
         "npKonsolaStatkuKosmicznego": "np. konsola statku kosmicznego — bursztyn i granat, wersaliki w nagłówkach",
         "nicNieZostaloJeszcze": "Nic nie zostało jeszcze zapisane — po wstawieniu możesz dostroić każdy token ręcznie.",
         "zwin": "Zwiń",
-        "uzyjTejPropozycji": "Użyj tej propozycji"
+        "uzyjTejPropozycji": "Użyj tej propozycji",
+        "ustawionoTokenow": "Ustawiono {ile} z {wszystkich} tokenów motywu"
       },
       "SkinEditor": {
         "wlasnaCubicBezier": "własna (cubic-bezier)",

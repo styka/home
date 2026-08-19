@@ -38,9 +38,25 @@ test("opisPorazki: rozróżnia brak tokenów od złych kluczy", () => {
   const nic = opisPorazki(0, []);
   const zle = opisPorazki(12, ["--tlo", "--tekst"]);
   assert.notEqual(nic, zle, "dwa różne stany nie mogą dawać tego samego zdania");
-  assert.match(nic, /nie odesłał żadnych tokenów/);
   assert.match(zle, /12/, "liczba przysłanych kluczy jest informacją diagnostyczną");
   assert.match(zle, /--tlo/, "nazwy odrzuconych kluczy mówią, czego zabrakło");
+});
+
+test("opisPorazki: brak mapy tokenów NIE obwinia użytkownika za opis", () => {
+  // 081: po dołożeniu warstwy mapowania ten stan znaczy „przeszukaliśmy wszystkie kształty i nic",
+  // czyli problem jest po stronie modelu. Poprzedni komunikat kazał „opisać skórkę konkretniej",
+  // co przy opisie „kosmiczna saga Star Trek" było zwyczajnie nieprawdziwe.
+  const nic = opisPorazki(0, []);
+  assert.doesNotMatch(nic, /konkretniej/, "nie zrzucamy winy na opis użytkownika");
+  assert.match(nic, /generation/, "kierujemy tam, gdzie da się coś zrobić: konfiguracja modelu");
+});
+
+test("korekta: przypomina KSZTAŁT odpowiedzi, nie tylko nazwy kluczy", () => {
+  // Po warstwie mapowania zła nazwa klucza już nie jest przyczyną porażki — jest nią kształt,
+  // którego nie umiemy zmapować. Korekta ma celować w to, co realnie zostało.
+  const tekst = korekta(["--cos"]);
+  assert.match(tekst, /OBIEKT/);
+  assert.match(tekst, /NAPIS/);
 });
 
 test("opisPorazki: nie odsyła użytkownika do klucza API", () => {

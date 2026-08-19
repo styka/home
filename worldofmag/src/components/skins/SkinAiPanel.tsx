@@ -6,7 +6,7 @@ import { Sparkles, AlertTriangle } from "lucide-react";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import type { AiUsageInfo } from "@/platform/ai/usage";
 import { SkinPreview } from "./SkinPreview";
-import type { SkinTokens } from "@/lib/skins";
+import { ALL_CONTROLS, type SkinTokens } from "@/lib/skins";
 
 /**
  * 045 — „opisz, jak ma wyglądać" → komplet tokenów.
@@ -207,6 +207,16 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
             {result.rationale && (
               <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{result.rationale}</span>
             )}
+
+            {/* 081: KOMPLETNOŚĆ skórki. Prompt żąda kompletu 53 tokenów, ale model bywa oszczędny —
+                a skórka złożona z ośmiu tokenów to przemalowane tło i wygląda jak „AI nie umie".
+                Bez tej liczby użytkownik nie ma jak odróżnić słabego modelu od słabego opisu. */}
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {t("ustawionoTokenow", {
+                ile: Object.keys(result.tokens).length,
+                wszystkich: ALL_CONTROLS.length,
+              })}
+            </span>
 
             {result.rejected.length > 0 && (
               <span style={{ fontSize: 11, color: "var(--accent-amber)" }}>

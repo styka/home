@@ -236,13 +236,40 @@ export function openAiBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean)
   return body;
 }
 
+/**
+ * 081: dyrektywa trybu JSON dla Anthropic.
+ *
+ * `opts.json` ustawiało `response_format` WYŁĄCZNIE na ścieżce zgodnej z OpenAI — `anthropicBody`
+ * nie czytało tego pola w ogóle, więc dla dostawcy Anthropic tryb JSON był po cichu bezczynny.
+ * Osiemnaście miejsc w aplikacji prosi o JSON; każde z nich opierało kształt odpowiedzi wyłącznie
+ * na uprzejmości modelu. Objawiło się to przy generowaniu skórek (zgłoszenie Z10), ale dotyczyło
+ * wszystkich.
+ *
+ * Dlaczego dyrektywa systemowa, a nie wypełnienie tury asystenta (`prefill` znakiem `{`), które
+ * jest u tego dostawcy metodą mocniejszą: **prefill jest niedozwolony razem z rozszerzonym
+ * myśleniem**, a `applyEffort` włącza je zależnie od konfiguracji administratora. Wybór między
+ * „mocniejszy tryb JSON" a „działa przy każdym poziomie wysiłku" rozstrzygamy na rzecz tego
+ * drugiego — a resztę domyka tolerancyjne parsowanie po stronie wołającego.
+ */
+const ANTHROPIC_JSON_DIRECTIVE =
+  "Odpowiadasz WYŁĄCZNIE poprawnym dokumentem JSON. Bez zdania wstępnego, bez komentarza, " +
+  "bez bloków markdown i bez tekstu po JSON-ie. Pierwszy znak odpowiedzi to `{`, ostatni to `}`.";
+
 /** Ciało żądania dla dostawcy Anthropic (`/messages`) — bez `temperature` (patrz wyżej). */
 export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boolean): Record<string, unknown> {
   const { system, messages } = toAnthropic(opts.messages);
+  // Dyrektywa idzie OSOBNYM blokiem na końcu, a nie doklejeniem do treści promptu: doklejenie
+  // zmieniłoby blok oznaczony `cache_control`, czyli unieważniłoby pamięć podręczną promptu.
+  const systemBloki = system ? toAnthropicSystem(system, opts.systemBlocks) : undefined;
+  const systemDoWyslania =
+    opts.json && !stream
+      ? [...(systemBloki ?? []), { type: "text" as const, text: ANTHROPIC_JSON_DIRECTIVE }]
+      : systemBloki;
+
   const body: Record<string, unknown> = {
     model: cfg.model,
     max_tokens: opts.maxTokens ?? cfg.maxTokens ?? 1024,
-    ...(system ? { system: toAnthropicSystem(system, opts.systemBlocks) } : {}),
+    ...(systemDoWyslania ? { system: systemDoWyslania } : {}),
     messages,
   };
   // 033: rozszerzone myślenie Anthropic. `applyEffort` podnosi też `max_tokens` ponad budżet
