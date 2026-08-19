@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Klikacz e2e zależy od stanu bazy, którego nie odtwarza żaden seed
+**Problem:** Skasowałem lokalną bazę `omnia_dev`, żeby wykluczyć zabrudzenie danymi z ręcznych
+przebiegów. Po odtworzeniu (migracje + `prisma/seed.ts` + `ensureE2EFixtures`) klikacz przestał
+działać w sposób masowy: 36 czerwonych na 127, w tym testy niezwiązane ze zmianą. Kolejne braki
+wychodziły warstwami: brak użytkowników → brak PRZESTRZENI OSOBISTYCH (`Workspace`) → brak
+CZŁONKOSTW (`WorkspaceMember`) → dalej niewidoczne dane modułów. Fikstury speców wołają
+`workspace.findUniqueOrThrow({ where: { personalUserId } })`, więc zakładają, że przestrzeń już
+istnieje — a tworzy ją dopiero aplikacja przy pierwszym zapisie.
+**Rozwiązanie:** Braki uzupełniane ręcznie SQL-em. Pełne odtworzenie środowiska z pustej bazy
+pozostało niedomknięte i jest odnotowane jako osobna praca — nie wchodziło w zakres tej fali.
+**Lekcja:** „Idempotentny seed" nie znaczy „odtwarza środowisko od zera". Ten seed zakłada bazę,
+przez którą wcześniej przeszła aplikacja, więc **skasowanie bazy e2e jest operacją nieodwracalną
+bez ręcznej pracy** — a przy diagnozie flaka to pierwszy odruch. Zanim skasujesz bazę testową,
+zrób zrzut (`pg_dump`); i nie diagnozuj niestabilności testu przez kasowanie stanu, dopóki nie
+wiadomo, czy ten stan da się odtworzyć.
+
 ## 2026-08-19 — Zakres widoku w parametrach zapytania znika po mutacji
 **Problem:** Widok wielu projektów w Zadaniach pokazywał „🗂 Wiele projektów (0)" po zmianie statusu
 dowolnego zadania. Zakres liczył się WYŁĄCZNIE z `searchParams` (`?group=` / `?projects=`), a te

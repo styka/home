@@ -77,6 +77,14 @@ export function FavoritesSidebarSection({ favorites, userPermissions, collapsed 
         <button
           onClick={przelacz}
           aria-expanded={!zwinieta}
+          // `aria-label` jest tu KONIECZNE, a nie ozdobne: nazwą dostępną przycisku byłaby inaczej
+          // jego treść („Ulubione · 4"), czyli nazwa sekcji, a nie czynność. Czytnik ekranu (i test
+          // klikacza) nie miałby z czego wywnioskować, że kliknięcie rozwija listę.
+          aria-label={
+            zwinieta
+              ? `${t("rozwinUlubione")}${accessible.length > 0 ? ` (${accessible.length})` : ""}`
+              : t("zwinUlubione")
+          }
           title={zwinieta ? t("rozwinUlubione") : t("zwinUlubione")}
           className="flex flex-1 items-center gap-2 py-3 text-left focus:outline-none"
           style={{

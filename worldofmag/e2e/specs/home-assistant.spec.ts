@@ -9,7 +9,7 @@ import { test, expect } from "../fixtures/test";
  * ignorowane, więc „telefon" okazywał się myszą i test mierzył coś innego, niż deklarował.
  */
 test.describe("043 — widget asystenta na pulpicie", () => {
-  test("[ha-AC14-AC15] widget jest pierwszy i nie ma pola tekstowego (desktop)", async ({ page }) => {
+  test("[080-AC18] powitanie jest pierwsze, widget asystenta zaraz po nim (desktop)", async ({ page }) => {
     await page.goto("/");
     // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
     // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
@@ -21,15 +21,24 @@ test.describe("043 — widget asystenta na pulpicie", () => {
     // AC-15: żadnego pola do pisania — od tego jest panel asystenta.
     await expect(widget.locator("textarea, input")).toHaveCount(0);
 
-    // AC-14: widget stoi przed powitaniem i przed sekcjami pulpitu.
-    const order = await page.evaluate(() => {
+    /**
+     * 080 (Z9) ODWRACA regułę z 043 (AC-14).
+     *
+     * 043 wymagało, żeby widget asystenta stał PIERWSZY. Właściciel poprosił potem o odwrotność:
+     * najpierw powitanie z podsumowaniem dnia, a widget zaraz pod nim. Test nie jest „naprawiany" —
+     * sprawdza nową regułę, bo stara przestała obowiązywać na wyraźne życzenie.
+     *
+     * Co z 043 ZOSTAJE w mocy i dlatego jest tu dalej sprawdzane: oba bloki są poza listą sekcji
+     * personalizowanych, więc ta zmiana nie rusza niczyjej zapisanej kolejności.
+     */
+    const kolejnosc = await page.evaluate(() => {
       const w = document.querySelector("[data-omnia-assistant-widget]");
       const h1 = document.querySelector("h1");
       if (!w || !h1) return null;
-      // 4 = DOCUMENT_POSITION_FOLLOWING → h1 występuje PO widgecie.
-      return (w.compareDocumentPosition(h1) & 4) !== 0;
+      // 4 = DOCUMENT_POSITION_FOLLOWING → widget występuje PO nagłówku powitania.
+      return (h1.compareDocumentPosition(w) & 4) !== 0;
     });
-    expect(order).toBe(true);
+    expect(kolejnosc, "powitanie ma stać przed widgetem asystenta").toBe(true);
   });
 
   test("[ha-AC16] klik akcji otwiera asystenta i od razu ją wysyła", async ({ page }) => {
