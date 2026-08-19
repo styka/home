@@ -2086,7 +2086,12 @@
         "brakObserwatorowDodajGotowy": "Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu”, „Bieganie”) albo własny opisany naturalnym językiem — AI oceni je względem prognozy.",
         "usunObserwator": "Usuń obserwator",
         "nazwaNpWypadW": "Nazwa (np. Wypad w góry)",
-        "coObserwowacNpWeekend": "Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr"
+        "coObserwowacNpWeekend": "Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr",
+        "obserwatoryCzekaja": "Obserwatory czekają na ocenę.",
+        "obserwatoryCzekajaOpis": "Sprawdzenie prognozy pod kątem Twoich warunków kosztuje wywołanie modelu, więc nie dzieje się samo przy wejściu na stronę.",
+        "ocenObserwatory": "Oceń obserwatory",
+        "ocenPonownie": "Oceń ponownie",
+        "prognozaAlboObserwatoryZmienily": "Prognoza albo lista obserwatorów zmieniła się od czasu tej oceny"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",

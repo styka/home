@@ -91,18 +91,18 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
 
 ## Faza 3 — Pogoda: obserwatory na żądanie
 
-- [ ] **T-10** — **Z11: rodzaj sekcji.** `weather.watchers` w `AiContentKind`
+- [x] **T-10** — **Z11: rodzaj sekcji.** `weather.watchers` w `AiContentKind`
   (`src/platform/ai/contentMemory.ts`), w `AI_SECTION_KINDS` i `AI_SECTION_LABELS`
   (`src/platform/ai/sectionMode.ts`, etykieta „Pogoda — obserwatory").
   **Gotowe, gdy:** sekcja pojawia się w ustawieniach trybu odświeżania u użytkownika i administratora.
-- [ ] **T-11** — **Z11: obserwatory przez pamięć treści.** `evaluateWatchers`
+- [x] **T-11** — **Z11: obserwatory przez pamięć treści.** `evaluateWatchers`
   (`src/modules/weather/actions/weather.ts`) opakowane w `rememberedContent` z `scopeKey` = id
   lokalizacji i `hashInputs` = (obserwatory + skrót prognozy + `userContextStamp`); wariant
   `PendingContent` przy trybie „na żądanie". Uzupełniony `reason` w
   `src/lib/ai/content-memory-coverage.json` (C-54 — opis ma mówić prawdę).
   **Gotowe, gdy:** `npm run check:content-memory` i `npm run check:cost-badge` przechodzą.
   *(AC-21)* — **zależy od T-10**
-- [ ] **T-12** — **Z11: panel bez automatycznego wywołania.** `WatchersPanel.tsx`: usunięty
+- [x] **T-12** — **Z11: panel bez automatycznego wywołania.** `WatchersPanel.tsx`: usunięty
   auto-`useEffect`, `AiContentPending` w stanie oczekiwania, `AiContentMeta` (data, znacznik
   „nieaktualne", koszt, przycisk odświeżenia). Stan brzegowy **wyłącznie** przez istniejące
   komponenty, nie rysowany ręcznie (C-33).

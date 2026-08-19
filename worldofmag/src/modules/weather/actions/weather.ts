@@ -323,13 +323,42 @@ export async function deleteWatcher(id: string): Promise<void> {
 export interface WatchersResult {
   verdicts: WatcherVerdict[];
   usage?: AiUsageInfo;
+  /** 080 (Z11): kiedy ocena powstała. `null` = jeszcze nie powstała. */
+  generatedAt: string | null;
+  /** Prognoza albo lista obserwatorów zmieniła się od czasu oceny. Sygnał, nie polecenie. */
+  stale: boolean;
+  fromMemory: boolean;
+  /** 080 (Z11): ocena czeka na kliknięcie — tryb sekcji zabrania generować przy wejściu na stronę. */
+  pending: boolean;
+  /** Obowiązujący tryb odświeżania tej sekcji (do przełącznika w pasku). */
+  mode: AiSectionMode;
 }
 
-/** Ocenia włączone obserwatory względem aktualnej prognozy (LLM). */
+/** Wynik dla użytkownika bez ani jednego włączonego obserwatora — nie ma czego oceniać. */
+const BRAK_OBSERWATOROW: WatchersResult = {
+  verdicts: [],
+  generatedAt: null,
+  stale: false,
+  fromMemory: false,
+  pending: false,
+  mode: "onDemand",
+};
+
+/**
+ * Ocenia włączone obserwatory względem aktualnej prognozy (LLM).
+ *
+ * 080 (Z11): przez `rememberedContent`, jak każda inna sekcja AI. Wcześniej ta funkcja była
+ * wołana z `useEffect` przy KAŻDYM wejściu na moduł Pogoda — bez pamięci, bez trybu, bez
+ * możliwości powstrzymania. Właściciel zgłosił to jako „bardzo często w ogóle nie działają":
+ * każde wejście płaciło za wywołanie modelu, a każda odmowa kończyła się pustą listą i spinnerem.
+ * Teraz obowiązuje ta sama zasada, co w „Co robić?": nic nie powstaje bez kliknięcia, chyba że
+ * użytkownik świadomie wybrał inny tryb.
+ */
 export async function evaluateWatchers(
   lat: number,
   lon: number,
-  label: string
+  label: string,
+  opts?: { force?: boolean }
 ): Promise<WatchersResult> {
   const user = await requireAuth();
   const watchers = await prisma.weatherWatcher.findMany({
@@ -337,7 +366,7 @@ export async function evaluateWatchers(
     where: { ...(await filtrMoichRekordow(user.id)), enabled: true },
     orderBy: { sortOrder: "asc" },
   });
-  if (watchers.length === 0) return { verdicts: [] };
+  if (watchers.length === 0) return BRAK_OBSERWATOROW;
 
   const f = await fetchForecast(lat, lon);
   if (!f) throw new Error("Brak danych pogodowych.");
@@ -365,26 +394,66 @@ export async function evaluateWatchers(
     `OBSERWATORZY (z horyzontem czasowym):\n${watcherList}\n\n` +
     `Zwróć JSON: {"verdicts":[{"index":0,"status":"met|partial|unmet|unknown","verdict":"...","detail":"..."}]}`;
 
-  const res = await chatComplete({
-    op: "reasoning",
-    json: true,
-    temperature: 0.3,
-    maxTokens: 1500,
-    // Z-330: ocena watcherów deterministyczna per lokalizacja/prognoza/lista watcherów
-    // (prompt je zawiera) — cache eliminuje powtórny koszt przy ponownych wejściach.
-    cache: true,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: userPrompt },
-    ],
-  });
-  if (!res.ok) throw new Error(res.message);
-  const parsed = parseJsonLoose<{
-    verdicts: Array<{ index: number; status: string; verdict: string; detail: string }>;
-  }>(res.content);
-  const verdicts = parsed?.verdicts ?? [];
+  // 080 (Z11): to tryb decyduje, czy samo wejście na stronę woła model. Domyślnie („na żądanie")
+  // NIE woła — ocena czeka na kliknięcie, zamiast kosztować przy każdym wejściu na moduł.
+  const mode = await resolveSectionMode(user.id, "weather.watchers");
 
-  const mapped = verdicts
+  // Ocena zależy od TREŚCI obserwatorów (nie tylko ich liczby) i od prognozy. Skrót prognozy
+  // celowo zaokrąglony: korekta o jedną dziesiątą stopnia nie może unieważniać oceny, bo
+  // zniweczyłaby całą oszczędność, dla której ta pamięć powstała.
+  const inputHash = hashInputs(
+    watchers.map((w) => `${w.id}|${w.horizon}|${w.title}|${w.query ?? ""}`).join(";"),
+    dailyDigest(f).slice(0, 400),
+    await userContextStamp(user.id)
+  );
+
+  // Surowe werdykty od modelu; przypisanie ich do obserwatorów robimy przy KAŻDYM odczycie,
+  // dzięki czemu skasowanie obserwatora natychmiast usuwa jego werdykt z widoku — bez generowania.
+  type SurowyWerdykt = { index: number; status: string; verdict: string; detail: string };
+
+  const remembered = await rememberedContent<SurowyWerdykt[]>({
+    ownerId: user.id,
+    kind: "weather.watchers",
+    scopeKey: `${lat.toFixed(3)}|${lon.toFixed(3)}`,
+    inputHash,
+    force: opts?.force ?? false,
+    mode,
+    generate: async () => {
+      const res = await chatComplete({
+        op: "reasoning",
+        json: true,
+        temperature: 0.3,
+        maxTokens: 1500,
+        // Pamięć treści (`AiContent`) zastąpiła tu pamięć podręczną wywołań: skoro do modelu
+        // idziemy wyłącznie przy braku zapisu albo na wyraźne żądanie, drugi poziom cache nie
+        // ma czego oszczędzić.
+        cache: false,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userPrompt },
+        ],
+      });
+      if (!res.ok) throw new Error(res.message);
+      const parsed = parseJsonLoose<{ verdicts: SurowyWerdykt[] }>(res.content);
+      // Nieparsowalna odpowiedź to awaria, nie „żaden obserwator się nie spełnił". Te dwie
+      // rzeczy wyglądały tak samo (pusta lista) i właśnie dlatego usterka była niewidoczna.
+      if (parsed == null) {
+        throw new Error("Nie udało się odczytać odpowiedzi modelu (niepoprawny format). Spróbuj ponownie.");
+      }
+      return {
+        value: parsed.verdicts ?? [],
+        usage: usageFromChat([{ res, label: "obserwatory", op: "reasoning" }]),
+      };
+    },
+  });
+
+  // Nic jeszcze nie powstało i tryb zabrania generować samoczynnie. To NIE jest „żaden obserwator
+  // się nie spełnił" ani awaria — UI ma dla tego osobny stan.
+  if (remembered.pending) {
+    return { verdicts: [], generatedAt: null, stale: false, fromMemory: false, pending: true, mode };
+  }
+
+  const mapped = remembered.value
     .filter((v) => watchers[v.index])
     .map((v) => {
       const w = watchers[v.index];
@@ -397,7 +466,12 @@ export async function evaluateWatchers(
 
   return {
     verdicts: mapped,
-    usage: await visibleUsage(usageFromChat([{ res, label: "obserwatory", op: "reasoning" }])),
+    usage: await visibleUsage(remembered.usage),
+    generatedAt: remembered.generatedAt,
+    stale: remembered.stale,
+    fromMemory: remembered.fromMemory,
+    pending: false,
+    mode,
   };
 }
 
