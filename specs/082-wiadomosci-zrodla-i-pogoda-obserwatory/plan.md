@@ -140,19 +140,35 @@ Brak zmian w akcjach — to jest handler zadania w tle, wołany z `startNewsRefr
 
 ### 3.2 Poszerzenie bramki `check-owner-columns.js` (AC-3)
 
-Bramka rozwiązuje identyfikatory stojące w miejscu warunku (`data: rows`) **do punktu stałego w
-pliku**, ale nie zaglądała do wartości zdefiniowanej wyrażeniem łańcuchowym
-(`const rows = feed.slice(…).map((f) => ({ ownerId, … }))`) — literał obiektu jest tam wewnątrz
-wywołania, a nie bezpośrednio po `=`. Zmiana:
+> **Korekta po pomiarze (C-54).** Plan zakładał, że luką jest literał obiektu ukryty w łańcuchu
+> `.map()`, do którego bramka nie zagląda przy rozwiązywaniu identyfikatora. **Pomiar tego nie
+> potwierdził**: ten sam łańcuch z zapisem `ownerId: "x"` bramka wykrywa poprawnie. Prawdziwa luka
+> jest prostsza i szersza, niż zakładaliśmy — opis poniżej odpowiada temu, co zmierzone.
 
-- przy rozwiązywaniu identyfikatora skanować **całe wyrażenie przypisania**, łącznie z literałami
-  obiektu zagnieżdżonymi w wywołaniach (`.map(…)`, `.flatMap(…)`, `.concat(…)`), a nie tylko literał
-  bezpośrednio po `=`;
-- dopisać **próbę mutacyjną** (skrypt ma już pięć) odwzorowującą dokładnie ten kształt:
-  `prisma.newsArticle.createMany({ data: feed.map((f) => ({ ownerId, sourceId: f.id })) })` — bramka
-  musi ją odrzucić. Bez próby poprawka bramki jest niesprawdzalna.
-- Poszerzenie może wskazać **istniejące** miejsca. Każde oglądamy osobno; żadnego nie uciszamy
-  wyjątkiem (bramka nie ma manifestu i nie dostanie go tutaj).
+Bramka szukała pola **wyłącznie w zapisie z dwukropkiem** (`ownerId\s*:`). JavaScript ma drugi,
+równoważny zapis tego samego pola — **skrócony**: `{ ownerId, sourceId: x }`. Prisma nie odróżnia
+ich wcale; bramka nie widziała skróconego w **żadnym** kształcie, także w najprostszym
+(`createMany({ data: { ownerId, url } })`) — więc łańcuch `.map()` nie miał z tym nic wspólnego.
+Zmierzone na czterech wariantach przed poprawką. Zmiana:
+
+- wzorzec klucza obejmuje **oba warianty składni**: `ownerId\s*:` **oraz** skrócony, wymagający
+  `{` albo `,` bezpośrednio przed nazwą i `,`/`}` po niej. Ten warunek brzegowy jest tym, co
+  odróżnia pole zapytania od `...ownerId` (rozlanie wartości) i `rekord.ownerId` (odczyt pola
+  pobranego rekordu) — oba muszą nadal przechodzić;
+- **pięć prób mutacyjnych wbudowanych w skrypt** i uruchamianych w każdym przebiegu (dwa kształty,
+  które muszą paść — w tym dokładny kształt błędu produkcyjnego — i trzy, które muszą przejść:
+  kolumna na modelu, który ją ma; pole pod kluczem relacji; rozlanie wartości). Do 082 „próby
+  mutacyjne" tej bramki były czynnością wykonaną raz, a nie kodem — czyli dowodem, którego nie da
+  się powtórzyć. Osobna flaga byłaby tym samym problemem o jeden krok dalej: pomija się ją
+  zapominając;
+- poszerzenie może wskazać **istniejące** miejsca. Każde oglądamy osobno; żadnego nie uciszamy
+  wyjątkiem (bramka nie ma manifestu i nie dostanie go tutaj). **Pomiar: poza `newsRefresh.ts`
+  poszerzenie nie wskazało ani jednego miejsca** (2324 sprawdzone wywołania Prismy).
+
+Dodatkowo kształt wiersza puli zostaje **wydzielony z `fetchPool` do czystej funkcji `wierszePuli`**
+— wpisany w środek pętli po źródłach nie miał jak być sprawdzony inaczej niż uruchomieniem całego
+zadania z prawdziwym kanałem RSS (dlatego przeżył migrację 0244 niezauważony). Po wydzieleniu ma
+test bez bazy i bez sieci (T-2).
 
 ### 3.3 Katalog źródeł — strona użytkownika
 
@@ -373,7 +389,7 @@ Testy jednostkowe (Vitest, katalog `__tests__` modułu): kształt wiersza puli, 
 |--------|-----------|
 | Seed 400+ wpisów rozdyma migrację i utrudnia przegląd | DDL i dane w **osobnych** migracjach; dane wsadami po ~50 wierszy z komentarzem grupującym |
 | Martwe kanały wśród 400+ | `checkStatus`/`checkedAt`/`checkNote` + akcja **Sprawdź**; wyłączenie wpisu jednym kliknięciem; odświeżanie u użytkownika i tak liczy próg per źródło, więc jedno martwe źródło nie psuje przebiegu |
-| Poszerzenie `check-owner-columns` wskaże istniejące miejsca | to jest cel bramki — każde miejsce oglądamy i naprawiamy; **bez** manifestu wyjątków |
+| Poszerzenie `check-owner-columns` wskaże istniejące miejsca | to jest cel bramki — każde miejsce oglądamy i naprawiamy; **bez** manifestu wyjątków. *Pomiar: poza `newsRefresh.ts` nie wskazało żadnego.* |
 | Powrót odrzuconego w 041 poziomego paska | pasek **uzupełnia**, nie zastępuje listy z wyszukiwarką (AC-24); powód zapisany w nagłówku pliku, żeby następna sesja nie „posprzątała" jednego z dwóch |
 | `WeatherPref` bez `dbgenerated()` odstaje od reszty schematu | odstępstwo opisane w pkt 2.2 i w komentarzu przy modelu; efekt jest **ostrzejszy**, nie luźniejszy (kompilator wymusza podanie przestrzeni) |
 | Kolizja numerów migracji z równoległym branchem | `npm run next:migration` tuż przed utworzeniem katalogów + `npm run check:migrations` w buildzie |

@@ -18,7 +18,7 @@
 Idzie pierwsza, bo dopóki pula artykułów jest pusta, żadnej zmiany w module Wiadomości nie da się
 obejrzeć na działających danych.
 
-- [ ] **T-1** — **Naprawa zapisu puli artykułów.** W `src/modules/news/jobs/newsRefresh.ts`
+- [x] **T-1** — **Naprawa zapisu puli artykułów.** W `src/modules/news/jobs/newsRefresh.ts`
   (`fetchPool`): wyliczyć `const wlasnosc = await wlasnoscOsobistaDoZapisu(ownerId)` **przed pętlą**
   po źródłach i wstawić `...wlasnosc` zamiast `ownerId` w kształcie wiersza; poprawić komentarz nad
   `createMany` (unikalność to `[workspaceId, sourceId, url]`, nie `[ownerId, …]`). Przejrzeć cały
@@ -26,19 +26,19 @@ obejrzeć na działających danych.
   *Gotowe, gdy:* `rg 'ownerId,' src/modules/news/jobs/newsRefresh.ts` nie pokazuje klucza obiektu
   danych, a `npx tsc --noEmit` przechodzi.
 
-- [ ] **T-2** — **Test kształtu wiersza puli.** W `src/modules/news/__tests__/` test jednostkowy
+- [x] **T-2** — **Test kształtu wiersza puli.** W `src/modules/news/__tests__/` test jednostkowy
   wydzielonej (albo wprost sprawdzonej) budowy wiersza: wynik zawiera `workspaceId`, `sourceId`,
   `url`, `title`, `description`, `publishedAt` i **nie** zawiera `ownerId`.
   *Gotowe, gdy:* `npm run test:unit` zielony i test pada po przywróceniu `ownerId`.
 
-- [ ] **T-3** — **Poszerzenie bramki `check-owner-columns.js`.** Rozwiązywanie identyfikatora
-  stojącego w miejscu `data:` ma skanować **całe wyrażenie przypisania**, w tym literały obiektu
-  zagnieżdżone w wywołaniach (`.map(…)`, `.flatMap(…)`, `.concat(…)`), a nie tylko literał
-  bezpośrednio po `=`. Dopisać **szóstą próbę mutacyjną** odwzorowującą kształt z T-1
-  (`createMany({ data: feed.map((f) => ({ ownerId, sourceId: f.id })) })`) — bramka musi ją odrzucić.
-  *Gotowe, gdy:* `npm run check:owner-columns` zielony na repo i **czerwony** przy przywróconym
-  `ownerId` w `newsRefresh.ts`; wszystkie próby mutacyjne przechodzą. **Bez manifestu wyjątków** —
-  jeśli poszerzenie wskaże inne miejsca, każde naprawiamy (patrz „Notatki").
+- [x] **T-3** — **Poszerzenie bramki `check-owner-columns.js`.** *(Zakres skorygowany po pomiarze —
+  patrz plan §3.2 i „Notatki".)* Wzorzec klucza obejmuje **oba warianty składni** pola: pełny
+  (`ownerId:`) i **skrócony** (`{ ownerId, … }`) — to ten drugi przepuścił błąd produkcyjny, i to
+  w każdym kształcie, nie tylko w łańcuchu `.map()`. Skrócony wymaga `{`/`,` przed nazwą i `,`/`}`
+  po niej, żeby `...ownerId` i `rekord.ownerId` nadal przechodziły. **Pięć prób mutacyjnych
+  wbudowanych w skrypt** (dwie muszą paść, trzy muszą przejść), uruchamianych w każdym przebiegu.
+  *Gotowe, gdy:* `npm run check:owner-columns` zielony na repo, próby zielone, a cofnięcie poprawki
+  wzorca czerwieni dokładnie te dwie próby, które mają paść. **Bez manifestu wyjątków**.
 
 ---
 
@@ -224,8 +224,11 @@ Równoległe: `T-10 ∥ T-11` (różne pliki), `T-13 ∥ T-14` (różne moduły)
 
 ## Notatki / blokady
 
-- **T-3** może wskazać istniejące miejsca w kodzie z tym samym kształtem zapisu. Każde naprawiamy
-  osobno; bramka **nie dostaje** manifestu wyjątków (decyzja z planu §3.2 i ryzyk §9).
+- **T-3 — korekta hipotezy (C-54).** Plan zakładał, że luką jest literał ukryty w łańcuchu `.map()`.
+  Pomiar na czterech wariantach tego nie potwierdził: łańcuch z zapisem `ownerId: "x"` bramka
+  wykrywała poprawnie. Luką był **skrócony zapis pola** — szerszy i prostszy problem. `plan.md` §3.2
+  poprawiony, zakres T-3 przeliczony. Poza `newsRefresh.ts` poszerzenie nie wskazało żadnego
+  miejsca; bramka **nie dostaje** manifestu wyjątków.
 - **T-7/T-8**: adresy kanałów pisane z wiedzy modelu — część może być nieaktualna. To jest świadomie
   przyjęte ryzyko wyboru właściciela („400+, maksymalnie szeroko"); ratunkiem jest akcja **Sprawdź**
   i wyłączenie wpisu (T-10/T-17), a nie odchudzanie katalogu.

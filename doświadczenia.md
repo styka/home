@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Bramka szukała pola tylko w jednym z dwóch zapisów tej samej rzeczy
+**Problem:** Odświeżanie Wiadomości padało przy KAŻDYM przebiegu — `prisma.newsArticle.createMany`
+odrzucał partię, bo wiersz niósł `ownerId`, kolumnę usuniętą migracją 0244. Moduł stał pusty:
+tematy, linia czasu i gorące tematy stoją na puli artykułów. Gorsze od samego błędu było to, że
+istniała bramka postawiona dokładnie po to (`check-owner-columns`, 095/098) — i była zielona.
+Powód: szukała pola wyłącznie w zapisie z dwukropkiem (`ownerId\s*:`). Zapis SKRÓCONY
+(`{ ownerId, sourceId: x }`) jest dla Prismy identyczny, a dla bramki nie istniał — w żadnym
+kształcie, także w najprostszym `createMany({ data: { ownerId, url } })`.
+**Rozwiązanie:** Wzorzec klucza objął oba warianty składni; skrócony wymaga `{`/`,` przed nazwą i
+`,`/`}` po niej, żeby `...ownerId` (rozlanie) i `rekord.ownerId` (odczyt pola) nadal przechodziły.
+Do skryptu wbudowane PIĘĆ prób mutacyjnych uruchamianych w każdym przebiegu: dwa kształty, które
+muszą paść (w tym dokładny kształt błędu produkcyjnego), i trzy, które muszą przejść. Sam kształt
+wiersza wydzielony z `fetchPool` do czystej `wierszePuli` i obłożony testem bez bazy i sieci.
+**Lekcja:** Wykrywanie po składni musi objąć **wszystkie warianty składni tej samej rzeczy** —
+inaczej mierzy nie „czy pole trafia do Prismy", tylko „czy autor napisał je tak, jak pomyślał autor
+bramki". I druga, oddzielna: „próby mutacyjne" wykonane raz ręcznie nie są dowodem, bo nie da się
+ich powtórzyć — dowód bramki musi być jej kodem, uruchamianym zawsze (osobna flaga to ten sam
+problem o krok dalej: pomija się ją zapominając). Hipotezę o przyczynie zawsze zmierz przed
+poprawką — tutaj pierwsza hipoteza (literał ukryty w łańcuchu `.map()`) była błędna, a prawdziwa
+luka okazała się szersza.
+
 ## 2026-08-19 — Commit scalający na `master` rozjeżdżał gałęzie przy każdej promocji
 **Problem:** Pipeline promował produkcję przez `git merge --no-ff develop -m "... [produkcja]"`.
 Ten commit scalający powstaje **wyłącznie na `master`** — `develop` nigdy go nie dostaje. Od tej

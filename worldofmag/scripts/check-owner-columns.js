@@ -30,6 +30,21 @@
  *      wszystkie przypisania do jego pól (`warunek.OR = […]`) i sprawdza je tak samo. Tędy weszły
  *      wszystkie cztery błędy — filtr budowany kilka linijek wcześniej.
  *
+ * ### 082 — trzecia droga dojazdu: SKRÓCONY ZAPIS POLA
+ *
+ * Do 082 obie drogi wyżej szukały klucza wyłącznie w postaci `ownerId:` — z dwukropkiem. Tymczasem
+ * JavaScript ma drugi, równoważny zapis tego samego pola: `{ ownerId, sourceId: x }`. Prisma widzi
+ * je identycznie, bramka nie widziała go wcale — i to **w każdym kształcie**, także w najprostszym
+ * (`createMany({ data: { ownerId, url } })`), nie tylko w łańcuchu `.map()`.
+ *
+ * Tędy przeszedł na produkcję zapis do puli artykułów Wiadomości (`newsRefresh.ts`): po migracji
+ * 0244 KAŻDE odświeżanie modułu kończyło się błędem Prismy, a moduł stał pusty. Bramka powstała
+ * dokładnie po to, żeby takich miejsc nie było, i była zielona.
+ *
+ * Lekcja wpisana wprost w kod: **wykrywanie po składni musi objąć wszystkie warianty składni tej
+ * samej rzeczy**, inaczej mierzy nie „czy pole trafia do Prismy", tylko „czy autor napisał je
+ * akurat tak, jak pomyślał autor bramki".
+ *
  * ZNANA GRANICA, zapisana zamiast przemilczanej: rozwiązywanie identyfikatorów jest
  * JEDNOPOZIOMOWE i tylko w obrębie pliku. Filtr zbudowany w innym module i zaimportowany tu
  * przejdzie. Świadomie: w tym repozytorium filtry własnościowe pochodzą albo z literału na
@@ -137,14 +152,9 @@ let sprawdzonych = 0;
  * tworzyły projekt z `ownerId`, czyli kolumną skasowaną migracją 0244, i przewracały klikacz
  * błędem Prismy zamiast wynikiem testu. Bramka pilnująca tylko `src/` przepuszczała to bez słowa.
  */
-for (const plik of [
-  ...walk(path.join(root, "src")),
-  ...walk(path.join(root, "e2e")),
-  ...walk(path.join(root, "prisma")),
-]) {
-  const rel = path.relative(root, plik).split(path.sep).join("/");
-  const t = bezKomentarzy(fs.readFileSync(plik, "utf8"));
-  if (!/\b(?:prisma|tx)\.\w+\./.test(t)) continue;
+function analizuj(rel, zrodlo) {
+  const t = bezKomentarzy(zrodlo);
+  if (!/\b(?:prisma|tx)\.\w+\./.test(t)) return;
 
   const re = new RegExp(`\\b(?:prisma|tx)\\.(\\w+)\\.(?:${OPERACJE})\\s*\\(`, "g");
   for (const m of t.matchAll(re)) {
@@ -233,7 +243,17 @@ for (const plik of [
 
     for (const kolumna of KOLUMNY) {
       if (ma.has(kolumna)) continue;
-      const kluczRe = new RegExp(`(?<![\\w$])${kolumna}\\s*:`, "g");
+      /**
+       * 082: DWA warianty zapisu tego samego pola, bo Prisma nie odróżnia ich wcale.
+       *  • `ownerId:` — zapis pełny;
+       *  • `{ ownerId,` / `, ownerId }` — zapis SKRÓCONY, przez który przeszedł błąd produkcyjny.
+       * Skrócony wymaga `{` albo `,` bezpośrednio przed nazwą, więc `...ownerId` (rozlanie
+       * wartości) i `x.ownerId` (odczyt pola pobranego rekordu) nie są trafieniami.
+       */
+      const kluczRe = new RegExp(
+        `(?<![\\w$])${kolumna}\\s*:|(?<=[{,]\\s{0,40})${kolumna}\\s*(?=[,}])`,
+        "g",
+      );
       for (const { tekst: frag, offset } of fragmenty) {
         const trafienie = kluczRe.exec(frag);
         kluczRe.lastIndex = 0;
@@ -251,10 +271,97 @@ for (const plik of [
   }
 }
 
+for (const plik of [
+  ...walk(path.join(root, "src")),
+  ...walk(path.join(root, "e2e")),
+  ...walk(path.join(root, "prisma")),
+]) {
+  analizuj(path.relative(root, plik).split(path.sep).join("/"), fs.readFileSync(plik, "utf8"));
+}
+
+/**
+ * PRÓBY MUTACYJNE (082). Bramka wykrywająca po składni jest warta dokładnie tyle, ile jej własny
+ * dowód: wersja sprzed 082 była zielona **przy błędzie leżącym na produkcji**, bo szukała pola
+ * wyłącznie w zapisie z dwukropkiem. Dlatego zestaw kształtów — te, które MUSZĄ paść, i te, które
+ * MUSZĄ przejść — mieszka odtąd w skrypcie, a nie w pamięci osoby, która go pisała.
+ *
+ * Uruchamiane w każdym przebiegu (koszt: kilka milisekund na czterech snippetach), więc nie da się
+ * ich pominąć zapominając o osobnej fladze.
+ */
+const PROBY = [
+  {
+    opis: "skrócony zapis pola wprost w argumencie — kształt błędu produkcyjnego z newsRefresh",
+    kod: `import { prisma } from "@/platform/db/prisma";
+      export async function f(ownerId: string) {
+        await prisma.newsArticle.createMany({ data: { ownerId, url: "a" } });
+      }`,
+    maPasc: true,
+  },
+  {
+    opis: "skrócony zapis pola w literale zwracanym z .map(), przypisanym do zmiennej",
+    kod: `import { prisma } from "@/platform/db/prisma";
+      export async function f(ownerId: string, feed: any[], source: any, since: Date) {
+        const rows = feed
+          .filter((x) => x.publishedAt >= since)
+          .map((x) => ({ ownerId, sourceId: source.id, url: x.link }));
+        await prisma.newsArticle.createMany({ data: rows, skipDuplicates: true });
+      }`,
+    maPasc: true,
+  },
+  {
+    opis: "ta sama kolumna na modelu, KTÓRY JĄ MA (workspace-nullable.json) — musi przejść",
+    kod: `import { prisma } from "@/platform/db/prisma";
+      export async function f(ownerId: string) {
+        await prisma.itemHistory.findMany({ where: { ownerId } });
+      }`,
+    maPasc: false,
+  },
+  {
+    opis: "pole pod kluczem relacji należy do INNEJ tabeli — musi przejść",
+    kod: `import { prisma } from "@/platform/db/prisma";
+      export async function f() {
+        await prisma.task.findMany({ select: { project: { select: { workspaceId: true } } } });
+      }`,
+    maPasc: false,
+  },
+  {
+    opis: "rozlanie wartości i odczyt pola pobranego rekordu to nie klucz zapytania — musi przejść",
+    kod: `import { prisma } from "@/platform/db/prisma";
+      export async function f(rekord: { ownerId: string }, filtr: any) {
+        await prisma.newsArticle.findMany({ where: { ...filtr, url: rekord.ownerId } });
+      }`,
+    maPasc: false,
+  },
+];
+
+const bledyProb = [];
+const sprawdzonychWRepo = sprawdzonych;
+for (const proba of PROBY) {
+  const przed = bledy.length;
+  analizuj("<próba>", proba.kod);
+  const padla = bledy.length > przed;
+  bledy.length = przed; // próby nie zanieczyszczają wyniku dla repozytorium
+  if (padla !== proba.maPasc) {
+    bledyProb.push(
+      `próba „${proba.opis}" ${proba.maPasc ? "MIAŁA paść, a przeszła" : "MIAŁA przejść, a padła"}`,
+    );
+  }
+}
+if (bledyProb.length) {
+  console.error("\n✖ Bramka nie przechodzi własnych prób mutacyjnych:\n");
+  for (const b of bledyProb) console.error(`  • ${b}`);
+  console.error("\n  Bramka, która nie wykrywa kształtu błędu, dla którego powstała, jest gorsza");
+  console.error("  niż jej brak: ogłasza kontrolę, której nie ma.\n");
+  process.exit(1);
+}
+
 if (bledy.length) {
   console.error("\n✖ Zapytania o skasowane kolumny własnościowe:\n");
   for (const b of [...new Set(bledy)]) console.error(`  • ${b}`);
   console.error("");
   process.exit(1);
 }
-console.log(`✓ Kolumny własnościowe: ${sprawdzonych} wywołań Prismy, żadne nie pyta o skasowane \`ownerId\`/\`ownerTeamId\`.`);
+console.log(
+  `✓ Kolumny własnościowe: ${sprawdzonychWRepo} wywołań Prismy (+ ${PROBY.length} prób mutacyjnych), ` +
+    "żadne nie pyta o skasowane `ownerId`/`ownerTeamId`.",
+);

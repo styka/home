@@ -9,11 +9,15 @@
 // na cykl. Teraz każde źródło pobieramy RAZ do wspólnej puli (`NewsArticle`), a przypisanie do
 // tematów jest osobnym, tanim etapem na całej puli naraz.
 
-import { filtrMoichRekordow, wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis"
+import {
+  filtrMoichRekordow,
+  wlasnoscOsobistaDoZapisu,
+  type WlasnoscOsobistaZapisu,
+} from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
 import { chatComplete } from "@/platform/llm/chat";
 import { parseJsonLoose } from "@/platform/llm/json";
-import { fetchRss } from "@/lib/news/rss";
+import { fetchRss, type RssItem } from "@/lib/news/rss";
 import { fingerprintOf } from "@/lib/textKey";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { JobError, type JobContext } from "@/platform/jobs/types";
@@ -103,6 +107,45 @@ interface PoolStageResult {
  * czynnością pojedynczego tematu. Pierwszy przebieg bierze okno 24 h — bez tego zaciągnęlibyśmy
  * całą historię kanału przy pierwszym kliknięciu.
  */
+/**
+ * 082: budowa wierszy puli wydzielona z `fetchPool`, żeby dała się przetestować BEZ bazy i sieci.
+ *
+ * Powód wydzielenia jest konkretny: kształt tego wiersza przez cały czas po migracji 0244 zawierał
+ * `ownerId` — kolumnę, której już nie ma — i przewracał każde odświeżanie. Wpisany w środek pętli
+ * po źródłach nie miał jak być sprawdzony inaczej niż uruchomieniem całego zadania z prawdziwym
+ * kanałem RSS. Teraz ma test (`__tests__/newsRefresh.test.ts`).
+ *
+ * Własność przychodzi **gotowa** (`wlasnosc`), a nie jako identyfikator użytkownika: ustalenie
+ * przestrzeni jest operacją na bazie i należy do wołającego, który robi je raz na przebieg.
+ */
+export function wierszePuli(
+  feed: RssItem[],
+  opts: { wlasnosc: WlasnoscOsobistaZapisu; sourceId: string; since: Date; teraz?: Date }
+): {
+  workspaceId: string;
+  sourceId: string;
+  url: string;
+  title: string;
+  description: string;
+  publishedAt: Date;
+}[] {
+  const teraz = opts.teraz ?? new Date();
+  return feed
+    .slice(0, MAX_ITEMS_PER_SOURCE)
+    // Pozycja bez daty w kanale jest w nim TERAZ, więc traktujemy ją jako bieżącą zamiast
+    // wyrzucać — inaczej kanały bez `pubDate` byłyby dla nas niewidoczne.
+    .map((f) => ({ ...f, publishedAt: f.publishedAt ?? teraz }))
+    .filter((f) => f.publishedAt >= opts.since)
+    .map((f) => ({
+      ...opts.wlasnosc,
+      sourceId: opts.sourceId,
+      url: f.link,
+      title: f.title,
+      description: f.description,
+      publishedAt: f.publishedAt,
+    }));
+}
+
 async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Promise<PoolStageResult> {
   // 079: zadanie w tle nie ma sesji — przestrzeń wyliczamy z właściciela zadania.
   const moje = await filtrMoichRekordow(ownerId);
@@ -114,6 +157,12 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
   if (sources.length === 0) return { sources: 0, fetched: 0 };
 
   const firstRunFloor = new Date(Date.now() - FIRST_RUN_WINDOW_MS);
+
+  // 082: własność wyliczona RAZ na cały przebieg, przed pętlą po źródłach — dokładnie z tego
+  // powodu, co w `ensureNewsSetup`: `createMany` to jeden zapis, a `wlasnoscOsobistaDoZapisu`
+  // potrafi domknąć brakującą przestrzeń, więc wołanie go w `map` powtarzałoby tę próbę dla
+  // każdego wiersza kanału.
+  const wlasnosc = await wlasnoscOsobistaDoZapisu(ownerId);
 
   /**
    * Próg czasu liczymy **per źródło**, z najnowszego artykułu tego źródła W PULI — a nie ze
@@ -140,23 +189,13 @@ async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Prom
     const feed = await fetchRss(source.rssUrl);
     const since = force ? firstRunFloor : sinceBySource.get(source.id) ?? firstRunFloor;
 
-    const rows = feed
-      .slice(0, MAX_ITEMS_PER_SOURCE)
-      // Pozycja bez daty w kanale jest w nim TERAZ, więc traktujemy ją jako bieżącą zamiast
-      // wyrzucać — inaczej kanały bez `pubDate` byłyby dla nas niewidoczne.
-      .map((f) => ({ ...f, publishedAt: f.publishedAt ?? new Date() }))
-      .filter((f) => f.publishedAt >= since)
-      .map((f) => ({
-        ownerId,
-        sourceId: source.id,
-        url: f.link,
-        title: f.title,
-        description: f.description,
-        publishedAt: f.publishedAt,
-      }));
+    const rows = wierszePuli(feed, { wlasnosc, sourceId: source.id, since });
     if (rows.length === 0) continue;
 
-    // Duplikat po [ownerId, sourceId, url] = ten sam artykuł widziany w poprzednim przebiegu.
+    // Duplikat po [workspaceId, sourceId, url] = ten sam artykuł widziany w poprzednim przebiegu.
+    // 082: to jest kolumna z `@@unique` na `NewsArticle`. Wcześniej komentarz (i sam zapis) mówiły
+    // o `ownerId` — kolumnie, którą migracja 0244 usunęła, przez co KAŻDE odświeżanie padało.
+    // Komentarz opisujący nieistniejącą kolumnę jest drugą, cichą wersją tego samego błędu.
     const res = await prisma.newsArticle.createMany({ data: rows, skipDuplicates: true });
     fetched += res.count;
   }
