@@ -31,7 +31,10 @@ export type AiContentKind =
   | "pets.insights"
   | "kitchen.planWeek"
   // 039: gorące tematy — wejście na widok Wiadomości nie może kosztować za każdym razem.
-  | "news.hotTopics";
+  | "news.hotTopics"
+  // 080 (Z11): obserwatory pogody. Do tej pory jedyna sekcja AI, która wołała model z `useEffect`
+  // przy KAŻDYM wejściu na moduł — stąd wieczny spinner i „bardzo często nie działają".
+  | "weather.watchers";
 
 export interface RememberedContent<T> {
   value: T;

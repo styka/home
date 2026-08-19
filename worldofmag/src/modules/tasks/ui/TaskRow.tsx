@@ -127,16 +127,21 @@ export function TaskRow({ task, isFocused, isSelected, onFocus, onOpen, rowRef, 
       onMouseEnter={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = "var(--bg-hover)"; }}
       onMouseLeave={(e) => { if (!isFocused && !isChecked) e.currentTarget.style.backgroundColor = ""; }}
     >
-      {/* Checkbox zaznaczania (bulk): w trybie zaznaczania zawsze widoczny; poza nim pojawia się przy najechaniu.
-          042: ujawnianie przy najechaniu TYLKO na urządzeniach z prawdziwym wskaźnikiem. Ekran dotykowy
-          emuluje `:hover` po dotknięciu i TRZYMA go do dotknięcia gdzie indziej, więc dotknięcie wiersza
-          w celu przewinięcia listy zapalało checkbox i zostawiało go zapalonym. Dodatkowo, gdy jest
-          niewidoczny, nie może być klikalny — `opacity-0` samo w sobie nie wyłącza zdarzeń wskaźnika,
-          więc dotknięcie „pustego" miejsca obok tytułu zaznaczało zadanie bez żadnego sygnału. */}
-      {onToggleSelect && (
+      {/* 080 (Z1): KOLUMNA ZAZNACZEŃ ISTNIEJE TYLKO W TRYBIE ZAZNACZANIA.
+          Wcześniej checkbox renderował się zawsze, a poza trybem dostawał `opacity-0`. Był
+          niewidoczny, ale ZAJMOWAŁ 20 px plus odstęp w każdym wierszu — czyli kolumna była tam
+          cały czas. Właściciel poprosił wprost, żeby ikona trybu ukrywała i odkrywała kolumnę,
+          a nie tylko blokowała zaznaczanie.
+
+          To świadomie cofa ujawnianie przy najechaniu z 042. Tamten mechanizm był właśnie powodem,
+          dla którego kolumna musiała stale zajmować miejsce, a przy okazji miał własny problem
+          z dotykiem (ekran dotykowy emuluje `:hover` i TRZYMA go). Wejście w tryb zostaje jedno
+          i widoczne: ikona w pasku narzędzi, podświetlana na `--accent-blue`, gdy tryb jest
+          włączony. Nie przywracaj `group-hover` — kolumna wróci razem z nim. */}
+      {onToggleSelect && selectionMode && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSelect(e.shiftKey); }}
-          className={`flex-shrink-0 self-center flex items-center justify-center rounded focus:outline-none transition-opacity ${selectionMode ? "opacity-100" : "opacity-0 pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto"}`}
+          className="flex-shrink-0 self-center flex items-center justify-center rounded focus:outline-none"
           style={{
             width: 20, height: 20,
             border: `2px solid ${isChecked ? "var(--accent-blue)" : "var(--border)"}`,

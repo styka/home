@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
 import { updateTaskProject, deleteTaskProject } from "../actions/taskProjects";
@@ -18,6 +19,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
   const confirmDialog = useConfirm();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const kotwica = useRef<HTMLButtonElement | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(project.name);
   const [isPending, startTransition] = useTransition();
@@ -66,6 +68,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
   return (
     <div className="relative">
       <button
+        ref={kotwica}
         onClick={() => { setName(project.name); setOpen((v) => !v); setRenaming(false); }}
         className="p-1.5 rounded focus:outline-none"
         style={{ color: open ? "var(--text-secondary)" : "var(--text-muted)" }}
@@ -77,15 +80,20 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
         {isPending ? <Loader2 size={15} className="animate-spin" /> : <MoreVertical size={15} />}
       </button>
 
-      {open && (
-        <>
-          {/* Klik poza menu zamyka (działa też na dotyku) */}
-          <div className="fixed inset-0 z-40" onClick={close} aria-hidden />
-          <div
-            className="absolute right-0 mt-1 z-50 rounded-md border shadow-lg overflow-hidden"
-            style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", minWidth: 200 }}
-            role="menu"
-          >
+      {/* 080 (Z7): pozycję, warstwę, Esc i klik poza obszarem daje `AnchoredLayer`. Zniknęła też
+          przezroczysta nakładka `fixed inset-0` łapiąca kliknięcia — była własnym sposobem tego
+          menu na „klik poza zamyka" i konkurowała o warstwę z resztą aplikacji. */}
+      <AnchoredLayer
+        anchorRef={kotwica}
+        open={open}
+        onClose={close}
+        side="dol"
+        align="koniec"
+        role="menu"
+        ariaLabel={t("akcjeProjektu")}
+        style={{ minWidth: 200, overflow: "hidden" }}
+      >
+          <div>
             {renaming ? (
               <div className="flex items-center gap-1 p-2">
                 <input
@@ -129,8 +137,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
               </>
             )}
           </div>
-        </>
-      )}
+      </AnchoredLayer>
     </div>
   );
 }

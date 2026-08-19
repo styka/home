@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
+import { logEvent } from "@/platform/observability/log";
 import { sprawdzLimit } from "@/platform/rateLimit";
-import { SPEECH_MAX_CHARS, synthesizeSpeech } from "@/lib/tts/serverTts";
+import { SPEECH_MAX_CHARS, SpeechError, synthesizeSpeech } from "@/lib/tts/serverTts";
 
 // 031: endpoint serwerowej syntezy mowy (lektor asystenta). Wymaga sesji i podlega temu samemu
 // limitowi zapytań co reszta AI. Zwraca 501, gdy administrator nie przypisał dostawcy dla typu
@@ -44,8 +45,17 @@ export async function POST(req: NextRequest) {
         "Content-Length": String(result.audio.byteLength),
       },
     });
-  } catch {
-    // Szczegóły błędu dostawcy zostają na serwerze — klient ma tylko wrócić do głosów przeglądarki.
-    return NextResponse.json({ error: "Nie udało się odczytać tekstu na głos." }, { status: 502 });
+  } catch (e) {
+    // 080 (Z4): szczegóły błędu dostawcy dalej zostają na serwerze (C-41) — na zewnątrz wychodzi
+    // wyłącznie POWÓD. Bez niego panel administratora mógł powiedzieć tylko „sprawdź klucz API",
+    // niezależnie od tego, czy odmówiono z powodu klucza, nieznanego modelu, czy limitu.
+    const reason = e instanceof SpeechError ? e.reason : "provider";
+    if (e instanceof SpeechError && e.detail) {
+      logEvent("warn", "tts.odmowa", { reason, detail: e.detail });
+    }
+    return NextResponse.json(
+      { error: "Nie udało się odczytać tekstu na głos.", reason },
+      { status: 502 }
+    );
   }
 }

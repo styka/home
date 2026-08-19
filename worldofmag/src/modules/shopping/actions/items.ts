@@ -5,6 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, ownedOrSystemWhere } from "@/platform/auth/serverUtils";
 import { categorize } from "../lib/categorize";
 import { parseQuantity } from "../lib/parseQuantity";
+import { MAX_POZYCJI_WSADOWO } from "../lib/limity";
 import { assertListAccess } from "./lists";
 import { upsertUserProduct } from "./products";
 import { trackActivity } from "@/actions/activity";
@@ -51,6 +52,56 @@ export async function addItem(listId: string, rawText: string): Promise<Item> {
 
   revalidatePath(`/shopping/${listId}`);
   return toItem(item);
+}
+
+/**
+ * 080 (Z6): dodanie WIELU pozycji na raz.
+ *
+ * Powód powstania jest konkretny: właściciel poprosił asystenta o dopisanie ~100 pozycji do listy
+ * „Weekend" i nie dostał nic — dwa razy, za każdym razem po ~60 tys. tokenów. Katalog Zakupów miał
+ * wyłącznie `add_item`, czyli JEDNĄ AKCJĘ NA JEDNĄ POZYCJĘ, więc plan asystenta musiałby zawierać
+ * sto obiektów JSON. Nie mieścił się w limicie wyjścia modelu, wracał ucięty i pętla kończyła się
+ * komunikatem „zabrakło kroków".
+ *
+ * Dlaczego osobna funkcja, a nie sto wywołań `addItem`: tamto sprawdzałoby sesję i dostęp do listy
+ * sto razy i sto razy unieważniało cache strony. Parsowanie, kategoryzacja i historia podpowiedzi
+ * idą DOKŁADNIE tą samą drogą co przy pojedynczym dodaniu — inaczej pozycja dodana hurtem
+ * różniłaby się od tej samej dodanej ręcznie.
+ */
+export async function addItems(listId: string, rawTexts: string[]): Promise<{ added: number; names: string[] }> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const linie = rawTexts.map((t) => t.trim()).filter(Boolean).slice(0, MAX_POZYCJI_WSADOWO);
+  if (linie.length === 0) return { added: 0, names: [] };
+
+  // Kolejność w obrębie kategorii liczymy RAZ na kategorię i inkrementujemy lokalnie: zapytanie
+  // agregujące na każdą pozycję to sto dodatkowych rund do bazy dla informacji, którą już mamy.
+  const kolejnosc = new Map<string, number>();
+  const nazwy: string[] = [];
+
+  for (const linia of linie) {
+    const { name, quantity, unit } = parseQuantity(linia);
+    const category = categorize(name);
+
+    if (!kolejnosc.has(category)) kolejnosc.set(category, await nextCategoryOrder(listId, category));
+    const order = kolejnosc.get(category)!;
+    kolejnosc.set(category, order + 1);
+
+    await prisma.item.create({ data: { listId, name, quantity, unit, category, order } });
+
+    await prisma.itemHistory.upsert({
+      where: { ownerId_name: { ownerId: user.id, name: name.toLowerCase() } },
+      update: { useCount: { increment: 1 }, category, unit: unit ?? undefined, updatedAt: new Date() },
+      create: { ownerId: user.id, name: name.toLowerCase(), category, unit: unit ?? null },
+    });
+    await upsertUserProduct(name.toLowerCase(), unit ?? null, category);
+    nazwy.push(name);
+  }
+
+  void trackActivity("shopping", "add_items", { count: nazwy.length, listId });
+  revalidatePath(`/shopping/${listId}`);
+  return { added: nazwy.length, names: nazwy };
 }
 
 export async function updateItemStatus(id: string, status: ItemStatus): Promise<Item> {

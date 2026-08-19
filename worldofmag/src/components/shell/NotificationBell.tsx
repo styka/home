@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useRouter } from "next/navigation";
 import { Bell, Check, X } from "lucide-react";
 import {
@@ -69,6 +70,8 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
     const onDown = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
     };
+    // 080 (Z7): Esc i klik poza obszarem obsługuje teraz `AnchoredLayer`. Ten nasłuch zostaje
+    // wyłącznie na kliknięcie w samą kotwicę spoza panelu (przycisk dzwonka w innym rozmieszczeniu).
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -92,10 +95,6 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
   }, []);
 
   const isSidebar = placement === "sidebar";
-  // Panel: w stopce sidebara rozwija się W GÓRĘ i w prawo (nad rzędem), w górnym pasku — W DÓŁ i w lewo.
-  const panelAnchor: React.CSSProperties = isSidebar
-    ? { bottom: "calc(100% + 8px)", left: 8 }
-    : { top: "calc(100% + 8px)", right: 0 };
 
   return (
     <div ref={panelRef} className="relative" style={isSidebar ? undefined : { display: "flex" }}>
@@ -138,17 +137,21 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
         </button>
       )}
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Powiadomienia"
-          style={{
-            position: "absolute", ...panelAnchor, zIndex: 60, width: "min(360px, calc(100vw - 24px))",
-            maxHeight: "min(70vh, 520px)", overflowY: "auto",
-            background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg, 10px)",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
-          }}
-        >
+      <AnchoredLayer
+        anchorRef={panelRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        role="dialog"
+        ariaLabel="Powiadomienia"
+        // Kierunek zostaje ten sam co dotąd — w stopce paska bocznego w górę, w górnym pasku w dół
+        // — ale teraz jest to PREFERENCJA: przy braku miejsca warstwa odbija się na drugą stronę,
+        // zamiast wyjść poza ekran (080/Z7).
+        side={isSidebar ? "gora" : "dol"}
+        align={isSidebar ? "start" : "koniec"}
+        width={360}
+        style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-lg, 10px)", boxShadow: "0 12px 32px rgba(0,0,0,0.45)" }}
+      >
+        <div>
           <div
             className="flex items-center justify-between"
             style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--bg-surface)" }}
@@ -200,7 +203,7 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
             </ul>
           )}
         </div>
-      )}
+      </AnchoredLayer>
     </div>
   );
 }

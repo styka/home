@@ -203,11 +203,15 @@ model AiUsage {
 
 // Preferencje paska bocznego/menu per użytkownik: kolejność i wyłączone moduły.
 model UserMenuPref {
-  userId    String   @id
-  order     String   @default("[]") // JSON: string[] id modułów w kolejności użytkownika
-  disabled  String   @default("[]") // JSON: string[] id modułów wyłączonych przez użytkownika
-  tabBar    String   @default("[]") // JSON: string[] id modułów w dolnym pasku (mobile), w kolejności użytkownika
-  updatedAt DateTime @updatedAt
+  userId             String   @id
+  order              String   @default("[]") // JSON: string[] id modułów w kolejności użytkownika
+  disabled           String   @default("[]") // JSON: string[] id modułów wyłączonych przez użytkownika
+  tabBar             String   @default("[]") // JSON: string[] id modułów w dolnym pasku (mobile), w kolejności użytkownika
+  // 080 (Z8): sekcja ulubionych startuje ZWINIĘTA. Domyślna `true` jest treścią zgłoszenia:
+  // rozwinięta sekcja spychała pozycje modułów poniżej pierwszego ekranu. Nośnikiem jest ta
+  // tabela, bo pasek boczny i tak ją czyta — osobny magazyn dokładałby zapytanie na każdą stronę.
+  favoritesCollapsed Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -426,7 +430,7 @@ model ShoppingList {
   // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
   // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
   // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
-  version Int @default(0)
+  version       Int       @default(0)
   name          String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -705,7 +709,7 @@ model TaskProject {
   // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
   // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
   // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
-  version Int @default(0)
+  version      Int      @default(0)
   name         String
   description  String?
   color        String   @default("#6b7280")
@@ -1037,7 +1041,7 @@ model Recipe {
   // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
   // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
   // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
-  version Int @default(0)
+  version       Int       @default(0)
   title         String
   slug          String    @unique
   description   String?
@@ -1231,7 +1235,7 @@ model StorageItem {
   // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
   // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
   // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
-  version Int @default(0)
+  version       Int       @default(0)
   name          String
   sku           String?
   barcode       String?
@@ -1915,6 +1919,11 @@ model AssistantPref {
   level        String   @default("standard") // AssistantLevel: "standard" | "economy"
   voiceKind    String   @default("browser") // AssistantVoiceKind: "browser" | "server"
   voiceId      String? // id głosu serwerowego (gdy voiceKind = "server")
+  // 080 (Z12): sterowanie lektorem. Domyślne odtwarzają dzisiejsze zachowanie — 0.95 to wartość,
+  // która była zaszyta w `src/lib/tts.ts`, a lektor zawsze przewijał za czytaniem. Zmieniamy
+  // MOŻLIWOŚĆ ustawienia, nie zachowanie kogoś, kto niczego nie ustawi.
+  readerRate   Float    @default(0.95) // prędkość czytania (obie ścieżki: przeglądarka i serwer)
+  readerFollow Boolean  @default(true) // czy widok podąża za czytaną wiadomością
   // 041: auto-zatwierdzanie BEZPIECZNYCH akcji asystenta. Akcje niszczące pytają zawsze —
   // klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, nie z osobnej listy.
   autoApprove  Boolean  @default(false)
@@ -3071,7 +3080,7 @@ model Contact {
   // 092 (zadanie 15): kontrola współbieżnej edycji. Kryterium: dwie osoby mogą to edytować naraz.
   // Zapis idzie przez `updateWithVersion`; `expectedVersion` jest opcjonalne, więc kontrola włącza
   // się w chwili, gdy klient zacznie je przesyłać, bez ruszania akcji.
-  version Int @default(0)
+  version   Int      @default(0)
   name      String
   phone     String?
   email     String?

@@ -346,13 +346,15 @@ export function HomePage({
   return (
     <div style={pageContainerStyle}>
       <div style={pageInnerStyle}>
-        {/* 043: widget asystenta stoi PIERWSZY na pulpicie i na każdej szerokości (AC-13, AC-14).
-            Świadomie nie jest sekcją personalizowaną: `effectiveOrder` dokleja nieznane klucze na
-            KONIEC zapisanej kolejności, więc dodanie go do `DASHBOARD_SECTIONS` wylądowałoby
-            u wszystkich obecnych użytkowników na dole — dokładnie odwrotnie do zgłoszenia. */}
-        <HomeAssistantCard starters={assistantStarters} />
+        {/* 080 (Z9): POWITANIE jest pierwsze, widget asystenta zaraz po nim.
+            To odwraca kolejność z 043 — na wyraźną prośbę właściciela, który chce najpierw
+            zobaczyć podsumowanie dnia, a dopiero pod nim pole rozmowy z asystentem.
 
-        {/* Greeting */}
+            Decyzja z 043, która ZOSTAJE w mocy: oba bloki są poza listą sekcji personalizowanych.
+            `effectiveOrder` dokleja nieznane klucze na KONIEC zapisanej kolejności, więc dopisanie
+            któregokolwiek do `DASHBOARD_SECTIONS` wylądowałoby u wszystkich obecnych użytkowników
+            na dole pulpitu — czyli znowu odwrotnie do tego, o co proszono. Dzięki temu ta zmiana
+            nie rusza niczyjej zapisanej kolejności sekcji. */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <BrandLogo px={24} />
@@ -408,6 +410,9 @@ export function HomePage({
             })}
           </p>
         </div>
+
+        {/* 080 (Z9): asystent bezpośrednio pod powitaniem. */}
+        <HomeAssistantCard starters={assistantStarters} />
 
         {/* Pending invitations banner */}
         <InvitationsBanner count={pendingInvitations} />

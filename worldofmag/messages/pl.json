@@ -479,7 +479,17 @@
       "SpeechAssignmentRow": {
         "domyslnyGlos": "Domyślny głos",
         "adresBazowyPodmienRegion": "Adres bazowy (podmień region)",
-        "kluczApiBezNiego": "Klucz API — bez niego lektor nie zadziała"
+        "kluczApiBezNiego": "Klucz API — bez niego lektor nie zadziała",
+        "wymusGlosSystemowy": "Czytaj głosem systemowym (przeglądarki)",
+        "wymusGlosSystemowyOpis": "Wyłącza syntezę serwerową, nie kasując konfiguracji dostawcy. Przydatne, gdy płatny lektor odmawia — czytanie działa dalej, tylko innym głosem.",
+        "probkaBrakKonfiguracji": "Lektor nie jest jeszcze skonfigurowany — zapisz wybór dostawcy i klucz.",
+        "probkaWymuszonyGlosSystemowy": "Synteza serwerowa jest wyłączona przełącznikiem powyżej — aplikacja czyta głosem systemowym.",
+        "probkaLimitOmnii": "Przekroczony limit zapytań w Omnii — odczekaj chwilę i spróbuj ponownie.",
+        "probkaPowodKlucz": "Dostawca odrzucił klucz API. Sprawdź, czy klucz jest aktywny i zapisany dla tego dostawcy.",
+        "probkaPowodModel": "Dostawca nie przyjął wybranego modelu lub głosu. Wybierz inny z listy — klucz jest tu bez znaczenia.",
+        "probkaPowodLimit": "Wyczerpany limit lub środki u dostawcy. Klucz działa, ale nie ma z czego opłacić zapytania.",
+        "probkaPowodSiec": "Nie udało się połączyć z dostawcą. To wygląda na problem sieciowy, nie na konfigurację.",
+        "probkaPowodDostawca": "Dostawca zwrócił błąd po swojej stronie. Spróbuj ponownie za chwilę."
       },
       "SystemCategoryManager": {
         "kategorieSystemoweWidoczneDla": "Kategorie systemowe widoczne dla wszystkich użytkowników. Zmiana nazwy aktualizuje wszystkie produkty w katalogu."
@@ -629,7 +639,9 @@
       "FavoritesSidebarSection": {
         "zarzadzajUlubionymiNazwaIkona": "Zarządzaj ulubionymi — nazwa, ikona, kolor, kolejność",
         "zarzadzajUlubionymi": "Zarządzaj ulubionymi",
-        "nieMaszJeszczeZapisanych": "Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją przyciskiem powyżej — wróci tu razem z filtrami."
+        "nieMaszJeszczeZapisanych": "Nie masz jeszcze zapisanych widoków. Ustaw filtry na dowolnej stronie i zapisz ją przyciskiem powyżej — wróci tu razem z filtrami.",
+        "rozwinUlubione": "Rozwiń ulubione",
+        "zwinUlubione": "Zwiń ulubione"
       },
       "FavoritesSwitcher": {
         "zarzadzajUlubionymiWUstawieniach": "Zarządzaj ulubionymi w ustawieniach"
@@ -725,6 +737,12 @@
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
         "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj."
+      },
+      "SpeechFallbackNotice": {
+        "zeszlismyNaGlosSystemowy": "Lektor serwerowy nie odpowiada — czytam głosem systemowym.",
+        "powodKlucz": "Dostawca odrzucił klucz API.",
+        "powodModel": "Dostawca nie zna wybranego modelu lub głosu.",
+        "powodLimit": "Wyczerpany limit u dostawcy."
       }
     },
     "shortcuts": {
@@ -1057,7 +1075,8 @@
         "importZeZdjeciaOcr": "Import ze zdjęcia (OCR)",
         "brakPrzepisowSpelniajacychFiltry": "Brak przepisów spełniających filtry.",
         "brakPrzepisow": "Brak przepisów",
-        "zacznijOdStworzeniaSwojego": "Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów."
+        "zacznijOdStworzeniaSwojego": "Zacznij od stworzenia swojego pierwszego przepisu. Możesz dodać składniki, kroki, czas i porcje, a potem jednym kliknięciem wygenerować listę zakupów.",
+        "nowyPrzepis": "Nowy przepis — sposób dodania"
       },
       "RecipeView": {
         "usun": "Usuń",
@@ -1248,7 +1267,10 @@
         "poprzedniaWiadomosc": "Poprzednia wiadomość",
         "czytajNaGlos": "Czytaj na głos",
         "nastepneZdanie": "Następne zdanie",
-        "nastepnaWiadomosc": "Następna wiadomość"
+        "nastepnaWiadomosc": "Następna wiadomość",
+        "predkoscCzytania": "Prędkość czytania",
+        "wlaczPodazanie": "Podążaj za czytaniem (przewijaj stronę do czytanej wiadomości)",
+        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)"
       },
       "NewsSettings": {
         "zrodlaWiadomosci": "Źródła wiadomości",
@@ -1267,6 +1289,10 @@
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",
         "materialZrodlowy": "Materiał źródłowy"
+      },
+      "TopicPicker": {
+        "poprzedniTemat": "Poprzedni temat",
+        "nastepnyTemat": "Następny temat"
       }
     },
     "notes": {
@@ -1725,12 +1751,14 @@
         "ustawKategorie": "Ustaw kategorię",
         "usun": "usuń",
         "brakTagow": "Brak tagów",
-        "usun2": "Usuń"
+        "usun2": "Usuń",
+        "opcjeAkcjiZbiorczej": "Opcje akcji zbiorczej"
       },
       "ProjectActionsMenu": {
         "zapiszNazwe": "Zapisz nazwę",
         "zmienNazwe": "Zmień nazwę",
-        "usunProjekt": "Usuń projekt"
+        "usunProjekt": "Usuń projekt",
+        "akcjeProjektu": "Akcje projektu"
       },
       "TaskDetail": {
         "wrocDoListyZadan": "Wróć do listy zadań",
@@ -1979,6 +2007,14 @@
       "QuickAddTask": {
         "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
         "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
+      },
+      "ProjectScopeFilter": {
+        "filtrProjektow": "Filtr projektów",
+        "wszystkieProjekty": "Wszystkie projekty",
+        "wybraneProjekty": "Projekty: {ile}",
+        "wyczyscWybor": "Pokaż wszystkie projekty",
+        "nazwaZestawu": "Nazwa zestawu…",
+        "zapiszJakoZestaw": "Zapisz wybór jako zestaw projektów"
       }
     },
     "truck": {
@@ -2070,7 +2106,12 @@
         "brakObserwatorowDodajGotowy": "Brak obserwatorów. Dodaj gotowy preset (np. „Weekend bez deszczu”, „Bieganie”) albo własny opisany naturalnym językiem — AI oceni je względem prognozy.",
         "usunObserwator": "Usuń obserwator",
         "nazwaNpWypadW": "Nazwa (np. Wypad w góry)",
-        "coObserwowacNpWeekend": "Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr"
+        "coObserwowacNpWeekend": "Co obserwować? np. weekend dobry na wspinaczkę: sucho, bez burz, słaby wiatr",
+        "obserwatoryCzekaja": "Obserwatory czekają na ocenę.",
+        "obserwatoryCzekajaOpis": "Sprawdzenie prognozy pod kątem Twoich warunków kosztuje wywołanie modelu, więc nie dzieje się samo przy wejściu na stronę.",
+        "ocenObserwatory": "Oceń obserwatory",
+        "ocenPonownie": "Oceń ponownie",
+        "prognozaAlboObserwatoryZmienily": "Prognoza albo lista obserwatorów zmieniła się od czasu tej oceny"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",

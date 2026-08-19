@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { zlecenieWsadowe } from "@/lib/ai/zlecenieWsadowe";
 import { logEvent } from "@/platform/observability/log";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
@@ -118,6 +119,23 @@ type AgentMeta = UsageMeter;
 // wieloetapowych (query→answer = 2 wywołania) niepotrzebnie zbliżała nas do limitu.
 const AGENT_MAX_TOKENS = 1200;
 const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
+
+/**
+ * 080 (Z6): zapas na ZLECENIE WSADOWE — długą listę pozycji w jednej wiadomości.
+ *
+ * Zgłoszenie właściciela: wklejona lista ~100 produktów do dopisania do listy zakupów. W logu tego
+ * zgłoszenia KAŻDE wywołanie kończy się dokładnie na `+1200` tokenów wyjścia — to nie jest
+ * odpowiedź, tylko odcięcie limitem. Plan wracał ucięty, pętla powtarzała i po sześciu obrotach
+ * kończyła się komunikatem „zabrakło kroków". Dwie tury po ~60 tys. tokenów bez żadnego efektu.
+ *
+ * Pierwsza połowa naprawy to akcja `add_items` (sto pozycji = jedna akcja zamiast stu). Druga to
+ * ten zapas: nawet jedna akcja z setką nazw plus uzasadnienie potrafi przekroczyć 1200 tokenów.
+ * Podnosimy WYŁĄCZNIE tam, gdzie wiadomość wygląda na listę — limit dotyczy wyjścia, więc dla
+ * zwykłych pytań nic się nie zmienia i presja na limit TPM zostaje bez zmian.
+ */
+const BULK_MAX_TOKENS = 4000;
+
+
 
 // 030: słowa wykluczające „prostą turę odczytową" (analiza/ocena/raport → zawsze reasoning).
 const SIMPLE_READ_ANALYTIC_RE =
@@ -854,7 +872,10 @@ export async function POST(req: NextRequest) {
   // wieloetapowych (query→answer = 2 wywołania w tej samej minucie).
   const intentText = `${body.text ?? ""} ${body.refine ?? ""}`;
   const wantsReport = /\braport\w*|podsumow\w*|zestawieni\w*|streść\w*|streszcz\w*/i.test(intentText);
-  const agentMaxTokens = wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
+  // 080 (Z6): zlecenie wsadowe potrzebuje NAJWIĘKSZEGO zapasu — dłuższego niż raport, bo plan
+  // z listą pozycji jest dłuższy niż jego opis.
+  const wsadowe = zlecenieWsadowe(intentText);
+  const agentMaxTokens = wsadowe ? BULK_MAX_TOKENS : wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
 
   // Kopia wyjściowych wiadomości do ewentualnego ponowienia na "reasoning" (pętla mutuje messages).
   const baselineMessages: ChatMessage[] | null = isSimpleRead ? messages.map((m) => ({ ...m })) : null;

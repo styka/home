@@ -119,6 +119,57 @@ Zwróć WYŁĄCZNIE JSON (bez markdown, bez komentarza) w schemacie:
 Jeśli opis nie da się przełożyć na wygląd interfejsu — zwróć {"error":"not-a-theme"}.`;
 }
 
+/** 080 (Z10): łącznie tyle podejść do wygenerowania skórki (pierwsze + jedno ponowienie). */
+export const SKIN_MAX_ATTEMPTS = 2;
+
+/** Ile nazw kluczy wymieniamy w komunikatach — pełna lista bywa długa i nic nie wnosi. */
+const MAX_WYMIENIONYCH = 8;
+
+function wymien(klucze: string[]): string {
+  const widoczne = klucze.slice(0, MAX_WYMIENIONYCH).join(", ");
+  const reszta = klucze.length - MAX_WYMIENIONYCH;
+  return reszta > 0 ? `${widoczne} i ${reszta} więcej` : widoczne;
+}
+
+/**
+ * 080 (Z10): komunikat korygujący do drugiego podejścia.
+ *
+ * Pokazujemy modelowi JEGO WŁASNE odrzucone klucze. Powtórzenie tego samego pytania byłoby
+ * losowaniem jeszcze raz; pokazanie błędu jest informacją, na której model potrafi się poprawić.
+ * Katalog dokładamy ponownie, bo to jedyna lista dopuszczalnych nazw — i jest generowana
+ * z `ALL_CONTROLS`, więc nie może się rozjechać z walidacją.
+ */
+export function korekta(odrzucone: string[]): string {
+  const co = odrzucone.length > 0
+    ? `Żaden z kluczy, które zwróciłeś, nie przeszedł walidacji: ${wymien(odrzucone)}.`
+    : "Nie zwróciłeś ani jednego tokenu.";
+  return (
+    `${co}\n\n` +
+    "Popraw odpowiedź. Klucze MUSZĄ pochodzić dokładnie z poniższego katalogu (co do znaku), " +
+    "a wartości muszą mieć podany tam format. Nie wymyślaj własnych nazw i nie tłumacz ich.\n\n" +
+    `${buildTokenCatalog()}\n\n` +
+    "Zwróć wyłącznie JSON w ustalonym kształcie."
+  );
+}
+
+/**
+ * 080 (Z10): komunikat porażki, który MÓWI, CZEGO ZABRAKŁO.
+ *
+ * Poprzedni („Model nie zwrócił ani jednego poprawnego tokenu — spróbuj ponownie") nie niósł
+ * żadnej informacji diagnostycznej, więc właściciel wymienił klucz API i ponawiał ręcznie,
+ * dostając za każdym razem to samo zdanie. Rozróżniamy dwa różne stany: model nie odesłał
+ * NICZEGO, a model odesłał klucze, których walidacja nie przyjęła.
+ */
+export function opisPorazki(przyslanych: number, odrzucone: string[]): string {
+  if (przyslanych === 0) {
+    return "Model nie odesłał żadnych tokenów — spróbuj opisać skórkę konkretniej (kolory, nastrój, kontrast).";
+  }
+  return (
+    `Model odesłał ${przyslanych} kluczy i żaden nie przeszedł walidacji ` +
+    `(${wymien(odrzucone)}). To zwykle nazwy spoza katalogu tokenów albo wartości w złym formacie.`
+  );
+}
+
 export interface GenerateSkinPayload {
   prompt?: string;
 }
@@ -138,40 +189,69 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
   if (!trimmed) throw new JobError("Opisz, jak ma wyglądać skórka", 400);
   if (trimmed.length > 600) throw new JobError("Opis za długi (max 600 znaków)", 400);
 
-  const result = await chatComplete({
-    op: "generation",
-    userId: ctx.ownerId ?? undefined,
-    messages: [
-      { role: "system", content: systemPrompt() },
-      { role: "user", content: trimmed },
-    ],
-    // Dobór palety to zadanie twórcze — przy niskiej temperaturze model zwraca
-    // wariacje tej samej szarości niezależnie od opisu.
-    temperature: 0.7,
-    maxTokens: 3000,
-    json: true,
-  });
-  if (!result.ok) throw new JobError(result.message, result.status);
+  // 080 (Z10): DWA PODEJŚCIA. Zgłoszenie właściciela („Star Trek" → „Model nie zwrócił ani jednego
+  // poprawnego tokenu") pokazało, że jedna nieudana odpowiedź kończyła całą operację, a komunikat
+  // nie niósł ani jednej informacji, z którą użytkownik mógłby cokolwiek zrobić — więc ponawiał
+  // ręcznie, dostawał to samo i wyglądało to na trwałą awarię.
+  //
+  // Drugie podejście NIE jest powtórzeniem tego samego pytania: dostaje komunikat korygujący
+  // z nazwami kluczy, które właśnie odrzuciliśmy. Najczęstsza przyczyna to nazwy spoza katalogu,
+  // a model, któremu pokaże się jego własny błąd, zwykle poprawia go za pierwszym razem.
+  const historia: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    { role: "system", content: systemPrompt() },
+    { role: "user", content: trimmed },
+  ];
 
-  let parsed: Record<string, unknown>;
-  try {
-    const cleaned = (result.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new JobError("Model zwrócił nieprawidłowy format", 502);
+  // Wszystkie wywołania, bo koszt ponowienia też jest kosztem — wskaźnik ma pokazywać prawdę.
+  const wywolania: Array<Parameters<typeof usageFromChat>[0][number]> = [];
+  let tokens: SkinTokens = {};
+  let rejected: string[] = [];
+  let parsed: Record<string, unknown> = {};
+  let ostatnieOdrzucone = 0;
+
+  for (let podejscie = 1; podejscie <= SKIN_MAX_ATTEMPTS; podejscie++) {
+    const result = await chatComplete({
+      op: "generation",
+      userId: ctx.ownerId ?? undefined,
+      messages: historia,
+      // Dobór palety to zadanie twórcze — przy niskiej temperaturze model zwraca
+      // wariacje tej samej szarości niezależnie od opisu.
+      temperature: 0.7,
+      maxTokens: 3000,
+      json: true,
+    });
+    if (!result.ok) throw new JobError(result.message, result.status);
+    wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
+
+    try {
+      const cleaned = (result.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
+      parsed = JSON.parse(cleaned);
+    } catch {
+      throw new JobError("Model zwrócił nieprawidłowy format", 502);
+    }
+
+    // Odmowa opisu jest odpowiedzią, nie awarią — ponowienie nie ma czego poprawić.
+    if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
+
+    // MODEL JEST ŹRÓDŁEM RÓWNIE OBCYM JAK CUDZY PLIK. Potrafi „pomocnie" zwrócić
+    // url() z obrazkiem tła albo font-family z nazwą czcionki z sieci — jedno i drugie
+    // przechodzi tu przez tę samą sanityzację co import. Sanityzacji NIE luzujemy pod
+    // żaden opis: to jest bramka bezpieczeństwa (wstrzyknięcie CSS), a nie próg jakości.
+    const rawTokens = (parsed.tokens ?? {}) as Record<string, unknown>;
+    tokens = validateTokens(rawTokens);
+    rejected = Object.keys(rawTokens).filter((k) => !(k in tokens));
+    ostatnieOdrzucone = Object.keys(rawTokens).length;
+
+    if (Object.keys(tokens).length > 0) break;
+
+    if (podejscie < SKIN_MAX_ATTEMPTS) {
+      historia.push({ role: "assistant", content: result.content ?? "" });
+      historia.push({ role: "user", content: korekta(rejected) });
+    }
   }
 
-  if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
-
-  // MODEL JEST ŹRÓDŁEM RÓWNIE OBCYM JAK CUDZY PLIK. Potrafi „pomocnie" zwrócić
-  // url() z obrazkiem tła albo font-family z nazwą czcionki z sieci — jedno i drugie
-  // przechodzi tu przez tę samą sanityzację co import.
-  const rawTokens = (parsed.tokens ?? {}) as Record<string, unknown>;
-  const tokens = validateTokens(rawTokens);
-  const rejected = Object.keys(rawTokens).filter((k) => !(k in tokens));
-
   if (Object.keys(tokens).length === 0) {
-    throw new JobError("Model nie zwrócił ani jednego poprawnego tokenu — spróbuj ponownie", 502);
+    throw new JobError(opisPorazki(ostatnieOdrzucone, rejected), 502);
   }
 
   const skin: GeneratedSkin = {
@@ -183,5 +263,5 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     rejected,
   };
 
-  return { skin, usage: usageFromChat([{ res: result, label: "wygenerowana skórka" }]) };
+  return { skin, usage: usageFromChat(wywolania) };
 }

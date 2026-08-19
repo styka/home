@@ -319,6 +319,8 @@ async function unassignedPool(ownerId: string): Promise<PoolArticle[]> {
 
 /** Ile pozycji streszczamy jednym wywołaniem. */
 const SUMMARY_BATCH = 10;
+/** 080 (Z5): łącznie tyle podejść do streszczenia jednej pozycji (pierwsze + dwa ponowienia). */
+const SUMMARY_MAX_ATTEMPTS = 3;
 
 function lengthInstruction(length: string): string {
   switch (length) {
@@ -358,36 +360,56 @@ async function summarizeItems(
     "czego nie ma w materiale. Zwróć WYŁĄCZNIE JSON.";
 
   let done = 0;
-  const batches = Math.ceil(items.length / SUMMARY_BATCH);
-  for (let b = 0; b < batches; b++) {
-    const batch = items.slice(b * SUMMARY_BATCH, (b + 1) * SUMMARY_BATCH);
-    ctx.progress?.(`Streszczam (${Math.min((b + 1) * SUMMARY_BATCH, items.length)}/${items.length})…`);
+  // 080 (Z5): pozycje, dla których model nie odesłał streszczenia, wracają do niego jeszcze raz.
+  // Model potrafi pominąć kilka wpisów w partii — zwłaszcza gdy odpowiedź otrze się o limit
+  // tokenów — a `out.summaries` jest wtedy po prostu krótsze. Bez ponowienia takie pozycje na
+  // zawsze zostawały z opisem z kanału i to użytkownik widział jako „Brak treści materiału.".
+  let pending = items;
 
-    const blocks = batch
-      .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.summary.slice(0, 600) || "(brak)"}`)
-      .join("\n");
+  for (let attempt = 1; attempt <= SUMMARY_MAX_ATTEMPTS && pending.length > 0; attempt++) {
+    const summarized = new Set<string>();
+    const batches = Math.ceil(pending.length / SUMMARY_BATCH);
 
-    const out = await llmJson<{ summaries?: Array<{ index: number; summary: string }> }>(
-      "generation",
-      system,
-      `${lengthInstruction(defaultLength)}\n\nMATERIAŁY:\n${blocks}\n\n` +
-        `Zwróć JSON: {"summaries":[{"index":0,"summary":"..."}]} dla KAŻDEGO materiału.`,
-      2000,
-      sink,
-      "streszczenia"
-    );
+    for (let b = 0; b < batches; b++) {
+      const batch = pending.slice(b * SUMMARY_BATCH, (b + 1) * SUMMARY_BATCH);
+      const postep = `Streszczam (${Math.min((b + 1) * SUMMARY_BATCH, pending.length)}/${pending.length})`;
+      // Numer podejścia trafia do postępu, żeby ktoś patrzący na kolejkę widział ponowienie,
+      // a nie „licznik, który zaczął od nowa".
+      ctx.progress?.(attempt === 1 ? `${postep}…` : `${postep}, podejście ${attempt}…`);
 
-    for (const s of out.summaries ?? []) {
-      const item = batch[s.index];
-      const text = s.summary?.trim();
-      if (!item || !text) continue;
-      await prisma.newsItem.update({
-        where: { id: item.id },
-        data: { summary: text, summaryLength: defaultLength },
-      });
-      done++;
+      const blocks = batch
+        .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.summary.slice(0, 600) || "(brak)"}`)
+        .join("\n");
+
+      const out = await llmJson<{ summaries?: Array<{ index: number; summary: string }> }>(
+        "generation",
+        system,
+        `${lengthInstruction(defaultLength)}\n\nMATERIAŁY:\n${blocks}\n\n` +
+          `Zwróć JSON: {"summaries":[{"index":0,"summary":"..."}]} dla KAŻDEGO materiału.`,
+        2000,
+        sink,
+        "streszczenia"
+      );
+
+      for (const s of out.summaries ?? []) {
+        const item = batch[s.index];
+        const text = s.summary?.trim();
+        if (!item || !text) continue;
+        await prisma.newsItem.update({
+          where: { id: item.id },
+          data: { summary: text, summaryLength: defaultLength },
+        });
+        summarized.add(item.id);
+        done++;
+      }
     }
+
+    // Podejście, które nie ruszyło ani jednej pozycji, nie ma po co się powtarzać — kolejne
+    // wyglądałoby identycznie i kosztowało tyle samo.
+    if (summarized.size === 0) break;
+    pending = pending.filter((it) => !summarized.has(it.id));
   }
+
   return done;
 }
 

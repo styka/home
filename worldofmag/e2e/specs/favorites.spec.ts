@@ -37,17 +37,44 @@ async function saveCurrentAs(page: import("@playwright/test").Page, name: string
   await page.getByRole("main").getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
 }
 
-/** Sprząta ulubione przez interfejs ustawień, żeby testy nie zależały od kolejności. */
+
+/**
+ * 080 (Z8): sekcja ulubionych w pasku bocznym startuje ZWINIĘTA — właściciel zgłosił, że rozwinięta
+ * spycha pozycje modułów poniżej pierwszego ekranu. Wejście przez ulubione kosztuje więc jedno
+ * dodatkowe kliknięcie, dopóki użytkownik raz jej nie rozwinie (stan jest zapamiętywany na koncie).
+ * Testy klikają jak człowiek, więc muszą to zrobić tak samo.
+ */
+async function rozwinUlubione(page: import("@playwright/test").Page) {
+  const naglowek = page.getByRole("button", { name: /rozwiń ulubione/i }).first();
+  if (await naglowek.count() > 0 && await naglowek.isVisible().catch(() => false)) {
+    await naglowek.click();
+  }
+}
+
+/**
+ * Sprząta ulubione przez interfejs ustawień, żeby testy nie zależały od kolejności.
+ *
+ * 080: selektor zawężony do `main`. Ta sama dwoistość, o której mówią komentarze z 098 przy
+ * `saveCurrentAs`: przycisk „Usuń … z ulubionych" istnieje też w POWŁOCE (gwiazdka bieżącego
+ * widoku). Dopóki `/settings` samo nie było w ulubionych, `.first()` trafiało w wiersz listy
+ * i wszystko działało; gdy trafiło w gwiazdkę powłoki, pętla kasowała wpis dla `/settings`
+ * w kółko i kończyła się po 40 obrotach. Zawężenie do treści strony usuwa tę zależność od
+ * przypadkowego stanu.
+ */
 async function clearFavorites(page: import("@playwright/test").Page) {
-  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]';
+  // Wykluczamy GWIAZDKĘ bieżącego widoku („Usuń to miejsce z ulubionych"), która też siedzi
+  // w `main` (pasek widoku). Kasowanie ma dotyczyć WPISÓW LISTY w ustawieniach — klikanie
+  // gwiazdki tylko przełącza `/settings` w kółko i pętla nigdy nie schodzi do zera.
+  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]:not([aria-label*="to miejsce"])';
   for (let i = 0; i < 40; i++) {
     await page.goto("/settings");
     await page.waitForLoadState("load").catch(() => {});
-    const n = await page.locator(sel).count();
+    const lista = page.getByRole("main").locator(sel);
+    const n = await lista.count();
     if (n === 0) return;
-    await page.locator(sel).first().click();
+    await lista.first().click();
     // Kasowanie idzie przez Server Action + router.refresh() — czekamy, az lista sie przeliczy.
-    await expect(page.locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
+    await expect(page.getByRole("main").locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
   }
   throw new Error("Nie udalo sie wyczyscic ulubionych w 40 iteracjach");
 }
@@ -65,6 +92,8 @@ test.describe("042 — ulubione widoki", () => {
 
     // AC-2: wejście z ulubionych wraca DOKŁADNIE pod ten sam adres z filtrami.
     await page.goto("/notes");
+    await page.waitForLoadState("load").catch(() => {});
+    await rozwinUlubione(page);
     await page.getByRole("link", { name: /Zrobione zadania/ }).first().click();
     await expect(page).toHaveURL(/\/tasks\?status=DONE&x=1/);
 
@@ -225,16 +254,38 @@ test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
     await clearFavorites(page);
   });
 
-  test("[fav043-AC1-AC2] sekcja, zachęta i punkt zapisu widoczne bez ani jednego ulubionego", async ({ page }) => {
+  test("[fav043-AC1-AC2 + 080-AC16] sekcja jest widoczna, ale zwinięta; po rozwinięciu ma zachętę i punkt zapisu", async ({ page }) => {
+    /**
+     * 080 (Z8) ZAWĘŻA regułę z 043, nie znosi jej.
+     *
+     * 043 wymagało, żeby sekcja ulubionych renderowała się ZAWSZE — także przy zerze wpisów —
+     * bo inaczej „nie było skąd się dowiedzieć, że ulubione w ogóle istnieją". To zostaje: nagłówek
+     * z gwiazdką i słowem „Ulubione" jest na miejscu. Zmieniło się tylko to, że reszta sekcji
+     * startuje ZWINIĘTA, bo rozwinięta spychała pozycje modułów poniżej pierwszego ekranu.
+     *
+     * Test JAWNIE ustawia stan początkowy zamiast liczyć na kolejność: rozwinięcie zapisuje się
+     * na koncie, a wszystkie testy w tym pliku dzielą jedno konto administratora, więc bez tego
+     * ten test przechodziłby albo nie w zależności od tego, co robił poprzedni.
+     */
     await page.goto("/tasks/all");
     await page.waitForLoadState("load").catch(() => {});
 
-    // AC-1: nagłówek sekcji jest w nawigacji mimo pustej listy.
-    await expect(page.getByText("Ulubione", { exact: true })).toBeVisible({ timeout: 15_000 });
-    // …wraz z zachętą mówiącą, co zrobić.
-    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toBeVisible();
+    // Stan początkowy: zwinięta. Jeśli poprzedni test ją rozwinął — zwijamy z powrotem.
+    const zwin = page.getByRole("button", { name: /^zwiń ulubione/i }).first();
+    if (await zwin.count() > 0 && await zwin.isVisible().catch(() => false)) {
+      await zwin.click();
+      await page.waitForTimeout(400);
+    }
 
-    // AC-2: punkt zapisu ma ETYKIETĘ, nie jest samą ikoną schowaną na dole nawigacji.
+    // 043/AC-1 ZOSTAJE: sam nagłówek sekcji jest w nawigacji mimo pustej listy.
+    await expect(page.getByText("Ulubione", { exact: true })).toBeVisible({ timeout: 15_000 });
+    // 080/AC-16: w stanie zwiniętym sekcja to JEDEN wiersz — bez zachęty i bez punktu zapisu.
+    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toHaveCount(0);
+
+    // Po rozwinięciu wraca wszystko, czego wymagało 043.
+    await page.getByRole("button", { name: /^rozwiń ulubione/i }).first().click();
+    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toBeVisible({ timeout: 10_000 });
+    // 043/AC-2: punkt zapisu ma ETYKIETĘ, nie jest samą ikoną schowaną na dole nawigacji.
     await expect(page.getByText("Zapisz ten widok", { exact: true })).toBeVisible();
   });
 

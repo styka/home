@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 
 /**
  * 034: WSPÓLNY wskaźnik kosztu operacji AI. Wyjęty z okna asystenta, żeby dało się go użyć wszędzie,
@@ -66,7 +67,6 @@ function billableTokens(call: AiCostCall): number {
 }
 
 /** Margines, jaki panel zostawia od krawędzi ekranu z każdej strony. */
-const PANEL_MARGIN = 8;
 /** Górna granica szerokości panelu — węższy ekran i tak zetnie go przez `maxWidth` niżej. */
 const PANEL_MAX_WIDTH = 360;
 
@@ -87,58 +87,20 @@ export function AiCostBadge({
   const t = useTranslations("ui.cost");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
   // 035: przesunięcie panelu w poziomie WZGLĘDEM przycisku, policzone z realnych pomiarów.
   // Wcześniej panel był kotwiczony na sztywno do prawej krawędzi przycisku, a `maxWidth` liczył się
   // od szerokości OKNA — więc gdy kwota wypadała blisko lewej krawędzi (krótka odpowiedź), panel
   // wyjeżdżał poza lewą stronę ekranu i jego początek był nieosiągalny.
-  const [offsetLeft, setOffsetLeft] = useState(0);
-  // Szerokość dostępna dla panelu — liczona z kontenera (arkusz asystenta), nie z okna.
-  const [maxPanelWidth, setMaxPanelWidth] = useState(PANEL_MAX_WIDTH);
-
-  const reposition = useCallback(() => {
-    const wrap = wrapRef.current;
-    const panel = panelRef.current;
-    if (!wrap || !panel) return;
-    const anchor = wrap.getBoundingClientRect();
-
-    // Granicą NIE jest okno przeglądarki, tylko kontener, w którym panel faktycznie żyje: na
-    // komputerze arkusz asystenta ma `max-w-lg` i stoi pośrodku szerokiego ekranu, a jego obszar
-    // przewijania przycina wszystko, co z niego wystaje. Clampowanie do okna przepuściłoby panel
-    // poza lewą krawędź arkusza — czyli dokładnie ten błąd, który naprawiamy.
-    const host = wrap.closest('[role="dialog"]');
-    const bounds = host ? host.getBoundingClientRect() : null;
-    const minX = Math.max(PANEL_MARGIN, (bounds?.left ?? 0) + PANEL_MARGIN);
-    const maxX = Math.min(window.innerWidth - PANEL_MARGIN, (bounds?.right ?? window.innerWidth) - PANEL_MARGIN);
-    const available = Math.max(160, maxX - minX);
-    setMaxPanelWidth(available);
-    const width = Math.min(panel.offsetWidth, available);
-
-    // Domyślnie wyrównujemy PRAWĄ krawędź panelu do prawej krawędzi przycisku…
-    let left = anchor.right - width;
-    // …a potem wpychamy go w dozwolony obszar. Gdy kontener jest węższy niż panel, wygrywa lewa
-    // krawędź (zawartość panelu i tak jest przewijalna w poziomie).
-    if (left + width > maxX) left = maxX - width;
-    if (left < minX) left = minX;
-    setOffsetLeft(left - anchor.left);
-  }, []);
-
-  // Pozycję liczymy PO wyrenderowaniu panelu (wcześniej nie ma czego mierzyć) i przy każdej
-  // zmianie rozmiaru okna — obrót telefonu z otwartym panelem nie może go wyrzucić poza ekran.
-  useLayoutEffect(() => {
-    if (!open) return;
-    reposition();
-  }, [open, reposition]);
-
-  useEffect(() => {
-    if (!open) return;
-    window.addEventListener("resize", reposition);
-    window.addEventListener("orientationchange", reposition);
-    return () => {
-      window.removeEventListener("resize", reposition);
-      window.removeEventListener("orientationchange", reposition);
-    };
-  }, [open, reposition]);
+  // 080 (Z7): pozycjonowanie należy do `AnchoredLayer`.
+  //
+  // Wcześniej stało tu ~50 linii własnej matematyki, która liczyła WYŁĄCZNIE oś poziomą i miała
+  // zaszyte otwieranie w górę (`bottom: calc(100% + 6px)`). Przy przycisku blisko górnej krawędzi
+  // panel wychodził ponad ekran — to jest zgłoszenie właściciela z /wiadomosci.
+  //
+  // Zmiana wobec dawnej wersji, świadoma: panel przycinaliśmy do KONTENERA (arkusza asystenta),
+  // bo `position: absolute` dawało się przyciąć jego obszarowi przewijania. Portal do `body`
+  // usuwa ten powód — panel nie leży już wewnątrz arkusza, więc nie ma go co przycinać, a jedyną
+  // sensowną granicą zostaje okno.
 
   if (!usage) return null;
 
@@ -173,21 +135,17 @@ export function AiCostBadge({
       >
         {label} {open ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
       </button>
-      {open && (
-        <div
-          ref={panelRef}
-          style={{
-            position: "absolute", bottom: "calc(100% + 6px)", zIndex: 5,
-            left: offsetLeft,
-            minWidth: 0,
-            width: `min(${PANEL_MAX_WIDTH}px, ${maxPanelWidth}px)`,
-            maxWidth: `${maxPanelWidth}px`,
-            padding: "8px 10px", background: "var(--bg-elevated)",
-            border: "1px solid var(--border)", borderRadius: 8,
-            boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-            fontSize: 11, color: "var(--text-secondary)",
-          }}
-        >
+      <AnchoredLayer
+        anchorRef={wrapRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        side="gora"
+        align="koniec"
+        width={PANEL_MAX_WIDTH}
+        ariaLabel={t("rozbicieKosztu")}
+        style={{ padding: "8px 10px", fontSize: 11, color: "var(--text-secondary)" }}
+      >
+        <div>
           <p style={{ margin: "0 0 6px", fontWeight: 600, color: "var(--text-primary)" }}>{t("rozbicieKosztu")}</p>
           {/* 035: przewijanie w poziomie należy do LISTY WYWOŁAŃ, a nie do całego panelu. Wcześniej
               `overflow-x` siedział na panelu, ale wiersze miały `white-space: nowrap` przy
@@ -231,7 +189,7 @@ export function AiCostBadge({
             </p>
           )}
         </div>
-      )}
+      </AnchoredLayer>
     </div>
   );
 }

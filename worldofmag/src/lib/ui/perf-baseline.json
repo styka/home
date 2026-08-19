@@ -3,5 +3,6 @@
   "_pasmo": "±5 %. Inaczej niż pozostałe zapadki (paginacja, N+1, i18n), które liczą rzeczy zależne WYŁĄCZNIE od naszych decyzji, rozmiar paczki zmienia się też przy aktualizacji zależności i wersji Next-a — próg co do bajta zostałby wyłączony po pierwszym `npm update`. Spadek poniżej pasma czerwieni tak samo jak wzrost: poprawa ma zostać zapisana.",
   "_jak_czytac": "Wzrost najcięższej trasy = coś nowego weszło do jej grafu (najczęściej import przez plik zbiorczy — patrz lekcje 049/050/084). Wzrost sumy przy stałej najcięższej = nowy wspólny kod na wszystkich trasach.",
   "najciezszaTrasaB": 1191000,
-  "sumaB": 63340000
+  "sumaB": 66748416,
+  "_zmiana_080": "080 (Z3): suma urosła o ok. 3 %, bo przybyła TRASA — /tasks/zestaw/[zestawId] renderuje ten sam widok listy zadań co /tasks/[projectId], a ta miara liczy graf każdej trasy osobno. Najcięższa trasa NIE urosła (1170 kB przy progu 1191 kB), czyli żaden pojedynczy ekran nie waży więcej niż przedtem — przeglądarka użytkownika pobiera te same, współdzielone paczki. Reszta wzrostu to AnchoredLayer wpięty w pięć miejsc, który w zamian USUNĄŁ pięć osobnych implementacji pozycjonowania. Nowa trasa jest ceną naprawy pustoszejącego widoku: zakres musiał trafić do segmentu ścieżki, bo parametry zapytania nie przeżywają renderu wywołanego z akcji."
 }

@@ -26,13 +26,14 @@ export async function readMenuPrefs(userId: string): Promise<MenuPrefs> {
       order: Array.isArray(order) && order.length ? order.filter((id: unknown): id is string => typeof id === "string") : def.order,
       disabled: Array.isArray(disabled) ? disabled.filter((id: unknown): id is string => typeof id === "string") : def.disabled,
       tabBar: Array.isArray(tabBar) && tabBar.length ? tabBar.filter((id: unknown): id is string => typeof id === "string") : def.tabBar,
+      favoritesCollapsed: row.favoritesCollapsed,
     };
   } catch {
     return def;
   }
 }
 
-export async function updateMenuPrefs(patch: { order?: string[]; disabled?: string[]; tabBar?: string[] }): Promise<void> {
+export async function updateMenuPrefs(patch: { order?: string[]; disabled?: string[]; tabBar?: string[]; favoritesCollapsed?: boolean }): Promise<void> {
   const user = await requireAuth();
   const current = await readMenuPrefs(user.id);
 
@@ -40,11 +41,12 @@ export async function updateMenuPrefs(patch: { order?: string[]; disabled?: stri
   const disabled = (patch.disabled ?? current.disabled).filter((id) => VALID_IDS.has(id));
   // dolny pasek: tylko prawidłowe id, bez duplikatów, ucięte do limitu
   const tabBar = Array.from(new Set((patch.tabBar ?? current.tabBar).filter((id) => VALID_IDS.has(id)))).slice(0, MAX_TAB_BAR);
+  const favoritesCollapsed = patch.favoritesCollapsed ?? current.favoritesCollapsed;
 
   await prisma.userMenuPref.upsert({
     where: { userId: user.id },
-    create: { userId: user.id, order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar) },
-    update: { order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar) },
+    create: { userId: user.id, order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed },
+    update: { order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed },
   });
 
   revalidatePath("/", "layout");
