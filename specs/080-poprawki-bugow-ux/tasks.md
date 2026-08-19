@@ -16,13 +16,13 @@
 
 ## Faza 0 — Fundament danych
 
-- [ ] **T-1** — Migracja `0253_poprawki_bugow_ux` wg planu §2: trzy kolumny
+- [x] **T-1** — Migracja `0253_poprawki_bugow_ux` wg planu §2: trzy kolumny
   (`AssistantPref.readerRate` DOUBLE PRECISION DEFAULT 0.95, `AssistantPref.readerFollow` BOOLEAN
   DEFAULT true, `UserMenuPref.favoritesCollapsed` BOOLEAN DEFAULT true), wszystkie
   `ADD COLUMN IF NOT EXISTS`. DDL pisany ręcznie — **nie** z `migrate diff` (C-15).
   **Gotowe, gdy:** `npm run check:migrations` przechodzi, a `grep -E "^(DROP|ALTER TABLE .* DROP)"`
   na nowej migracji nie zwraca nic.
-- [ ] **T-2** — `schema.prisma`: te same trzy kolumny na `AssistantPref` i `UserMenuPref`.
+- [x] **T-2** — `schema.prisma`: te same trzy kolumny na `AssistantPref` i `UserMenuPref`.
   **Gotowe, gdy:** `npx prisma generate` czysto i `npm run check:schema-drift` nie zgłasza rozjazdu
   (na lokalnym Postgresie — C-13).
 
