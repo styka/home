@@ -616,6 +616,10 @@
     "reason": "interactive",
     "access": "owner"
   },
+  "items:addItems": {
+    "status": "ai",
+    "access": "owner"
+  },
   "items:clearDoneItems": {
     "status": "ai",
     "access": "owner"

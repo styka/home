@@ -226,14 +226,14 @@ Najpierw regresja, potem przebudowa — żeby naprawa buga nie czekała na więk
 
 ## Faza 8 — Asystent: zlecenie wsadowe
 
-- [ ] **T-28** — **Z6: akcja `add_items`.** Typ w `src/platform/ai/aiAction.ts`, egzekutor
+- [x] **T-28** — **Z6: akcja `add_items`.** Typ w `src/platform/ai/aiAction.ts`, egzekutor
   w `src/modules/shopping/ai/executor.ts` (rozbicie `rawText` po liniach → istniejące `addItem`,
   zwrot liczby dodanych), opis w `src/modules/shopping/ai/catalog.ts` (przy wielu pozycjach użyj
   `add_items`, nie powtarzaj `add_item`), wpis w `src/platform/ai/actionContract.ts`, klasyfikacja
   wraz z `access` w `src/lib/ai/action-coverage.json`. **Nie** trafia do `DESTRUCTIVE_ACTION_TYPES`.
   **Gotowe, gdy:** `npm run check:actions` i `npm run check:ai-coverage` przechodzą; test
   jednostkowy egzekutora na ~100 liniach dodaje komplet i zwraca liczbę. *(AC-13)*
-- [ ] **T-29** — **Z6: limit wyjścia dla długiego planu.** `src/app/api/llm/home/agent/route.ts` —
+- [x] **T-29** — **Z6: limit wyjścia dla długiego planu.** `src/app/api/llm/home/agent/route.ts` —
   limit wyjścia kroku planu podniesiony do rzędu `REPORT_MAX_TOKENS` (istniejący precedens w tym
   pliku). Limit dotyczy **wyjścia**, więc rośnie tylko przy realnie długim planie.
   **Gotowe, gdy:** szacunek tokenów planu na ~100 pozycji mieści się poniżej limitu; zlecenie

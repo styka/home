@@ -317,6 +317,7 @@ const longText = (label: string): FieldSpec => ({ label, control: "textarea" });
 export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   // ── ZAKUPY ────────────────────────────────────────────────────────────────
   add_item: { label: "Dodaj pozycję do listy zakupów", fields: { rawText: f("Co dodać") } },
+  add_items: { label: "Dodaj wiele pozycji do listy zakupów", fields: { rawText: f("Pozycje (po jednej w linii)") } },
   update_item_status: { label: "Zmień status pozycji", fields: { status: sel("Status", ITEM_STATUS_OPTIONS) } },
   update_item: { label: "Zmień pozycję na liście", fields: { quantity: num("Ilość", { min: 0 }) } },
   delete_item: { label: "Usuń pozycję z listy" },
