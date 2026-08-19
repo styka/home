@@ -197,24 +197,24 @@ Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy
 
 Najpierw regresja, potem przebudowa — żeby naprawa buga nie czekała na większą zmianę.
 
-- [ ] **T-24** — **Z3: trasa zestawu na segmencie ścieżki.**
+- [x] **T-24** — **Z3: trasa zestawu na segmencie ścieżki.**
   `src/app/tasks/zestaw/[zestawId]/page.tsx` — zakres z `params`, nigdy z `searchParams`; widok przez
   `ModuleView` ze `state` (C-33). `revalidatePath` dla nowej trasy w
   `src/modules/tasks/actions/tasks.ts` (C-20).
   **Gotowe, gdy:** **klikacz regresyjny** — wejście na zestaw, zmiana statusu zadania, lista
   **nadal niepusta**; `npm run check:route-gating` i `check:owner-columns` przechodzą.
   *(AC-4)* — **to jest naprawa zgłoszonego buga**
-- [ ] **T-25** — **Z3: zgodność wstecz.** `src/app/tasks/[projectId]/page.tsx` — `/tasks/multi?group=<id>`
+- [x] **T-25** — **Z3: zgodność wstecz.** `src/app/tasks/[projectId]/page.tsx` — `/tasks/multi?group=<id>`
   → `redirect("/tasks/zestaw/<id>")`, `/tasks/multi?projects=a,b` → `redirect("/tasks/all?projekty=a,b")`.
   **Gotowe, gdy:** stare adresy (w tym zapisane ulubione widoki właściciela) otwierają **ten sam
   zakres** co przed zmianą. *(AC-6)* — **zależy od T-24**
-- [ ] **T-26** — **Z3: multiselect projektów w filtrze.** `src/modules/tasks/ui/TasksPage.tsx` —
+- [x] **T-26** — **Z3: multiselect projektów w filtrze.** `src/modules/tasks/ui/TasksPage.tsx` —
   wybór wielu projektów zawężający listę **po stronie klienta** w widokach zbiorczych, odbijany do
   adresu przez `useViewState` kluczem `projekty`. **Utrata parametru degraduje do „wszystkie
   projekty", nigdy do „żadnego"** — to jest reguła, dla której cała ta faza istnieje.
   **Gotowe, gdy:** zaznaczenie projektów zawęża listę, a wyczyszczenie adresu pokazuje wszystko,
   nie pustkę. *(AC-5, część 1)* — **zależy od T-24**
-- [ ] **T-27** — **Z3: „zapisz ten wybór" + wspólny nagłówek.** Przycisk zapisu woła istniejące
+- [x] **T-27** — **Z3: „zapisz ten wybór" + wspólny nagłówek.** Przycisk zapisu woła istniejące
   `createProjectGroup`/`updateProjectGroup` i nawiguje na `/tasks/zestaw/<id>` (zero nowych akcji,
   zero migracji danych). Widok projektu i widok zestawu dostają **ten sam** nagłówek `ModuleView`,
   te same ikony i te same akcje.

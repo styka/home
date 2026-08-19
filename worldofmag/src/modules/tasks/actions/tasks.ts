@@ -16,6 +16,18 @@ import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/typ
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
 import { SUFIT_LISTY } from "@/platform/pagination";
 
+/**
+ * 080 (Z3): odświeżenie widoków listy zadań po mutacji.
+ *
+ * Poza `/tasks` trzeba odświeżyć też trasę zapisanego zestawu. Podajemy ją w formie TRASY
+ * (`[zestawId]`, tryb "page"), a nie konkretnego adresu: jedna mutacja może dotyczyć zadania,
+ * które należy do kilku zestawów naraz, a akcja nie ma powodu ich wyliczać.
+ */
+function odswiezZadania(): void {
+  revalidatePath("/tasks");
+  revalidatePath("/tasks/zestaw/[zestawId]", "page");
+}
+
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },
   subtasks: {
@@ -191,7 +203,7 @@ export async function createTask(data: {
   });
 
   void trackActivity("tasks", "create_task", { title, priority: data.priority ?? "NONE", dueDate: dueDate?.toISOString() ?? null });
-  revalidatePath("/tasks");
+  odswiezZadania();
   if (projectId) revalidatePath(`/tasks/${projectId}`);
   return toTask(task);
 }
@@ -361,7 +373,7 @@ export async function updateTask(
   }
 
   void trackActivity("tasks", "update_task", { id, patchKeys: Object.keys(patch) });
-  revalidatePath("/tasks");
+  odswiezZadania();
   // Odśwież zarówno stary, jak i nowy projekt (przy przeniesieniu zadanie znika
   // ze starej listy i pojawia się na nowej).
   if (existing.projectId) revalidatePath(`/tasks/${existing.projectId}`);
@@ -380,7 +392,7 @@ export async function updateTaskTags(taskId: string, tagIds: string[]): Promise<
     await prisma.taskTaskTag.createMany({ data: tagIds.map((tagId) => ({ taskId, tagId })) });
   }
 
-  revalidatePath("/tasks");
+  odswiezZadania();
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
 }
 
@@ -406,7 +418,7 @@ export async function deleteTask(id: string): Promise<void> {
   });
 
   await prisma.task.delete({ where: { id } });
-  revalidatePath("/tasks");
+  odswiezZadania();
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
 }
 
@@ -510,7 +522,7 @@ export async function bulkUpdateTasks(
   }
 
   void trackActivity("tasks", "bulk_update_tasks", { count: updated, skipped, patchKeys: Object.keys(patch) });
-  revalidatePath("/tasks");
+  odswiezZadania();
   Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
   return { updated, skipped };
 }
@@ -556,7 +568,7 @@ export async function bulkDeleteTasks(taskIds: string[]): Promise<{ deleted: num
   }
 
   void trackActivity("tasks", "bulk_delete_tasks", { count: deleted, skipped });
-  revalidatePath("/tasks");
+  odswiezZadania();
   Array.from(affectedProjectIds).forEach((pid) => revalidatePath(`/tasks/${pid}`));
   return { deleted, skipped };
 }
@@ -634,7 +646,7 @@ export async function addTaskComment(taskId: string, content: string): Promise<v
   await assertTaskAccess(task, user.id);
 
   await prisma.taskComment.create({ data: { taskId, userId: user.id, content: content.trim() } });
-  revalidatePath("/tasks");
+  odswiezZadania();
   if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
 }
 
@@ -688,7 +700,7 @@ export async function shareTaskByEmail(taskId: string, email: string, role: "VIE
     }
     await mirrorTaskShare(taskId, { userId: targetUser.id }, role, user.id);
 
-    revalidatePath("/tasks");
+    odswiezZadania();
     if (task.projectId) revalidatePath(`/tasks/${task.projectId}`);
     return {};
   } catch (e) {
@@ -705,7 +717,7 @@ export async function reorderTask(taskId: string, newOrder: number): Promise<voi
   if (!task) throw new Error("Task not found");
   await assertTaskAccess(task, user.id);
   await prisma.task.update({ where: { id: taskId }, data: { order: newOrder } });
-  revalidatePath("/tasks");
+  odswiezZadania();
 }
 
 export async function getTodayTasks(): Promise<Task[]> {

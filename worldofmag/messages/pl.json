@@ -2007,6 +2007,14 @@
       "QuickAddTask": {
         "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
         "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
+      },
+      "ProjectScopeFilter": {
+        "filtrProjektow": "Filtr projektów",
+        "wszystkieProjekty": "Wszystkie projekty",
+        "wybraneProjekty": "Projekty: {ile}",
+        "wyczyscWybor": "Pokaż wszystkie projekty",
+        "nazwaZestawu": "Nazwa zestawu…",
+        "zapiszJakoZestaw": "Zapisz wybór jako zestaw projektów"
       }
     },
     "truck": {

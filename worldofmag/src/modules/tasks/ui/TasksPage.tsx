@@ -15,6 +15,7 @@ import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { useTranslations } from "next-intl";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
+import { ProjectScopeFilter } from "./ProjectScopeFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
@@ -72,6 +73,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const viewSpec = useMemo(() => ({
     status: oneOf(["ALL", ...statusConfig.enabled], "ALL"),
     tags: idList(),
+    // 080 (Z3): zakres projektów jako FILTR widoku, nie jako źródło danych. Kluczowa różnica:
+    // gdy parametr zniknie z adresu, `idList()` daje pustą listę, a pusta lista znaczy tu
+    // „wszystkie projekty" — nigdy „żaden". Poprzedni widok wielu projektów miał odwrotnie
+    // i to była cała przyczyna pustego ekranu po zmianie statusu zadania.
+    projekty: idList(),
     groupBy: oneOf(["default", "priority"] as const, "default"),
     layout: oneOf(["list", "kanban", "timeline"] as const, "list"),
   }), [statusConfig]);
@@ -131,7 +137,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const notifiedRef = useRef<Set<string>>(new Set());
 
   // For virtual views, create tasks in inbox instead
-  const isVirtualView = ["today", "upcoming", "overdue", "all", "multi"].includes(projectId);
+  // 080 (Z3): „multi" przestało być identyfikatorem trasy — zapisany zestaw ma własny adres
+  // (`/tasks/zestaw/<id>`) i przychodzi tu z pustym `projectId`, ale z `viewMode === "multi"`.
+  const isVirtualView = ["today", "upcoming", "overdue", "all"].includes(projectId) || viewMode === "multi";
   // 090 (zadanie 14): okno udostępniania. Dostaje tylko `resourceType` (tekst z deklaracji) i `id`,
   // więc nie wiąże Zadań z warstwą udostępniania — moduł nie ma tu ani jednej własnej linii logiki
   // dostępu. Widoki wirtualne (dziś/zaległe/wszystkie) nie są zasobem, więc nie mają czego udostępnić.
@@ -283,31 +291,43 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     setNotificationsEnabled(perm === "granted");
   }
 
+  /**
+   * 080 (Z3): zadania po zawężeniu do wybranych projektów.
+   *
+   * Zawężamy PRZED liczeniem zakładek i liczników, bo inaczej „Wszystkie (17)" opisywałoby coś
+   * innego niż lista pod spodem. Pusty wybór = brak zawężenia.
+   */
+  const zadaniaWZakresie = useMemo(() => {
+    if (view.projekty.length === 0) return tasks;
+    const dozwolone = new Set(view.projekty);
+    return tasks.filter((t) => t.projectId && dozwolone.has(t.projectId));
+  }, [tasks, view.projekty]);
+
   const displayedTasks = useMemo(() => {
     if (aiSearchResults !== null) {
       return aiSearchResults.map((id) => tasks.find((t) => t.id === id)).filter(Boolean) as Task[];
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      return tasks.filter(
+      return zadaniaWZakresie.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
           t.description?.toLowerCase().includes(q) ||
           t.tags?.some((tt) => tt.tag.name.includes(q))
       );
     }
-    return tasks;
-  }, [tasks, searchQuery, aiSearchResults]);
+    return zadaniaWZakresie;
+  }, [zadaniaWZakresie, tasks, searchQuery, aiSearchResults]);
 
   const counts = useMemo(() => {
     const result: Record<string, number> = {};
     // „Aktywne" = statusy nie-terminalne (DONE/CANCELLED wykluczone, ale W weryfikacji liczy się).
-    result["ALL"] = tasks.filter((t) => !statusMetaFor(t.status, statusConfig).isTerminal).length;
+    result["ALL"] = zadaniaWZakresie.filter((t) => !statusMetaFor(t.status, statusConfig).isTerminal).length;
     for (const s of resolveStatuses(statusConfig)) {
-      result[s.key] = tasks.filter((t) => t.status === s.key).length;
+      result[s.key] = zadaniaWZakresie.filter((t) => t.status === s.key).length;
     }
     return result;
-  }, [tasks, statusConfig]);
+  }, [zadaniaWZakresie, statusConfig]);
 
   // Etykiety zakładek (z nazwami własnych statusów); „ALL" stałe.
   const filterLabels = useMemo<Record<string, string>>(
@@ -503,7 +523,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         {/* Mobile: project picker */}
         <div className="md:hidden flex-1 mr-2">
           <select
-            value={projectId}
+            value={isVirtualView && !projectId ? "all" : projectId}
             onChange={(e) => { window.location.href = `/tasks/${e.target.value}`; }}
             className="bg-transparent text-sm font-semibold focus:outline-none w-full"
             style={{ color: "var(--text-primary)" }}
@@ -512,7 +532,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <option value="upcoming">{t("nadchodzace")}</option>
             <option value="overdue">{t("zalegle")}</option>
             <option value="all">◎ Wszystkie</option>
-            {projectId === "multi" && <option value="multi">{t("wieleProjektow")}</option>}
             {allProjects.filter((p) => p.isInbox).map((p) => (
               <option key={p.id} value={p.id}>📥 {p.name}</option>
             ))}
@@ -539,6 +558,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             role="toolbar"
             aria-label={t("pasekAkcjiListyPrzewin")}
           >
+          {/* 080 (Z3): filtr projektów tylko w widokach ZBIORCZYCH. W widoku jednego projektu
+              zawężanie do projektów nie ma sensu — pokazywałby jedną pozycję, zawsze zaznaczoną. */}
+          {isVirtualView && allProjects.length > 1 && (
+            <ProjectScopeFilter
+              allProjects={allProjects}
+              selected={view.projekty}
+              onChange={(next) => setView({ projekty: next })}
+            />
+          )}
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
@@ -746,7 +774,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           ))}
           {multiGroupId && (
             <Link
-              href={`/tasks/multi?group=${multiGroupId}&edit=1`}
+              href={`/tasks/zestaw/${multiGroupId}?edit=1`}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-xs flex-shrink-0 ml-1"
               style={{ color: "var(--text-muted)" }}
               title={t("edytujGrupeNazwaProjekty")}
