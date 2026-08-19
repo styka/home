@@ -1,7 +1,7 @@
 # Spec: Wiadomości — naprawa odświeżania, biblioteka źródeł i nawigacja po tematach; Pogoda — obserwatory wg stanu
 
 - **ID:** 082-wiadomosci-zrodla-i-pogoda-obserwatory
-- **Status:** draft
+- **Status:** planned
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-19
 - **Moduł(y):** Wiadomości (`module.news`), Pogoda (`module.weather`), panel administratora (`module.admin`)
