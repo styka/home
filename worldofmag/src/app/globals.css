@@ -149,6 +149,26 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--border-focus);
 }
 
+/*
+ * 082: pasek tematów w Wiadomościach przewija się poziomo, ale bez własnego paska przewijania.
+ *
+ * Powód jest funkcjonalny, nie estetyczny: pasek stoi w jednym wierszu z przyciskami akcji tematu,
+ * a widoczny scrollbar dokłada 6 px wysokości, przez które chipy przestają być wyrównane z resztą
+ * wiersza i tracą cel dotyku `py-3` (C-31). Sam ruch w bok zostaje — także kółkiem myszy i gestem.
+ *
+ * `overscroll-behavior-x: contain` zatrzymuje przewijanie na końcu paska: bez tego dojechanie do
+ * ostatniego tematu na telefonie uruchamia gest „wstecz" przeglądarki.
+ */
+.omnia-pasek-tematow {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 2rem;
+}
+.omnia-pasek-tematow::-webkit-scrollbar {
+  display: none;
+}
+
 /* Focus ring */
 :focus-visible {
   outline: var(--focus-ring-width, 2px) solid var(--accent-blue);

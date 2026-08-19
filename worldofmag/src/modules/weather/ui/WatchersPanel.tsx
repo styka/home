@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Plus, Trash2, Loader2, RefreshCw, Pencil } from "lucide-react";
+import { Bell, Plus, Trash2, Loader2, RefreshCw, Pencil, ListFilter, Rows3, ArrowDownUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -13,13 +13,23 @@ import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "../lib/presets";
 import {
+  STATUS_ORDER,
+  poStanie,
+  wSekcje,
+  liczniki,
+  type WatchersLayout,
+} from "../lib/uklad";
+import {
   evaluateWatchers,
   addPresetWatcher,
   addCustomWatcher,
   deleteWatcher,
   updateWatcher,
+  setWatchersView,
   type WatcherDTO,
   type WatcherVerdict,
+  type WatcherStatus,
+  type WeatherPrefDTO,
 } from "../actions/weather";
 
 /**
@@ -57,10 +67,13 @@ export function WatchersPanel({
   watchers,
   coords,
   usdPlnRate,
+  pref,
 }: {
   watchers: WatcherDTO[];
   coords: { lat: number; lon: number; label: string } | null;
   usdPlnRate?: number;
+  /** 082: zapamiętany układ listy. Przychodzi z serwera, więc widok nie mruga przy pierwszym renderze. */
+  pref: WeatherPrefDTO;
 }) {
   const t = useTranslations("modules.weather.WatchersPanel");
   const router = useRouter();
@@ -77,6 +90,10 @@ export function WatchersPanel({
   const [adding, setAdding] = useState(false);
   // 037: ten sam formularz obsługuje dodawanie i edycję — `editing` trzyma obserwatora do poprawy.
   const [editing, setEditing] = useState<WatcherDTO | null>(null);
+  // 082: układ i filtr listy. Stan lokalny + zapis w tle, żeby klik był natychmiastowy —
+  // preferencja układu nie jest danymi, na które warto czekać.
+  const [layout, setLayout] = useState<WatchersLayout>(pref.watchersLayout);
+  const [filtr, setFiltr] = useState<WatcherStatus[]>(pref.watchersFilter);
 
   /**
    * 080 (Z11): `force` znaczy „użytkownik właśnie o to poprosił".
@@ -163,6 +180,123 @@ export function WatchersPanel({
 
   const verdictById = new Map((verdicts ?? []).map((v) => [v.id, v]));
 
+  /**
+   * 082: dopóki ocena nie powstała, lista NIE UDAJE, że zna stany.
+   *
+   * To jest warunek, na którym stoi cała reszta tej sekcji: sortowanie „po stanie" bez werdyktów
+   * ustawiłoby wszystkie obserwatory w jednym worku „brak danych" i wyglądałoby jak wynik oceny,
+   * którego nikt nie zamawiał. Zamiast tego zostaje kolejność dodania, a sterowanie układem jest
+   * nieaktywne z podpowiedzią, czego brakuje.
+   */
+  const oceniono = verdicts !== null && !pending;
+  const statusOf = (w: WatcherDTO): WatcherStatus | null =>
+    (w.enabled ? verdictById.get(w.id)?.status : null) ?? null;
+
+  const licznikiStanow = liczniki(watchers, statusOf);
+
+  function zapisz(patch: { layout?: WatchersLayout; filter?: WatcherStatus[] }) {
+    if (patch.layout !== undefined) setLayout(patch.layout);
+    if (patch.filter !== undefined) setFiltr(patch.filter);
+    startTransition(async () => {
+      try {
+        await setWatchersView(patch);
+      } catch {
+        /* Preferencja układu nie jest danymi użytkownika — nieudany zapis nie może przerwać pracy.
+           Widok zostaje w wybranym stanie do końca sesji, wróci do zapisanego po przeładowaniu. */
+      }
+    });
+  }
+
+  function przelaczStan(s: WatcherStatus) {
+    zapisz({ filter: filtr.includes(s) ? filtr.filter((x) => x !== s) : [...filtr, s] });
+  }
+
+  // Filtr działa tylko po ocenie: przed nią odsiewałby wszystko, bo żaden obserwator nie ma stanu.
+  const widoczne =
+    oceniono && filtr.length > 0
+      ? watchers.filter((w) => {
+          const s = statusOf(w);
+          return s !== null && filtr.includes(s);
+        })
+      : watchers;
+
+  const uporzadkowane = oceniono && layout !== "manual" ? poStanie(widoczne, statusOf) : widoczne;
+  const sekcje = oceniono && layout === "grouped" ? wSekcje(widoczne, statusOf) : null;
+
+  /**
+   * 082: karta obserwatora wydzielona z pętli, bo rysują ją teraz DWIE ścieżki — lista płaska
+   * i lista w sekcjach. Powielenie znaczników oznaczałoby, że poprawka w jednej z nich cicho
+   * omija drugą. Zwykła funkcja, nie komponent: nie ma własnego stanu, a jako komponent
+   * zdefiniowany w ciele `WatchersPanel` byłby przy każdym renderze nowym typem i gubiłby fokus.
+   */
+  function karta(w: WatcherDTO) {
+    const v = verdictById.get(w.id);
+    const style = v ? STATUS_STYLE[v.status] : null;
+    return (
+      <div
+        key={w.id}
+        className={cn(
+          "rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-3",
+          !w.enabled && "opacity-50",
+        )}
+      >
+        {/* 038: na telefonie tytuł, status i horyzont nie mieszczą się w jednym wierszu —
+            tytuł jest osobno i zawija się, a znaczniki idą pod nim. */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <span className="block break-words font-medium text-[var(--text-primary)]">
+              {w.title}
+            </span>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {style && (
+                <span
+                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                  style={{ color: style.color, border: `1px solid ${style.color}` }}
+                  title={style.hint}
+                >
+                  {style.label}
+                </span>
+              )}
+              <span className="text-[10px] text-[var(--text-muted)]">
+                {HORIZON_META[w.horizon].label}
+              </span>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              onClick={() => run(() => updateWatcher(w.id, { enabled: !w.enabled }))}
+              className="rounded p-2 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            >
+              {w.enabled ? "Wyłącz" : "Włącz"}
+            </button>
+            <button
+              onClick={() => setEditing(w)}
+              className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-blue)]"
+              title="Edytuj obserwator"
+              aria-label={`Edytuj obserwator ${w.title}`}
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={() => run(() => deleteWatcher(w.id))}
+              className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
+              title={t("usunObserwator")}
+              aria-label={`Usuń obserwator ${w.title}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+        {v && (
+          <div className="mt-1.5 text-sm">
+            <span className="font-medium text-[var(--text-primary)]">{v.verdict}</span>
+            {v.detail && <span className="text-[var(--text-secondary)]"> — {v.detail}</span>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
       <div className="mb-3 flex items-center justify-between">
@@ -209,73 +343,96 @@ export function WatchersPanel({
         </div>
       ) : (
         <div className="space-y-2">
-          {watchers.map((w) => {
-            const v = verdictById.get(w.id);
-            const style = v ? STATUS_STYLE[v.status] : null;
-            return (
-              <div
-                key={w.id}
-                className={cn(
-                  "rounded-lg border border-[var(--border)] bg-[var(--bg-base)] p-3",
-                  !w.enabled && "opacity-50"
-                )}
-              >
-                {/* 038: na telefonie tytuł, status i horyzont nie mieszczą się w jednym wierszu —
-                    tytuł jest teraz osobno i zawija się, a znaczniki idą pod nim. */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <span className="block break-words font-medium text-[var(--text-primary)]">
-                      {w.title}
-                    </span>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {style && (
-                        <span
-                          className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                          style={{ color: style.color, border: `1px solid ${style.color}` }}
-                          title={style.hint}
-                        >
-                          {style.label}
-                        </span>
-                      )}
-                      <span className="text-[10px] text-[var(--text-muted)]">
-                        {HORIZON_META[w.horizon].label}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <button
-                      onClick={() => run(() => updateWatcher(w.id, { enabled: !w.enabled }))}
-                      className="rounded p-2 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                    >
-                      {w.enabled ? "Wyłącz" : "Włącz"}
-                    </button>
-                    <button
-                      onClick={() => setEditing(w)}
-                      className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-blue)]"
-                      title="Edytuj obserwator"
-                      aria-label={`Edytuj obserwator ${w.title}`}
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => run(() => deleteWatcher(w.id))}
-                      className="rounded p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-                      title={t("usunObserwator")}
-                      aria-label={`Usuń obserwator ${w.title}`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-                {v && (
-                  <div className="mt-1.5 text-sm">
-                    <span className="font-medium text-[var(--text-primary)]">{v.verdict}</span>
-                    {v.detail && <span className="text-[var(--text-secondary)]"> — {v.detail}</span>}
-                  </div>
-                )}
+          {/* 082: pasek stanu — liczniki (klik = filtr) i wybór układu. Stoi POD nagłówkiem sekcji,
+              a nie w nim, bo w nagłówku mieszkają akcje sekcji („Dodaj", „Przelicz"), a to jest
+              sterowanie treścią listy. Znika, gdy obserwator jest jeden: przy jednym liczniki
+              powtarzałyby to, co widać na jego własnym znaczniku. */}
+          {watchers.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 pb-1">
+              {STATUS_ORDER.map((sKey) => {
+                const style = STATUS_STYLE[sKey];
+                const aktywny = filtr.includes(sKey);
+                const ile = licznikiStanow[sKey];
+                return (
+                  <button
+                    key={sKey}
+                    type="button"
+                    onClick={() => przelaczStan(sKey)}
+                    disabled={!oceniono}
+                    aria-pressed={aktywny}
+                    title={oceniono ? style.hint : t("najpierwOcen")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors",
+                      "disabled:cursor-not-allowed disabled:opacity-40",
+                      aktywny
+                        ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]",
+                    )}
+                    style={{ borderColor: aktywny ? style.color : "var(--border)" }}
+                  >
+                    <span
+                      className="inline-block h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: style.color }}
+                    />
+                    {style.label}
+                    <span className="font-semibold text-[var(--text-primary)]">{ile}</span>
+                  </button>
+                );
+              })}
+
+              <div className="ml-auto flex items-center gap-0.5">
+                {(
+                  [
+                    { key: "status" as const, Icon: ArrowDownUp, label: t("ukladWgStanu") },
+                    { key: "grouped" as const, Icon: Rows3, label: t("ukladSekcje") },
+                    { key: "manual" as const, Icon: ListFilter, label: t("ukladKolejnosc") },
+                  ]
+                ).map(({ key, Icon, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => zapisz({ layout: key })}
+                    disabled={!oceniono && key !== "manual"}
+                    aria-pressed={layout === key}
+                    title={oceniono || key === "manual" ? label : t("najpierwOcen")}
+                    aria-label={label}
+                    className={cn(
+                      "rounded-md border p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                      layout === key
+                        ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                        : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                    )}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          {oceniono && filtr.length > 0 && uporzadkowane.length === 0 && (
+            <p className="py-3 text-sm text-[var(--text-muted)]">{t("filtrNicNieZostawil")}</p>
+          )}
+
+          {sekcje
+            ? sekcje.map((g) => (
+                <div key={g.status ?? "brak"} className="space-y-2">
+                  <div className="flex items-center gap-2 pt-1">
+                    {g.status && (
+                      <span
+                        className="inline-block h-2 w-2 shrink-0 rounded-full"
+                        style={{ background: STATUS_STYLE[g.status].color }}
+                      />
+                    )}
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+                      {g.status ? STATUS_STYLE[g.status].label : t("bezOceny")}
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)]">{g.pozycje.length}</span>
+                  </div>
+                  {g.pozycje.map((w) => karta(w))}
+                </div>
+              ))
+            : uporzadkowane.map((w) => karta(w))}
         </div>
       )}
 

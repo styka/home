@@ -115,7 +115,7 @@ obejrzeć na działających danych.
 
 ## Faza 3 — UI
 
-- [ ] **T-13** — **Poziomy pasek tematów** (zadanie 4 zgłoszenia). `TopicPicker.tsx`: układ
+- [x] **T-13** — **Poziomy pasek tematów** (zadanie 4 zgłoszenia). `TopicPicker.tsx`: układ
   `[◀][pasek chipów przewijany w poziomie][⌄][▶]`, chipy `whitespace-nowrap px-3 py-3` w kolorach ze
   zmiennych CSS, aktywny wyróżniony; `useEffect` na `selectedId` dosuwający aktywny chip
   (`scrollIntoView({behavior:"smooth", inline:"center", block:"nearest"})`). Rozwijana lista z
@@ -124,7 +124,7 @@ obejrzeć na działających danych.
   pliku (dlaczego pasek wraca i dlaczego **nie zastępuje** listy). Bez wariantów `hidden md:*`.
   *Gotowe, gdy:* AC-22…AC-25 sprawdzone klikiem przy ≥ 5 tematach na wąskim i szerokim oknie.
 
-- [ ] **T-14** `[P]` — **Obserwatory pogody: układ i filtr** (zadanie 3 zgłoszenia).
+- [x] **T-14** `[P]` — **Obserwatory pogody: układ i filtr** (zadanie 3 zgłoszenia).
   `WatchersPanel.tsx`: stała `STATUS_ORDER`, rząd chipów-liczników w nagłówku (klik = przełączenie
   stanu w filtrze), przełącznik układu *lista wg stanu / sekcje / kolejność dodania*. Sortowanie i
   grupowanie liczone po stronie klienta z `verdicts`. Dopóki `pending` albo `verdicts === null` —
@@ -132,7 +132,7 @@ obejrzeć na działających danych.
   `hint` stanów zostają tekstem (AC-21).
   *Gotowe, gdy:* AC-16…AC-18, AC-20, AC-21 sprawdzone klikiem.
 
-- [ ] **T-15** — **Wpięcie preferencji pogody w widok.** Trasa `/pogoda` (serwerowy wrapper) pobiera
+- [x] **T-15** — **Wpięcie preferencji pogody w widok.** Trasa `/pogoda` (serwerowy wrapper) pobiera
   `getWeatherPref()` i podaje propsem przez `WeatherPage` do `WatchersPanel`; zmiana układu/filtra
   woła `setWatchersView` w `startTransition`.
   *Gotowe, gdy:* AC-19 — wybór przeżywa przeładowanie strony.

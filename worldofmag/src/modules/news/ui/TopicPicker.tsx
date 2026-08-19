@@ -13,6 +13,21 @@ import { useTranslations } from "next-intl";
 // desktopie (C-31, AC-25). Rozwijana lista jest jedną z niewielu kontrolek, które skalują się w obie
 // strony bez osobnego wariantu: na wąskim ekranie zajmuje pełną szerokość, na szerokim stoi w
 // kolumnie o rozsądnej maksymalnej szerokości.
+//
+// 082: POZIOMY PASEK TEMATÓW WRACA — ale nie jako następca listy, tylko obok niej.
+//
+// Zgłoszenie właściciela: „tematy scrolowały się na boki w tym przypiętym temacie". To jest ten sam
+// pomysł, który przegrał w 041, więc trzeba powiedzieć wprost, co się zmieniło: pasek przegrał
+// dlatego, że BYŁ JEDYNĄ drogą — mieścił kilka pierwszych tematów, a o reszcie z ekranu nic nie
+// mówiło. Wada nie leżała w przewijaniu, tylko w tym, że nie było czym go zastąpić.
+//
+// Teraz pasek jest SKRÓTEM: pokazuje sąsiednie tematy (czyli odpowiada na to, czego brakowało —
+// widać, że są inne) i sam dosuwa aktywny do widoku. Pełna lista z wyszukiwarką i pełnymi nazwami
+// zostaje pod przyciskiem obok. Trzy drogi wyboru — chip, strzałka, lista — wołają JEDNO `onSelect`,
+// więc nie mogą się rozjechać (ta sama zasada, dla której 080 dołożyło strzałki).
+//
+// Gdyby ktoś kiedyś chciał „posprzątać" jedną z dwóch dróg: usunięcie listy odtwarza usterkę z 040,
+// usunięcie paska odtwarza zgłoszenie z 082. Obie są potrzebne.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
@@ -33,6 +48,7 @@ export function TopicPicker({
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const aktywnyChipRef = useRef<HTMLButtonElement>(null);
 
   const selected = topics.find((t) => t.id === selectedId) ?? null;
 
@@ -53,6 +69,20 @@ export function TopicPicker({
     if (open) searchRef.current?.focus();
     else setQuery("");
   }, [open]);
+
+  /**
+   * 082: aktywny temat sam wjeżdża w widoczny obszar paska.
+   *
+   * Efekt wisi na `selectedId`, a nie na obsłudze kliknięcia w chip — dzięki temu działa tak samo
+   * dla wszystkich trzech dróg zmiany tematu (chip, strzałka, wybór z listy) oraz dla gestu
+   * w `NewsStream`. Gdyby siedział w `pick`, wybór strzałką przesuwałby zaznaczenie poza ekran.
+   *
+   * `inline: "center"` zamiast `"nearest"`: przy wyborze strzałką „nearest" dosuwa chip dokładnie
+   * do krawędzi, więc sąsiedni temat — to, co ten pasek ma pokazywać — zostaje poza kadrem.
+   */
+  useEffect(() => {
+    aktywnyChipRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [selectedId]);
 
   // Zamknięcie: `Esc` (C-31) i kliknięcie poza listą. Bez tego drugiego lista zostawałaby otwarta po
   // przejściu wzrokiem do treści, zasłaniając pierwsze wiadomości.
@@ -114,32 +144,69 @@ export function TopicPicker({
           <ChevronLeft size={16} />
         </button>
       )}
+      {/* 082: przewijany poziomo pasek tematów. `min-w-0` przy `flex-1` jest tu warunkiem
+          działania, a nie ozdobą: bez niego kontener przyjąłby szerokość swojej zawartości
+          i rozepchnął stronę w bok zamiast się przewijać — dokładnie usterka z 040. */}
+      <div
+        className="omnia-pasek-tematow flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+        role="tablist"
+        aria-label={t("pasekTematow")}
+      >
+        {topics.length === 0 ? (
+          <span className="px-3 py-3 text-sm text-[var(--text-muted)]">{t("brakTematow")}</span>
+        ) : (
+          topics.map((x) => {
+            const aktywny = x.id === selectedId;
+            return (
+              <button
+                key={x.id}
+                type="button"
+                role="tab"
+                aria-selected={aktywny}
+                ref={aktywny ? aktywnyChipRef : undefined}
+                onClick={() => onSelect(x.id)}
+                className={cn(
+                  // `py-3` = cel dotyku na telefonie (C-31); `whitespace-nowrap` — chip ma wyjechać
+                  // poza kadr, a nie złamać się na dwie linie i rozepchnąć pasek w pionie.
+                  "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-3 py-3 text-sm transition-colors",
+                  aktywny
+                    ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                )}
+              >
+                {/* `max-w-[14rem]` + `truncate`: bardzo długi tytuł nie może zająć całego paska,
+                    bo wtedy sąsiednich tematów znów nie widać. Pełna nazwa jest w liście obok. */}
+                <span className="max-w-[14rem] truncate">{x.title}</span>
+                {x.pendingCount > 0 && (
+                  <span className="shrink-0 rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">
+                    {x.pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {/* Wyzwalacz pełnej listy. Do 082 zajmował całą szerokość paska — teraz oddaje ją chipom,
+          bo nazwa aktywnego tematu jest już widoczna na własnym chipie. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={t("wszystkieTematy")}
+        title={t("wszystkieTematy")}
         className={cn(
-          // `py-3` = cel dotyku na telefonie (C-31). Pełna szerokość, bo to główna nawigacja widoku.
-          "flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+          "flex shrink-0 items-center justify-center rounded-md border px-1.5 py-3 transition-colors",
           open
             ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-            : "border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+            : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
         )}
       >
-        {/* `min-w-0` przy `flex-1`: bez tego długa nazwa ustawiłaby minimalną szerokość przycisku i
-            rozepchnęła stronę w bok — dokładnie ta usterka, którą naprawialiśmy w 040. */}
-        <span className="min-w-0 flex-1 truncate">
-          {selected ? selected.title : topics.length === 0 ? "Brak tematów" : "Wybierz temat"}
-        </span>
-        {selected && selected.pendingCount > 0 && (
-          <span className="shrink-0 rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">
-            {selected.pendingCount}
-          </span>
-        )}
         <ChevronDown
           size={16}
-          className={cn("shrink-0 text-[var(--text-muted)] transition-transform", open && "rotate-180")}
+          className={cn("shrink-0 transition-transform", open && "rotate-180")}
         />
       </button>
 

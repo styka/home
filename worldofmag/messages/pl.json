@@ -1293,7 +1293,10 @@
       },
       "TopicPicker": {
         "poprzedniTemat": "Poprzedni temat",
-        "nastepnyTemat": "Następny temat"
+        "nastepnyTemat": "Następny temat",
+        "pasekTematow": "Tematy",
+        "brakTematow": "Brak tematów",
+        "wszystkieTematy": "Wszystkie tematy — szukaj po nazwie"
       }
     },
     "notes": {
@@ -2112,7 +2115,13 @@
         "obserwatoryCzekajaOpis": "Sprawdzenie prognozy pod kątem Twoich warunków kosztuje wywołanie modelu, więc nie dzieje się samo przy wejściu na stronę.",
         "ocenObserwatory": "Oceń obserwatory",
         "ocenPonownie": "Oceń ponownie",
-        "prognozaAlboObserwatoryZmienily": "Prognoza albo lista obserwatorów zmieniła się od czasu tej oceny"
+        "prognozaAlboObserwatoryZmienily": "Prognoza albo lista obserwatorów zmieniła się od czasu tej oceny",
+        "najpierwOcen": "Najpierw oceń obserwatory — bez oceny nie ma czego układać po stanie",
+        "ukladWgStanu": "Lista ułożona wg stanu",
+        "ukladSekcje": "Sekcje wg stanu",
+        "ukladKolejnosc": "Kolejność dodania",
+        "filtrNicNieZostawil": "Żaden obserwator nie jest w wybranym stanie.",
+        "bezOceny": "Bez oceny"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",

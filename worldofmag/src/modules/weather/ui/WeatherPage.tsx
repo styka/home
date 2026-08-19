@@ -23,6 +23,7 @@ import {
   deleteLocation,
   type LocationDTO,
   type WatcherDTO,
+  type WeatherPrefDTO,
 } from "../actions/weather";
 
 interface Coords {
@@ -36,6 +37,7 @@ export function WeatherPage({
   watchers,
   usdPlnRate,
   canAddToTasks,
+  weatherPref,
 }: {
   locations: LocationDTO[];
   watchers: WatcherDTO[];
@@ -43,6 +45,8 @@ export function WeatherPage({
   usdPlnRate?: number;
   /** Czy pokazywać „Dodaj do zadań" — zależy od uprawnienia do modułu Zadania. */
   canAddToTasks: boolean;
+  /** 082: zapamiętany układ listy obserwatorów (kolejność, grupowanie, filtr stanów). */
+  weatherPref: WeatherPrefDTO;
 }) {
   const t = useTranslations("modules.weather.WeatherPage");
   const router = useRouter();
@@ -154,7 +158,12 @@ export function WeatherPage({
             <ForecastDays forecast={forecast} />
           </div>
 
-          <WatchersPanel watchers={watchers} coords={coords} usdPlnRate={usdPlnRate} />
+          <WatchersPanel
+            watchers={watchers}
+            coords={coords}
+            usdPlnRate={usdPlnRate}
+            pref={weatherPref}
+          />
         </div>
       )}
 
