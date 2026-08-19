@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { parseReaderRate, READER_RATE_DEFAULT } from "@/lib/lektor";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { configuredSpeechVoices } from "@/lib/tts/serverTts";
@@ -64,29 +65,16 @@ export interface AssistantPrefsInput {
   readerFollow?: boolean;
 }
 
-/** Zakres prędkości lektora. Poza nim mowa albo bełkocze, albo usypia — nie ma po co go poszerzać. */
-const READER_RATE_MIN = 0.5;
-const READER_RATE_MAX = 2;
-
 const DEFAULTS: AssistantPrefsDTO = {
   instructions: "",
   level: "standard",
   voiceKind: "browser",
   voiceId: null,
   autoApprove: false,
-  readerRate: 0.95,
+  readerRate: READER_RATE_DEFAULT,
   readerFollow: true,
 };
 
-/**
- * Prędkość spoza zakresu ZAOKRĄGLAMY do brzegu, nie odrzucamy błędem. To wartość z suwaka —
- * jedyną drogą, żeby przyszła zła, jest ręcznie spreparowane żądanie, a wtedy sensowną odpowiedzią
- * jest najbliższa dozwolona prędkość, nie wyjątek u użytkownika, który nic złego nie zrobił.
- */
-function parseReaderRate(value: number | null | undefined): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULTS.readerRate;
-  return Math.min(READER_RATE_MAX, Math.max(READER_RATE_MIN, Math.round(value * 100) / 100));
-}
 
 function parseLevel(value: string | null | undefined): AssistantLevel {
   return ASSISTANT_LEVELS.includes(value as AssistantLevel) ? (value as AssistantLevel) : DEFAULTS.level;

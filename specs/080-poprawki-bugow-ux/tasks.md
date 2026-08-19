@@ -243,14 +243,14 @@ Najpierw regresja, potem przebudowa — żeby naprawa buga nie czekała na więk
 
 ## Faza 9 — Bramki i domknięcie
 
-- [ ] **T-30** — **Testy jednostkowe zebrane.** `npm run check:test-types` + `npm run test:unit`
+- [x] **T-30** — **Testy jednostkowe zebrane.** `npm run check:test-types` + `npm run test:unit`
   zielone (nowe testy: pozycjonowanie `AnchoredLayer`, zatrzask lektora, kody przyczyny bez klucza,
   ponowienia artykułu i streszczeń, ponowienie skórki, egzekutor `add_items`, próg gestu).
-- [ ] **T-31** — **Klikacz e2e.** Nowe/zaktualizowane scenariusze dla AC-1, AC-2, AC-3, AC-4, AC-5,
+- [~] **T-31** — **Klikacz e2e.** Nowe/zaktualizowane scenariusze dla AC-1, AC-2, AC-3, AC-4, AC-5,
   AC-16, AC-17, AC-18, AC-20, AC-23, AC-24. Uruchamiany `nohup bash scripts/e2e-web.sh`, **nigdy**
   `test:e2e:local`. **Żadnego `networkidle`** — aplikacja trzyma otwarty strumień zdarzeń od 072,
   więc takie oczekiwanie może się skończyć wyłącznie przekroczeniem czasu (`check:e2e-waits`).
-- [ ] **T-32** — **Pełne bramki.** `next lint --dir src` + `next build` na **lokalnym** Postgresie.
+- [x] **T-32** — **Pełne bramki.** `next lint --dir src` + `next build` na **lokalnym** Postgresie.
   **C-13: zatrzymujemy się na `next build`** — kolejny krok (`migrate.js`) ruszyłby produkcyjną bazę.
   Świadomie sprawdzane: `check:migrations`, `check:schema-drift`, `check:actions`,
   `check:ai-coverage`, `check:content-memory`, `check:cost-badge`, `check:ui-contract`,
@@ -258,7 +258,7 @@ Najpierw regresja, potem przebudowa — żeby naprawa buga nie czekała na więk
   `check:client-safe`, `check:tailwind`, `check:e2e-waits`, `check:perf`.
 - [ ] **T-33** — **Mapowanie AC → wynik** (wejście do `/verify`): tabela z sekcji poniżej wypełniona
   faktycznym wynikiem każdego kryterium.
-- [ ] **T-34** — **Wpisy do `doświadczenia.md`** (C-51) — po jednym dla: zakresu widoku ginącego
+- [x] **T-34** — **Wpisy do `doświadczenia.md`** (C-51) — po jednym dla: zakresu widoku ginącego
   z `searchParams` (Z3), ścieżki zapasowej lektora działającej poza gestem (Z4), planu ucinanego
   limitem wyjścia (Z6), warstwy pozycjonowanej tylko w jednej osi (Z7), sekcji AI wołanej
   z `useEffect` przy wejściu (Z11) oraz cofnięcia ujawniania kolumny przy najechaniu (Z1) — żeby

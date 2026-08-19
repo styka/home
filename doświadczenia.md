@@ -4,6 +4,97 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Zakres widoku w parametrach zapytania znika po mutacji
+**Problem:** Widok wielu projektów w Zadaniach pokazywał „🗂 Wiele projektów (0)" po zmianie statusu
+dowolnego zadania. Zakres liczył się WYŁĄCZNIE z `searchParams` (`?group=` / `?projects=`), a te
+potrafią nie dotrzeć przy ponownym renderze wywołanym z akcji przez `revalidatePath`: stan widoku
+zapisujemy natywnym `pushState` (`useViewState`, 043), więc adres i drzewo routera mogą się
+rozjechać. Puste parametry dawały pustą listę projektów.
+**Rozwiązanie:** Zakres zapisanego zestawu przeniesiony do SEGMENTU ŚCIEŻKI (`/tasks/zestaw/<id>`) —
+`params` są częścią trasy, więc Next ma je zawsze. Doraźny wybór projektów został filtrem widoku,
+którego utrata pokazuje wszystkie projekty, nie żadnego. Stare adresy przekierowują z zachowaniem
+filtrów (właściciel ma je w ulubionych widokach).
+**Lekcja:** Pozostałe filtry gubiły się tak samo od miesięcy i NIKT tego nie zgłosił, bo
+`oneOf(allowed, fallback)` degraduje je do wartości domyślnej — nieszkodliwie. Widoczna była tylko ta
+jedna gałąź, której domyślną było „nic". Stąd reguła: **żadne źródło zakresu nie może degradować do
+zera zasobów.** Jeśli wartość domyślna oznacza pustkę, to nie jest wartość domyślna, tylko awaria
+czekająca na okazję.
+
+## 2026-08-19 — Ścieżka zapasowa, która działa tylko na papierze
+**Problem:** Lektor milczał, gdy dostawca płatnej syntezy odmawiał. Kod ZAPASOWEJ ścieżki istniał
+i wyglądał poprawnie: nieudane `/api/tts` → `speakViaBrowser`. Tyle że działał **per wypowiedź
+i asynchronicznie**, więc każde zdanie płaciło nieudane żądanie sieciowe, a syntezę przeglądarki
+odpalał już POZA gestem użytkownika — a WebKit takie wywołanie odrzuca po cichu. Lektor Wiadomości
+łańcuchuje zdania z `onEnd`, więc poza pierwszym żadne i tak nie było w geście.
+**Rozwiązanie:** Zatrzask porażki. Po pierwszej odmowie `speak()` idzie na przeglądarkę od razu
+i synchronicznie, bez żądania. Zatrzask kasuje zmiana głosu/konfiguracji, a przejście jest widoczne
+w jednorazowym komunikacie.
+**Lekcja:** „Mamy fallback" to za mało — trzeba sprawdzić, **w jakim kontekście się wykonuje**.
+Ścieżka zapasowa uruchomiona po `await` jest w innym świecie niż ta uruchomiona w geście
+użytkownika, i tylko jedna z nich naprawdę działa. Testem, który to łapie, jest asercja na LICZBĘ
+żądań przy drugiej wypowiedzi, nie na sam fakt zejścia na głos zapasowy.
+
+## 2026-08-19 — Jeden komunikat na wszystkie przyczyny to komunikat o niczym
+**Problem:** Panel `/admin/llm` na każdą odmowę lektora mówił „Sprawdź klucz API i wybrany model".
+Właściciel wygenerował nowy klucz API — na darmo, bo problem był gdzie indziej. Trasa `/api/tts`
+łykała wyjątek i zwracała zawsze 502, mimo że `synthesizeSpeech` ZNAŁO status dostawcy.
+**Rozwiązanie:** Błąd niesie kod powodu wyprowadzony ze statusu (auth/model/quota/provider/network);
+trasa zwraca kod, panel tłumaczy go na zdanie. Treść odpowiedzi dostawcy dalej zostaje na serwerze,
+bo potrafi zawierać klucz — pilnuje tego asercja NEGATYWNA w teście.
+**Lekcja:** Diagnostyka, która nie rozróżnia przyczyn, jest gorsza niż jej brak: kieruje na fałszywy
+trop i kosztuje czas na naprawianie czegoś, co działa. Jeśli serwer zna powód, to informacja, którą
+się przekazuje — a nie szczegół implementacyjny, który się chowa.
+
+## 2026-08-19 — Warstwa pozycjonowana w jednej osi
+**Problem:** Popover kosztów LLM „zawsze otwiera się w górę i wychodzi powyżej widoku ekranu".
+`AiCostBadge` miał zaszyte `bottom: calc(100% + 6px)`, a jego ~50 linii własnej matematyki liczyło
+WYŁĄCZNIE oś poziomą. Pionu nie sprawdzało żadne z pięciu podobnych miejsc w aplikacji.
+**Rozwiązanie:** Jeden `AnchoredLayer`: portal do `body` (wyklucza naraz przycięcie przez `overflow`
+i zależność od bloku zawierającego), odbicie w pionie, dosunięcie w poziomie, `maxHeight` zamiast
+wyjścia poza ekran. Wpięty od razu we wszystkie pięć miejsc — komponent bez konsumentów byłby
+gorszy niż jego brak (C-35).
+**Lekcja:** Usterka przetrwała tak długo, bo przypadek ŚRODKOWY wyglądał dobrze zawsze. Wariant
+brzegowy (wyzwalacz przy krawędzi okna) trzeba wpisać do galerii komponentów jako osobny podgląd,
+inaczej nikt go nie zobaczy przed użytkownikiem. Test geometrii przechodzi CAŁĄ powierzchnię okna,
+bo „panel jest w oknie" to właściwość, a nie kilka przypadków.
+
+## 2026-08-19 — Plan asystenta ucinany limitem wyjścia
+**Problem:** „Dodaj ~100 pozycji do listy Weekend" kończyło się komunikatem „zabrakło kroków" —
+dwa razy, po ~60 tys. tokenów każde, bez dodania ani jednej pozycji. W logu diagnostycznym KAŻDE
+wywołanie kończy się dokładnie na `+1200` tokenów wyjścia. To nie była odpowiedź, tylko odcięcie
+limitem `AGENT_MAX_TOKENS`: katalog Zakupów miał wyłącznie `add_item`, czyli jedną akcję na jedną
+pozycję, więc plan musiałby zawierać sto obiektów JSON.
+**Rozwiązanie:** Akcja `add_items` (sto pozycji = jedna akcja) plus większa rezerwacja tokenów dla
+wiadomości, która wygląda na listę. Mniej akcji, nie więcej kroków — zwiększanie liczby obrotów
+pętli mnoży koszt, który właściciel już dwa razy zapłacił bez efektu.
+**Lekcja:** Równe `+1200` w kolejnych wierszach logu to nie zbieg okoliczności, tylko podpis limitu.
+Zanim uzna się, że „model sobie nie poradził", warto porównać liczbę tokenów wyjścia ze stałą
+w kodzie. I druga rzecz: koszt akcji w katalogu AI to nie tylko jej wykonanie — to także rozmiar
+planu, w którym musi się zmieścić.
+
+## 2026-08-19 — Sekcja AI wołana z useEffect przy każdym wejściu
+**Problem:** Obserwatory pogody „bardzo często w ogóle nie działają", a przy wejściu na moduł kręcił
+się spinner. `WatchersPanel` wołał model z `useEffect` przy każdym wejściu, a `evaluateWatchers`
+szło prosto do `chatComplete` — bez pamięci treści, bez trybu odświeżania, bez możliwości
+powstrzymania. Każde wejście płaciło za wywołanie, a każda odmowa kończyła się pustą listą.
+**Rozwiązanie:** `rememberedContent` z nowym rodzajem `weather.watchers`, dokładnie wzorcem sekcji
+„Co robić?" z tego samego pliku. Wejście na stronę tylko ODCZYTUJE stan sekcji.
+**Lekcja:** Nieparsowalna odpowiedź modelu dawała ten sam widok co „żaden obserwator się nie
+spełnił" — pustą listę. Dlatego usterka była niewidoczna mimo częstego występowania. **Awaria i
+poprawny pusty wynik nie mogą wyglądać tak samo**; to ta sama lekcja co w 038 i wraca za każdym
+razem, gdy ktoś napisze `?? []` na wyniku parsowania.
+
+## 2026-08-19 — Ukryty element wciąż zajmuje kolumnę
+**Problem:** Właściciel poprosił, żeby ikona trybu zaznaczania UKRYWAŁA kolumnę checkboxów, a nie
+tylko blokowała zaznaczanie. Checkbox renderował się zawsze i dostawał `opacity-0
+pointer-events-none` — był niewidoczny, ale zajmował 20 px plus odstęp w każdym wierszu.
+**Rozwiązanie:** Poza trybem zaznaczania nie renderujemy go wcale. Świadomie cofa to ujawnianie
+przy najechaniu z 042 — to ono było powodem, dla którego kolumna musiała stale zajmować miejsce.
+**Lekcja:** `opacity: 0` chowa piksele, nie układ. Jeśli prośba brzmi „ukryj kolumnę", to znaczy
+`display: none` albo brak elementu — nic innego nie zmieni szerokości wiersza. Przy cofaniu
+wcześniejszej decyzji zostawiamy w kodzie komentarz, DLACZEGO nie wolno jej przywrócić: inaczej
+następna osoba „naprawi regresję" i wróci do punktu wyjścia.
+
 ## 2026-08-20 — Konstrukcja obiektu Node w zasięgu modułu wywala hydrację CAŁEJ strony
 **Problem:** `const x = new AsyncLocalStorage()` stało w zasięgu modułu w dwóch plikach platformy.
 W grafie klienta `async_hooks` jest podmieniony na pusty moduł (świadomie — w przeglądarce ten

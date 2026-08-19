@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { odswiezZadania } from "../lib/odswiezanie";
 import { updateWithVersion } from "@/platform/concurrency/version";
 import { mirrorTaskShare, unmirrorTaskShare } from "@/platform/sharing/grantMirror";
 import { prisma } from "@/platform/db/prisma";
@@ -15,18 +16,6 @@ import { computeNextDue, parseRecurringRule, computeRecurringSuccessor } from "@
 import type { Task, TaskPriority, TaskWithRelations, RecurringRule } from "@/types";
 import { parseStatusConfig, DEFAULT_STATUS_CONFIG, SYSTEM_TASK_STATUSES } from "@/types";
 import { SUFIT_LISTY } from "@/platform/pagination";
-
-/**
- * 080 (Z3): odświeżenie widoków listy zadań po mutacji.
- *
- * Poza `/tasks` trzeba odświeżyć też trasę zapisanego zestawu. Podajemy ją w formie TRASY
- * (`[zestawId]`, tryb "page"), a nie konkretnego adresu: jedna mutacja może dotyczyć zadania,
- * które należy do kilku zestawów naraz, a akcja nie ma powodu ich wyliczać.
- */
-function odswiezZadania(): void {
-  revalidatePath("/tasks");
-  revalidatePath("/tasks/zestaw/[zestawId]", "page");
-}
 
 const TASK_INCLUDE = {
   tags: { include: { tag: true } },

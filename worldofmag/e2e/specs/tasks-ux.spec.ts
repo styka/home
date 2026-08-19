@@ -33,66 +33,41 @@ async function seedTask(title: string, description?: string) {
 }
 
 test.describe("042 — usterki w Zadaniach", () => {
-  test("[ux-AC20-AC21] checkbox ujawnia się przy myszy, ale NIE na dotyku", async ({ page, browser }) => {
+  test("[080-AC1] kolumna zaznaczeń pojawia się i ZNIKA razem z trybem zaznaczania", async ({ page }) => {
+    /**
+     * 080 (Z1) ZASTĘPUJE test [ux-AC20-AC21] z 042.
+     *
+     * 042 sprawdzało, że checkbox ujawnia się przy najechaniu myszą, a na dotyku nie. Właściciel
+     * zgłosił potem, że chce czegoś innego: ikona trybu ma UKRYWAĆ I ODKRYWAĆ kolumnę, a nie tylko
+     * blokować zaznaczanie. Ujawnianie przy najechaniu było właśnie powodem, dla którego checkbox
+     * musiał się renderować zawsze (z `opacity-0`) i zajmować 20 px w każdym wierszu.
+     *
+     * Dlatego stary test nie jest „naprawiany" — jest zastąpiony testem nowej reguły. Asercja idzie
+     * na OBECNOŚĆ W DOM, nie na przezroczystość: „ukryta kolumna" znaczy brak elementu, bo
+     * `opacity: 0` chowa piksele, a nie układ.
+     */
     const { projectId } = await seedTask("Zadanie testowe A");
 
-    const odczytajCheckbox = async (p: import("@playwright/test").Page) =>
-      p.evaluate(() => {
-        const btn = document.querySelector('button[aria-label="Zaznacz zadanie"]') as HTMLElement | null;
-        if (!btn) return null;
-        const cs = getComputedStyle(btn);
-        return {
-          opacity: cs.opacity,
-          pointerEvents: cs.pointerEvents,
-          hoverHover: matchMedia("(hover: hover)").matches,
-        };
-      });
-
-    // --- Wariant DOTYKOWY (AC-20) — zgłoszenie właściciela ---
-    // Uzywamy PRAWDZIWEJ emulacji urzadzenia mobilnego w Chromium (Pixel 5). CDP
-    // `Emulation.setEmulatedMedia` z cecha `hover` bylo ignorowane — `matchMedia("(hover: hover)")`
-    // nadal zwracalo `true`, wiec test mierzyl w rzeczywistosci urzadzenie ze wskaznikiem.
-    const { devices } = await import("@playwright/test");
-    const touchCtx = await browser.newContext({
-      ...devices["Pixel 5"],
-      storageState: "e2e/.auth/admin.json",
-      baseURL: "http://localhost:3000",
-    });
-    const touchPage = await touchCtx.newPage();
-    try {
-      await touchPage.goto(`/tasks/${projectId}`);
-      // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
-      // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
-      await touchPage.waitForLoadState("load").catch(() => {});
-      const row = touchPage.getByText("Zadanie testowe A").first();
-      await expect(row).toBeVisible({ timeout: 15_000 });
-
-      // Dotkniecie tytulu w celu przewiniecia listy — dokladnie gest ze zgloszenia.
-      await row.tap();
-      await touchPage.waitForTimeout(400);
-
-      const onTouch = await odczytajCheckbox(touchPage);
-      console.log("[AC-20] dotyk →", JSON.stringify(onTouch));
-      expect(onTouch).not.toBeNull();
-      // Warunek wstepny: to naprawde urzadzenie BEZ wskaznika.
-      expect(onTouch!.hoverHover).toBe(false);
-      expect(Number(onTouch!.opacity)).toBe(0);
-      expect(onTouch!.pointerEvents).toBe("none");
-    } finally {
-      await touchCtx.close();
-    }
-
-    // --- Wariant MYSZY (AC-21) — zachowanie ma zostać jak było ---
     await page.goto(`/tasks/${projectId}`);
     await page.waitForLoadState("load").catch(() => {});
-    await page.getByText("Zadanie testowe A").first().hover();
-    await page.waitForTimeout(400);
+    await expect(page.getByText("Zadanie testowe A").first()).toBeVisible({ timeout: 15_000 });
 
-    const onMouse = await odczytajCheckbox(page);
-    console.log("[AC-21] mysz →", JSON.stringify(onMouse));
-    expect(onMouse!.hoverHover).toBe(true);
-    expect(Number(onMouse!.opacity)).toBe(1);
-    expect(onMouse!.pointerEvents).not.toBe("none");
+    const checkboxy = page.locator('button[aria-label="Zaznacz zadanie"]');
+    const przelacznik = page.getByRole("button", { name: /zaznacz wiele/i }).first();
+
+    // Poza trybem: kolumny NIE MA w drzewie. Najechanie myszą też jej nie przywraca.
+    await page.getByText("Zadanie testowe A").first().hover();
+    await page.waitForTimeout(300);
+    expect(await checkboxy.count()).toBe(0);
+
+    // Włączenie trybu odsłania kolumnę.
+    await przelacznik.click();
+    await expect(checkboxy.first()).toBeVisible({ timeout: 10_000 });
+
+    // Wyłączenie trybu chowa ją z powrotem — w całości.
+    await przelacznik.click();
+    await page.waitForTimeout(300);
+    expect(await checkboxy.count()).toBe(0);
   });
 
   test("[ux-AC23] pole opisu rozciąga się bez wewnętrznego przewijania", async ({ page }) => {
