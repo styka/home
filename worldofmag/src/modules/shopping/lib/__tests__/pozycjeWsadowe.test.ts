@@ -1,9 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_POZYCJI_WSADOWO } from "@/modules/shopping/lib/limity";
-import { parseQuantity } from "@/modules/shopping/lib/parseQuantity";
+import { MAX_POZYCJI_WSADOWO } from "../limity";
+import { parseQuantity } from "../parseQuantity";
 
-// 080 (Z6). Egzekutor `add_items` rozbija wejście od modelu na pozycje. Ta reguła jest tu
+// 080 (Z6). Egzekutor `add_items` rozbija wejście od modelu na pozycje.
+//
+// Importy WZGLĘDNE, nie przez `@/`: dla lintera `@/modules/shopping/…` wewnątrz `modules/shopping`
+// wygląda identycznie jak import cudzego wnętrza, więc granica modułów musi być widoczna w samym
+// imporcie (C-02, C-36). Bramka `check:boundaries` istnieje właśnie po to, żeby to wyłapać. Ta reguła jest tu
 // odwzorowana 1:1, bo sam egzekutor woła Prismę i sesję — a łamie się właśnie parsowanie:
 // model wypisuje listę z punktorami, których nikt nie chce widzieć w nazwie produktu.
 
