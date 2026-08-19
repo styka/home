@@ -866,6 +866,12 @@
     "reason": "admin",
     "access": "admin"
   },
+  "llmConfig:getForceBrowserVoice": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "llmConfig:getLlmProviders": {
     "kind": "read",
     "status": "excluded",
@@ -922,6 +928,11 @@
     "access": "admin"
   },
   "llmConfig:setFollowupsEnabled": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "llmConfig:setForceBrowserVoice": {
     "status": "excluded",
     "reason": "admin",
     "access": "admin"

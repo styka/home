@@ -2,6 +2,7 @@ import { prisma } from "@/platform/db/prisma";
 import { resolveLlmChain } from "@/platform/llm/resolver";
 import { buildSpeechRequest, parseSpeechResponse } from "@/lib/tts/adapters";
 import { defaultVoiceFor, isVoiceOf, voicesFor } from "@/lib/tts/catalog";
+import { readForceBrowserVoice } from "@/lib/tts/forceBrowser";
 import type { ServerVoice } from "@/lib/tts/serverVoices";
 
 // Klucz `Config` z domyślnym głosem wybranym przez administratora (ustawiany w /admin/llm).
@@ -33,6 +34,10 @@ export interface SpeechResult {
 export async function synthesizeSpeech(input: { text: string; voiceId?: string | null }): Promise<SpeechResult | null> {
   const text = input.text.trim().slice(0, SPEECH_MAX_CHARS);
   if (!text) return null;
+
+  // 080 (Z4): administrator może świadomie wybrać głos systemowy. Wyłączamy warstwę serwerową,
+  // nie kasując konfiguracji dostawcy — wybór jest odwracalny jednym przełącznikiem.
+  if (await readForceBrowserVoice()) return null;
 
   const chain = await resolveLlmChain("speech");
   const cfg = chain[0];

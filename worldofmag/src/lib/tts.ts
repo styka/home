@@ -199,9 +199,67 @@ let audioUnlocked = false;
 // widział stan „zatrzymane", a słyszał lektora.
 let speechGeneration = 0;
 
+/**
+ * 080 (Z4): ZATRZASK PORAŻKI GŁOSU SERWEROWEGO.
+ *
+ * Ścieżka zapasowa istniała już wcześniej, ale była **per wypowiedź i asynchroniczna**, przez co
+ * w praktyce nie działała wcale. Zgłoszenie właściciela: „jak włączy się czytaj to nic nie słychać".
+ * Mechanizm był taki: każde zdanie szło do `/api/tts`, dostawało odmowę, a dopiero POTEM wołało
+ * syntezę przeglądarki — czyli już poza gestem użytkownika. WebKit takie wywołanie odrzuca po cichu
+ * (patrz `primeSpeech`), więc zamiast przełączenia głosu była cisza. Lektor Wiadomości łańcuchuje
+ * zdania z `onEnd`, więc żadne zdanie poza pierwszym i tak nie było w geście.
+ *
+ * Po pierwszej odmowie schodzimy na przeglądarkę OD RAZU i SYNCHRONICZNIE — w tym samym geście,
+ * bez żądania sieciowego. Zatrzask jest na sesję strony (nie zapisujemy go nigdzie), więc
+ * przeładowanie albo zmiana konfiguracji daje dostawcy kolejną szansę.
+ */
+let serverVoiceFailed = false;
+/** Wołane raz, przy pierwszym zejściu na głos systemowy — UI ma o tym POWIEDZIEĆ, nie milczeć. */
+let onFallbackNotice: ((reason: string | null) => void) | null = null;
+
 /** Ustawia głos serwerowy (null = korzystaj z syntezy przeglądarki). */
 export function setServerVoiceId(id: string | null): void {
-  serverVoiceId = id && id.trim() ? id.trim() : null;
+  const next = id && id.trim() ? id.trim() : null;
+  // Zmiana głosu albo konfiguracji kasuje zatrzask: to jest dokładnie ta sytuacja, w której
+  // warto spróbować jeszcze raz (administrator mógł właśnie poprawić klucz albo model).
+  if (next !== serverVoiceId) serverVoiceFailed = false;
+  serverVoiceId = next;
+}
+
+/**
+ * Rejestruje odbiorcę jednorazowej informacji „czytam głosem systemowym".
+ * Bez tego przejście byłoby niewidoczne, a użytkownik słyszałby inny głos bez wyjaśnienia.
+ */
+export function setSpeechFallbackNotice(fn: ((reason: string | null) => void) | null): void {
+  onFallbackNotice = fn;
+}
+
+/** Czy głos serwerowy został w tej sesji zatrzaśnięty jako niedziałający (do testów i UI). */
+export function serverVoiceLatchedOff(): boolean {
+  return serverVoiceFailed;
+}
+
+/**
+ * 080 (Z12): prędkość czytania, wspólna dla OBU ścieżek.
+ *
+ * Do tej pory `u.rate` było zaszyte jako 0.95 i dotyczyło wyłącznie syntezy przeglądarki — głos
+ * serwerowy nie miał żadnej regulacji. Skoro użytkownik ma jeden suwak, obie ścieżki muszą go
+ * słuchać, inaczej „prędkość" znaczyłaby co innego zależnie od tego, kto akurat czyta.
+ * Serwerowa ścieżka realizuje ją przez `playbackRate` odtwarzacza — dostawcy syntezy albo nie
+ * przyjmują prędkości, albo każdy inaczej, a odtwarzacz robi to samo za darmo i natychmiast.
+ */
+let speechRate = 0.95;
+
+export function setSpeechRate(rate: number): void {
+  if (!Number.isFinite(rate)) return;
+  speechRate = Math.min(2, Math.max(0.5, rate));
+  // Zmiana w trakcie czytania działa od razu — czekanie do następnego zdania wyglądałoby
+  // na zepsuty suwak.
+  if (sharedAudio) sharedAudio.playbackRate = speechRate;
+}
+
+export function getSpeechRate(): number {
+  return speechRate;
 }
 
 /** Współdzielony element audio (tworzony leniwie, NIGDY nie niszczony — patrz komentarz wyżej). */
@@ -269,14 +327,20 @@ export function speechAvailable(): boolean {
 }
 
 async function speakViaServer(text: string, generation: number, opts?: SpeakOptions): Promise<boolean> {
-  if (!serverVoiceId) return false;
+  if (!serverVoiceId || serverVoiceFailed) return false;
   try {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text.slice(0, 1200), voiceId: serverVoiceId }),
     });
-    if (!res.ok) return false; // 501 (brak konfiguracji) / 429 / 502 → fallback na przeglądarkę
+    if (!res.ok) {
+      // 501 (brak konfiguracji) / 429 / 502 → fallback na przeglądarkę, ale JUŻ NA STAŁE:
+      // kolejne zdania nie mają po co powtarzać tego samego nieudanego obiegu.
+      const reason = await odczytajPowod(res);
+      zatrzasnijGlosSerwerowy(reason);
+      return false;
+    }
     const blob = await res.blob();
     // Odczyt zatrzymany (albo zaczęła się nowa wypowiedź) w czasie oczekiwania na dźwięk — nie graj.
     if (generation !== speechGeneration) return true;
@@ -292,19 +356,40 @@ async function speakViaServer(text: string, generation: number, opts?: SpeakOpti
     audio.onended = done;
     audio.onerror = done;
     audio.src = url;
+    audio.playbackRate = speechRate;
     await audio.play();
     audioUnlocked = true; // udane odtworzenie też odblokowuje element na przyszłość
     return true;
   } catch {
+    // Awaria sieci albo odrzucone `play()` — tak samo nie ma sensu ponawiać przy każdym zdaniu.
+    zatrzasnijGlosSerwerowy(null);
     return false;
   }
+}
+
+/** Odczytuje kod powodu z odpowiedzi trasy. Brak powodu nie jest błędem — bywa 501/429. */
+async function odczytajPowod(res: Response): Promise<string | null> {
+  try {
+    const body = (await res.json()) as { reason?: string };
+    return typeof body.reason === "string" ? body.reason : null;
+  } catch {
+    return null;
+  }
+}
+
+function zatrzasnijGlosSerwerowy(reason: string | null): void {
+  if (serverVoiceFailed) return; // informujemy RAZ, nie przy każdym zdaniu
+  serverVoiceFailed = true;
+  onFallbackNotice?.(reason);
 }
 
 /** Wypowiada tekst w danym języku (BCP-47 lub nazwa). Przerywa poprzednią wypowiedź. */
 export function speak(text: string, lang?: string | null, opts?: SpeakOptions): void {
   if (!text.trim()) return;
   // Głos serwerowy ma pierwszeństwo; przy jakimkolwiek problemie wracamy do przeglądarki.
-  if (serverVoiceId) {
+  // Po zatrzaśnięciu (080/Z4) omijamy go BEZ żądania — dzięki temu synteza przeglądarki startuje
+  // synchronicznie, wciąż w geście użytkownika. To jest cała różnica między „inny głos" a ciszą.
+  if (serverVoiceId && !serverVoiceFailed) {
     stopSpeaking(); // zwiększa `speechGeneration`
     const generation = speechGeneration;
     void speakViaServer(text, generation, opts).then((ok) => {
@@ -333,7 +418,7 @@ function speakViaBrowser(text: string, lang?: string | null, opts?: SpeakOptions
       const match = window.speechSynthesis.getVoices().find((v) => v.voiceURI === uri);
       if (match) u.voice = match;
     }
-    u.rate = 0.95;
+    u.rate = speechRate;
     if (opts?.onEnd) {
       u.onend = () => opts.onEnd!();
       u.onerror = () => opts.onEnd!();

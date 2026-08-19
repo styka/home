@@ -45,6 +45,13 @@ export interface AssistantPrefsDTO {
    * klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, tego samego zbioru, którego używa szuflada.
    */
   autoApprove: boolean;
+  /**
+   * 080 (Z12): prędkość czytania lektora. Domyślna 0.95 nie jest okrągła celowo — dokładnie tyle
+   * było zaszyte w `lib/tts`, więc użytkownik, który niczego nie ustawił, nie usłyszy zmiany.
+   */
+  readerRate: number;
+  /** 080 (Z12): czy widok podąża za czytaną wiadomością. */
+  readerFollow: boolean;
 }
 
 export interface AssistantPrefsInput {
@@ -53,7 +60,13 @@ export interface AssistantPrefsInput {
   voiceKind?: string;
   voiceId?: string | null;
   autoApprove?: boolean;
+  readerRate?: number;
+  readerFollow?: boolean;
 }
+
+/** Zakres prędkości lektora. Poza nim mowa albo bełkocze, albo usypia — nie ma po co go poszerzać. */
+const READER_RATE_MIN = 0.5;
+const READER_RATE_MAX = 2;
 
 const DEFAULTS: AssistantPrefsDTO = {
   instructions: "",
@@ -61,7 +74,19 @@ const DEFAULTS: AssistantPrefsDTO = {
   voiceKind: "browser",
   voiceId: null,
   autoApprove: false,
+  readerRate: 0.95,
+  readerFollow: true,
 };
+
+/**
+ * Prędkość spoza zakresu ZAOKRĄGLAMY do brzegu, nie odrzucamy błędem. To wartość z suwaka —
+ * jedyną drogą, żeby przyszła zła, jest ręcznie spreparowane żądanie, a wtedy sensowną odpowiedzią
+ * jest najbliższa dozwolona prędkość, nie wyjątek u użytkownika, który nic złego nie zrobił.
+ */
+function parseReaderRate(value: number | null | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULTS.readerRate;
+  return Math.min(READER_RATE_MAX, Math.max(READER_RATE_MIN, Math.round(value * 100) / 100));
+}
 
 function parseLevel(value: string | null | undefined): AssistantLevel {
   return ASSISTANT_LEVELS.includes(value as AssistantLevel) ? (value as AssistantLevel) : DEFAULTS.level;
@@ -88,6 +113,8 @@ export async function getAssistantPrefs(): Promise<AssistantPrefsDTO> {
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
     autoApprove: row.autoApprove,
+    readerRate: parseReaderRate(row.readerRate),
+    readerFollow: row.readerFollow,
   };
 }
 
@@ -105,9 +132,13 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind?: AssistantVoiceKind;
     voiceId?: string | null;
     autoApprove?: boolean;
+    readerRate?: number;
+    readerFollow?: boolean;
   } = {};
 
   if (input.autoApprove !== undefined) data.autoApprove = input.autoApprove === true;
+  if (input.readerRate !== undefined) data.readerRate = parseReaderRate(input.readerRate);
+  if (input.readerFollow !== undefined) data.readerFollow = input.readerFollow === true;
 
   if (input.instructions !== undefined) {
     if (input.instructions.length > ASSISTANT_INSTRUCTIONS_MAX) {
@@ -157,6 +188,8 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
     autoApprove: row.autoApprove,
+    readerRate: parseReaderRate(row.readerRate),
+    readerFollow: row.readerFollow,
   };
 }
 

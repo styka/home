@@ -68,20 +68,20 @@ Wszystkie cztery zadania tej fazy dotykają rozłącznych plików i nie zależą
 
 Zależy od T-6 (kod przyczyny) po stronie panelu administratora; T-7 nie zależy od niczego.
 
-- [ ] **T-7** — **Z4: zatrzask porażki głosu serwerowego.** `src/lib/tts.ts`: po pierwszej odmowie
+- [x] **T-7** — **Z4: zatrzask porażki głosu serwerowego.** `src/lib/tts.ts`: po pierwszej odmowie
   ścieżki serwerowej `speak()` idzie **od razu, synchronicznie** do przeglądarki — w geście
   użytkownika i bez żądania sieciowego. Zatrzask kasuje zmiana głosu/konfiguracji. Jednorazowe,
   nieblokujące powiadomienie o zejściu na głos systemowy.
   **Gotowe, gdy:** test jednostkowy — pierwsze wywołanie schodzi na przeglądarkę, **drugie nie
   wykonuje już żądania**. *(AC-8)*
-- [ ] **T-8** — **Z4: głos systemowy jako wybór administratora.** `Config.speech_force_browser`
+- [x] **T-8** — **Z4: głos systemowy jako wybór administratora.** `Config.speech_force_browser`
   (`"1"`/`"0"`, brak wiersza = `"0"`) czytany na wejściu `synthesizeSpeech`; odczyt/zapis
   w `src/actions/llmConfig.ts` **z wpisem do `AuditLog`** (C-25); opcja w `SpeechAssignmentRow`.
   W tym samym zadaniu: panel tłumaczy kody przyczyny z T-6 na polskie zdania zamiast jednego
   „Sprawdź klucz API i wybrany model".
   **Gotowe, gdy:** przy `speech_force_browser=1` trasa zwraca 501 i powstaje wpis audytu; komunikat
   próbki rozróżnia odrzucony klucz od nieznanego modelu. *(AC-9, AC-10 część 2)*
-- [ ] **T-9** — **Z12: prędkość czytania.** `src/actions/assistantPrefs.ts` obsługuje `readerRate`
+- [x] **T-9** — **Z12: prędkość czytania.** `src/actions/assistantPrefs.ts` obsługuje `readerRate`
   i `readerFollow`; `src/lib/tts.ts` przyjmuje prędkość na **obu** ścieżkach (`u.rate` zamiast
   zaszytego `0.95`; `playbackRate` na współdzielonym elemencie audio).
   **Gotowe, gdy:** zmiana prędkości działa dla głosu przeglądarki i serwerowego, a użytkownik bez

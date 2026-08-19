@@ -479,7 +479,17 @@
       "SpeechAssignmentRow": {
         "domyslnyGlos": "Domyślny głos",
         "adresBazowyPodmienRegion": "Adres bazowy (podmień region)",
-        "kluczApiBezNiego": "Klucz API — bez niego lektor nie zadziała"
+        "kluczApiBezNiego": "Klucz API — bez niego lektor nie zadziała",
+        "wymusGlosSystemowy": "Czytaj głosem systemowym (przeglądarki)",
+        "wymusGlosSystemowyOpis": "Wyłącza syntezę serwerową, nie kasując konfiguracji dostawcy. Przydatne, gdy płatny lektor odmawia — czytanie działa dalej, tylko innym głosem.",
+        "probkaBrakKonfiguracji": "Lektor nie jest jeszcze skonfigurowany — zapisz wybór dostawcy i klucz.",
+        "probkaWymuszonyGlosSystemowy": "Synteza serwerowa jest wyłączona przełącznikiem powyżej — aplikacja czyta głosem systemowym.",
+        "probkaLimitOmnii": "Przekroczony limit zapytań w Omnii — odczekaj chwilę i spróbuj ponownie.",
+        "probkaPowodKlucz": "Dostawca odrzucił klucz API. Sprawdź, czy klucz jest aktywny i zapisany dla tego dostawcy.",
+        "probkaPowodModel": "Dostawca nie przyjął wybranego modelu lub głosu. Wybierz inny z listy — klucz jest tu bez znaczenia.",
+        "probkaPowodLimit": "Wyczerpany limit lub środki u dostawcy. Klucz działa, ale nie ma z czego opłacić zapytania.",
+        "probkaPowodSiec": "Nie udało się połączyć z dostawcą. To wygląda na problem sieciowy, nie na konfigurację.",
+        "probkaPowodDostawca": "Dostawca zwrócił błąd po swojej stronie. Spróbuj ponownie za chwilę."
       },
       "SystemCategoryManager": {
         "kategorieSystemoweWidoczneDla": "Kategorie systemowe widoczne dla wszystkich użytkowników. Zmiana nazwy aktualizuje wszystkie produkty w katalogu."
@@ -725,6 +735,12 @@
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
         "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj."
+      },
+      "SpeechFallbackNotice": {
+        "zeszlismyNaGlosSystemowy": "Lektor serwerowy nie odpowiada — czytam głosem systemowym.",
+        "powodKlucz": "Dostawca odrzucił klucz API.",
+        "powodModel": "Dostawca nie zna wybranego modelu lub głosu.",
+        "powodLimit": "Wyczerpany limit u dostawcy."
       }
     },
     "shortcuts": {
