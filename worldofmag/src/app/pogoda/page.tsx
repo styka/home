@@ -5,7 +5,7 @@ import { auth } from "@/platform/auth/session";
 import { hasPermission } from "@/platform/auth/permissions";
 import tasksModule from "@/modules/tasks/module";
 import weatherModule from "@/modules/weather/module";
-import { getLocations, getWatchers } from "@/modules/weather/actions/weather";
+import { getLocations, getWatchers, getWeatherPref } from "@/modules/weather/actions/weather";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
 import { WeatherPage } from "@/modules/weather/ui/WeatherPage";
 
@@ -14,10 +14,13 @@ export default async function PogodaRootPage() {
   if (!session?.user?.id) redirect("/auth/signin");
   if (!hasPermission(session, weatherModule.permission)) redirect("/");
 
-  const [locations, watchers, usdPlnRate] = await Promise.all([
+  const [locations, watchers, usdPlnRate, weatherPref] = await Promise.all([
     getLocations(),
     getWatchers(),
     getUsdPlnRate(),
+    // 082: układ listy obserwatorów wczytany po stronie serwera — inaczej widok mrugnąłby
+    // domyślnym ustawieniem, zanim doszedłby zapisany wybór użytkownika.
+    getWeatherPref(),
   ]);
   // „Dodaj do zadań" pokazujemy tylko komuś, kto ma dostęp do modułu Zadania — akcja i tak to
   // sprawdza po stronie serwera, ale przycisk, który zawsze kończy się błędem, byłby wadą UX.
@@ -29,6 +32,7 @@ export default async function PogodaRootPage() {
       watchers={watchers}
       usdPlnRate={usdPlnRate}
       canAddToTasks={canAddToTasks}
+      weatherPref={weatherPref}
     />
   );
 }

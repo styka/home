@@ -4,6 +4,54 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — Katalog systemowy nie może mieszkać w przestrzeni użytkownika
+**Problem:** Biblioteka 419 źródeł RSS wyglądała na zwykłe dane modułu Wiadomości, czyli — zgodnie
+z odruchem po zadaniu 11 — na tabelę z `workspaceId`. Gdyby tak zrobić, każdy użytkownik dostałby
+własną kopię czterystu wierszy przy pierwszym wejściu, a poprawiony przez administratora adres
+martwego kanału nie dotarłby do nikogo, kto już wpis miał.
+**Rozwiązanie:** Katalog jest tabelą SYSTEMOWĄ, bez przestrzeni i bez właściciela — jak `Category`
+z `userId=null, teamId=null`. Dodanie źródła KOPIUJE wpis do `NewsSource` użytkownika (razem
+z jego `key`, po którym rozstrzyga się „czy już mam"), więc od tej chwili to jest jego źródło:
+może poprawić adres, a wyłączenie wpisu w katalogu nie kasuje mu historii artykułów.
+**Lekcja:** Zanim dołożysz `workspaceId`, zapytaj, czyją decyzją jest treść wiersza. Dane, które
+opisuje ADMINISTRATOR dla wszystkich, nie należą do żadnej przestrzeni; własność przestrzeni ma
+sens dla tego, co użytkownik sam utworzył. Powiązanie przez kopię, a nie przez klucz obcy, jest
+tu cechą, nie skrótem: dwa byty mają odtąd osobne cykle życia i to jest dokładnie to, czego chcemy.
+
+## 2026-08-19 — Domyślnik `dbgenerated()` na NOWEJ tabeli zdejmuje kontrolę z kompilatora
+**Problem:** Wszystkie modele własnościowe w schemacie mają `workspaceId String @default(dbgenerated())`,
+więc odruch przy nowej tabeli (`WeatherPref`) był taki sam. Tyle że ten domyślnik jest pozostałością
+po etapie 1 zadania 11 — kolumnie dokładanej do ISTNIEJĄCYCH tabel i wypełnianej wyzwalaczem
+`omnia_fill_workspace`. Jego skutek uboczny: pole staje się OPCJONALNE w kliencie Prismy.
+**Rozwiązanie:** Nowa tabela dostała `workspaceId String @unique` bez domyślnika. Kolumna jest
+`NOT NULL`, a kompilator wymusza podanie przestrzeni przy każdym `create` — czyli dokładnie tę
+kontrolę, którą `dbgenerated()` by zdjął. Bramka `check:workspace-fill` słusznie nie żąda tu
+wyzwalacza: dotyczy wyłącznie tabel z NULLOWALNYM `workspaceId`.
+**Lekcja:** „Zgodność ze stylem otoczenia" nie znaczy kopiowania rozwiązań, które powstały dla
+problemu, jakiego nowy kod nie ma. Zanim powielisz wzorzec ze schematu, sprawdź, CO on tam robi —
+tutaj naśladowanie migracji wstecznej kosztowałoby kontrolę typów na wszystkich przyszłych zapisach.
+
+## 2026-08-19 — Bramka szukała pola tylko w jednym z dwóch zapisów tej samej rzeczy
+**Problem:** Odświeżanie Wiadomości padało przy KAŻDYM przebiegu — `prisma.newsArticle.createMany`
+odrzucał partię, bo wiersz niósł `ownerId`, kolumnę usuniętą migracją 0244. Moduł stał pusty:
+tematy, linia czasu i gorące tematy stoją na puli artykułów. Gorsze od samego błędu było to, że
+istniała bramka postawiona dokładnie po to (`check-owner-columns`, 095/098) — i była zielona.
+Powód: szukała pola wyłącznie w zapisie z dwukropkiem (`ownerId\s*:`). Zapis SKRÓCONY
+(`{ ownerId, sourceId: x }`) jest dla Prismy identyczny, a dla bramki nie istniał — w żadnym
+kształcie, także w najprostszym `createMany({ data: { ownerId, url } })`.
+**Rozwiązanie:** Wzorzec klucza objął oba warianty składni; skrócony wymaga `{`/`,` przed nazwą i
+`,`/`}` po niej, żeby `...ownerId` (rozlanie) i `rekord.ownerId` (odczyt pola) nadal przechodziły.
+Do skryptu wbudowane PIĘĆ prób mutacyjnych uruchamianych w każdym przebiegu: dwa kształty, które
+muszą paść (w tym dokładny kształt błędu produkcyjnego), i trzy, które muszą przejść. Sam kształt
+wiersza wydzielony z `fetchPool` do czystej `wierszePuli` i obłożony testem bez bazy i sieci.
+**Lekcja:** Wykrywanie po składni musi objąć **wszystkie warianty składni tej samej rzeczy** —
+inaczej mierzy nie „czy pole trafia do Prismy", tylko „czy autor napisał je tak, jak pomyślał autor
+bramki". I druga, oddzielna: „próby mutacyjne" wykonane raz ręcznie nie są dowodem, bo nie da się
+ich powtórzyć — dowód bramki musi być jej kodem, uruchamianym zawsze (osobna flaga to ten sam
+problem o krok dalej: pomija się ją zapominając). Hipotezę o przyczynie zawsze zmierz przed
+poprawką — tutaj pierwsza hipoteza (literał ukryty w łańcuchu `.map()`) była błędna, a prawdziwa
+luka okazała się szersza.
+
 ## 2026-08-19 — Commit scalający na `master` rozjeżdżał gałęzie przy każdej promocji
 **Problem:** Pipeline promował produkcję przez `git merge --no-ff develop -m "... [produkcja]"`.
 Ten commit scalający powstaje **wyłącznie na `master`** — `develop` nigdy go nie dostaje. Od tej

@@ -91,6 +91,48 @@
     "reason": "admin",
     "access": "admin"
   },
+  "adminNewsCatalog:checkCatalogEntry": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:createCatalogEntry": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:deleteCatalogEntry": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:exportCatalog": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:getCatalogEntries": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:importCatalog": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:setCatalogEntryEnabled": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "adminNewsCatalog:updateCatalogEntry": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "aiConversations:appendAiMessage": {
     "status": "excluded",
     "reason": "internal",
@@ -676,6 +718,17 @@
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
+  },
+  "katalog:addSourceFromCatalog": {
+    "status": "excluded",
+    "reason": "redundant",
+    "access": "owner"
+  },
+  "katalog:getSourceCatalog": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   },
   "languageDecks:addWord": {
     "status": "ai",
@@ -2859,6 +2912,12 @@
     "action": "get_weather",
     "access": "owner"
   },
+  "weather:getWeatherPref": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "owner"
+  },
   "weather:saveIdeaFromList": {
     "status": "excluded",
     "reason": "interactive",
@@ -2871,6 +2930,11 @@
   "weather:setIdeaState": {
     "status": "excluded",
     "reason": "interactive",
+    "access": "owner"
+  },
+  "weather:setWatchersView": {
+    "status": "excluded",
+    "reason": "settings",
     "access": "owner"
   },
   "weather:updateWatcher": {

@@ -2529,6 +2529,48 @@ model NewsSource {
   @@index([workspaceId])
 }
 
+// 082: SYSTEMOWA BIBLIOTEKA ŹRÓDEŁ RSS — słownik, z którego użytkownik dodaje gotowe źródło
+// jednym kliknięciem, zamiast szukać adresu kanału po portalach.
+//
+// Tabela świadomie NIE MA przestrzeni ani właściciela. Katalog jest systemowy — jak `Category`
+// z `userId=null, teamId=null`: czyta go każdy zalogowany, edytuje wyłącznie administrator
+// (`/admin/zrodla-rss`). Gdyby należał do przestrzeni, każdy użytkownik miałby własną kopię
+// czterystu wierszy, a poprawiony przez administratora adres kanału nie dotarłby do nikogo.
+//
+// Dodanie wpisu do własnych źródeł KOPIUJE dane do `NewsSource` (z `key` wpisu), więc późniejsza
+// zmiana w katalogu nie rusza tego, co użytkownik już ma — i odwrotnie: jego poprawka adresu nie
+// wraca do katalogu.
+model NewsSourceCatalog {
+  id          String    @id @default(cuid())
+  // Stabilny klucz wpisu (np. "pl-onet-wiadomosci"). Po nim idzie idempotentny seed
+  // (`ON CONFLICT DO NOTHING`), rozpoznanie „już dodane" i import bez duplikatów.
+  key         String    @unique
+  name        String
+  rssUrl      String
+  homepageUrl String    @default("")
+  // Ten sam sens co `NewsSource.descriptor` (040) — kolor liczy z niego `lib/news/sourceColor.ts`.
+  descriptor  String    @default("")
+  // Kod kraju wielkimi literami ("PL", "US"); pusty = międzynarodowe.
+  country     String    @default("")
+  // Kod języka małymi literami ("pl", "en").
+  language    String    @default("")
+  // "wiadomosci" | "biznes" | "sport" | … — String + union TS (C-12), nigdy enum Prisma.
+  category    String    @default("inne")
+  // Wyłączenie zamiast kasowania: wpis znika użytkownikom, ale niczyje źródła nie przepadają.
+  enabled     Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  // Wynik ostatniego sprawdzenia kanału: "unknown" | "ok" | "error". Katalog liczy setki pozycji,
+  // więc martwy kanał jest kwestią czasu — administrator sprawdza wpis i wyłącza go jednym ruchem.
+  checkStatus String    @default("unknown")
+  checkedAt   DateTime?
+  checkNote   String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([enabled, country])
+  @@index([category])
+}
+
 model NewsTopic {
   id              String    @id @default(cuid())
   title           String
@@ -2741,6 +2783,26 @@ model WeatherWatcher {
 // zablokował („nie proponuj"). Sama wygenerowana lista NIE ląduje w bazie: powtórne wejście na
 // /pogoda tego samego dnia obsługuje pamięć podręczna promptu w `chatComplete`, więc trzymamy tu
 // wyłącznie decyzje użytkownika i wygenerowane szczegóły, które mają go przeżyć.
+// 082: preferencja UKŁADU listy obserwatorów — odpowiednik `NewsPref` po stronie Pogody.
+// Jedna preferencja na przestrzeń osobistą.
+model WeatherPref {
+  id             String   @id @default(cuid())
+  // "status" (lista posortowana po stanie) | "grouped" (sekcje po stanie) | "manual" (kolejność
+  // dodania) — String + union TS (C-12).
+  watchersLayout String   @default("status")
+  // Stany do pokazania, po przecinku ("met,partial"); pusty = bez filtra.
+  watchersFilter String   @default("")
+  updatedAt      DateTime @updatedAt
+
+  // 082: świadomie BEZ `@default(dbgenerated())`, którym legitymują się pozostałe modele.
+  // Tamten domyślnik jest pozostałością po etapie 1 zadania 11 (kolumna dokładana do istniejących
+  // tabel i wypełniana wyzwalaczem `omnia_fill_workspace`). Nowa tabela nie ma czego wypełniać
+  // wstecz, a `dbgenerated()` czyni pole OPCJONALNYM w kliencie Prismy — czyli zdejmuje
+  // z kompilatora jedyną kontrolę tego, że zapis podał przestrzeń.
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model WeatherIdea {
   id            String    @id @default(cuid())
   // Odcisk tytułu (małe litery, bez diakrytyków i interpunkcji) — klucz naturalny propozycji.
@@ -3169,6 +3231,7 @@ model Workspace {
   weatherLocations      WeatherLocation[]
   weatherWatchers       WeatherWatcher[]
   weatherIdeas          WeatherIdea[]
+  weatherPrefs          WeatherPref[]
   aiContents            AiContent[]
   aiSectionPrefs        AiSectionPref[]
   newsRefreshRuns       NewsRefreshRun[]
