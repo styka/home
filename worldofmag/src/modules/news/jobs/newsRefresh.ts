@@ -101,19 +101,12 @@ interface PoolStageResult {
 }
 
 /**
- * Pobiera każde włączone źródło **dokładnie raz** i dopisuje nowe pozycje do wspólnej puli.
- *
- * Próg czasu jest wspólny dla całego modułu (`NewsPref.lastFetchedAt`), bo pobranie przestało być
- * czynnością pojedynczego tematu. Pierwszy przebieg bierze okno 24 h — bez tego zaciągnęlibyśmy
- * całą historię kanału przy pierwszym kliknięciu.
- */
-/**
  * 082: budowa wierszy puli wydzielona z `fetchPool`, żeby dała się przetestować BEZ bazy i sieci.
  *
  * Powód wydzielenia jest konkretny: kształt tego wiersza przez cały czas po migracji 0244 zawierał
  * `ownerId` — kolumnę, której już nie ma — i przewracał każde odświeżanie. Wpisany w środek pętli
  * po źródłach nie miał jak być sprawdzony inaczej niż uruchomieniem całego zadania z prawdziwym
- * kanałem RSS. Teraz ma test (`__tests__/newsRefresh.test.ts`).
+ * kanałem RSS. Teraz ma test (`__tests__/wierszePuli.test.ts`).
  *
  * Własność przychodzi **gotowa** (`wlasnosc`), a nie jako identyfikator użytkownika: ustalenie
  * przestrzeni jest operacją na bazie i należy do wołającego, który robi je raz na przebieg.
@@ -146,6 +139,13 @@ export function wierszePuli(
     }));
 }
 
+/**
+ * Pobiera każde włączone źródło **dokładnie raz** i dopisuje nowe pozycje do wspólnej puli.
+ *
+ * Próg czasu jest wspólny dla całego modułu (`NewsPref.lastFetchedAt`), bo pobranie przestało być
+ * czynnością pojedynczego tematu. Pierwszy przebieg bierze okno 24 h — bez tego zaciągnęlibyśmy
+ * całą historię kanału przy pierwszym kliknięciu.
+ */
 async function fetchPool(ownerId: string, force: boolean, ctx: JobContext): Promise<PoolStageResult> {
   // 079: zadanie w tle nie ma sesji — przestrzeń wyliczamy z właściciela zadania.
   const moje = await filtrMoichRekordow(ownerId);

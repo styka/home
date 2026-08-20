@@ -269,8 +269,22 @@ export async function importCatalog(json: string): Promise<{ added: number; skip
     throw new Error("Plik nie jest eksportem biblioteki źródeł Omnii");
   }
 
-  let added = 0;
-  let skipped = 0;
+  /**
+   * Walidacja w pamięci, a potem **JEDEN** zapis.
+   *
+   * Wersja z `createMany` w pętli robiła jedno zapytanie na wpis — dla pliku wyeksportowanego
+   * z tego katalogu to 419 podróży do bazy. Na lokalnym Postgresie niezauważalne, na Neonie
+   * (baza zdalna, kilkadziesiąt ms na podróż) to kilkanaście sekund, czyli akcja serwerowa, która
+   * zdąży się przekroczyć zanim skończy. Wejściem jest tu **własny eksport**, więc duży plik to
+   * przypadek typowy, nie skrajny.
+   */
+  const dobre: {
+    key: string; name: string; rssUrl: string; homepageUrl: string; descriptor: string;
+    country: string; language: string; category: string; enabled: boolean; sortOrder: number;
+  }[] = [];
+  const widziane = new Set<string>();
+  let odrzucone = 0;
+
   for (const e of paczka.entries) {
     let key: string;
     let rssUrl: string;
@@ -278,36 +292,47 @@ export async function importCatalog(json: string): Promise<{ added: number; skip
       key = sprawdzKluczKatalogu(String(e?.key ?? ""));
       rssUrl = sprawdzAdresKanalu(String(e?.rssUrl ?? ""));
     } catch {
-      skipped++;
+      odrzucone++;
       continue;
     }
     const name = przytnijPole(String(e?.name ?? ""));
-    if (!name) {
-      skipped++;
+    // Powtórka klucza W OBRĘBIE PLIKU odsiewana tutaj, a nie zostawiona bazie: `ON CONFLICT` co
+    // prawda ją przełknie, ale wtedy liczba „pominiętych" nie powiedziałaby, dlaczego.
+    if (!name || widziane.has(key)) {
+      odrzucone++;
       continue;
     }
-    const wynik = await prisma.newsSourceCatalog.createMany({
-      data: [
-        {
-          key,
-          name,
-          rssUrl,
-          homepageUrl: przytnijPole(e?.homepageUrl) || rssUrl,
-          descriptor: przytnijPole(e?.descriptor),
-          country: normalizujKraj(e?.country),
-          language: normalizujJezyk(e?.language),
-          category: normalizujKategorie(e?.category),
-          enabled: e?.enabled !== false,
-          sortOrder: Number.isFinite(e?.sortOrder) ? Number(e?.sortOrder) : 0,
-        },
-      ],
-      skipDuplicates: true,
+    widziane.add(key);
+    dobre.push({
+      key,
+      name,
+      rssUrl,
+      homepageUrl: przytnijPole(e?.homepageUrl) || rssUrl,
+      descriptor: przytnijPole(e?.descriptor),
+      country: normalizujKraj(e?.country),
+      language: normalizujJezyk(e?.language),
+      category: normalizujKategorie(e?.category),
+      enabled: e?.enabled !== false,
+      sortOrder: Number.isFinite(e?.sortOrder) ? Number(e?.sortOrder) : 0,
     });
-    if (wynik.count > 0) added++;
-    else skipped++;
   }
 
-  await logAudit("config", "news.catalog.import", null, `Import biblioteki: dodano ${added}, pominięto ${skipped}`);
+  // `skipDuplicates` = `ON CONFLICT ("key") DO NOTHING` — ta sama reguła co w seedzie migracyjnym:
+  // wpis, który już jest, zostaje TAKI, JAKI JEST (poprawka administratora nie może się cofnąć).
+  const wynik = dobre.length > 0
+    ? await prisma.newsSourceCatalog.createMany({ data: dobre, skipDuplicates: true })
+    : { count: 0 };
+  const added = wynik.count;
+  const skipped = paczka.entries.length - added;
+
+  // W dzienniku rozróżniamy DWA powody pominięcia, bo znaczą co innego: „już był" to normalny
+  // wynik ponownego importu, a „odrzucony" to wpis, którego plik nie niósł poprawnie.
+  await logAudit(
+    "config",
+    "news.catalog.import",
+    null,
+    `Import biblioteki: dodano ${added}, pominięto ${skipped} (w tym ${odrzucone} odrzuconych przy walidacji)`,
+  );
   revalidatePath("/admin/zrodla-rss");
   revalidatePath("/wiadomosci");
   return { added, skipped };
