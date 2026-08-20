@@ -94,3 +94,34 @@ To było świadome ryzyko wyboru właściciela („400+, maksymalnie szeroko"), 
 Pierwszą czynnością po wdrożeniu warto zrobić przegląd katalogu przyciskiem „Sprawdź"
 w `/admin/zrodla-rss`. Martwy wpis jest odwracalny jednym kliknięciem, a odświeżanie u użytkownika
 liczy próg per źródło, więc pojedynczy niedziałający kanał nie psuje przebiegu pozostałym.
+
+## Domknięcie — co poszło na środowiska
+
+| Gałąź | Commit | Środowisko | Stan |
+|-------|--------|-----------|------|
+| `develop` | `0c39920` | `worldofmag.onrender.com` (test, free tier) | ✅ wypchnięte |
+| `master` | `0c39920` | `omnia-prod.onrender.com` (produkcja, paid tier) | ✅ wypchnięte, **fast-forward** |
+
+Kontrola integralności (C-52) przeszła w obie strony: przed promocją `origin/master` był przodkiem
+`develop`, po promocji `origin/master` jest przodkiem `origin/develop`. Na produkcji stoi **dokładnie
+ten commit**, który przeszedł testy na `develop` — bit w bit, bez commita scalającego, którego nikt
+nie testował (C-52a).
+
+**Znacznik wydania nie trafił na zdalne repozytorium.** Tag `prod-082-wiadomosci-zrodla-i-pogoda-obserwatory`
+powstał lokalnie, ale `git push origin <tag>` odbija się trwałym `HTTP 403` (trzy próby z narastającą
+zwłoką). Push **gałęzi** z tej samej sesji działa bez zarzutu, więc to nie jest kwestia dostępu do
+repozytorium, tylko zakresu uprawnień nadanego tej sesji: wolno jej pisać po gałęziach, nie po tagach.
+Potwierdza to `git ls-remote --tags origin` — zdalnie nie ma **ani jednego** tagu `prod-*`, także dla
+wcześniejszych wydań, więc ograniczenie jest starsze niż ten przebieg.
+
+To **nie jest** przypadek awaryjny z C-52: ten dotyczy nieudanej kontroli integralności albo odbitego
+pushu do `master`, a oba przeszły i produkcja jest zaktualizowana. Tag jest znacznikiem wydania, nie
+samym wydaniem. Do dołożenia jednym poleceniem z maszyny właściciela:
+
+```bash
+git fetch origin master
+git tag -a prod-082-wiadomosci-zrodla-i-pogoda-obserwatory 0c39920 \
+  -m "082: Wiadomości — naprawa odświeżania, biblioteka źródeł RSS (419 wpisów), pasek tematów; Pogoda — obserwatory wg stanu [produkcja]"
+git push origin prod-082-wiadomosci-zrodla-i-pogoda-obserwatory
+```
+
