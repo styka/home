@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-23 — Trzy specyfikacje klikacza walczą o ulubione jednego konta
+**Problem:** Po przeniesieniu chromu paska widoku zaczęły migotać testy `favorites`, `shortcuts`
+i `view-state` — raz jeden, raz drugi. Pierwsze podejrzenie (moja zmiana zepsuła ulubione) okazało
+się fałszywe: **każdy z tych plików uruchomiony osobno jest zielony** (14/14, 7/7, 11/11), a razem
+pada jeden albo dwa. Wszystkie trzy czyszczą ulubione „do zera" i zapisują własne wpisy — na tym
+samym koncie administratora, w równoległych workerach. Moje zmiany dołożyły kilka kliknięć, timing
+się przesunął i wyścig zaczął przegrywać.
+Po drodze wyszły dwa **zastane** błędy w tych pętlach czyszczących, oba maskowane przypadkiem:
+selektor nie wykluczał GWIAZDKI bieżącego widoku (klikanie jej przełącza `/settings` w kółko —
+naprawione w `favorites` w 098, ale nie w pozostałych dwóch), i nie zawężał wyszukiwania do treści
+strony, więc `count()` liczył też ukryty mobilny overlay powłoki, którego skasować się nie da.
+**Rozwiązanie:** Oba zastane błędy naprawione. Sam wyścig **nie** — i to jest świadoma decyzja,
+a nie przeoczenie: usunięcie go wymaga albo osobnego konta na plik, albo szeregowego przebiegu, czyli
+zmiany infrastruktury testów, a nie tego przebiegu. Zapisane jako znane ograniczenie z dowodem
+pomiarowym (izolacja = zielone).
+**Lekcja:** Gdy test migocze po zmianie w kodzie, **najpierw uruchom go w izolacji**. Zielony
+w izolacji i czerwony w zestawie to nie regresja funkcji, tylko współdzielony stan — a ściganie go
+w kodzie produkcyjnym kosztuje godziny i kończy się „naprawą", która niczego nie naprawia.
+Test, który czyści stan globalny „do zera", jest z definicji niezgodny z równoległością.
+
 ## 2026-08-23 — Cztery niezależne drogi do tej samej ciszy w lektorze
 **Problem:** Właściciel zgłosił „lektor przestał działać… niby leci a nie słyszę". Objaw był jeden,
 przyczyny cztery — i trzy z nich znalazłem dopiero pisząc testy. (1) Lektor Wiadomości **nigdy nie

@@ -22,10 +22,10 @@ async function clearFavorites(page: import("@playwright/test").Page) {
     // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
     // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
     await page.waitForLoadState("load").catch(() => {});
-    const n = await page.locator(sel).count();
+    const n = await page.getByRole("main").locator(sel).count();
     if (n === 0) return;
-    await page.locator(sel).first().click();
-    await expect(page.locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
+    await page.getByRole("main").locator(sel).first().click();
+    await expect(page.getByRole("main").locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
   }
   throw new Error("Nie udalo sie wyczyscic ulubionych w 40 iteracjach");
 }
