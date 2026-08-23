@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Clock } from "lucide-react";
 import { onDataRefreshed, lastRefreshAt } from "@/lib/dataFreshnessBus";
 
 /**
@@ -60,10 +60,22 @@ export function FreshnessIndicator() {
         fontSize: 11,
         color: "var(--text-muted)",
         whiteSpace: "nowrap",
+        // Bez afordancji kontrolki: brak wskaźnika myszy, brak tła, brak obramowania.
+        cursor: "default",
       }}
     >
-      <RefreshCw size={12} />
-      <span className="hidden sm:inline">{label}</span>
+      {/* 083: ZEGAR, nie strzałka odświeżania.
+          Zgłoszenie właściciela: „ikona odświeżania, która wygląda na wyłączoną i nie wiadomo, do
+          czego służy, a powyżej niej jest przycisk «Odśwież»". Rozpoznanie było trafne w połowie:
+          to nigdy nie był przycisk — to podpis z wiekiem danych. Winna była IKONA: kołowa strzałka
+          jest powszechnym symbolem akcji odświeżania, więc element bez reakcji na kliknięcie
+          czytało się jako zepsuty, a stojąc obok prawdziwego „Odśwież" — jako jego duplikat.
+          Zegar mówi „czas", nie „zrób", i nie konkuruje z niczym.
+          Ikona jest `aria-hidden`, bo znaczenie niesie tekst obok. */}
+      <Clock size={12} aria-hidden />
+      {/* Tekst pokazujemy ZAWSZE. Wcześniej znikał na wąskim ekranie (`hidden sm:inline`) i zostawała
+          sama ikona — czyli dokładnie ten stan, w którym nie wiadomo, co element znaczy. */}
+      <span>{label}</span>
     </span>
   );
 }

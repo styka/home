@@ -149,7 +149,36 @@ export function ModuleView({
   const compact = density === "compact";
 
   return (
+    /**
+     * 083: DWIE warstwy zamiast jednej — nieruchoma rama i przewijana treść w środku.
+     *
+     * Wcześniej `ChromeFrame` siedział WEWNĄTRZ elementu z `overflow-y`, a `position: absolute;
+     * inset: 0` odnosi się tam do całej przewijanej zawartości, nie do widocznego okna. Narożniki
+     * skórki „Mostek" odjeżdżały więc razem z treścią. W modułach o krótkiej treści nie było tego
+     * widać, bo nie ma czego przewijać — usterka ujawniała się wyłącznie tam, gdzie treść jest
+     * długa (Wiadomości). To samo dotyczy tła: gradient `--bg-image-base` rozciągał się na pełną
+     * wysokość przewijania zamiast na ekran, więc przy długiej liście „gubił" swój przebieg.
+     *
+     * Zewnętrzny element NIE przewija się i nosi tło oraz dekorację; przewijanie i `scrollRef`
+     * (potrzebny listom wirtualizowanym) zostają na wewnętrznym.
+     */
     <div
+      style={{
+        position: "relative",
+        flex: 1,
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        backgroundColor: "var(--bg-base)",
+        backgroundImage: "var(--bg-image-base)",
+      }}
+    >
+      {/* Dekoracja skórki. Widoczność rozstrzyga `data-chrome-frame` na <html>, więc dla
+          większości skórek to jest pusty div bez kosztu. */}
+      <ChromeFrame />
+
+      <div
       ref={scrollRef}
       style={{
         position: "relative",
@@ -160,14 +189,8 @@ export function ModuleView({
         // W układzie `fill` przewijanie należy do TREŚCI, nie do ramy — inaczej
         // panel boczny modułu przewijałby się razem z listą.
         overflowY: fill ? "hidden" : "auto",
-        backgroundColor: "var(--bg-base)",
-        backgroundImage: "var(--bg-image-base)",
       }}
     >
-      {/* Dekoracja skórki. Widoczność rozstrzyga `data-chrome-frame` na <html>, więc dla
-          większości skórek to jest pusty div bez kosztu. */}
-      <ChromeFrame />
-
       <div
         style={{
           position: "relative",
@@ -237,6 +260,7 @@ export function ModuleView({
         >
           {children}
         </ViewContent>
+      </div>
       </div>
     </div>
   );

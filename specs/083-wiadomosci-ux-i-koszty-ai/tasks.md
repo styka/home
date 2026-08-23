@@ -16,7 +16,7 @@
 
 ## Faza 0 — Środowisko i punkt odniesienia
 
-- [ ] **T-1** — **Środowisko do oglądania.** Lokalny Postgres + baza e2e z zaseedowanymi tematami
+- [x] **T-1** — **Środowisko do oglądania.** Lokalny Postgres + baza e2e z zaseedowanymi tematami
   i wiadomościami (skrypt z 082-poprawki), build i `next start`. Zrzuty „przed" dla:
   `/wiadomosci` (góra strony), zakładka Źródła, moduł krótki (`/pogoda`) i długi po przewinięciu
   (narożniki skórki).
@@ -24,7 +24,7 @@
   odległość od górnej krawędzi ramy do pierwszej wiadomości** jest zapisana jako liczba odniesienia
   dla miary sukcesu ze speca §2.
 
-- [ ] **T-2** `[P]` — **Pomiar chromu.** Policz w przeglądarce ikony gwiazdki na desktopie i mobile,
+- [x] **T-2** `[P]` — **Pomiar chromu.** Policz w przeglądarce ikony gwiazdki na desktopie i mobile,
   na trasie modułowej i poza nią (`/admin`). Zapisz liczby — to jest dowód „przed" dla AC-1/AC-2.
   *Gotowe, gdy:* liczby zapisane; wiadomo, które konkretnie elementy DOM je rysują.
 
@@ -32,20 +32,20 @@
 
 ## Faza 1 — Powłoka: jedna gwiazdka, czytelny wskaźnik świeżości *(AC-1..AC-5)*
 
-- [ ] **T-3** — **Jedno miejsce akcji „zapisz ten widok".** Usuń `FavoriteStarButton`
+- [x] **T-3** — **Jedno miejsce akcji „zapisz ten widok".** Usuń `FavoriteStarButton`
   z `FavoritesSidebarSection` i z mobilnego górnego paska w `AppShell`; zostaje wyłącznie chrom
   `ViewBar`. Sekcja „ULUBIONE" traci ikonę gwiazdki jako etykietę — zostaje tekst i chevron.
   Przełącznik ulubionych (`⇄`) i lista **zostają** w obu miejscach.
   *Gotowe, gdy:* na desktopie i mobile widać **dokładnie jedną** gwiazdkę; przejście do ulubionych
   nadal działa z każdej strony.
 
-- [ ] **T-4** — **Wskaźnik świeżości przestaje udawać przycisk.** `FreshnessIndicator` renderuje się
+- [x] **T-4** — **Wskaźnik świeżości przestaje udawać przycisk.** `FreshnessIndicator` renderuje się
   jako podpis: ikona `aria-hidden` + tekst wieku danych, bez tła, obramowania i `hover`, z `title`
   wyjaśniającym, co pokazuje. Mechanizm odświeżania bez zmian.
   *Gotowe, gdy:* element nie ma `role="button"` ani `cursor: pointer`; obok niego nie stoi nic, co
   wygląda tak samo (AC-3, AC-4).
 
-- [ ] **T-5** `[P]` — **Narożniki skórki poza przewijaną treścią.** Wynieś `ChromeFrame` z wnętrza
+- [x] **T-5** `[P]` — **Narożniki skórki poza przewijaną treścią.** Wynieś `ChromeFrame` z wnętrza
   przewijanego kontenera `ModuleView` do warstwy rodzica z `position: relative`.
   *Gotowe, gdy:* przy przewinięciu `/wiadomosci` narożniki **nie zmieniają położenia**, a wygląd
   `/pogoda` (treść krótka) jest identyczny jak przed zmianą — porównanie zrzutów (AC-31).

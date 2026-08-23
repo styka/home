@@ -4,10 +4,9 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Star, Search, Settings2, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, Settings2, ChevronRight, ChevronDown } from "lucide-react";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
-import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { isPathLocked } from "@/lib/pathPermissions";
 
@@ -94,7 +93,9 @@ export function FavoritesSidebarSection({ favorites, userPermissions, collapsed 
           }}
         >
           {zwinieta ? <ChevronRight size={11} style={{ flexShrink: 0 }} /> : <ChevronDown size={11} style={{ flexShrink: 0 }} />}
-          <Star size={11} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+          {/* 083: etykieta sekcji BEZ ikony gwiazdki. Gwiazdka ma w całej aplikacji jedno znaczenie —
+              „zapisz/odznacz ten widok" — i stoi wyłącznie w pasku widoku. Etykieta obok akcji o tym
+              samym symbolu była jedną z czterech gwiazdek, które właściciel widział naraz. */}
           <span className="truncate">Ulubione</span>
           {/* Licznik w zwiniętym wierszu: sekcja ma być mała, ale nie niewidoczna. */}
           {zwinieta && accessible.length > 0 && (
@@ -111,10 +112,10 @@ export function FavoritesSidebarSection({ favorites, userPermissions, collapsed 
         </Link>
       </div>
 
-      {/* Punkt zapisu bieżącego widoku — pierwszy element sekcji (AC-2 z 043). W stanie zwiniętym
-          też chowany: to on i lista dawały ten „duży obszar", na który skarżył się właściciel.
-          Zapis widoku zostaje dostępny gwiazdką w pasku widoku modułu. */}
-      {!zwinieta && <FavoriteStarButton favorites={favorites} placement="viewbar" />}
+      {/* 083: przycisk „Zapisz ten widok" ZNIKA stąd. Ta sama akcja stała w trzech miejscach naraz
+          (tu, w mobilnym pasku powłoki i w pasku widoku) — przy jednej akcji trzy wejścia nie dają
+          wyboru, tylko pytanie „które z nich jest właściwe". Zostaje jedno: pasek widoku, bo to on
+          opisuje widok, który się zapisuje. Sekcja pozostaje tym, czym jest: LISTĄ zapisanych. */}
 
       {zwinieta ? null : accessible.length === 0 ? (
         <p

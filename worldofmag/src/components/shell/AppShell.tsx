@@ -161,8 +161,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               jest pływającym przyciskiem (FeedbackInspector) — działa też nad
               modalem, czego przycisk w pasku (pod modalem) nie potrafił. */}
           <div className="ml-auto flex items-center flex-shrink-0">
-            {/* 042: zapis bieżącego miejsca i skok do ulubionych — dostępne z KAŻDEJ strony (AC-4). */}
-            <FavoriteStarButton favorites={favoriteViews} placement="topbar" />
+            {/* 083: gwiazdka „zapisz ten widok" ZNIKA z tego paska — zostaje wyłącznie w pasku
+                widoku (`ViewBar`), czyli przy widoku, którego dotyczy. Trzy wejścia do jednej akcji
+                nie dawały wyboru, tylko niepewność, które jest właściwe.
+                Skok do ulubionych (poniżej) zostaje: to inna czynność i jedyne jej wejście na
+                telefonie. Świadomy koszt: na trasach bez `ModuleView` (`/admin/*`) nie da się już
+                zapisać widoku — zapis widoku administracyjnego nie jest realną potrzebą. */}
             <button
               onClick={openFavoritesSwitcher}
               className="flex items-center justify-center rounded"
