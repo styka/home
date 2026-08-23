@@ -57,59 +57,59 @@ sam układ akcji jak w pozostałych modułach.
 
 ### A. Porządek w nagłówku (cała aplikacja)
 
-- [ ] **AC-1** — Given dowolny moduł na desktopie, when użytkownik patrzy na ekran, then widzi
+- [x] **AC-1** — Given dowolny moduł na desktopie, when użytkownik patrzy na ekran, then widzi
       **dokładnie jedną** ikonę gwiazdki ulubionych (dziś są dwie: w górnym pasku powłoki i w pasku
       widoku).
-- [ ] **AC-2** — Given ta sama sytuacja na telefonie, then również **dokładnie jedna** gwiazdka.
-- [ ] **AC-3** — Given wskaźnik świeżości danych (ikona odświeżania z czasem), when użytkownik go
+- [x] **AC-2** — Given ta sama sytuacja na telefonie, then również **dokładnie jedna** gwiazdka.
+- [x] **AC-3** — Given wskaźnik świeżości danych (ikona odświeżania z czasem), when użytkownik go
       widzi, then **nie wygląda jak wyłączony przycisk**: albo jest czytelnie oznaczony jako
       informacja (nie kontrolka), albo jest klikalny i faktycznie odświeża dane.
-- [ ] **AC-4** — Given moduł Wiadomości, when użytkownik szuka odświeżenia wiadomości, then jest
+- [x] **AC-4** — Given moduł Wiadomości, when użytkownik szuka odświeżenia wiadomości, then jest
       **jedno** miejsce, które to robi, i nie sąsiaduje z elementem wyglądającym tak samo.
-- [ ] **AC-5** — Given dowolny inny moduł, when patrzymy na rozmieszczenie podstawowych akcji, then
+- [x] **AC-5** — Given dowolny inny moduł, when patrzymy na rozmieszczenie podstawowych akcji, then
       Wiadomości mają je **w tych samych miejscach** co reszta aplikacji.
 
 ### B. Koszty AI (przekrojowo)
 
-- [ ] **AC-6** — Given zalogowany użytkownik **bez** uprawnień administratora, when korzysta
+- [x] **AC-6** — Given zalogowany użytkownik **bez** uprawnień administratora, when korzysta
       z dowolnej funkcji AI w aplikacji, then **nigdzie** nie widzi komponentu kosztu (jak dziś —
       to jest zachowanie do utrzymania, nie do zmiany).
-- [ ] **AC-7** — Given administrator, when wchodzi na dowolną stronę, then komponenty kosztu przy
+- [x] **AC-7** — Given administrator, when wchodzi na dowolną stronę, then komponenty kosztu przy
       treściach AI są **domyślnie ukryte** i nie zajmują miejsca.
-- [ ] **AC-8** — Given administrator, when patrzy na górny pasek nawigacji (obok ulubionych
+- [x] **AC-8** — Given administrator, when patrzy na górny pasek nawigacji (obok ulubionych
       i powiadomień), then widzi **ikonę-przełącznik** pokazywania kosztów; przełączenie natychmiast
       pokazuje/ukrywa komponenty kosztu przy treściach AI.
-- [ ] **AC-9** — Given administrator w miejscu z **innym** górnym paskiem (asystent AI), then ma tam
+- [x] **AC-9** — Given administrator w miejscu z **innym** górnym paskiem (asystent AI), then ma tam
       dostęp do tego samego przełącznika.
-- [ ] **AC-10** — Given administrator z **włączonym** pokazywaniem kosztów, when patrzy na treść
+- [x] **AC-10** — Given administrator z **włączonym** pokazywaniem kosztów, when patrzy na treść
       wygenerowaną przez AI, then widzi koszt oraz może rozwinąć **składowe/szczegóły** (jak dziś).
-- [ ] **AC-11** — Given administrator (niezależnie od stanu przełącznika), when jakakolwiek operacja
+- [x] **AC-11** — Given administrator (niezależnie od stanu przełącznika), when jakakolwiek operacja
       AI wygeneruje koszt, then w **prawym górnym rogu aplikacji** pojawia się ulotne powiadomienie
       z **kwotą** oraz **nazwą biznesowej akcji użytkownika**, która je wywołała, i **samo znika**
       po chwili.
-- [ ] **AC-12** — Given kilka komponentów AI na jednej stronie, when każdy wygeneruje koszt, then
+- [x] **AC-12** — Given kilka komponentów AI na jednej stronie, when każdy wygeneruje koszt, then
       z powiadomień da się jednoznacznie odczytać, **który** koszt należy do której akcji.
-- [ ] **AC-13** — Given ulotne powiadomienie o koszcie, when zniknie, then **nie ma sposobu**
+- [x] **AC-13** — Given ulotne powiadomienie o koszcie, when zniknie, then **nie ma sposobu**
       obejrzenia go ponownie — nie jest nigdzie trwale zapisywane jako powiadomienie.
-- [ ] **AC-14** — Given powiadomienie o koszcie, when na ekranie jest otwarty modal albo pływający
+- [x] **AC-14** — Given powiadomienie o koszcie, when na ekranie jest otwarty modal albo pływający
       przycisk asystenta, then powiadomienie jest **nad nimi** (najwyższa warstwa).
-- [ ] **AC-15** — Given wyłączony globalnie wskaźnik kosztów w konfiguracji administratora, when
+- [x] **AC-15** — Given wyłączony globalnie wskaźnik kosztów w konfiguracji administratora, when
       administrator korzysta z aplikacji, then nie widzi ani przełącznika, ani powiadomień —
       istniejący wyłącznik systemowy pozostaje nadrzędny.
 
 ### C. Widok wiadomości
 
-- [ ] **AC-16** — Given widok Wiadomości, when użytkownik go otwiera, then **nie ma już sekcji
+- [x] **AC-16** — Given widok Wiadomości, when użytkownik go otwiera, then **nie ma już sekcji
       „historia odświeżeń"**.
-- [ ] **AC-17** — Given nawigacja po tematach, when użytkownik ją otwiera, then na **pierwszej
+- [x] **AC-17** — Given nawigacja po tematach, when użytkownik ją otwiera, then na **pierwszej
       pozycji** listy tematów jest **„Wszystkie"**, a osobny przełącznik „Strumień / Jeden temat"
       **nie istnieje**.
-- [ ] **AC-18** — Given przyklejony pasek nawigacji, when użytkownik czyta wiadomości, then pasek
+- [x] **AC-18** — Given przyklejony pasek nawigacji, when użytkownik czyta wiadomości, then pasek
       **nie powtarza nazwy bieżącego tematu** (ta jest w przyklejonym nagłówku sekcji); pasek ma
       strzałki wstecz/dalej i wejście do listy tematów.
-- [ ] **AC-19** — Given wybrany temat, when użytkownik przejdzie do sąsiedniego (strzałką lub
+- [x] **AC-19** — Given wybrany temat, when użytkownik przejdzie do sąsiedniego (strzałką lub
       z listy), then treść przesuwa się **płynnie w bok**, a nie skacze.
-- [ ] **AC-20** — Given przewijanie w dół przez kolejne tematy, when zmienia się temat bieżący, then
+- [x] **AC-20** — Given przewijanie w dół przez kolejne tematy, when zmienia się temat bieżący, then
       strona **nie cofa się** i pasek nawigacji **pozostaje przyklejony** (zachowanie wywalczone
       w 082-poprawce nie może zniknąć).
       > **Korekta po decyzji z AC-18 (C-54).** Pierwotnie to kryterium wymagało też, żeby „wskaźnik
@@ -118,39 +118,39 @@ sam układ akcji jak w pozostałych modułach.
       > Bez chipów nie ma czego przesuwać: wyzwalacz listy pokazuje **wybrany filtr** („Wszystkie"
       > albo nazwę tematu), a to się przy przewijaniu nie zmienia. Zostaje istotna połowa —
       > brak szarpania stroną. Wrażenie ruchu w bok daje AC-19 (przejście przy zmianie tematu).
-- [ ] **AC-21** — Given akcje tematu (edycja, usunięcie, dodanie nowego), when użytkownik ich szuka,
+- [x] **AC-21** — Given akcje tematu (edycja, usunięcie, dodanie nowego), when użytkownik ich szuka,
       then są **przy temacie**, którego dotyczą, a nie w pasku nawigacji.
-- [ ] **AC-22** — Given użytkownik z kilkunastoma źródłami, when patrzy na widok, then wybór źródeł
+- [x] **AC-22** — Given użytkownik z kilkunastoma źródłami, when patrzy na widok, then wybór źródeł
       zajmuje **stałą, niewielką przestrzeń** niezależnie od ich liczby (nie rośnie z listą).
-- [ ] **AC-23** — Given wybór źródeł, when użytkownik go otworzy, then może zaznaczyć/odznaczyć
+- [x] **AC-23** — Given wybór źródeł, when użytkownik go otworzy, then może zaznaczyć/odznaczyć
       pojedyncze źródła oraz **wszystkie naraz**, a stan („Wszystkie" albo „3 z 12") jest widoczny
       bez otwierania.
-- [ ] **AC-24** — Given wybrane **„Wszystkie" tematy**, when użytkownik przełącza widok na **linię
+- [x] **AC-24** — Given wybrane **„Wszystkie" tematy**, when użytkownik przełącza widok na **linię
       czasu**, then przełącznik jest dostępny i linia czasu się wyświetla (dziś działa tylko dla
       pojedynczego tematu).
-- [ ] **AC-25** — Given linia czasu przy wszystkich tematach, when użytkownik ją czyta, then przy
+- [x] **AC-25** — Given linia czasu przy wszystkich tematach, when użytkownik ją czyta, then przy
       każdym wpisie **widać, do którego tematu należy**.
 
 ### G. Zakładka Źródła
 
-- [ ] **AC-26** — Given zakładka Źródła, when użytkownik patrzy na listę, then pozycje są **równo
+- [x] **AC-26** — Given zakładka Źródła, when użytkownik patrzy na listę, then pozycje są **równo
       wyrównane** (jednakowa struktura wiersza), a nie „krzywe".
-- [ ] **AC-27** — Given ustawienie domyślnej długości streszczeń, when użytkownik go szuka, then
+- [x] **AC-27** — Given ustawienie domyślnej długości streszczeń, when użytkownik go szuka, then
       **nie musi przewijać na sam koniec** długiej listy źródeł.
-- [ ] **AC-28** — Given wszystkie trzy zakładki modułu, when użytkownik je przełącza, then mają
+- [x] **AC-28** — Given wszystkie trzy zakładki modułu, when użytkownik je przełącza, then mają
       **ten sam** układ nagłówka, odstępów i rozmieszczenia akcji.
 
 ### H. Spójność i reużywalność
 
-- [ ] **AC-29** — Given nawigator po grupach elementów (tematy → wiadomości), when programista chce
+- [x] **AC-29** — Given nawigator po grupach elementów (tematy → wiadomości), when programista chce
       go użyć w innym kontekście, then jest **wspólnym komponentem** przyjmującym grupy i elementy
       jako dane, bez wiedzy o wiadomościach.
-- [ ] **AC-30** — Given ten wspólny komponent, when powstaje, then ma **co najmniej jednego
+- [x] **AC-30** — Given ten wspólny komponent, when powstaje, then ma **co najmniej jednego
       konsumenta** w aplikacji (C-35 — komponent bez konsumenta jest gorszy niż jego brak).
 
 ### I. Ramki skórki
 
-- [ ] **AC-31** — Given skórka rysująca ozdobne narożniki widoku, when użytkownik przewija długą
+- [x] **AC-31** — Given skórka rysująca ozdobne narożniki widoku, when użytkownik przewija długą
       treść (np. Wiadomości), then narożniki **zostają na miejscu** i nie odjeżdżają z treścią.
 
 ## 5. Zakres

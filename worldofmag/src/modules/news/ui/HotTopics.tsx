@@ -2,10 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Flame, Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
+import { Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
+import { NaglowekSekcji } from "./sekcjeTematow";
 import {
   getHotTopics,
   createTopic,
@@ -120,21 +121,26 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Flame size={18} className="text-[var(--accent-amber)]" />
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("goraceTematy")}</h2>
-          <span className="text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</span>
-        </div>
-        {(hidden?.length ?? 0) > 0 && (
-          <button
-            onClick={() => setShowHidden((v) => !v)}
-            className="text-xs text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
-          >
-            Odrzucone tematy ({hidden!.length})
-          </button>
-        )}
-      </div>
+      {/* 083 (AC-28): TEN SAM przyklejony nagłówek sekcji, co w wiadomościach, na osi czasu i w
+          zakładce Źródeł. Właściciel prosił o spójność trzech zakładek wprost — a spójność, która
+          bierze się ze wspólnego komponentu, nie rozjeżdża się przy pierwszej zmianie stylu; taka,
+          która bierze się z podobnie wyglądającego, skopiowanego JSX-a, rozjeżdża się zawsze. */}
+      <NaglowekSekcji
+        tytul={t("goraceTematy")}
+        licznik={topics.length}
+        akcje={
+          (hidden?.length ?? 0) > 0 ? (
+            <button
+              onClick={() => setShowHidden((v) => !v)}
+              aria-expanded={showHidden}
+              className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            >
+              Odrzucone tematy ({hidden!.length})
+            </button>
+          ) : undefined
+        }
+      />
+      <p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</p>
 
       {/* 041: koszt stoi WEWNĄTRZ paska, a nie obok — to jedna informacja o tej samej treści.
           Przy stanie oczekiwania pasek się nie pokazuje: nie ma jeszcze czego opisywać. */}
