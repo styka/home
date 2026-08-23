@@ -1,7 +1,7 @@
 # Spec: Wiadomości — porządek w widoku i nawigator tematów; koszty AI poza treścią (przekrojowo)
 
 - **ID:** 083-wiadomosci-ux-i-koszty-ai
-- **Status:** draft
+- **Status:** planned
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-19
 - **Moduł(y):** Wiadomości (`module.news`), powłoka aplikacji i wspólny kontrakt widoku (wszystkie moduły), koszty AI (przekrojowo)
