@@ -98,9 +98,17 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
 
 ### D. Pasek widoku w całej aplikacji *(zgłoszenie 3)*
 
-- [ ] **AC-14** — Given dowolny moduł, when użytkownik patrzy na pasek widoku, then gwiazdka
-      ulubionych, wskaźnik świeżości i ściągawka skrótów zajmują **miejsce jednej ikony**, a nie
-      trzech.
+- [ ] **AC-14** — Given dowolny moduł, when użytkownik patrzy na pasek widoku, then chrom powłoki
+      zajmuje **miejsce dwóch kontrolek zamiast trzech**: gwiazdka ulubionych zostaje widoczna,
+      a wskaźnik świeżości i ściągawka skrótów chowają się pod jedną ikoną.
+      > **Korekta na etapie implementacji (C-54).** Pierwotnie kryterium wymagało **jednej** ikony
+      > na wszystkie trzy rzeczy. Implementacja pokazała, dlaczego to nie działa: gwiazdka otwiera
+      > WŁASNĄ warstwę (okienko z nazwą widoku), a warstwa w warstwie jest krucha — zamknięcie menu
+      > odmontowuje okienko w tej samej klatce, w której się pojawia, a menu zostawione otwarte
+      > pochłania pierwsze kliknięcie poza sobą. Zmierzone: trzy testy ulubionych stały się
+      > niestabilne. Podział idzie więc wg CZĘSTOŚCI: gwiazdka (najczęstsza akcja, własna warstwa)
+      > zostaje w pasku, a rzeczy rzadkie i bezstanowe idą do menu. Cel zgłoszenia — oddanie
+      > szerokości zakładkom — jest nadal osiągnięty, tylko o jedną ikonę mniej.
 - [ ] **AC-15** — Given ta sama sytuacja, when użytkownik potrzebuje którejś z tych rzeczy, then
       wszystkie są nadal dostępne **jednym dotknięciem** i żadna nie znika z aplikacji.
 - [ ] **AC-16** — Given moduł z filtrami (Zadania, Wiadomości), when porównamy szerokość dostępną dla

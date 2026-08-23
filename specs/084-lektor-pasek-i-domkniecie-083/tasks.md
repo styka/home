@@ -170,7 +170,7 @@
 
 ## Faza 6 — Domknięcie
 
-- [ ] **T-29** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13, zatrzymanie przed
+- [x] **T-29** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13, zatrzymanie przed
   `migrate.js` na prod): wszystkie `check:*`, `tsc` ×2, `next lint`, `next build`, budżet
   wydajnościowy, testy jednostkowe.
 
@@ -178,10 +178,10 @@
   klikacza + pomiary do AC-14..AC-20 porównane z punktem odniesienia z T-1.
   *Gotowe, gdy:* zero regresji, a liczby zapisane — nie „wygląda dobrze".
 
-- [ ] **T-31** — **`CLAUDE.md`**: lektor (pasek dolny, podświetlenie w karcie), pasek widoku (menu
+- [x] **T-31** — **`CLAUDE.md`**: lektor (pasek dolny, podświetlenie w karcie), pasek widoku (menu
   chromu, dwa wiersze na telefonie), Wiadomości (drop-down jako skok, nie filtr), `summaryFailed`.
 
-- [ ] **T-32** — **`doświadczenia.md`** (C-51): co najmniej trzy wpisy — milczenie lektora
+- [x] **T-32** — **`doświadczenia.md`** (C-51): co najmniej trzy wpisy — milczenie lektora
   (dziedziczony stan globalny + brak zdarzenia przy odrzuceniu przez WebKit + zatrzask ratujący
   nieistniejące drugie zdanie), awaria partii ubijająca cały etap, oraz odwrócenie decyzji
   z 083 (filtr → skok) jako lekcja o tym, że „jedna kontrolka = jedno znaczenie" bywa rozstrzygane

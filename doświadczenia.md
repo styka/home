@@ -4,6 +4,56 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-23 — Cztery niezależne drogi do tej samej ciszy w lektorze
+**Problem:** Właściciel zgłosił „lektor przestał działać… niby leci a nie słyszę". Objaw był jeden,
+przyczyny cztery — i trzy z nich znalazłem dopiero pisząc testy. (1) Lektor Wiadomości **nigdy nie
+ustawiał własnego głosu**: `setServerVoiceId` wołał wyłącznie asystent, a to zmienna modułowa
+w `lib/tts`, więc lektor dziedziczył ją przypadkiem — zależnie od tego, czy użytkownik otworzył
+wcześniej asystenta w tej samej sesji strony. Stąd „czasem działa". (2) Zatrzask porażki głosu
+serwerowego z 080 ratował **drugie** zdanie, którego nigdy nie było: pierwsze szło do sieci,
+a po odmowie synteza startowała po `await`, czyli poza gestem, gdzie WebKit odrzuca ją **bez żadnego
+zdarzenia** — łańcuch `onEnd` zamierał na pierwszym zdaniu przy pokazanym liczniku. (3) Brak syntezy
+wołał `onEnd`, więc na urządzeniu bez TTS lektor przelatywał **całą porcję w milczeniu**, pokazując
+rosnący postęp. (4) Pusty `catch` przy niesprawnej syntezie nie zgłaszał niczego.
+**Rozwiązanie:** Lektor konfiguruje własny głos i rozstrzyga jego dostępność (`getSpeechOptions`)
+PRZED pierwszym dotknięciem — przy nieskonfigurowanym dostawcy pierwsze zdanie rusza przeglądarką
+synchronicznie w geście. Nad tym stoi **czujka ciszy**: `speak()` przyjmuje `onSilent`, a brak
+dowodu startu (`onstart` albo udane `play()`) przez 1,5 s zgłasza ciszę. Czujka i `onEnd` wykluczają
+się wzajemnie. Interfejs przestał udawać: przy ciszy pokazuje komunikat i „Odtwórz ponownie" —
+kliknięcie JEST gestem, więc ponowienie gra.
+**Lekcja:** Gdy objaw brzmi „nic nie słychać", nie szukaj **jednej** przyczyny — policz wszystkie
+ścieżki, którymi kod może dojść do braku dźwięku, i zamknij każdą. A ponad nimi postaw zabezpieczenie,
+które **nie zna przyczyny**: tylko ono złapie tę piątą, której nie przewidziałeś. Zabezpieczenie,
+które ratuje „następną iterację", jest bezużyteczne w pętli, która zamiera na pierwszej.
+
+## 2026-08-23 — Ujemny margines na przyklejonym nagłówku rozpychał całą stronę
+**Problem:** Na telefonie strona Wiadomości przewijała się w bok (zmierzone: korzeń 377 px przy
+ekranie 360 px). Podejrzenie padało na zawartość paska — a rozpychały **sekcje tematów**. Przyczyną
+był idiom `-mx-1 px-1` na przyklejonych nagłówkach, użyty po to, żeby tło sięgało krawędzi:
+ujemny margines czyni element o 8 px szerszym od rodzica, a przy `min-width: auto` elementu `flex`
+nie ma czego skurczyć.
+**Rozwiązanie:** Ujemne marginesy usunięte; `min-w-0` na pasku i jego elastycznych dzieciach;
+wyzwalacz listy dostał `flex-1`, żeby BRAŁ dostępną szerokość zamiast zajmować tyle, ile mierzy jego
+treść (wcześniej robił obie złe rzeczy naraz: kurczył się do skrawka i rozpychał przy długiej nazwie).
+**Lekcja:** Poziomego przewijania nie szukaj po `document.documentElement.scrollWidth` — w aplikacji,
+która przewija się we własnej ramie, ten pomiar **nie wykryje niczego**. Szukaj elementów szerszych
+od swojego pola widzenia, które nie deklarują własnego przewijania, i pomijaj te przycinające tekst
+(`text-overflow: ellipsis`), bo one są szersze z definicji i to jest poprawne.
+
+## 2026-08-23 — Filtr, który miał być skokiem: odwrócona decyzja z poprzedniego przebiegu
+**Problem:** W 083 zrobiłem z listy tematów FILTR — wybór zawężał widok do jednej sekcji. Przeszło
+komplet bramek i weryfikację, bo było wewnętrznie spójne. Właściciel po testach powiedział wprost coś
+przeciwnego: „drop-down powinien dawać tylko możliwość łatwego przeskoku do wybranego tematu, a nie
+ograniczenie widoku. Na widoku powinny być wiadomości z wszystkich tematów."
+**Rozwiązanie:** Filtr zniknął w całości — klucz `temat` w adresie, filtrowanie, strzałki
+i przejście „między kolumnami" (kolumn nie ma, więc animacja opisywałaby zmianę, która się nie
+odbywa). Wyzwalacz nosi stałą etykietę, bo nazwa tematu, przy którym jesteś, należy do nagłówka jego
+sekcji. Zmiana zapisana w specyfikacji jako świadome odwrócenie decyzji, nie jako usterka.
+**Lekcja:** „Jedna kontrolka = jedno znaczenie" nie rozstrzyga, KTÓRE to ma być znaczenie — to
+rozstrzyga się dopiero w rękach użytkownika. Gdy wracasz do tej samej kontrolki drugi raz, usuwaj
+poprzednie znaczenie do końca (stan, adres, animacje), zamiast zostawiać je „na wszelki wypadek":
+inaczej zostaną dwa nośniki jednej decyzji, czyli dokładnie to, co ten przebieg naprawiał.
+
 ## 2026-08-23 — Lista DANYCH jako sygnał o WĘZŁACH DOM: zamrożony obserwator przecięć
 **Problem:** Obserwator wyznaczający „czytany temat" był przeliczany efektem zależnym od listy
 identyfikatorów (`kolejnosc.join(",")`), a obserwował **węzły DOM** rejestrowane osobną drogą przez

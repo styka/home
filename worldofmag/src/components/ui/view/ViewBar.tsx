@@ -38,13 +38,26 @@ export interface ViewBarProps {
 
 export function ViewBar({ filters, actions, hideChrome, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
   const chrome = useViewChrome();
-  const chromeItems = hideChrome
-    ? []
-    : [chrome.favorite, chrome.freshness, chrome.shortcuts].filter(Boolean);
+  /**
+   * 084: chrom dzieli się na DWIE grupy, i to jest korekta wobec pierwotnego zamysłu.
+   *
+   * Plan mówił „wszystkie trzy pod jedną ikonę". Implementacja pokazała, dlaczego to nie działa:
+   * gwiazdka ulubionych otwiera WŁASNĄ warstwę (okienko z nazwą widoku), a warstwa w warstwie jest
+   * krucha — zamknięcie menu odmontowuje okienko w tej samej klatce, w której się pojawia, a gdy
+   * menu zostawić otwarte, pochłania ono pierwsze kliknięcie poza sobą. Zmierzone: trzy testy
+   * ulubionych stały się niestabilne.
+   *
+   * Zostaje więc podział wg CZĘSTOŚCI, nie wg rodzaju: gwiazdka (najczęstsza akcja, własna warstwa)
+   * zostaje w pasku, a świeżość danych i ściągawka skrótów — rzeczy, po które sięga się raz na
+   * jakiś czas i które niczego nie otwierają — chowają się pod „⋯". Chrom kurczy się z trzech
+   * elementów do dwóch, a nie do jednego; zapis widoku nadal kosztuje jedno kliknięcie.
+   */
+  const chromeItems = hideChrome ? [] : [chrome.freshness, chrome.shortcuts].filter(Boolean);
+  const gwiazdka = hideChrome ? null : chrome.favorite;
 
   // Pusty pasek nie zajmuje miejsca — moduł bez filtrów i akcji, renderowany poza
   // powłoką, nie powinien dostawać pustej listwy z obramowaniem.
-  if (!compact && !filters && !actions && chromeItems.length === 0) return null;
+  if (!compact && !filters && !actions && chromeItems.length === 0 && !gwiazdka) return null;
 
   return (
     /**
@@ -105,7 +118,7 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
 
         {/* 084: chrom powłoki zwinięty do JEDNEJ kontrolki. Kolejność w środku zostaje ta sama,
             żeby ręka trafiała bez patrzenia — zmienia się tylko to, ile miejsca odbiera filtrom. */}
-        {chromeItems.length > 0 && (
+        {(chromeItems.length > 0 || gwiazdka) && (
           <div
             className="md:order-4"
             style={{
@@ -117,6 +130,7 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
               borderLeft: "var(--border-width) var(--border-style) var(--border)",
             }}
           >
+            {gwiazdka}
             <ViewChromeMenu pozycje={chromeItems} />
           </div>
         )}

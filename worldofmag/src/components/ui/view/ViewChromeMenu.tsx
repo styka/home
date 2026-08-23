@@ -69,12 +69,16 @@ export function ViewChromeMenu({ pozycje }: { pozycje: ReactNode[] }) {
         {/* Pozycje zostają TYM, czym są w pasku — własnymi komponentami powłoki. Menu daje im
             miejsce i odstęp, nie przerysowuje ich. */}
         <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 180 }}>
+          {/**
+           * Menu NIE zamyka się samo po kliknięciu pozycji — i to jest konieczność, nie wygoda.
+           *
+           * Gwiazdka ulubionych otwiera własne okienko z nazwą widoku, zakotwiczone do siebie.
+           * Zamknięcie menu odmontowuje gwiazdkę razem z tym okienkiem, więc kliknięcie „zapisz
+           * widok" nie robiło NIC: okienko znikało w tej samej klatce, w której się pojawiało.
+           * Menu zamyka się klikiem poza obszarem i klawiszem Esc — jak każda inna warstwa.
+           */}
           {pozycje.map((p, i) => (
-            <div
-              key={i}
-              onClick={() => setOtwarte(false)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 6px" }}
-            >
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 6px" }}>
               {p}
             </div>
           ))}

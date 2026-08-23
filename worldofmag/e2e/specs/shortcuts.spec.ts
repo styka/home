@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/test";
+import { kliknijGwiazdkeUlubionych } from "../pages/chromWidoku";
 
 /**
  * 043 — rejestr skrótów klawiszowych (AC-9..AC-12).
@@ -10,7 +11,12 @@ import { test, expect } from "../fixtures/test";
 test.describe.configure({ mode: "serial" });
 
 async function clearFavorites(page: import("@playwright/test").Page) {
-  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]';
+  // 084: wykluczamy GWIAZDKĘ bieżącego widoku („Usuń to miejsce z ulubionych") — kasowanie ma
+  // dotyczyć WPISÓW LISTY w ustawieniach. Klikanie gwiazdki tylko przełącza `/settings` w kółko,
+  // więc pętla nigdy nie schodzi do zera. Ten sam błąd naprawiono w `favorites.spec.ts` w 098;
+  // tutaj przetrwał, bo `.first()` przypadkiem trafiało we wpis listy — dopóki 084 nie zmieniło
+  // kolejności elementów w drzewie paska widoku.
+  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]:not([aria-label*="to miejsce"])';
   for (let i = 0; i < 40; i++) {
     await page.goto("/settings");
     // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
@@ -79,7 +85,7 @@ test.describe("043 — skróty klawiszowe", () => {
     // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
     // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
     // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
-    await page.getByRole("main").getByRole("button", { name: /Zapisz to miejsce w ulubionych/i }).click();
+    await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
     await page.getByPlaceholder("Nazwa widoku…").fill("Notatki skrót");
     await page.getByRole("button", { name: "Zapisz", exact: true }).click();
     // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
