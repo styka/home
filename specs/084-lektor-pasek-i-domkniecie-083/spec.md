@@ -57,48 +57,48 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
 
 ### A. Lektor — usterka odtwarzania *(zgłoszenie 1, część nowa)*
 
-- [ ] **AC-1** — Given telefon, na którym głos serwerowy jest niedostępny albo zawodzi, when
+- [x] **AC-1** — Given telefon, na którym głos serwerowy jest niedostępny albo zawodzi, when
       użytkownik uruchomi lektora **jednym dotknięciem**, then słychać głos systemowy urządzenia.
-- [ ] **AC-2** — Given sytuacja, w której **żadna** droga odtwarzania nie zadziała, when użytkownik
+- [x] **AC-2** — Given sytuacja, w której **żadna** droga odtwarzania nie zadziała, when użytkownik
       uruchomi lektora, then na ekranie pojawia się zrozumiały komunikat, **co** nie zadziałało —
       lektor nigdy nie pokazuje, że „leci", gdy nie ma dźwięku.
-- [ ] **AC-3** — Given przejście z głosu serwerowego na systemowy w trakcie odsłuchu, when zmiana
+- [x] **AC-3** — Given przejście z głosu serwerowego na systemowy w trakcie odsłuchu, when zmiana
       nastąpi, then odsłuch **trwa dalej** od tego samego miejsca, a użytkownik dowiaduje się
       o zmianie głosu raz, nie przy każdym zdaniu.
 
 ### B. Lektor — UX odsłuchu *(grupa E z listy 083: E1–E6)*
 
-- [ ] **AC-4** — Given włączony lektor, when użytkownik przewija stronę, then sterowanie lektorem
+- [x] **AC-4** — Given włączony lektor, when użytkownik przewija stronę, then sterowanie lektorem
       jest **przyklejone do dołu ekranu** i pozostaje dostępne przez cały czas.
-- [ ] **AC-5** — Given włączony lektor, when użytkownik patrzy na ekran, then **nie ma** osobnej
+- [x] **AC-5** — Given włączony lektor, when użytkownik patrzy na ekran, then **nie ma** osobnej
       sekcji powtarzającej treść wiadomości gołym tekstem — czytany fragment jest podświetlony
       **w karcie tej wiadomości**.
-- [ ] **AC-6** — Given lista wiadomości, when użytkownik chce włączyć podążanie za czytanym tekstem,
+- [x] **AC-6** — Given lista wiadomości, when użytkownik chce włączyć podążanie za czytanym tekstem,
       then przełącznik jest **przy wiadomościach**, a nie schowany w ustawieniach lektora.
-- [ ] **AC-7** — Given włączone podążanie, when użytkownik **sam** przewinie stronę, then podążanie
+- [x] **AC-7** — Given włączone podążanie, when użytkownik **sam** przewinie stronę, then podążanie
       wyłącza się samo i widok zostaje tam, gdzie użytkownik go zostawił.
-- [ ] **AC-8** — Given odsłuch kilku wiadomości pod rząd, when lektor kończy jedną i zaczyna
+- [x] **AC-8** — Given odsłuch kilku wiadomości pod rząd, when lektor kończy jedną i zaczyna
       następną, then między nimi jest **słyszalna przerwa**, a nie sklejenie w jedno zdanie.
-- [ ] **AC-9** — Given kolejne wiadomości, when lektor je czyta, then **przed tytułem** zapowiada
+- [x] **AC-9** — Given kolejne wiadomości, when lektor je czyta, then **przed tytułem** zapowiada
       źródło, ale **nie powtarza** nazwy dla kolejnych wiadomości z tego samego portalu pod rząd.
-- [ ] **AC-10** — Given porcja wiadomości, when użytkownik chce ją odsłuchać albo zamknąć w całości,
+- [x] **AC-10** — Given porcja wiadomości, when użytkownik chce ją odsłuchać albo zamknąć w całości,
       then „słuchaj" i „oznacz wszystkie jako przeczytane" są **rozróżnialne** i nie da się kliknąć
       jednego, mierząc w drugie.
 
 ### C. Nawigacja po tematach *(zgłoszenie 2 — odwrócenie decyzji z 083)*
 
-- [ ] **AC-11** — Given widok Wiadomości, when użytkownik wybierze temat z listy, then widok
+- [x] **AC-11** — Given widok Wiadomości, when użytkownik wybierze temat z listy, then widok
       **przewija się** do sekcji tego tematu, a wiadomości **wszystkich pozostałych tematów zostają
       na ekranie**.
-- [ ] **AC-12** — Given pasek nawigacji, when użytkownik na niego patrzy, then **nie ma** strzałek
+- [x] **AC-12** — Given pasek nawigacji, when użytkownik na niego patrzy, then **nie ma** strzałek
       „poprzednia / następna grupa".
-- [ ] **AC-13** — Given widok Wiadomości, when użytkownik go otworzy w dowolny sposób (wejście
+- [x] **AC-13** — Given widok Wiadomości, when użytkownik go otworzy w dowolny sposób (wejście
       wprost, powrót, zapisany ulubiony widok), then **zawsze** widzi wiadomości ze wszystkich
       tematów — nie istnieje stan, w którym część tematów jest niewidoczna z powodu wyboru tematu.
 
 ### D. Pasek widoku w całej aplikacji *(zgłoszenie 3)*
 
-- [ ] **AC-14** — Given dowolny moduł, when użytkownik patrzy na pasek widoku, then chrom powłoki
+- [x] **AC-14** — Given dowolny moduł, when użytkownik patrzy na pasek widoku, then chrom powłoki
       zajmuje **miejsce dwóch kontrolek zamiast trzech**: gwiazdka ulubionych zostaje widoczna,
       a wskaźnik świeżości i ściągawka skrótów chowają się pod jedną ikoną.
       > **Korekta na etapie implementacji (C-54).** Pierwotnie kryterium wymagało **jednej** ikony
@@ -109,16 +109,16 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
       > niestabilne. Podział idzie więc wg CZĘSTOŚCI: gwiazdka (najczęstsza akcja, własna warstwa)
       > zostaje w pasku, a rzeczy rzadkie i bezstanowe idą do menu. Cel zgłoszenia — oddanie
       > szerokości zakładkom — jest nadal osiągnięty, tylko o jedną ikonę mniej.
-- [ ] **AC-15** — Given ta sama sytuacja, when użytkownik potrzebuje którejś z tych rzeczy, then
+- [x] **AC-15** — Given ta sama sytuacja, when użytkownik potrzebuje którejś z tych rzeczy, then
       wszystkie są nadal dostępne **jednym dotknięciem** i żadna nie znika z aplikacji.
-- [ ] **AC-16** — Given moduł z filtrami (Zadania, Wiadomości), when porównamy szerokość dostępną dla
+- [x] **AC-16** — Given moduł z filtrami (Zadania, Wiadomości), when porównamy szerokość dostępną dla
       filtrów przed zmianą i po niej, then filtry mają **mierzalnie więcej** miejsca.
 
 ### E. Telefon *(zgłoszenie 4)*
 
-- [ ] **AC-17** — Given szerokość ekranu 360 px, when użytkownik otworzy Wiadomości i przewinie
+- [x] **AC-17** — Given szerokość ekranu 360 px, when użytkownik otworzy Wiadomości i przewinie
       stronę, then strona **nie przewija się w poziomie** w żadnym momencie.
-- [ ] **AC-18** — Given ta sama szerokość, when użytkownik patrzy na wejście do listy tematów,
+- [x] **AC-18** — Given ta sama szerokość, when użytkownik patrzy na wejście do listy tematów,
       then jest ono **czytelnie opisane i nie ucięte**.
       > **Korekta na etapie planowania (C-54).** Pierwotnie kryterium brzmiało „widzi nazwę
       > **wybranego** tematu". Napisałem je pod stan obecny, w którym drop-down jest filtrem — a AC-11
@@ -126,14 +126,14 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
       > czego pokazywać w wyzwalaczu poza stałą etykietą. Nazwa tematu, przy którym akurat jesteś,
       > była i zostaje w **przyklejonym nagłówku jego sekcji** — to rozstrzygnięcie z 083 (AC-18 tamże)
       > pozostaje w mocy. Zostaje istotna połowa: wejście ma być czytelne, a nie ucięte do skrawka.
-- [ ] **AC-19** — Given ta sama szerokość, when użytkownik patrzy na zakładki modułu, then widzi
+- [x] **AC-19** — Given ta sama szerokość, when użytkownik patrzy na zakładki modułu, then widzi
       **nazwy wszystkich trzech**, ewentualnie przewijając sam pasek zakładek — nigdy całą stronę.
-- [ ] **AC-20** — Given ta sama szerokość, when użytkownik przełącza Wiadomości ⇄ Linia czasu, then
+- [x] **AC-20** — Given ta sama szerokość, when użytkownik przełącza Wiadomości ⇄ Linia czasu, then
       przełącznik mieści się na ekranie.
 
 ### F. Jakość treści *(grupa D z listy 083)*
 
-- [ ] **AC-21** — Given wiadomość, dla której pierwsza próba streszczenia się nie powiodła, when
+- [x] **AC-21** — Given wiadomość, dla której pierwsza próba streszczenia się nie powiodła, when
       trwa odświeżanie, then podejmowana jest **automatyczna ponowna próba**, a użytkownik nie musi
       niczego klikać.
       > **Doprecyzowanie na etapie planowania (C-54).** Rekonesans pokazał, że **połowa tego
@@ -143,20 +143,20 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
       > — pozostałe partie nie są nawet próbowane i cała porcja zostaje bez streszczeń. To kryterium
       > dotyczy więc przede wszystkim tego przypadku: awaria jednej partii nie może kosztować
       > wszystkich pozostałych.
-- [ ] **AC-22** — Given wiadomość ze źródła obcojęzycznego, when użytkownik czyta listę, then
+- [x] **AC-22** — Given wiadomość ze źródła obcojęzycznego, when użytkownik czyta listę, then
       **tytuł jest po polsku**, tak samo jak streszczenie.
-- [ ] **AC-23** — Given wiadomość, której mimo ponowienia nie udało się streścić, when użytkownik ją
+- [x] **AC-23** — Given wiadomość, której mimo ponowienia nie udało się streścić, when użytkownik ją
       widzi, then wie, że streszczenia zabrakło — pozycja nie udaje kompletnej.
 
 ### G. Gorące tematy *(grupa F z listy 083)*
 
-- [ ] **AC-24** — Given zakładka gorących tematów, when użytkownik ją otwiera, then układ jest ten
+- [x] **AC-24** — Given zakładka gorących tematów, when użytkownik ją otwiera, then układ jest ten
       sam co w pozostałych zakładkach modułu.
-- [ ] **AC-25** — Given lista propozycji, when system ją buduje, then **pomija** propozycje pokryte
+- [x] **AC-25** — Given lista propozycji, when system ją buduje, then **pomija** propozycje pokryte
       przez temat, który użytkownik już monitoruje, oraz te wcześniej odrzucone.
-- [ ] **AC-26** — Given propozycja, when użytkownik doda ją do monitorowanych, then **znika**
+- [x] **AC-26** — Given propozycja, when użytkownik doda ją do monitorowanych, then **znika**
       z propozycji i pojawia się wśród monitorowanych tematów.
-- [ ] **AC-27** — Given zakładka gorących tematów, when użytkownik chce zobaczyć, co monitoruje i co
+- [x] **AC-27** — Given zakładka gorących tematów, when użytkownik chce zobaczyć, co monitoruje i co
       odrzucił, then obie listy są dostępne **stąd**, wraz z możliwością cofnięcia odrzucenia.
 
 ## 5. Zakres

@@ -174,7 +174,7 @@
   `migrate.js` na prod): wszystkie `check:*`, `tsc` ×2, `next lint`, `next build`, budżet
   wydajnościowy, testy jednostkowe.
 
-- [ ] **T-30** — **Weryfikacja w przeglądarce** (obowiązkowa, lekcja z 082/083): pełna suita
+- [x] **T-30** — **Weryfikacja w przeglądarce** (obowiązkowa, lekcja z 082/083): pełna suita
   klikacza + pomiary do AC-14..AC-20 porównane z punktem odniesienia z T-1.
   *Gotowe, gdy:* zero regresji, a liczby zapisane — nie „wygląda dobrze".
 
