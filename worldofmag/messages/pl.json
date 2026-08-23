@@ -1305,7 +1305,8 @@
         "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach."
       },
       "NewsItemCard": {
-        "odrzuc": "Odrzuć"
+        "odrzuc": "Odrzuć",
+        "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła."
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",

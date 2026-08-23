@@ -56,6 +56,8 @@ export interface NewsItemDTO {
   title: string;
   summary: string;
   summaryLength: SummaryLength;
+  /** 084: mimo ponowień nie udało się streścić — karta pokazuje surowy skrót z kanału i mówi to. */
+  summaryFailed: boolean;
   noveltyNote: string | null;
   imageUrl: string | null;
   publishedAt: string;
@@ -203,6 +205,7 @@ function toItemDTO(i: NewsItem & { source: NewsSource }): NewsItemDTO {
     title: i.title,
     summary: i.summary,
     summaryLength: i.summaryLength as SummaryLength,
+    summaryFailed: i.summaryFailed,
     noveltyNote: i.noveltyNote,
     imageUrl: i.imageUrl,
     publishedAt: i.publishedAt.toISOString(),

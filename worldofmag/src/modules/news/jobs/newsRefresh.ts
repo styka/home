@@ -22,6 +22,8 @@ import { fingerprintOf } from "@/lib/textKey";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { JobError, type JobContext } from "@/platform/jobs/types";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { przetworzPartiami } from "../lib/partieStreszczen";
+import { logEvent } from "@/platform/observability/log";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -398,20 +400,26 @@ async function summarizeItems(
     "Streszczasz wiadomości prasowe po polsku, rzeczowo i bez ozdobników. Nie dopisujesz niczego, " +
     "czego nie ma w materiale. Zwróć WYŁĄCZNIE JSON.";
 
+  /**
+   * 084 (AC-21): pętla podejść mieszka w `lib/partieStreszczen.ts` i jest testowana osobno.
+   *
+   * Tutaj zostaje wyłącznie WYKONAWCA jednej partii — rozmowa z modelem i zapis do bazy. Rozdział
+   * jest po to, żeby zachowanie przy awarii („partia, która padła, wraca do kolejnego podejścia,
+   * a nie przerywa etapu") dało się sprawdzić bez Prismy i bez dostawcy modelu.
+   */
   let done = 0;
-  // 080 (Z5): pozycje, dla których model nie odesłał streszczenia, wracają do niego jeszcze raz.
-  // Model potrafi pominąć kilka wpisów w partii — zwłaszcza gdy odpowiedź otrze się o limit
-  // tokenów — a `out.summaries` jest wtedy po prostu krótsze. Bez ponowienia takie pozycje na
-  // zawsze zostawały z opisem z kanału i to użytkownik widział jako „Brak treści materiału.".
-  let pending = items;
-
-  for (let attempt = 1; attempt <= SUMMARY_MAX_ATTEMPTS && pending.length > 0; attempt++) {
-    const summarized = new Set<string>();
-    const batches = Math.ceil(pending.length / SUMMARY_BATCH);
-
-    for (let b = 0; b < batches; b++) {
-      const batch = pending.slice(b * SUMMARY_BATCH, (b + 1) * SUMMARY_BATCH);
-      const postep = `Streszczam (${Math.min((b + 1) * SUMMARY_BATCH, pending.length)}/${pending.length})`;
+  const wynik = await przetworzPartiami({
+    pozycje: items,
+    rozmiarPartii: SUMMARY_BATCH,
+    maksPodejsc: SUMMARY_MAX_ATTEMPTS,
+    onBlad: (e, podejscie, numerPartii) =>
+      logEvent("warn", "news.summarize.batch_failed", {
+        attempt: podejscie,
+        batch: numerPartii,
+        error: e instanceof Error ? e.message : String(e),
+      }),
+    wykonaj: async (batch, attempt) => {
+      const postep = `Streszczam (${batch.length} poz.)`;
       // Numer podejścia trafia do postępu, żeby ktoś patrzący na kolejkę widział ponowienie,
       // a nie „licznik, który zaczął od nowa".
       ctx.progress?.(attempt === 1 ? `${postep}…` : `${postep}, podejście ${attempt}…`);
@@ -420,33 +428,53 @@ async function summarizeItems(
         .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.summary.slice(0, 600) || "(brak)"}`)
         .join("\n");
 
-      const out = await llmJson<{ summaries?: Array<{ index: number; summary: string }> }>(
+      const out = await llmJson<{ summaries?: Array<{ index: number; title?: string; summary: string }> }>(
         "generation",
         system,
         `${lengthInstruction(defaultLength)}\n\nMATERIAŁY:\n${blocks}\n\n` +
-          `Zwróć JSON: {"summaries":[{"index":0,"summary":"..."}]} dla KAŻDEGO materiału.`,
+          `Zwróć JSON: {"summaries":[{"index":0,"title":"...","summary":"..."}]} dla KAŻDEGO materiału.\n` +
+          `Pole "title" to TYTUŁ PO POLSKU: przetłumacz go, a jeśli już jest po polsku — przepisz bez zmian. ` +
+          `Nie dopisuj do tytułu niczego, czego nie ma w oryginale, i nie zmieniaj jego sensu.`,
         2000,
         sink,
         "streszczenia"
       );
 
+      const zrobione: string[] = [];
       for (const s of out.summaries ?? []) {
         const item = batch[s.index];
         const text = s.summary?.trim();
         if (!item || !text) continue;
+        // 084 (AC-22): tytuł po polsku zapisujemy TYM SAMYM wywołaniem. Pominięty tytuł zostawia
+        // oryginał — brak tłumaczenia jest gorszy niż tytuł, ale pusty tytuł jest gorszy od obu.
+        const tytul = s.title?.trim();
         await prisma.newsItem.update({
           where: { id: item.id },
-          data: { summary: text, summaryLength: defaultLength },
+          data: {
+            summary: text,
+            summaryLength: defaultLength,
+            summaryFailed: false,
+            ...(tytul ? { title: tytul } : {}),
+          },
         });
-        summarized.add(item.id);
+        zrobione.push(item.id);
         done++;
       }
-    }
+      return zrobione;
+    },
+  });
 
-    // Podejście, które nie ruszyło ani jednej pozycji, nie ma po co się powtarzać — kolejne
-    // wyglądałoby identycznie i kosztowało tyle samo.
-    if (summarized.size === 0) break;
-    pending = pending.filter((it) => !summarized.has(it.id));
+  /**
+   * 084 (AC-23): to, co po wszystkich podejściach nadal nie ma streszczenia, MA to powiedzieć.
+   *
+   * Taka pozycja zostaje z surowym skrótem z kanału — a skrót z kanału bywa poprawnym zdaniem, więc
+   * z samej treści użytkownik nie odróżni go od streszczenia i uzna listę za kompletną.
+   */
+  if (wynik.nieudane.length > 0) {
+    await prisma.newsItem.updateMany({
+      where: { id: { in: wynik.nieudane } },
+      data: { summaryFailed: true },
+    });
   }
 
   return done;

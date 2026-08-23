@@ -114,9 +114,16 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
           <NewsReader blocks={readerBlocks} />
         </div>
       ) : (
-        <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">
-          {summary}
-        </p>
+        <>
+          <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">
+            {summary}
+          </p>
+          {/* 084 (AC-23): pozycja bez streszczenia MA to powiedzieć. Skrót z kanału bywa poprawnym
+              zdaniem, więc bez tego znacznika lista wygląda na kompletną, a nie jest. */}
+          {item.summaryFailed && (
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">{t("bezStreszczenia")}</p>
+          )}
+        </>
       )}
       {usage && (
         <div className="mt-1 flex justify-end">

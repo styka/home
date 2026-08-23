@@ -16,13 +16,13 @@
 
 ## Faza 0 — Środowisko i fundament danych
 
-- [ ] **T-1** — **Punkt odniesienia w przeglądarce.** Zmierz PRZED zmianami, przy 360 px i 1280 px:
+- [x] **T-1** — **Punkt odniesienia w przeglądarce.** Zmierz PRZED zmianami, przy 360 px i 1280 px:
   `document.documentElement.scrollWidth` vs `clientWidth` na `/wiadomosci` i `/tasks`, liczbę
   elementów chromu w pasku widoku, szerokość kontenera filtrów. Bez tych liczb AC-16 i AC-17 nie da
   się orzec, a nie zamierzam ich orzekać „na oko" (lekcja z 082).
   *Gotowe, gdy:* liczby zapisane w notatce przebiegu.
 
-- [ ] **T-2** — **Migracja 0256** `prisma/migrations/0256_news_item_summary_failed/migration.sql`:
+- [x] **T-2** — **Migracja 0256** `prisma/migrations/0256_news_item_summary_failed/migration.sql`:
   `ALTER TABLE "NewsItem" ADD COLUMN IF NOT EXISTS "summaryFailed" BOOLEAN NOT NULL DEFAULT false;`
   plus zsynchronizowany `schema.prisma`.
   *Gotowe, gdy:* `npm run check:migrations` i `npm run check:schema-drift` zielone na LOKALNYM
@@ -32,22 +32,22 @@
 
 ## Faza 1 — Dług z 083, część D: jakość treści *(AC-21..AC-23)*
 
-- [ ] **T-3** — **Awaria partii nie ubija etapu streszczania.** W `summarizeItems` otocz wywołanie
+- [x] **T-3** — **Awaria partii nie ubija etapu streszczania.** W `summarizeItems` otocz wywołanie
   modelu `try/catch`: partia, która padła, wraca do kolejnego podejścia zamiast przerywać cały etap.
   Po wyczerpaniu podejść pozycje bez streszczenia dostają `summaryFailed = true`.
   *Gotowe, gdy:* AC-21 — test jednostkowy, w którym jedna partia rzuca, a pozostałe i tak zostają
   streszczone.
 
-- [ ] **T-4** — **Tłumaczenie tytułów na polski.** Rozszerz istniejący prompt streszczeń o pole
+- [x] **T-4** — **Tłumaczenie tytułów na polski.** Rozszerz istniejący prompt streszczeń o pole
   `title` w odpowiedzi JSON (przetłumacz; jeśli już po polsku — przepisz bez zmian). To samo
   wywołanie, nie drugie.
   *Gotowe, gdy:* AC-22 — tytuł zapisywany razem ze streszczeniem; test kształtu odpowiedzi.
 
-- [ ] **T-5** `[P]` — **Widoczny brak streszczenia.** `NewsItemCard` przy `summaryFailed` pokazuje
+- [x] **T-5** `[P]` — **Widoczny brak streszczenia.** `NewsItemCard` przy `summaryFailed` pokazuje
   dyskretny znacznik „bez streszczenia — skrót ze źródła" (tekst przez `t()`).
   *Gotowe, gdy:* AC-23 spełnione; `check:i18n` zielone.
 
-- [ ] **T-6** — **Commit fazy 1.**
+- [x] **T-6** — **Commit fazy 1.**
 
 ---
 
