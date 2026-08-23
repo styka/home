@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useTransition, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, useMemo, type CSSProperties } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
@@ -107,6 +107,18 @@ export function NewsPage({
   // 044: dane strumienia trzymamy osobno od danych pojedynczego tematu — to dwa różne odczyty
   // i przełączenie trybu nie może kasować tego, co już wczytane.
   const [stream, setStream] = useState<StreamTopicDTO[] | null>(null);
+  /**
+   * 082 (poprawka): wysokość PRZYKLEJONEGO paska tematów, mierzona, a nie wpisana na sztywno.
+   *
+   * Potrzebują jej trzy rzeczy naraz: przyklejony nagłówek sekcji (musi stanąć POD paskiem, nie
+   * na nim), margines celu przewijania (inaczej skok do tematu chowa jego nagłówek za paskiem)
+   * i obserwator wyznaczający temat aktywny (musi wiedzieć, ile ekranu jest zasłonięte).
+   *
+   * Mierzymy, bo skórki Omnii zmieniają typografię i gęstość — wpisana liczba pikseli byłaby
+   * poprawna dla jednej skórki i fałszywa dla ośmiu pozostałych.
+   */
+  const pasekRef = useRef<HTMLDivElement>(null);
+  const [pasekH, setPasekH] = useState(0);
   const [loadingStream, setLoadingStream] = useState(false);
   // Funkcja „przewiń do tematu" udostępniana przez strumień — po niej selektor tematu przewija
   // stronę zamiast przeładowywać widok (AC-B4).
@@ -240,6 +252,17 @@ export function NewsPage({
     scrollToTopicRef.current = fn;
   }, []);
 
+  useEffect(() => {
+    const el = pasekRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const zmierz = () => setPasekH(el.offsetHeight);
+    zmierz();
+    const ro = new ResizeObserver(zmierz);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // Pasek istnieje tylko w widoku strumienia/tematu — przy zmianie widoku mierzymy od nowa.
+  }, [view, browseMode, topics.length]);
+
   const filteredItems = (data?.items ?? []).filter(
     (i) => sourceFilter === "all" || i.sourceKey === sourceFilter
   );
@@ -292,7 +315,12 @@ export function NewsPage({
           a treść dostaje całą stronę. Ten sam układ działa na telefonie, więc nie ma dwóch osobnych
           nawigacji. */}
       {view === "feed" && (
-        <div className="min-w-0">
+        <div
+          className="min-w-0"
+          // Wysokość paska jako zmienna CSS: czytają ją `NewsStream` (przyklejony nagłówek sekcji
+          // i margines celu przewijania), więc nie musi go obchodzić, skąd się bierze.
+          style={{ "--news-pasek-h": `${pasekH}px` } as CSSProperties}
+        >
           {/* 044: wybór sposobu przeglądania. Strumień jest domyślny — po niego przyszło
               zgłoszenie — ale skupienie na jednym temacie zostaje jako osobna potrzeba. */}
           <div className="mb-3 flex gap-1">
@@ -308,16 +336,26 @@ export function NewsPage({
             />
           </div>
 
-          <TopicBar
-            topics={topics}
-            selectedId={selectedId}
-            onSelect={selectTopic}
-            onChanged={() => router.refresh()}
-          />
+          {/* 082 (poprawka): pasek tematów jest PRZYKLEJONY — to była druga połowa zgłoszenia
+              („nie przykleja się na górze przy scrolowaniu"), i bez niej pierwsza połowa nie ma
+              sensu: pasek, który odjeżdża razem z treścią, nie jest nawigacją, tylko nagłówkiem.
+              `z-30` stawia go nad przyklejonymi nagłówkami sekcji (`z-20`), które od teraz
+              zatrzymują się POD nim. */}
+          <div
+            ref={pasekRef}
+            className="sticky top-0 z-30 -mx-1 border-b border-[var(--border)] bg-[var(--bg-base)] px-1 pt-1 pb-2"
+          >
+            <TopicBar
+              topics={topics}
+              selectedId={selectedId}
+              onSelect={selectTopic}
+              onChanged={() => router.refresh()}
+            />
+          </div>
 
           {/* Filtr źródeł stoi NAD oboma trybami: jest ustawieniem użytkownika, a nie własnością
               tematu, więc w strumieniu działa na całość (Z-4). */}
-          <div className="mb-1 flex flex-wrap gap-1.5">
+          <div className="mb-1 mt-3 flex flex-wrap gap-1.5">
             <SourceTab
               label={`Wszystkie (${enabledSources.length})`}
               active={sourceFilter === "all"}
@@ -348,6 +386,7 @@ export function NewsPage({
               onActiveTopicChange={setSelectedId}
               onChanged={onItemChanged}
               registerScrollToTopic={registerScrollToTopic}
+              zaslonaGory={pasekH}
             />
           ) : !selectedTopic ? (
             <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
@@ -651,7 +690,9 @@ function TopicBar({
   }
 
   return (
-    <div className="mb-3">
+    // Bez własnego marginesu: odstęp należy do przyklejonego opakowania w widoku, inaczej
+    // powiększałby przyklejony pasek o pustą przestrzeń.
+    <div>
       <div className="flex items-center gap-2">
         <TopicPicker topics={topics} selectedId={selectedId} onSelect={onSelect} />
 

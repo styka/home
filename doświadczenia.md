@@ -4,6 +4,33 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-19 — `scrollIntoView` przewija WSZYSTKO nad elementem, nie tylko to, o co chodzi
+**Problem:** Po dołożeniu poziomego paska tematów w Wiadomościach właściciel zgłosił: „jak przewijam
+stronę (tryb strumień) to co przewinięcie do kolejnego tematu to mnie cofa do góry. no i ten pasek
+z tematami nie przykleja się na górze". Dwie usterki, jedna przyczyna. Pasek NIE był przyklejony,
+więc przy przewijaniu uciekał wysoko ponad ekran. W strumieniu temat aktywny zmienia się SAM
+(obserwator przecięć), a `TopicPicker` dosuwał wtedy aktywny chip przez
+`scrollIntoView({inline:"center", block:"nearest"})`. Ta metoda przewija **każdy przewijalny
+kontener nad elementem** — więc żeby chip stał się widoczny, przewijała całą ramę widoku z powrotem
+na górę. Zmierzone w przeglądarce: skok o **4719 px** w górę przy każdej zmianie tematu.
+`block:"nearest"` nie chroni: „nearest" znaczy „najmniejszy ruch, ŻEBY element był widoczny", a nie
+„nie ruszaj".
+**Rozwiązanie:** Dosuwanie robi teraz `pasek.scrollTo({left})` — operacja, która z definicji nie może
+dotknąć niczego poza paskiem — i tylko wtedy, gdy chip nie jest już wygodnie widoczny (inaczej pasek
+drgałby przy czytaniu). Pasek dostał `position: sticky`, a przyklejony nagłówek sekcji zatrzymuje się
+POD nim (`top: var(--news-pasek-h)`); wysokość paska jest **mierzona** `ResizeObserver`-em i podawana
+zmienną CSS, bo skórki Omnii zmieniają gęstość i typografię, więc wpisana liczba pikseli byłaby
+prawdziwa dla jednej skórki. Ta sama liczba poprawia `rootMargin` obserwatora i margines celu
+przewijania.
+**Lekcja:** `scrollIntoView` to złe narzędzie do przewijania JEDNEGO kontenera — jego zasięgiem jest
+cały łańcuch przodków. Gdy chcesz przesunąć zawartość konkretnego elementu, ustaw mu `scrollLeft`
+/ `scrollTop`. Druga lekcja, droższa: **zmiany układu strony trzeba zobaczyć w przeglądarce.**
+Ta usterka przeszła przez komplet bramek statycznych, `tsc`, lint, build i 1142 testy jednostkowe,
+bo żadne z nich nie ma reprezentacji dla „który kontener się przewinął" ani dla `position: sticky`.
+Dowód powstał dopiero z uruchomienia aplikacji i pomiaru `scrollTop` — i dlatego regresję pilnuje
+teraz klikacz (`e2e/specs/news-stream-scroll.spec.ts`), sprawdzony w obie strony: na kodzie sprzed
+poprawki pada z komunikatem „pasek tematów nie jest przyklejony", po poprawce przechodzi.
+
 ## 2026-08-19 — Katalog systemowy nie może mieszkać w przestrzeni użytkownika
 **Problem:** Biblioteka 419 źródeł RSS wyglądała na zwykłe dane modułu Wiadomości, czyli — zgodnie
 z odruchem po zadaniu 11 — na tabelę z `workspaceId`. Gdyby tak zrobić, każdy użytkownik dostałby
