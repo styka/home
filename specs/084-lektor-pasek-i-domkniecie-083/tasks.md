@@ -71,37 +71,37 @@
   *Gotowe, gdy:* AC-1 — test jednostkowy: przy niedostępnym głosie serwerowym pierwsze `speak`
   nie wykonuje żądania sieciowego przed syntezą.
 
-- [ ] **T-10** — **Komunikat zamiast udawania + ponowienie.** Po `onSilent` lektor przestaje pokazywać
+- [x] **T-10** — **Komunikat zamiast udawania + ponowienie.** Po `onSilent` lektor przestaje pokazywać
   postęp, wyświetla **co** nie zadziałało i daje „Odtwórz ponownie" (kliknięcie jest gestem, więc
   ponowienie gra).
   *Gotowe, gdy:* AC-2 i AC-3 — klikacz z podstawioną, milczącą syntezą pokazuje komunikat, nie licznik.
 
-- [ ] **T-11** — **Pasek lektora przyklejony do dołu, bez listy zdań.** `NewsReader` zostaje samym
+- [x] **T-11** — **Pasek lektora przyklejony do dołu, bez listy zdań.** `NewsReader` zostaje samym
   sterowaniem (`sticky bottom-0`, `env(safe-area-inset-bottom)`); pudełko z powtórzoną treścią
   **znika**. Przenieś świadomie mechanizmy z 080/Z12: prędkość, podążanie, jeden lektor naraz
   (`claimSpeech`).
   *Gotowe, gdy:* AC-4 i AC-5 — w drzewie nie ma listy zdań lektora, pasek ma `position: sticky`.
 
-- [ ] **T-12** — **Podświetlenie czytanego zdania w karcie wiadomości.** `NewsItemCard` przyjmuje
+- [x] **T-12** — **Podświetlenie czytanego zdania w karcie wiadomości.** `NewsItemCard` przyjmuje
   czytane zdanie i podświetla pasujący fragment (dopasowanie po treści, nie po indeksie; kolor
   zmienną CSS).
   *Gotowe, gdy:* AC-5 w pełni — czytany fragment widać przy wiadomości, nie w osobnym pudełku.
 
-- [ ] **T-13** — **Przełącznik podążania przy wiadomościach + samoczynne wyłączenie.** Ikona
+- [x] **T-13** — **Przełącznik podążania przy wiadomościach + samoczynne wyłączenie.** Ikona
   w nagłówku sekcji tematu (jeden stan `readerFollow`, dwa wejścia); ręczne przewinięcie ramy gasi
   podążanie.
   *Gotowe, gdy:* AC-6 i AC-7 — po samodzielnym przewinięciu widok zostaje tam, gdzie go zostawiono.
 
-- [ ] **T-14** `[P]` — **Przerwa między pozycjami i zapowiedź źródła bez powtórzeń.** ~400 ms ciszy
+- [x] **T-14** `[P]` — **Przerwa między pozycjami i zapowiedź źródła bez powtórzeń.** ~400 ms ciszy
   na granicy bloków; `ReaderBlock.zrodlo` zapowiadane tylko przy zmianie portalu.
   *Gotowe, gdy:* AC-8 i AC-9 — test jednostkowy budowania zdań: dwie kolejne pozycje z tego samego
   źródła dają **jedną** zapowiedź.
 
-- [ ] **T-15** `[P]` — **Rozróżnialne wejścia „słuchaj" i „oznacz wszystkie".** Odsłuch dostaje
+- [x] **T-15** `[P]` — **Rozróżnialne wejścia „słuchaj" i „oznacz wszystkie".** Odsłuch dostaje
   wariant `primary` z ikoną, oznaczanie zostaje przyciskiem tekstowym, między nimi separator.
   *Gotowe, gdy:* AC-10 — nie da się kliknąć jednego, mierząc w drugie.
 
-- [ ] **T-16** — **Commit fazy 2** + bramki modułowe.
+- [x] **T-16** — **Commit fazy 2** + bramki modułowe.
 
 ---
 

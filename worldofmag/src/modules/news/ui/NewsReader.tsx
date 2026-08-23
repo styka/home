@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Play, Pause, SkipBack, SkipForward, Square, Volume2, ChevronLeft, ChevronRight, Gauge, Crosshair, Ban } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Square, Volume2, ChevronLeft, ChevronRight, Gauge, Crosshair, Ban, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { splitSentences } from "@/lib/speech/sentences";
 import {
@@ -60,6 +60,9 @@ interface Sentence {
  */
 let activeStopper: (() => void) | null = null;
 
+/** 084 (AC-8): ile ciszy zostawiamy między wiadomościami, żeby dało się usłyszeć granicę. */
+const PRZERWA_MIEDZY_WIADOMOSCIAMI_MS = 400;
+
 function claimSpeech(stop: () => void) {
   if (activeStopper && activeStopper !== stop) activeStopper();
   activeStopper = stop;
@@ -72,10 +75,22 @@ function releaseSpeech(stop: () => void) {
 export function NewsReader({
   blocks,
   onBlockChange,
+  onCzytaneZdanie,
+  onZamknij,
 }: {
   blocks: ReaderBlock[];
   /** Wywoływane, gdy lektor przechodzi do innej wiadomości — pozwala przewinąć widok do niej. */
   onBlockChange?: (blockIndex: number) => void;
+  /**
+   * 084 (AC-5): treść zdania, które właśnie leci — do podświetlenia W KARCIE wiadomości.
+   *
+   * Podajemy TEKST, nie indeks: lektor i karta dzielą ten sam podział na zdania
+   * (`lib/speech/sentences`), więc porównanie treści jest jednoznaczne, a indeks wymagałby
+   * utrzymywania zgodności dwóch list i psuł się przy pierwszej rozbieżności.
+   */
+  onCzytaneZdanie?: (zdanie: string | null, blockIndex: number | null) => void;
+  /** Zamknięcie lektora — pasek jest jedynym miejscem, z którego da się go wyłączyć. */
+  onZamknij?: () => void;
 }) {
   const t = useTranslations("modules.news.NewsReader");
   // Zdania wszystkich bloków w jednej, płaskiej liście: łańcuch `onEnd` nie musi wtedy wiedzieć nic
@@ -96,7 +111,12 @@ export function NewsReader({
   const [current, setCurrent] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [supported, setSupported] = useState(true);
-  const listRef = useRef<HTMLDivElement>(null);
+  /**
+   * 084 (AC-2): „mowa nie ruszyła". Osobny stan od `paused` i od `current == null`, bo znaczy coś
+   * trzeciego: użytkownik poprosił o odczyt, a urządzenie nie wydało dźwięku. Dopóki tego stanu nie
+   * było, lektor pokazywał postęp przy zerowym dźwięku — i to jest zgłoszenie właściciela.
+   */
+  const [cisza, setCisza] = useState<string | null>(null);
   // Indeks trzymany też w ref, bo `onEnd` domyka wartość z chwili wywołania `speak`.
   const indexRef = useRef(0);
   const activeRef = useRef(false);
@@ -183,6 +203,7 @@ export function NewsReader({
     stopSpeaking();
     setCurrent(null);
     setPaused(false);
+    setCisza(null);
     indexRef.current = 0;
   }, []);
 
@@ -201,7 +222,7 @@ export function NewsReader({
   // Zależność to PODPIS TREŚCI, nie tożsamość tablicy: gdyby konsument budował `blocks` w ciele
   // komponentu, każdy render dawałby nową tablicę i lektor milkłby sam z siebie po pierwszym
   // zdaniu. Podpis zmienia się dopiero wtedy, gdy naprawdę zmienia się zestaw wiadomości.
-  const blocksKey = useMemo(() => blocks.map((b) => b.title).join(" "), [blocks]);
+  const blocksKey = useMemo(() => blocks.map((b) => b.title).join(" "), [blocks]);
   useEffect(() => {
     silence();
     releaseSpeech(silence);
@@ -222,44 +243,65 @@ export function NewsReader({
       claimSpeech(silence);
       setCurrent(index);
       setPaused(false);
-      speak(sentences[index].text, "pl", {
-        onEnd: () => {
-          // Zatrzymanie/przeskok w międzyczasie unieważnia ten łańcuch.
-          if (!activeRef.current || indexRef.current !== index) return;
-          playFrom(index + 1);
-        },
-      });
+      setCisza(null);
+
+      /**
+       * 084 (AC-8): PRZERWA NA GRANICY WIADOMOŚCI.
+       *
+       * Bez niej ostatnie zdanie jednej wiadomości i tytuł następnej zlewają się w jedno zdanie,
+       * a słuchacz nie ma jak usłyszeć, że temat się zmienił. Stała, bez ustawienia: suwak do
+       * regulowania ciszy to kontrolka, której nikt nie dotknie drugi raz (C-53).
+       */
+      const poprzednie = index > 0 ? sentences[index - 1] : null;
+      const granica = poprzednie != null && poprzednie.block !== sentences[index].block;
+
+      const powiedz = () => {
+        if (!activeRef.current || indexRef.current !== index) return;
+        speak(sentences[index].text, "pl", {
+          onEnd: () => {
+            // Zatrzymanie/przeskok w międzyczasie unieważnia ten łańcuch.
+            if (!activeRef.current || indexRef.current !== index) return;
+            playFrom(index + 1);
+          },
+          /**
+           * 084 (AC-2): urządzenie nie wydało dźwięku. Zatrzymujemy łańcuch i MÓWIMY o tym —
+           * przelatywanie dalej w milczeniu przy rosnącym liczniku było sednem zgłoszenia.
+           */
+          onSilent: () => {
+            if (!activeRef.current || indexRef.current !== index) return;
+            activeRef.current = false;
+            setPaused(false);
+            setCisza(t("ciszaOpis"));
+          },
+        });
+      };
+
+      if (granica) window.setTimeout(powiedz, PRZERWA_MIEDZY_WIADOMOSCIAMI_MS);
+      else powiedz();
     },
-    [sentences, silence]
+    [sentences, silence, t]
   );
 
   /**
-   * 080 (Z12): przewijanie do bieżącego zdania odbywa się WYŁĄCZNIE wewnątrz pudełka lektora.
+   * 084 (AC-5): przewijania WEWNĄTRZ lektora już nie ma, bo nie ma czego przewijać — lista zdań
+   * zniknęła razem z pudełkiem. Czytany fragment podświetla się teraz w karcie wiadomości, a za
+   * przewinięcie widoku do niej odpowiada `onBlockChange`, czyli rama widoku.
    *
-   * Wcześniej stało tu `el.scrollIntoView({ block: "nearest" })`, a to rusza KAŻDYM przewijanym
-   * przodkiem — czyli także stroną. W efekcie dwa niezależne mechanizmy walczyły o ten sam ekran:
-   * `NewsStream` przewijał stronę do czytanej wiadomości, a chwilę później pierwsze zdanie tej
-   * wiadomości ściągało widok z powrotem na panel lektora. Dokładnie to zgłosił właściciel:
-   * „scroluje do tej wiadomości po czym wraca do górnej części tego lektora".
-   *
-   * Liczymy `scrollTop` ręcznie, bo to jedyny sposób, żeby przewinąć kontener i NIE dotknąć strony.
+   * To domyka zgłoszenie z 080/Z12 („scroluje do wiadomości, po czym wraca do góry lektora") od
+   * strony przyczyny, a nie objawu: dwa mechanizmy nie mogą już walczyć o ten sam ekran, bo drugi
+   * przestał istnieć.
    */
-  useEffect(() => {
-    if (current == null) return;
-    const box = listRef.current;
-    const el = box?.querySelector<HTMLElement>(`[data-sentence="${current}"]`);
-    if (!box || !el) return;
-    const gora = el.offsetTop - box.offsetTop;
-    const dol = gora + el.offsetHeight;
-    if (gora < box.scrollTop) box.scrollTo({ top: gora, behavior: "smooth" });
-    else if (dol > box.scrollTop + box.clientHeight) {
-      box.scrollTo({ top: dol - box.clientHeight, behavior: "smooth" });
-    }
-  }, [current]);
 
   // 044: przejście do innej wiadomości zgłaszamy na zewnątrz, żeby strumień mógł przewinąć stronę
   // do czytanej karty. Wywołujemy TYLKO przy faktycznej zmianie bloku, nie przy każdym zdaniu.
   const currentBlock = current == null ? null : sentences[current]?.block ?? null;
+  // 084 (AC-5): czytane zdanie idzie na zewnątrz przy KAŻDEJ zmianie — to ono podświetla się
+  // w karcie. Blok zgłaszamy osobno (niżej), bo przewinięcie ma nastąpić raz na wiadomość, a nie
+  // raz na zdanie.
+  useEffect(() => {
+    onCzytaneZdanie?.(current == null ? null : sentences[current]?.text ?? null, currentBlock);
+  }, [current, currentBlock, sentences, onCzytaneZdanie]);
+
   useEffect(() => {
     if (currentBlock == null || currentBlock === lastReportedBlock.current) return;
     lastReportedBlock.current = currentBlock;
@@ -329,44 +371,41 @@ export function NewsReader({
       : sentences.slice(0, current + 1).filter((s) => s.block === currentBlock).length;
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]">
-      <div ref={listRef} className="max-h-72 overflow-y-auto p-3 text-sm leading-relaxed">
-        {sentences.map((s, i) => (
-          <span key={i}>
-            {/* Granica wiadomości w strumieniu — bez niej dwie sąsiednie wiadomości zlewają się
-                w jeden akapit i nie wiadomo, gdzie kończy się jedna myśl. */}
-            {multi && i > 0 && s.block !== sentences[i - 1].block && (
-              <span className="my-2 block border-t border-[var(--border)]" aria-hidden />
-            )}
-            <span
-              data-sentence={i}
-              role="button"
-              tabIndex={0}
-              onClick={() => step(i - (current ?? 0))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  step(i - (current ?? 0));
-                }
-              }}
-              className={cn(
-                "cursor-pointer rounded px-0.5 transition-colors",
-                i === current
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-              )}
-              style={
-                i === current
-                  ? { boxShadow: "inset 2px 0 0 var(--accent-purple)", paddingLeft: 6 }
-                  : undefined
-              }
-            >
-              {s.text}{" "}
-            </span>
-          </span>
-        ))}
-      </div>
-
+    /**
+     * 084 (AC-4, AC-5): LEKTOR TO JUŻ SAM PASEK STEROWANIA.
+     *
+     * Zniknęła lista zdań, która powtarzała treść wiadomości gołym tekstem — właściciel zgłosił to
+     * wprost: „lektor nie miał pokazywać swojego okna z tekstem, tylko być przyklejony i pokazywać
+     * czytane elementy bezpośrednio w miejscach tych elementów". Czytany fragment podświetla się
+     * teraz w karcie wiadomości; tutaj zostaje wyłącznie to, czym się steruje.
+     *
+     * `sticky bottom-0` względem RAMY WIDOKU — pasek jest w zasięgu kciuka przez cały czas
+     * przewijania i nie chowa się pod paskiem systemowym telefonu (C-31).
+     */
+    <div className="sticky bottom-0 z-30 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg">
+      {/* 084 (AC-2): stan ciszy zamiast udawania. Gdy urządzenie nie wydało dźwięku, pasek MÓWI
+          o tym i daje wyjście — kliknięcie „Odtwórz ponownie" JEST gestem użytkownika, a ścieżka
+          serwerowa jest już wtedy zatrzaśnięta, więc synteza rusza synchronicznie i gra. */}
+      {cisza && (
+        <div
+          className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] px-3 py-2 text-xs"
+          style={{ color: "var(--accent-amber)" }}
+          role="status"
+        >
+          <Ban size={14} className="shrink-0" />
+          <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{cisza}</span>
+          <button
+            onClick={() => {
+              setCisza(null);
+              primeSpeech();
+              playFrom(indexRef.current);
+            }}
+            className="shrink-0 rounded-md px-2 py-2 text-[var(--text-primary)] underline-offset-2 hover:underline"
+          >
+            {t("odtworzPonownie")}
+          </button>
+        </div>
+      )}
       {/* Pasek sterowania przyklejony do dołu karty — na telefonie musi być w zasięgu kciuka i nie
           może chować się pod paskiem systemowym (C-31).
 
@@ -422,6 +461,17 @@ export function NewsReader({
         <ReaderButton onClick={stop} label="Zatrzymaj" disabled={current == null}>
           <Square size={16} />
         </ReaderButton>
+        {onZamknij && (
+          <ReaderButton
+            onClick={() => {
+              stop();
+              onZamknij();
+            }}
+            label={t("zamknijLektora")}
+          >
+            <X size={16} />
+          </ReaderButton>
+        )}
 
         {/* 080 (Z12): PRĘDKOŚĆ. Suwak, nie lista wartości — użytkownik dobiera ją słuchem,
             a nie wybiera z katalogu. Wartość działa natychmiast, także w trakcie czytania. */}

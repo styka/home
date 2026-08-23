@@ -33,8 +33,17 @@ import {
 /** Poziom, na którym gra lektor. Union TS, nie enum (C-12). */
 type ReaderScope =
   | { kind: "none" }
+  | { kind: "item"; itemId: string }
   | { kind: "topic"; topicId: string }
   | { kind: "stream" };
+
+/** Czy to ten sam zakres odsłuchu — powtórne dotknięcie tego samego przycisku ma go WYŁĄCZYĆ. */
+function tenSamZakres(a: ReaderScope, b: ReaderScope): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === "topic" && b.kind === "topic") return a.topicId === b.topicId;
+  if (a.kind === "item" && b.kind === "item") return a.itemId === b.itemId;
+  return true;
+}
 
 export function NewsStream({
   topics,
@@ -66,27 +75,53 @@ export function NewsStream({
   const [busyTopicId, setBusyTopicId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
   const [reader, setReader] = useState<ReaderScope>({ kind: "none" });
+  /**
+   * 084 (AC-5): co lektor czyta W TEJ CHWILI — treść zdania i pozycja, do której należy.
+   *
+   * Trzymamy to tutaj, bo podświetlić trzeba KARTĘ, a lektor jest jeden na cały widok. Przekazanie
+   * indeksu zamiast treści wymagałoby, żeby karta i lektor utrzymywały zgodne listy zdań — a one
+   * i tak dzielą ten sam podział, więc porównanie tekstu jest tańsze i odporniejsze.
+   */
+  const [czytaneZdanie, setCzytaneZdanie] = useState<string | null>(null);
+  const [czytanaPozycja, setCzytanaPozycja] = useState<string | null>(null);
 
   const totalItems = topics.reduce((n, t) => n + t.items.length, 0);
 
   // ── Lektor ────────────────────────────────────────────────────────────────
   const readerBlocks = useMemo<ReaderBlock[]>(() => {
     const toBlock = (i: NewsItemDTO): ReaderBlock => ({ title: i.title, text: i.summary });
+
+    /**
+     * 084 (AC-9): ZAPOWIEDŹ ŹRÓDŁA, ale bez powtarzania.
+     *
+     * Słuchacz nie widzi ekranu, więc musi wiedzieć, skąd pochodzi wiadomość — ale słysząc pięć
+     * razy pod rząd „Onet", przestaje słyszeć cokolwiek. Zapowiadamy więc tylko przy ZMIANIE
+     * portalu. Ten sam mechanizm co zapowiedź tematu (`lead`), a nie drugi obok niego.
+     */
+    const zZapowiedziami = (pozycje: NewsItemDTO[], temat?: string): ReaderBlock[] => {
+      let poprzednieZrodlo: string | null = null;
+      return pozycje.map((item, idx) => {
+        const b = toBlock(item);
+        const zapowiedzi: string[] = [];
+        if (idx === 0 && temat) zapowiedzi.push(`Temat: ${temat}`);
+        if (item.sourceName && item.sourceName !== poprzednieZrodlo) zapowiedzi.push(`Źródło: ${item.sourceName}`);
+        poprzednieZrodlo = item.sourceName ?? poprzednieZrodlo;
+        if (zapowiedzi.length > 0) b.lead = zapowiedzi.join(". ");
+        return b;
+      });
+    };
+
+    if (reader.kind === "item") {
+      const item = topics.flatMap((t) => t.items).find((i) => i.id === reader.itemId);
+      return item ? zZapowiedziami([item]) : [];
+    }
     if (reader.kind === "topic") {
       const t = topics.find((x) => x.id === reader.topicId);
-      return t ? t.items.map(toBlock) : [];
+      return t ? zZapowiedziami(t.items) : [];
     }
     if (reader.kind === "stream") {
       const out: ReaderBlock[] = [];
-      for (const t of topics) {
-        t.items.forEach((item, idx) => {
-          const b = toBlock(item);
-          // Zapowiedź tematu na PIERWSZEJ wiadomości każdego tematu — słuchacz nie widzi ekranu,
-          // więc bez niej nie wiedziałby, że właśnie zmienił się temat.
-          if (idx === 0) b.lead = `Temat: ${t.title}`;
-          out.push(b);
-        });
-      }
+      for (const t of topics) out.push(...zZapowiedziami(t.items, t.title));
       return out;
     }
     return [];
@@ -94,6 +129,7 @@ export function NewsStream({
 
   /** Pozycje w tej samej kolejności co bloki lektora — po nich przewijamy do czytanej karty. */
   const readerItemIds = useMemo<string[]>(() => {
+    if (reader.kind === "item") return [reader.itemId];
     if (reader.kind === "topic") {
       return topics.find((x) => x.id === reader.topicId)?.items.map((i) => i.id) ?? [];
     }
@@ -111,12 +147,9 @@ export function NewsStream({
 
   function toggleReader(next: ReaderScope) {
     // W danej chwili gra JEDEN lektor. Dwa głosy naraz to błąd, nie funkcja.
-    setReader((prev) =>
-      prev.kind === next.kind &&
-      (prev.kind !== "topic" || (next.kind === "topic" && prev.topicId === next.topicId))
-        ? { kind: "none" }
-        : next,
-    );
+    setCzytaneZdanie(null);
+    setCzytanaPozycja(null);
+    setReader((prev) => (tenSamZakres(prev, next) ? { kind: "none" } : next));
   }
 
   // ── Akcje zbiorcze ────────────────────────────────────────────────────────
@@ -179,37 +212,36 @@ export function NewsStream({
             ? "Brak nowych wiadomości"
             : `Nowych wiadomości: ${totalItems} w ${topics.filter((t) => t.items.length > 0).length} tematach`}
         </span>
-        <div className="ml-auto flex items-center gap-1">
+        {/* 084 (AC-10): dwie akcje o CAŁKIEM różnych skutkach przestają wyglądać jak bliźniaki.
+            Do 083 stały obok siebie jako dwa przyciski tekstowe tej samej wagi — a jeden zaczyna
+            odsłuch, drugi masowo zamyka porcję. Odsłuch dostaje wagę główną (obramowanie akcentem),
+            oznaczanie zostaje przyciskiem tekstowym, a między nimi stoi separator. */}
+        <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => toggleReader({ kind: "stream" })}
             disabled={totalItems === 0}
             aria-pressed={reader.kind === "stream"}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs transition-colors disabled:opacity-40",
+              "inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs transition-colors disabled:opacity-40",
               reader.kind === "stream"
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
             )}
           >
             <Headphones size={14} />
             {reader.kind === "stream" ? "Zamknij lektora" : "Słuchaj wszystkiego"}
           </button>
+          <span aria-hidden className="h-5 w-px shrink-0 bg-[var(--border)]" />
           <button
             onClick={markAll}
             disabled={busyAll || totalItems === 0}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
           >
             {busyAll ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
             Oznacz wszystkie
           </button>
         </div>
       </div>
-
-      {reader.kind === "stream" && readerBlocks.length > 0 && (
-        <div className="mb-4" data-no-swipe>
-          <NewsReader blocks={readerBlocks} onBlockChange={handleBlockChange} />
-        </div>
-      )}
 
       {totalItems === 0 && (
         <p className="mb-4 rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
@@ -265,12 +297,6 @@ export function NewsStream({
               </>
             }
           >
-            {reader.kind === "topic" && reader.topicId === topic.id && readerBlocks.length > 0 && (
-              <div className="mt-3" data-no-swipe>
-                <NewsReader blocks={readerBlocks} onBlockChange={handleBlockChange} />
-              </div>
-            )}
-
             {topic.items.length === 0 ? (
               // Temat bez nowych pozycji ZOSTAJE na liście. Znikający temat wygląda jak usterka,
               // a pusta sekcja jest informacją: „tu nic nowego nie przyszło".
@@ -281,7 +307,13 @@ export function NewsStream({
               <div className="mt-3 space-y-3">
                 {topic.items.map((item) => (
                   <div key={item.id} data-news-item={item.id}>
-                    <NewsItemCard item={item} onChanged={onChanged} />
+                    <NewsItemCard
+                      item={item}
+                      onChanged={onChanged}
+                      czytaneZdanie={czytanaPozycja === item.id ? czytaneZdanie : null}
+                      czytana={reader.kind === "item" && reader.itemId === item.id}
+                      onSluchaj={(id) => toggleReader({ kind: "item", itemId: id })}
+                    />
                   </div>
                 ))}
               </div>
@@ -289,6 +321,24 @@ export function NewsStream({
           </SekcjaTematu>
         ))}
       </div>
+
+      {/* 084 (AC-4): JEDEN pasek lektora na cały widok, przyklejony do dołu ramy.
+          Do 083 lektor renderował się w trzech miejscach naraz (nad listą, w sekcji tematu,
+          w karcie) i każdy z nich niósł własną kopię treści. Teraz jest jeden i steruje wszystkim,
+          niezależnie od tego, czy słuchasz pojedynczej wiadomości, tematu, czy całej porcji. */}
+      {reader.kind !== "none" && readerBlocks.length > 0 && (
+        <div data-no-swipe>
+          <NewsReader
+            blocks={readerBlocks}
+            onBlockChange={handleBlockChange}
+            onCzytaneZdanie={(zdanie, blockIndex) => {
+              setCzytaneZdanie(zdanie);
+              setCzytanaPozycja(blockIndex == null ? null : readerItemIds[blockIndex] ?? null);
+            }}
+            onZamknij={() => toggleReader({ kind: "none" })}
+          />
+        </div>
+      )}
     </div>
   );
 }

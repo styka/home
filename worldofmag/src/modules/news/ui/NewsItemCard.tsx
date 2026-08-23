@@ -8,7 +8,6 @@ import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
 import { useToast } from "@/components/ui/Toast";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
-import { NewsReader } from "./NewsReader";
 import {
   acknowledgeItem,
   dismissItem,
@@ -17,7 +16,22 @@ import {
   type SummaryLength,
 } from "../actions/news";
 
-export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged: () => void }) {
+export function NewsItemCard({
+  item,
+  onChanged,
+  czytaneZdanie,
+  czytana = false,
+  onSluchaj,
+}: {
+  item: NewsItemDTO;
+  onChanged: () => void;
+  /** 084 (AC-5): zdanie, które lektor właśnie czyta — podświetlane w treści tej karty. */
+  czytaneZdanie?: string | null;
+  /** Czy lektor widoku czyta akurat tę pozycję. */
+  czytana?: boolean;
+  /** Prośba o odsłuch tej pozycji — lektor jest JEDEN, w ramie widoku, nie w karcie. */
+  onSluchaj?: (itemId: string) => void;
+}) {
   const t = useTranslations("modules.news.NewsItemCard");
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -26,11 +40,11 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
   const [resummarizing, setResummarizing] = useState(false);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
-  const [reading, setReading] = useState(false);
+
   const color = sourceColor(item.sourceDescriptor);
   // 044: lektor przyjmuje listę bloków. Pojedyncza karta to jeden blok — zachowanie identyczne jak
   // przed zmianą. `useMemo` jest tu potrzebne, żeby nie budować nowej tablicy przy każdym renderze.
-  const readerBlocks = useMemo(() => [{ title: item.title, text: summary }], [item.title, summary]);
+
 
   function changeLength(next: SummaryLength) {
     if (next === length || resummarizing) return;
@@ -109,14 +123,14 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
 
       {/* 039: streszczenie albo lektor — nie oba naraz. Podwójny tekst na ekranie każe czytelnikowi
           zgadywać, który z nich jest „ten właściwy". */}
-      {reading ? (
-        <div className="mt-2">
-          <NewsReader blocks={readerBlocks} />
-        </div>
-      ) : (
+      {(
         <>
+          {/* 084 (AC-5): czytany fragment podświetla się TUTAJ, przy treści, a nie w osobnym
+              pudełku lektora. Dopasowanie po TREŚCI zdania: lektor i karta dzielą ten sam podział
+              (`lib/speech/sentences`), więc porównanie jest jednoznaczne — indeks wymagałby
+              utrzymywania zgodności dwóch list i psułby się przy pierwszej rozbieżności. */}
           <p className="mt-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-[var(--text-secondary)]">
-            {summary}
+            {czytaneZdanie ? podswietl(summary, czytaneZdanie) : summary}
           </p>
           {/* 084 (AC-23): pozycja bez streszczenia MA to powiedzieć. Skrót z kanału bywa poprawnym
               zdaniem, więc bez tego znacznika lista wygląda na kompletną, a nie jest. */}
@@ -165,16 +179,16 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setReading((v) => !v)}
+            onClick={() => onSluchaj?.(item.id)}
             className={cn(
               "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs",
-              reading
+              czytana
                 ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
             )}
-            aria-pressed={reading}
+            aria-pressed={czytana}
           >
-            <Headphones size={13} /> {reading ? "Zamknij lektora" : "Słuchaj"}
+            <Headphones size={13} /> {czytana ? "Zamknij lektora" : "Słuchaj"}
           </button>
           <button
             onClick={dismiss}
@@ -193,5 +207,38 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 084 (AC-5): podświetla w streszczeniu zdanie, które lektor właśnie czyta.
+ *
+ * Szukamy po TREŚCI, nie po pozycji: lektor dzieli tekst tą samą funkcją co my, więc zdanie musi
+ * się w streszczeniu znaleźć — a gdyby się nie znalazło (zmiana długości streszczenia w trakcie
+ * odsłuchu), po prostu nie podświetlamy niczego. Cichy brak podświetlenia jest znacznie lepszy niż
+ * podświetlenie nie tego fragmentu.
+ */
+function podswietl(tekst: string, zdanie: string) {
+  const szukane = zdanie.trim();
+  if (!szukane) return tekst;
+  const i = tekst.indexOf(szukane);
+  if (i < 0) return tekst;
+  return (
+    <>
+      {tekst.slice(0, i)}
+      <mark
+        // Kolory wyłącznie zmiennymi CSS — skórka musi móc to przemalować (C-30).
+        style={{
+          background: "var(--bg-elevated)",
+          color: "var(--text-primary)",
+          boxShadow: "inset 2px 0 0 var(--accent-purple)",
+          padding: "0 2px 0 6px",
+          borderRadius: 3,
+        }}
+      >
+        {szukane}
+      </mark>
+      {tekst.slice(i + szukane.length)}
+    </>
   );
 }

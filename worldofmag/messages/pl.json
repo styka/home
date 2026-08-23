@@ -1331,7 +1331,10 @@
         "nastepnaWiadomosc": "Następna wiadomość",
         "predkoscCzytania": "Prędkość czytania",
         "wlaczPodazanie": "Podążaj za czytaniem (przewijaj stronę do czytanej wiadomości)",
-        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)"
+        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)",
+        "ciszaOpis": "To urządzenie nie odtworzyło dźwięku. Dotknij „Odtwórz ponownie” — powinno ruszyć.",
+        "odtworzPonownie": "Odtwórz ponownie",
+        "zamknijLektora": "Zamknij lektora"
       },
       "NewsSettings": {
         "zrodlaWiadomosci": "Źródła wiadomości",
