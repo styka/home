@@ -55,17 +55,17 @@
 
 > Najtrudniejsza faza przebiegu. Kolejność: najpierw **słychać**, potem **wygląda**.
 
-- [ ] **T-7** — **Lektor konfiguruje własny głos.** `NewsReader` przy montowaniu czyta
+- [x] **T-7** — **Lektor konfiguruje własny głos.** `NewsReader` przy montowaniu czyta
   `getSpeechOptions()` i woła `setServerVoiceId(...)` — koniec dziedziczenia stanu po asystencie.
   *Gotowe, gdy:* zachowanie lektora nie zależy już od tego, czy asystent był wcześniej otwarty.
 
-- [ ] **T-8** — **Czujka ciszy w `lib/tts.ts`.** Po starcie wypowiedzi licznik czasu; brak `onstart`
+- [x] **T-8** — **Czujka ciszy w `lib/tts.ts`.** Po starcie wypowiedzi licznik czasu; brak `onstart`
   i `onend` w ~1,5 s → wywołanie zwrotne `onSilent`. To jest jedyne zabezpieczenie działające
   **niezależnie od przyczyny** milczenia.
   *Gotowe, gdy:* test jednostkowy — synteza, która nic nie robi, wyzwala `onSilent`; synteza, która
   gra, **nie** wyzwala.
 
-- [ ] **T-9** — **Rozstrzygnięcie dostępności głosu przed pierwszym dotknięciem.** Gdy głos serwerowy
+- [x] **T-9** — **Rozstrzygnięcie dostępności głosu przed pierwszym dotknięciem.** Gdy głos serwerowy
   jest ustawiony, lektor sprawdza jego gotowość przy montowaniu; odmowa zatrzaskuje ścieżkę
   serwerową, więc pierwsze zdanie idzie przeglądarką **synchronicznie w geście**.
   *Gotowe, gdy:* AC-1 — test jednostkowy: przy niedostępnym głosie serwerowym pierwsze `speak`
