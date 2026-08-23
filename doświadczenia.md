@@ -4,6 +4,60 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-23 — Dwa nośniki tej samej decyzji: „tryb przeglądania" obok „wybranego tematu"
+**Problem:** Wiadomości miały przełącznik „Strumień / Jeden temat" (044) ORAZ selektor tematu (041).
+To były dwa nośniki jednej decyzji, więc dawały stany bez sensu: „tryb: jeden temat" bez wybranego
+tematu, „tryb: strumień" z tematem wskazanym przez obserwator przecięć, a do tego dwie różne ścieżki
+odczytu danych (`getTopicView` i `getStreamView`) pokazujące te same pozycje. Właściciel zobaczył
+skutek, nie przyczynę: „podwójnie mamy bieżący temat, ten jako input i ten ładny" oraz „widok osi
+czasu nie działa, jak są wybrane wszystkie tematy" — oś czasu czytała linię POJEDYNCZEGO tematu, więc
+przy pozycji zbiorczej nie miała czego zapytać i pokazywała pustkę.
+**Rozwiązanie:** Tryb ZNIKA, zostaje filtr. „Wszystkie tematy" pokazuje wszystkie sekcje, wybrany
+temat — jedną; to ta sama lista i ten sam odczyt. Rozdzieliliśmy za to dwa pojęcia, które naprawdę są
+różne: temat **wybrany** (filtr, w adresie) i temat **czytany** (wynik przewijania, w pamięci). Nazwa
+czytanego stoi w przyklejonym nagłówku jego sekcji, przy jego treści; pasek nawigacji pokazuje
+wyłącznie filtr.
+**Lekcja:** Gdy dwa elementy interfejsu potrafią opisać ten sam stan, użytkownik prędzej czy później
+ustawi je sprzecznie — i zgłosi to jako „chaos", a nie jako „dwa nośniki stanu". Zanim dołożysz
+przełącznik trybu, sprawdź, czy to nie jest po prostu wartość istniejącego filtra.
+
+## 2026-08-23 — Wysokość PRZYKLEJONEGO paska nie może zależeć od liczby danych
+**Problem:** Filtr źródeł był pasem chipsów — jeden na kanał. Przy trzech źródłach mieścił się w
+jednym wierszu, przy piętnastu zawijał się w trzy. A pasek jest przyklejony, więc każdy jego wiersz
+odbiera miejsce na treść **na stałe**, nie tylko przy pierwszym spojrzeniu. Zgłoszenie brzmiało
+„ikonki źródeł zajmują za dużo miejsca", ale problemem była zmienność, nie rozmiar.
+**Rozwiązanie:** Jeden przycisk z licznikiem („Wszystkie" / „3 z 12") i panel na `AnchoredLayer`
+(portal do `body`), czyli lista, która z definicji niczego nie przesuwa. Zmierzone w przeglądarce:
+59 px wysokości paska przy 3 źródłach i **te same 59 px** przy 15; chrom nad treścią 163 px w obu
+przypadkach (przed przebudową całego chromu: 515 px).
+**Lekcja:** Element przyklejony ma budżet wysokości, którego nie wolno oddać danym. Jeśli kontrolka
+rośnie razem z listą, jej miejsce jest w warstwie nad treścią, a w pasku zostaje licznik.
+
+## 2026-08-23 — Akcja „na aktywnym elemencie" w pasku, gdy aktywny zmienia się sam
+**Problem:** Kosz i ołówek stały w pasku tematów i dotyczyły „tematu aktywnego". W strumieniu aktywny
+temat wyznacza obserwator przecięć, czyli zmienia się SAM w trakcie przewijania. Kliknięcie kosza
+kasowało więc temat, na który akurat wskazywał obserwator, a nie ten, na który patrzył użytkownik —
+i nic na ekranie tej różnicy nie pokazywało.
+**Rozwiązanie:** Akcje wędrują do przyklejonego nagłówka SEKCJI danego tematu (obok „słuchaj"
+i „oznacz"), a „dodaj temat" — do akcji widoku, bo nie dotyczy żadnego tematu. Cel akcji jest teraz
+tym, przy czym akcja stoi.
+**Lekcja:** Akcja odnosząca się do „elementu aktywnego" jest bezpieczna tylko wtedy, gdy aktywny
+zmienia się WYŁĄCZNIE na żądanie użytkownika. Gdy wyznacza go przewijanie, akcję trzeba postawić przy
+elemencie.
+
+## 2026-08-23 — Test klikacza sprawdzony w obie strony wyłapał to, czego bramki nie widzą
+**Problem:** Po 082 regresja przewijania przeszła przez wszystkie bramki statyczne, `tsc`, lint, build
+i 1142 testy jednostkowe — bo `position: sticky` i „który kontener się przewinął" nie mają
+reprezentacji poza przeglądarką.
+**Rozwiązanie:** Spec `news-stream-scroll` przepisany na nowe selektory (`[data-news-pasek]` zamiast
+klas Tailwinda) i **sprawdzony w obie strony**: zielony na docelowym kodzie, a po wstrzyknięciu
+sztucznego `rama.scrollTo({top: 0})` w obserwatorze — czerwony z komunikatem „krok 2: strona cofnęła
+się do góry". Doszedł warunek odwrotny do dawnego: etykieta nawigatora ma się NIE zmieniać przy
+przewijaniu (AC-18).
+**Lekcja:** Test układu strony, którego nie widziano na czerwono, nie jest dowodem — jest deklaracją.
+Uchwyty dla klikacza dawaj przez `data-*`; klasa Tailwinda nie jest kontraktem i znika przy pierwszym
+przestylowaniu.
+
 ## 2026-08-19 — `scrollIntoView` przewija WSZYSTKO nad elementem, nie tylko to, o co chodzi
 **Problem:** Po dołożeniu poziomego paska tematów w Wiadomościach właściciel zgłosił: „jak przewijam
 stronę (tryb strumień) to co przewinięcie do kolejnego tematu to mnie cofa do góry. no i ten pasek

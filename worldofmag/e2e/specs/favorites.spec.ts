@@ -282,11 +282,27 @@ test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
     // 080/AC-16: w stanie zwiniętym sekcja to JEDEN wiersz — bez zachęty i bez punktu zapisu.
     await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toHaveCount(0);
 
-    // Po rozwinięciu wraca wszystko, czego wymagało 043.
+    // Po rozwinięciu wraca zachęta z 043.
     await page.getByRole("button", { name: /^rozwiń ulubione/i }).first().click();
     await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toBeVisible({ timeout: 10_000 });
-    // 043/AC-2: punkt zapisu ma ETYKIETĘ, nie jest samą ikoną schowaną na dole nawigacji.
-    await expect(page.getByText("Zapisz ten widok", { exact: true })).toBeVisible();
+
+    /**
+     * 083/AC-2 ZNOSI drugą połowę reguły z 043/AC-2 — i to jest decyzja, nie regresja.
+     *
+     * 043 wymagało punktu zapisu Z ETYKIETĄ w sekcji ulubionych, bo wtedy jedynym wejściem była
+     * ikona schowana na dole nawigacji. Od tamtej pory ta sama akcja stała w TRZECH miejscach naraz
+     * (sekcja paska bocznego, mobilny pasek powłoki, pasek widoku) — właściciel zobaczył cztery
+     * gwiazdki na jednym ekranie i zgłosił to jako „dwie ikony gwiazdki, po co?". Przy jednej akcji
+     * trzy wejścia nie dają wyboru, tylko pytanie „które z nich jest właściwe".
+     *
+     * Zostaje JEDNO wejście: gwiazdka w pasku widoku — bo to on opisuje widok, który się zapisuje.
+     * Sekcja pozostaje tym, czym jest: LISTĄ zapisanych. Zmierzone po zmianie: jedna ikona gwiazdki
+     * na ekranie (`/wiadomosci`, desktop 1280 px).
+     */
+    await expect(page.getByText("Zapisz ten widok", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /zapisz to miejsce w ulubionych/i }).first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("[fav043-AC3] zarządzanie ulubionymi dostępne wprost z nawigacji", async ({ page }) => {

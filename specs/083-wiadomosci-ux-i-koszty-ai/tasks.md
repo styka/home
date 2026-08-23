@@ -163,16 +163,16 @@
   `check:e2e-waits`, `check:logs`, `check:owner-columns`, `check:cost-badge`, `check:content-memory`,
   `tsc` (główny + testowy), `test:unit`, `next lint`, `next build`, `check:perf`.
 
-- [ ] **T-25** — **Weryfikacja w przeglądarce** (obowiązkowa, lekcja z 082): pełna suita klikacza
+- [x] **T-25** — **Weryfikacja w przeglądarce** (obowiązkowa, lekcja z 082): pełna suita klikacza
   + pomiary do miar sukcesu ze speca §2 — wysokość chromu nad pierwszą wiadomością „przed/po",
   liczba gwiazdek, wysokość paska przy 3 i 15 źródłach, położenie narożników po przewinięciu.
   *Gotowe, gdy:* liczby zapisane i **spadek chromu wynosi co najmniej połowę**; gdyby nie wynosił —
   to jest brak do naprawienia, nie do przemilczenia.
 
-- [ ] **T-26** — **`CLAUDE.md`**: tabela modułu Wiadomości (nawigator, „Wszystkie", filtr źródeł,
+- [x] **T-26** — **`CLAUDE.md`**: tabela modułu Wiadomości (nawigator, „Wszystkie", filtr źródeł,
   brak historii odświeżeń), opis nowego podejścia do kosztów AI, wpis o `GroupNavigator`.
 
-- [ ] **T-27** — **`doświadczenia.md`** (C-51): lekcje z tego przebiegu — co najmniej rozjazd
+- [x] **T-27** — **`doświadczenia.md`** (C-51): lekcje z tego przebiegu — co najmniej rozjazd
   „ikona informacyjna wyglądająca jak wyłączona kontrolka" i „dekoracja w środku przewijanego
   kontenera przewija się razem z treścią".
 
