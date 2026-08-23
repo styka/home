@@ -35,6 +35,7 @@ import { NewsSettings } from "./NewsSettings";
 import { SourceFilter } from "./SourceFilter";
 import { useSekcjeTematow, przewinDoSekcji, PROGRAMOWE_PRZEWIJANIE_MS } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
 import {
   getStreamView,
   getStreamTimeline,
@@ -111,6 +112,25 @@ export function NewsPage({
    * a nazwa tematu stoi tam, gdzie jego treść.
    */
   const [czytanyTemat, setCzytanyTemat] = useState<string | null>(null);
+
+  /**
+   * 084 (AC-6, AC-7): PODĄŻANIE ZA CZYTANYM TEKSTEM — jeden stan na cały widok.
+   *
+   * Mieszka tutaj, a nie w lektorze, bo ma dwa wejścia (pasek lektora i nagłówek sekcji) i jedno
+   * wyjście: samoczynne wyłączenie, gdy użytkownik przewinie widok SAM. Dwa stany dałyby sytuację,
+   * w której przełącznik pokazuje co innego niż robi widok.
+   */
+  const [podazanie, setPodazanie] = useState(true);
+  const zmienPodazanie = useCallback((wlaczone: boolean) => {
+    setPodazanie(wlaczone);
+    void updateAssistantPrefs({ readerFollow: wlaczone }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    getAssistantPrefs()
+      .then((p) => setPodazanie(p.readerFollow))
+      .catch(() => {});
+  }, []);
 
   const [stream, setStream] = useState<StreamTopicDTO[] | null>(null);
   const [timeline, setTimeline] = useState<StreamTimelineTopicDTO[] | null>(null);
@@ -274,12 +294,35 @@ export function NewsPage({
 
   const przewinDoPozycji = useCallback(
     (itemId: string) => {
+      // 084 (AC-7): wyłączone podążanie znaczy „nie ruszaj widoku" — można wtedy czytać jedno,
+      // a słuchać drugiego.
+      if (!podazanie) return;
       const el = document.querySelector<HTMLElement>(`[data-news-item="${itemId}"]`);
       programoweDo.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
+      programoweDoRef.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
       przewinDoSekcji(ramaRef.current, el, pasekH + 80);
     },
-    [pasekH, programoweDo]
+    [pasekH, programoweDo, podazanie]
   );
+
+  /**
+   * 084 (AC-7): ręczne przewinięcie GASI podążanie.
+   *
+   * Rozróżnienie „kto przewinął" opiera się na tym samym strażniku czasu, co obserwator sekcji:
+   * przewinięcia wykonane przez lektora są w jego oknie, wszystko inne to ruch użytkownika. Bez
+   * tego rozróżnienia każde przewinięcie lektora gasiłoby podążanie natychmiast po włączeniu.
+   */
+  const programoweDoRef = useRef(0);
+  useEffect(() => {
+    const rama = ramaRef.current;
+    if (!rama || !podazanie) return;
+    const naPrzewiniecie = () => {
+      if (Date.now() < programoweDoRef.current) return;
+      zmienPodazanie(false);
+    };
+    rama.addEventListener("scroll", naPrzewiniecie, { passive: true });
+    return () => rama.removeEventListener("scroll", naPrzewiniecie);
+  }, [podazanie, zmienPodazanie]);
 
   useEffect(() => {
     const el = pasekRef.current;
@@ -578,6 +621,8 @@ export function NewsPage({
                   zarejestruj={zarejestruj}
                   onChanged={onItemChanged}
                   onPrzewinDoPozycji={przewinDoPozycji}
+                  podazanie={podazanie}
+                  onPodazanie={zmienPodazanie}
                   akcjeTematu={akcjeTematu}
                 />
               ) : (

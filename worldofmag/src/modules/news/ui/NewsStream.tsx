@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { CheckCheck, Headphones, Loader2 } from "lucide-react";
+import { CheckCheck, Crosshair, Headphones, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
@@ -37,6 +37,11 @@ type ReaderScope =
   | { kind: "topic"; topicId: string }
   | { kind: "stream" };
 
+/** Czy lektor czyta akurat coś z tego tematu — decyduje, czy pokazać przełącznik podążania. */
+function czytaSieTuLektor(reader: ReaderScope, topicId: string): boolean {
+  return reader.kind === "stream" || (reader.kind === "topic" && reader.topicId === topicId);
+}
+
 /** Czy to ten sam zakres odsłuchu — powtórne dotknięcie tego samego przycisku ma go WYŁĄCZYĆ. */
 function tenSamZakres(a: ReaderScope, b: ReaderScope): boolean {
   if (a.kind !== b.kind) return false;
@@ -53,6 +58,8 @@ export function NewsStream({
   zarejestruj,
   onChanged,
   onPrzewinDoPozycji,
+  podazanie,
+  onPodazanie,
   akcjeTematu,
 }: {
   /** Tematy JUŻ przefiltrowane przez pasek nawigacji — widok nie zna reguł filtrowania. */
@@ -66,6 +73,9 @@ export function NewsStream({
   onChanged: () => void;
   /** Przewinięcie do karty czytanej przez lektora — należy do ramy widoku, nie do tego komponentu. */
   onPrzewinDoPozycji: (itemId: string) => void;
+  /** 084 (AC-6): czy widok ma podążać za czytanym tekstem. Jeden stan na cały widok. */
+  podazanie: boolean;
+  onPodazanie: (wlaczone: boolean) => void;
   /** Akcje tematu (edycja, usunięcie) wstawiane do przyklejonego nagłówka sekcji. */
   akcjeTematu?: (topicId: string) => ReactNode;
 }) {
@@ -264,6 +274,25 @@ export function NewsStream({
               <>
                 {topic.items.length > 0 && (
                   <>
+                    {/* 084 (AC-6): PODĄŻANIE ZA CZYTANIEM stoi przy wiadomościach, a nie tylko
+                        w pasku lektora — bo to tutaj użytkownik patrzy, gdy czyta, i tutaj
+                        zauważa, że widok sam mu ucieka. Jeden stan, dwa wejścia. */}
+                    {czytaSieTuLektor(reader, topic.id) && (
+                      <button
+                        onClick={() => onPodazanie(!podazanie)}
+                        aria-pressed={podazanie}
+                        title={podazanie ? t("wylaczPodazanie") : t("wlaczPodazanie")}
+                        aria-label={podazanie ? t("wylaczPodazanie") : t("wlaczPodazanie")}
+                        className={cn(
+                          "shrink-0 rounded-md p-2 transition-colors",
+                          podazanie
+                            ? "bg-[var(--bg-elevated)] text-[var(--accent-blue)]"
+                            : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                        )}
+                      >
+                        <Crosshair size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => toggleReader({ kind: "topic", topicId: topic.id })}
                       aria-pressed={reader.kind === "topic" && reader.topicId === topic.id}
@@ -336,6 +365,8 @@ export function NewsStream({
               setCzytanaPozycja(blockIndex == null ? null : readerItemIds[blockIndex] ?? null);
             }}
             onZamknij={() => toggleReader({ kind: "none" })}
+            podazanie={podazanie}
+            onPodazanie={onPodazanie}
           />
         </div>
       )}

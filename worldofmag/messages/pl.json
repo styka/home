@@ -1351,7 +1351,9 @@
         "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
         "sluchajCalegoTematu": "Słuchaj całego tematu",
         "oznaczCalyTematJako": "Oznacz cały temat jako przeczytany",
-        "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie."
+        "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie.",
+        "wlaczPodazanie": "Podążaj za czytanym tekstem",
+        "wylaczPodazanie": "Nie podążaj za czytanym tekstem"
       },
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",

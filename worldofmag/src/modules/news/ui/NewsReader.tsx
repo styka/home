@@ -77,6 +77,8 @@ export function NewsReader({
   onBlockChange,
   onCzytaneZdanie,
   onZamknij,
+  podazanie = true,
+  onPodazanie,
 }: {
   blocks: ReaderBlock[];
   /** Wywoływane, gdy lektor przechodzi do innej wiadomości — pozwala przewinąć widok do niej. */
@@ -91,6 +93,9 @@ export function NewsReader({
   onCzytaneZdanie?: (zdanie: string | null, blockIndex: number | null) => void;
   /** Zamknięcie lektora — pasek jest jedynym miejscem, z którego da się go wyłączyć. */
   onZamknij?: () => void;
+  /** 084 (AC-6): podążanie za czytanym tekstem — stan WIDOKU, nie lektora. */
+  podazanie?: boolean;
+  onPodazanie?: (wlaczone: boolean) => void;
 }) {
   const t = useTranslations("modules.news.NewsReader");
   // Zdania wszystkich bloków w jednej, płaskiej liście: łańcuch `onEnd` nie musi wtedy wiedzieć nic
@@ -131,9 +136,15 @@ export function NewsReader({
    * odpowiedź serwera przy przesuwaniu suwaka byłoby widoczne jako zacinanie.
    */
   const [rate, setRate] = useState(0.95);
-  const [follow, setFollow] = useState(true);
-  const followRef = useRef(true);
-  followRef.current = follow;
+  /**
+   * 084 (AC-6): PODĄŻANIE nie jest już stanem lektora — jest stanem WIDOKU i przychodzi propsem.
+   *
+   * Powód: ma teraz dwa wejścia (ten pasek i nagłówek sekcji tematu) oraz jedno wyjście poza
+   * lektorem (samoczynne wyłączenie, gdy użytkownik przewinie sam). Dwa stany dałyby przełącznik,
+   * który pokazuje co innego, niż robi widok.
+   */
+  const followRef = useRef(podazanie);
+  followRef.current = podazanie;
 
   /**
    * 084: LEKTOR KONFIGURUJE WŁASNY GŁOS — i rozstrzyga jego dostępność, ZANIM ktokolwiek dotknie
@@ -161,7 +172,6 @@ export function NewsReader({
         const p = await getAssistantPrefs();
         if (anulowane) return;
         setRate(p.readerRate);
-        setFollow(p.readerFollow);
         setSpeechRate(p.readerRate);
 
         if (p.voiceKind === "server" && p.voiceId) {
@@ -186,11 +196,6 @@ export function NewsReader({
     setRate(next);
     setSpeechRate(next); // działa od razu, także w trakcie czytania
     void updateAssistantPrefs({ readerRate: next }).catch(() => {});
-  }
-
-  function zmienPodazanie(next: boolean) {
-    setFollow(next);
-    void updateAssistantPrefs({ readerFollow: next }).catch(() => {});
   }
 
   useEffect(() => {
@@ -496,11 +501,11 @@ export function NewsReader({
         {/* 080 (Z12): PODĄŻANIE ZA CZYTANIEM. Wyłączone = strona nie rusza się w ogóle, więc da
             się czytać jedno, a słuchać drugiego. */}
         <ReaderButton
-          onClick={() => zmienPodazanie(!follow)}
-          label={follow ? t("wylaczPodazanie") : t("wlaczPodazanie")}
-          primary={follow}
+          onClick={() => onPodazanie?.(!podazanie)}
+          label={podazanie ? t("wylaczPodazanie") : t("wlaczPodazanie")}
+          primary={podazanie}
         >
-          {follow ? <Crosshair size={16} /> : <Ban size={16} />}
+          {podazanie ? <Crosshair size={16} /> : <Ban size={16} />}
         </ReaderButton>
 
         <span className="ml-auto whitespace-nowrap pr-1 text-[11px] text-[var(--text-muted)]">
