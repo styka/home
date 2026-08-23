@@ -162,7 +162,7 @@ export function LLMInputSection({ listId, categoryNames }: LLMInputSectionProps)
 
           {aiUsage && (
             <div className="flex justify-end">
-              <AiCostBadge usage={aiUsage} />
+              <AiCostBadge akcja="Rozpoznanie zakupów z tekstu" usage={aiUsage} />
             </div>
           )}
           {error && (

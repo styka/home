@@ -34,6 +34,7 @@ import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/assistant/AssistantLevelSettings";
+import { PrzelacznikKosztow } from "@/components/ui/PrzelacznikKosztow";
 
 interface RouteContext {
   context: string[];
@@ -1655,6 +1656,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 <button onClick={() => togglePanel("prefs")} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
                 <button onClick={() => togglePanel("report")} title={t("zglosProblemZAsystentem")} aria-label={t("zglosProblemZAsystentem")} aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
                 <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
+                {/* 083: asystent ma WŁASNY górny pasek, więc przełącznik kosztów musi być i tutaj —
+                    inaczej administrator, który wszedł w rozmowę, nie miałby jak go dosięgnąć. */}
+                <PrzelacznikKosztow />
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>
@@ -2371,7 +2375,7 @@ function TurnView({
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CopyButton text={turn.content} />
           {isLast && onRegenerate && <RegenerateButton onClick={onRegenerate} />}
-          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2415,7 +2419,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2431,7 +2435,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2497,7 +2501,7 @@ function TurnView({
         <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
-          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
       </div>
     );
@@ -2514,7 +2518,7 @@ function TurnView({
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, `${turn.title}. ${turn.content}`)} />}
           <CopyButton text={turn.content} />
-          <AiCostBadge usage={turn.meta} rate={usdPlnRate} />
+          <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
         {turn.savedSlug ? (
           <button onClick={() => onNavigate(`/reports/${turn.savedSlug}`)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-green)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>

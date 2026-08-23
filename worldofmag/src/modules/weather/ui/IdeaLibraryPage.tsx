@@ -267,7 +267,7 @@ function LibraryRow({
               />
               {usage && (
                 <div className="mt-2 flex justify-end">
-                  <AiCostBadge usage={usage} rate={usdPlnRate} />
+                  <AiCostBadge akcja="Plan pomysłu na pogodę" usage={usage} rate={usdPlnRate} />
                 </div>
               )}
             </>

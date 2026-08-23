@@ -176,7 +176,7 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
         >
           {busy ? "Generuję…" : result ? "Generuj ponownie" : "Generuj"}
         </button>
-        {usage && <AiCostBadge usage={usage} />}
+        {usage && <AiCostBadge akcja="Generowanie skórki z opisu" usage={usage} />}
       </div>
 
       {error && (

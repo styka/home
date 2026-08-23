@@ -177,7 +177,7 @@ function OrderRow({
                     <Mail size={12} /> {t("wyslijMailem")}
                   </a>
                 ) : null}
-                {aiUsage && <AiCostBadge usage={aiUsage} />}
+                {aiUsage && <AiCostBadge akcja="Projekt zamówienia do dostawcy" usage={aiUsage} />}
               </div>
             </div>
           ) : null}

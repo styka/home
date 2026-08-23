@@ -58,36 +58,36 @@
 
 ## Faza 2 — Koszty AI *(AC-6..AC-15)*
 
-- [ ] **T-7** — **Autobus kosztu.** `src/platform/ai/kosztBus.ts` — `zglosKoszt({akcja, usage})`
+- [x] **T-7** — **Autobus kosztu.** `src/platform/ai/kosztBus.ts` — `zglosKoszt({akcja, usage})`
   i `onKoszt(handler)`, wzorowane na `lib/ai/feedbackBus.ts`. Bez Reacta i bez Prismy.
   *Gotowe, gdy:* `tsc` czysto; test jednostkowy: zgłoszenie dociera do subskrybenta, wypisanie się
   odcina.
 
-- [ ] **T-8** — **Przełącznik widoczności.** `src/platform/ai/kosztWidocznosc.tsx` — provider
+- [x] **T-8** — **Przełącznik widoczności.** `src/platform/ai/kosztWidocznosc.tsx` — provider
   + `usePokazKoszty()`, stan w `localStorage` (`omnia.pokazKoszty`), **domyślnie wyłączony**, odczyt
   i zapis w `try/catch` (prywatne okno i zablokowane dane witryny to poprawny stan).
   *Gotowe, gdy:* test jednostkowy reguły odczytu: brak wartości → wyłączone; wyjątek → wyłączone,
   bez rzucania.
 
-- [ ] **T-9** — **Ulotne powiadomienia.** `src/components/ui/KosztToasts.tsx`: prawy górny róg,
+- [x] **T-9** — **Ulotne powiadomienia.** `src/components/ui/KosztToasts.tsx`: prawy górny róg,
   `position: fixed`, warstwa **nad** modalami i pływającym asystentem, znikanie po ~6 s, maks. 3
   naraz, powtórzenia tej samej akcji **łączone z licznikiem** zamiast układane w stos.
   *Gotowe, gdy:* AC-11, AC-12, AC-14 dają się pokazać klikaczem; nic nie trafia do dzwonka ani do
   bazy (AC-13).
 
-- [ ] **T-10** — **`AiCostBadge` melduje zawsze, rysuje warunkowo.** Nowy **wymagany** prop
+- [x] **T-10** — **`AiCostBadge` melduje zawsze, rysuje warunkowo.** Nowy **wymagany** prop
   `akcja: string`; komponent zgłasza koszt na autobus przy każdej zmianie zużycia (niezależnie od
   przełącznika) i renderuje `null`, gdy przełącznik wyłączony. Rozwinięcie składowych bez zmian.
   `AiContentMeta` podaje `akcja` z `AI_SECTION_LABELS[sectionKind]`.
   *Gotowe, gdy:* `tsc` wskazuje **wszystkie** miejsca bez propu (to jest cel — pominięcie ma być
   błędem kompilacji, nie cichym „Nieznana akcja").
 
-- [ ] **T-11** — **Etykiety akcji w 24 modułach.** Dodaj `akcja` w każdym pliku wołającym
+- [x] **T-11** — **Etykiety akcji w 24 modułach.** Dodaj `akcja` w każdym pliku wołającym
   `AiCostBadge` bezpośrednio, polską nazwą **czynności użytkownika** (np. „Streszczenie
   wiadomości", „Ocena obserwatorów pogody", „Plan tygodnia", „Rozpoznanie zdjęcia magazynu").
   *Gotowe, gdy:* `tsc` czysto; dwa różne komponenty na jednej stronie dają dwie różne nazwy (AC-12).
 
-- [ ] **T-12** — **Wpięcie w powłokę.** `AppShell`: provider przełącznika + `KosztToasts`;
+- [x] **T-12** — **Wpięcie w powłokę.** `AppShell`: provider przełącznika + `KosztToasts`;
   boolean `kosztyDostepne` liczony **po stronie serwera** (admin ∧ `ai_cost_badge_enabled`) — nie
   przenosimy tej decyzji do klienta. Ikona przełącznika w mobilnym pasku obok dzwonka i w wierszu
   nagłówka `FavoritesSidebarSection` na desktopie; w `AICommandSheet` — w jego własnym nagłówku.

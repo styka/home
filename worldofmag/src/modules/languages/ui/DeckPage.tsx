@@ -155,7 +155,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
             </div>
             {aiUsage && (
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <AiCostBadge usage={aiUsage} />
+                <AiCostBadge akcja="Generowanie słownictwa" usage={aiUsage} />
               </div>
             )}
           </div>

@@ -12,6 +12,7 @@ import { readActiveSkin } from "@/actions/skins";
 import { defaultMenuPrefs } from "@/lib/modules";
 import { tokensToStyle, type SkinTokens } from "@/lib/skins";
 import { getUsdPlnRate } from "@/lib/usdPlnRate";
+import { readCostBadgeEnabled } from "@/platform/ai/costVisibility";
 import { ensureEventWorker } from "@/lib/eventSubscribers";
 import { APP_TITLE, ICON_VERSION } from "@/lib/appName";
 
@@ -86,6 +87,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // 029: przelicznik USD→PLN — do wskaźnika kosztu asystenta (kwoty USD z równowartością PLN).
   const usdPlnRate = await getUsdPlnRate();
+  // 083: czy przełącznik pokazywania kosztów AI ma się w ogóle pojawić. Liczone PO STRONIE
+  // SERWERA — uprawnienie administratora i systemowy wyłącznik nie mogą być decyzją klienta.
+  const kosztyDostepne = isAdmin && (await readCostBadgeEnabled());
 
   // 045: `data-chrome-frame` powiela token `--chrome-frame` jako atrybut, bo CSS nie potrafi
   // warunkować `display` wartością zmiennej, a odczyt tokenu w `useEffect` dawałby mignięcie
@@ -121,7 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             kilobajtów tekstu, więc dzielenie go per trasa kosztowałoby więcej uwagi, niż oszczędza
             transferu. Gdy słownik urośnie, dzieli się go przez `messages={pick(...)}` w układzie. */}
         <NextIntlClientProvider>
-          <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews}>{children}</AppShell>
+          <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews} kosztyDostepne={kosztyDostepne}>{children}</AppShell>
         </NextIntlClientProvider>
         <ServiceWorkerRegistration />
       </body>

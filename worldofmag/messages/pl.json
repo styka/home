@@ -3,7 +3,8 @@
     "aiContent": {
       "regenerate": "Wygeneruj treść na nowo",
       "refreshMode": "Kiedy ta sekcja ma się odświeżać",
-      "pending": "Treść powstanie po kliknięciu"
+      "pending": "Treść powstanie po kliknięciu",
+      "trescAi": "Treść generowana przez AI"
     },
     "cost": {
       "incomplete": "Któryś z użytych modeli nie ma stawek w cenniku — kwota jest niepełna. Cennik uzupełnia administrator w panelu LLM.",
@@ -841,6 +842,15 @@
         "oproznijKosz": "Opróżnij kosz",
         "przywroc": "Przywróć",
         "usunTrwale": "Usuń trwale"
+      }
+    },
+    "ui": {
+      "KosztToasts": {
+        "kosztNieznany": "koszt nieznany"
+      },
+      "PrzelacznikKosztow": {
+        "pokazKoszty": "Pokaż koszty AI przy treściach",
+        "ukryjKoszty": "Ukryj koszty AI przy treściach"
       }
     }
   },

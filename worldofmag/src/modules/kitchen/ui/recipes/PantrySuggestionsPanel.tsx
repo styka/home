@@ -84,7 +84,7 @@ export function PantrySuggestionsPanel() {
       </div>
       {aiUsage && (
         <div className="flex justify-end">
-          <AiCostBadge usage={aiUsage} />
+          <AiCostBadge akcja="Propozycje ze spiżarni" usage={aiUsage} />
         </div>
       )}
       <div className="flex gap-2 overflow-x-auto">

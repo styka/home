@@ -195,7 +195,7 @@ export function DocumentsPage({
             </div>
             {aiUsage && (
               <div className="flex justify-end">
-                <AiCostBadge usage={aiUsage} />
+                <AiCostBadge akcja="Odczyt dokumentu magazynowego" usage={aiUsage} />
               </div>
             )}
             {lines.map((l, i) => (

@@ -104,7 +104,7 @@ export function ImportFromUrlDialog({ open, onClose }: ImportFromUrlDialogProps)
       </p>
       {aiUsage && (
         <div className="flex justify-end">
-          <AiCostBadge usage={aiUsage} />
+          <AiCostBadge akcja="Import przepisu z adresu" usage={aiUsage} />
         </div>
       )}
       <input

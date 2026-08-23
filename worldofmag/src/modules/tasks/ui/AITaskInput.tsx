@@ -257,7 +257,7 @@ export function AITaskInput({ projectId, allTags }: AITaskInputProps) {
           </div>
           {aiUsage && (
             <div className="flex justify-end mt-1.5">
-              <AiCostBadge usage={aiUsage} />
+              <AiCostBadge akcja="Rozpoznanie zadania z tekstu" usage={aiUsage} />
             </div>
           )}
           {error && <p className="text-xs mt-1.5" style={{ color: "var(--accent-red)" }}>{error}</p>}

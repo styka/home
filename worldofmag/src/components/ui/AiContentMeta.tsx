@@ -6,7 +6,7 @@ import { RefreshCw, Loader2, Settings2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { setSectionMode } from "@/actions/aiSections";
-import { AI_SECTION_MODE_LABELS, type AiSectionMode } from "@/platform/ai/sectionMode";
+import { AI_SECTION_LABELS, AI_SECTION_MODE_LABELS, type AiSectionMode } from "@/platform/ai/sectionMode";
 import type { AiContentKind } from "@/platform/ai/contentMemory";
 
 /**
@@ -98,7 +98,16 @@ export function AiContentMeta({
             nieaktualne
           </span>
         )}
-        {usage && <AiCostBadge usage={usage} align="left" />}
+        {/* 083: nazwa akcji bierze się z RODZAJU SEKCJI — sekcja AI już wie, czym jest
+            („Gorące tematy", „Obserwatory pogody"), więc jej sześciu konsumentów nie musi
+            powtarzać tej informacji drugi raz. */}
+        {usage && (
+          <AiCostBadge
+            usage={usage}
+            akcja={sectionKind ? AI_SECTION_LABELS[sectionKind] : t("trescAi")}
+            align="left"
+          />
+        )}
         {onRefresh && (
           <button
             onClick={onRefresh}

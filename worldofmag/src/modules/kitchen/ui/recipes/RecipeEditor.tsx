@@ -520,7 +520,7 @@ export function RecipeEditor({ recipe, cookbooks, hasAI, initialDraft, importSou
               </div>
               {aiUsage && (
                 <div className="flex justify-end">
-                  <AiCostBadge usage={aiUsage} />
+                  <AiCostBadge akcja="Generowanie przepisu" usage={aiUsage} />
                 </div>
               )}
             </div>

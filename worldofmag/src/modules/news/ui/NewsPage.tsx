@@ -535,7 +535,7 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
           {t("modelNieskonfigurowanyMaterialPobrany")}
         </span>
       )}
-      <AiCostBadge usage={r.usage} align="left" />
+      <AiCostBadge usage={r.usage} akcja="Odświeżanie wiadomości" align="left" />
     </div>
   );
 }
@@ -602,7 +602,7 @@ function RefreshHistory() {
                       streszczeń: {r.summarized} · faktów: {r.timelineAdded}
                     </span>
                   )}
-                  <AiCostBadge usage={r.usage} align="left" />
+                  <AiCostBadge usage={r.usage} akcja="Odświeżanie wiadomości" align="left" />
                 </li>
               ))}
             </ul>

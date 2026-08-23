@@ -133,7 +133,7 @@ export function IdeaDetailSheet({
             <ListPlus size={14} /> {t("dodajDoZadan")}
           </Button>
         )}
-        <AiCostBadge usage={usage} rate={usdPlnRate} />
+        <AiCostBadge akcja="Plan pomysłu na pogodę" usage={usage} rate={usdPlnRate} />
       </div>
     </div>
   );

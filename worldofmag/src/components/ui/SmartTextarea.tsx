@@ -359,7 +359,7 @@ export function SmartTextarea({
 
       {aiUsage && (
         <div className="flex justify-end">
-          <AiCostBadge usage={aiUsage} />
+          <AiCostBadge akcja="Podpowiedź do pola tekstowego" usage={aiUsage} />
         </div>
       )}
       {error && (

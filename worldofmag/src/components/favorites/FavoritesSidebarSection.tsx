@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Settings2, ChevronRight, ChevronDown } from "lucide-react";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
+import { PrzelacznikKosztow } from "@/components/ui/PrzelacznikKosztow";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { isPathLocked } from "@/lib/pathPermissions";
@@ -102,6 +103,9 @@ export function FavoritesSidebarSection({ favorites, userPermissions, collapsed 
             <span style={{ color: "var(--text-muted)", opacity: 0.8 }}>· {accessible.length}</span>
           )}
         </button>
+        {/* 083: przełącznik kosztów AI — w chromie konta na desktopie, dokładnie tam, skąd
+            właśnie zabraliśmy zduplikowaną gwiazdkę. Dla nie-administratora renderuje `null`. */}
+        <PrzelacznikKosztow rozmiar={12} />
         <Link
           href="/settings#ulubione"
           title={t("zarzadzajUlubionymiNazwaIkona")}

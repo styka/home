@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
+import { zglosKoszt } from "@/platform/ai/kosztBus";
+import { usePokazKoszty } from "@/platform/ai/kosztWidocznosc";
 
 /**
  * 034: WSPÓLNY wskaźnik kosztu operacji AI. Wyjęty z okna asystenta, żeby dało się go użyć wszędzie,
@@ -72,10 +74,23 @@ const PANEL_MAX_WIDTH = 360;
 
 export function AiCostBadge({
   usage,
+  akcja,
   rate = DEFAULT_USD_PLN_RATE,
   align = "right",
 }: {
   usage?: AiCostUsage;
+  /**
+   * 083: nazwa BIZNESOWEJ czynności użytkownika („Streszczenie wiadomości", „Plan tygodnia").
+   *
+   * **Wymagana, bez wartości domyślnej** — i to jest decyzja, nie niedopatrzenie. Wariant
+   * opcjonalny z „historycznym" domyślnikiem dałby ciche „Nieznana akcja" w połowie z 26 miejsc
+   * wołających ten komponent, a właściciel prosił dokładnie o odwrotność: chce wiedzieć, **za co**
+   * poleciał koszt, bo na jednej stronie bywa kilka komponentów wołających model. Brak etykiety
+   * ma być błędem kompilacji (wzorzec C-36: parametr wymagany zamiast cichego domyślnika).
+   *
+   * To NIE jest typ operacji LLM — „reasoning" nie odróżnia dwóch sekcji na tej samej stronie.
+   */
+  akcja: string;
   rate?: number;
   /**
    * 037: w bąblu czatu wskaźnik dociska się do prawej (`marginLeft:auto`) i tak zostaje domyślnie.
@@ -85,6 +100,7 @@ export function AiCostBadge({
   align?: "left" | "right";
 }) {
   const t = useTranslations("ui.cost");
+  const { pokazuj } = usePokazKoszty();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   // 035: przesunięcie panelu w poziomie WZGLĘDEM przycisku, policzone z realnych pomiarów.
@@ -102,7 +118,27 @@ export function AiCostBadge({
   // usuwa ten powód — panel nie leży już wewnątrz arkusza, więc nie ma go co przycinać, a jedyną
   // sensowną granicą zostaje okno.
 
+  /**
+   * 083: MELDUNEK idzie zawsze, RYSOWANIE zależy od przełącznika.
+   *
+   * Rozdzielenie tych dwóch rzeczy jest sednem zmiany. Gdyby meldunek siedział za tym samym
+   * warunkiem co rysowanie, wyłączenie wskaźnika wyciszyłoby administratora całkowicie — a on ma
+   * dowiadywać się o KAŻDYM koszcie; przełącznik decyduje tylko o szczegółach przy treści.
+   *
+   * Hak stoi PRZED wczesnymi wyjściami, bo kolejność haków nie może zależeć od danych.
+   */
+  useEffect(() => {
+    if (!usage) return;
+    if (usage.costUsd === undefined && !usage.tokens) return;
+    zglosKoszt({
+      akcja,
+      usage: { costUsd: usage.costUsd, costKnown: usage.costKnown, tokens: usage.tokens, model: usage.model },
+    });
+  }, [usage, akcja]);
+
   if (!usage) return null;
+  // Przełącznik administratora: wskaźnik przy treści domyślnie NIE ZAJMUJE MIEJSCA (AC-7).
+  if (!pokazuj) return null;
 
   const hasCost = !!(usage.costUsd && usage.costUsd > 0);
   const hasDetail = !!usage.calls?.length || !!usage.model || !!usage.tokens;

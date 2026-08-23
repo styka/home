@@ -185,7 +185,7 @@ export function StorageScan() {
           <div className="flex flex-col gap-1">
             {aiUsage && (
               <div className="flex justify-end">
-                <AiCostBadge usage={aiUsage} />
+                <AiCostBadge akcja="Rozpoznanie zdjęcia magazynu" usage={aiUsage} />
               </div>
             )}
             {rows.map((r, idx) => (

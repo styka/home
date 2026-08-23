@@ -105,7 +105,7 @@ export function StorageSearch({ items, initialLocation }: StorageSearchProps) {
 
       {aiUsage && (
         <div className="flex justify-end">
-          <AiCostBadge usage={aiUsage} />
+          <AiCostBadge akcja="Szukanie w magazynie" usage={aiUsage} />
         </div>
       )}
 

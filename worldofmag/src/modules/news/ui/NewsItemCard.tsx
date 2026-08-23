@@ -120,7 +120,7 @@ export function NewsItemCard({ item, onChanged }: { item: NewsItemDTO; onChanged
       )}
       {usage && (
         <div className="mt-1 flex justify-end">
-          <AiCostBadge usage={usage} />
+          <AiCostBadge akcja="Streszczenie wiadomości" usage={usage} />
         </div>
       )}
 
