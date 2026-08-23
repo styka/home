@@ -558,7 +558,7 @@ export function NewsPage({
       <div className="mx-auto w-full max-w-6xl">
         <RefreshStatus state={refresh} running={refreshRunning} />
 
-        {view === "hot" && <HotTopics onTopicsChanged={() => router.refresh()} />}
+        {view === "hot" && <HotTopics monitorowane={topics} onTopicsChanged={() => router.refresh()} />}
 
         {view === "settings" && (
           <NewsSettings sources={sources} defaultLength={defaultLength} onChanged={() => router.refresh()} />

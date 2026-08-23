@@ -1302,7 +1302,11 @@
         "nieUdaloSiePrzygotowac": "Nie udało się przygotować gorących tematów.",
         "sprobujPonownie": "Spróbuj ponownie",
         "goraceTematyPowstanaPo": "Gorące tematy powstaną po kliknięciu",
-        "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach."
+        "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach.",
+        "monitorowane": "Monitorowane",
+        "odrzucone": "Odrzucone",
+        "tematyKtoreMonitorujesz": "Tematy, które monitorujesz. Ich propozycje nie pojawią się już na liście gorących tematów.",
+        "przestanMonitorowac": "Przestań monitorować"
       },
       "NewsItemCard": {
         "odrzuc": "Odrzuć",

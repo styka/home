@@ -107,17 +107,17 @@
 
 ## Faza 3 — Dług z 083, część F: gorące tematy *(AC-24..AC-27)*
 
-- [ ] **T-17** — **Odsiewanie propozycji już pokrytych.** W `getHotTopics` odfiltruj propozycje,
+- [x] **T-17** — **Odsiewanie propozycji już pokrytych.** W `getHotTopics` odfiltruj propozycje,
   których odcisk tytułu pokrywa się z tematem monitorowanym albo odrzuconym. Reużyj istniejącej
   funkcji odcisku (tej od `NewsHiddenTopic`), nie pisz drugiej reguły podobieństwa.
   *Gotowe, gdy:* AC-25 i AC-26 — dodana propozycja znika z listy sama, bez osobnego stanu.
 
-- [ ] **T-18** — **Zarządzanie monitorowanymi i odrzuconymi w zakładce.** Dwie zwijane listy pod
+- [x] **T-18** — **Zarządzanie monitorowanymi i odrzuconymi w zakładce.** Dwie zwijane listy pod
   jednym panelem, każda z akcją odwrotną (przestań monitorować / przywróć). Usunięcie tematu za
   `confirmDialog` (C-34).
   *Gotowe, gdy:* AC-24 i AC-27 — obie listy dostępne z zakładki, układ ten sam co w pozostałych.
 
-- [ ] **T-19** — **Commit fazy 3.**
+- [x] **T-19** — **Commit fazy 3.**
 
 ---
 

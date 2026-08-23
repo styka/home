@@ -2,9 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Plus, Loader2, EyeOff, Undo2, Check } from "lucide-react";
+import { Plus, Loader2, EyeOff, Undo2, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import { NaglowekSekcji } from "./sekcjeTematow";
 import {
@@ -15,18 +16,29 @@ import {
   getHiddenTopics,
   type HotTopic,
   type HotTopicsResult,
+  deleteTopic,
   type HiddenTopicDTO,
+  type TopicDTO,
 } from "../actions/news";
 
 /** `onTopicsChanged` odświeża listę tematów w module — bez zmiany widoku (040). */
-export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) {
+export function HotTopics({
+  monitorowane,
+  onTopicsChanged,
+}: {
+  /** 084 (AC-27): tematy monitorowane — żeby dało się nimi zarządzać STĄD, a nie tylko z listy. */
+  monitorowane: TopicDTO[];
+  onTopicsChanged: () => void;
+}) {
   const t = useTranslations("modules.news.HotTopics");
   const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [data, setData] = useState<HotTopicsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [hidden, setHidden] = useState<HiddenTopicDTO[] | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [showMonitorowane, setShowMonitorowane] = useState(false);
   // Odciski tematów oznaczonych jako monitorowane w TEJ sesji przeglądu.
   const [monitored, setMonitored] = useState<Set<string>>(new Set());
   const [busy, startBusy] = useTransition();
@@ -100,6 +112,26 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
     });
   }
 
+  /**
+   * 084 (AC-27): przestań monitorować — z tej samej zakładki, w której temat się pojawił.
+   *
+   * Do 083 dodanie tematu z propozycji było jednokierunkowe: żeby je cofnąć, trzeba było przejść do
+   * listy wiadomości i tam znaleźć jego sekcję. Skoro propozycję dodaje się stąd, stąd też musi dać
+   * się ją wycofać.
+   */
+  async function przestanMonitorowac(temat: TopicDTO) {
+    if (!(await confirmDialog(`Przestać monitorować temat „${temat.title}" i usunąć jego linię czasu?`))) return;
+    startBusy(async () => {
+      try {
+        await deleteTopic(temat.id);
+        onTopicsChanged();
+        load(true);
+      } catch (e: any) {
+        showToast(e.message ?? "Nie udało się usunąć tematu", "error");
+      }
+    });
+  }
+
   function unhide(h: HiddenTopicDTO, monitor: boolean) {
     startBusy(async () => {
       try {
@@ -129,15 +161,26 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
         tytul={t("goraceTematy")}
         licznik={topics.length}
         akcje={
-          (hidden?.length ?? 0) > 0 ? (
-            <button
-              onClick={() => setShowHidden((v) => !v)}
-              aria-expanded={showHidden}
-              className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-            >
-              Odrzucone tematy ({hidden!.length})
-            </button>
-          ) : undefined
+          <div className="flex shrink-0 items-center gap-1">
+            {monitorowane.length > 0 && (
+              <button
+                onClick={() => setShowMonitorowane((v) => !v)}
+                aria-expanded={showMonitorowane}
+                className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              >
+                {t("monitorowane")} ({monitorowane.length})
+              </button>
+            )}
+            {(hidden?.length ?? 0) > 0 && (
+              <button
+                onClick={() => setShowHidden((v) => !v)}
+                aria-expanded={showHidden}
+                className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              >
+                {t("odrzucone")} ({hidden!.length})
+              </button>
+            )}
+          </div>
         }
       />
       <p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</p>
@@ -159,6 +202,22 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
             mode={data?.mode}
             onModeChange={() => load()}
           />
+        </div>
+      )}
+
+      {showMonitorowane && monitorowane.length > 0 && (
+        <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
+          <p className="mb-2 text-xs text-[var(--text-muted)]">{t("tematyKtoreMonitorujesz")}</p>
+          <ul className="space-y-2">
+            {monitorowane.map((temat) => (
+              <li key={temat.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 flex-1 text-sm text-[var(--text-primary)]">{temat.title}</span>
+                <Button variant="ghost" size="sm" onClick={() => przestanMonitorowac(temat)} disabled={busy}>
+                  <Trash2 size={14} /> {t("przestanMonitorowac")}
+                </Button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

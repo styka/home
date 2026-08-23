@@ -821,7 +821,30 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     where: { ...(await filtrMoichRekordow(user.id)) },
     select: { fingerprint: true },
   });
-  const hiddenSet = new Set(hidden.map((h) => h.fingerprint));
+
+  /**
+   * 084 (AC-25, AC-26): propozycja, którą JUŻ MONITORUJESZ, nie jest propozycją.
+   *
+   * Do 083 odsiewaliśmy wyłącznie tematy odrzucone, więc temat dodany do monitorowanych wracał na
+   * listę propozycji przy każdym odświeżeniu — użytkownik dodawał go, widział go z powrotem
+   * i nie miał jak stwierdzić, czy dodanie w ogóle zadziałało.
+   *
+   * Odcisk liczymy TĄ SAMĄ funkcją co dla odrzuconych (`fingerprintOf`), a nie drugą regułą
+   * podobieństwa: dwie reguły rozjechałyby się przy pierwszej zmianie i dałyby stan, w którym temat
+   * jest „odrzucony, ale nie taki sam jak monitorowany".
+   *
+   * To załatwia też AC-26 bez osobnego stanu „przeniesione": dodana propozycja znika, bo od tej
+   * chwili jest tematem, a nie propozycją.
+   */
+  const monitorowane = await prisma.newsTopic.findMany({
+    take: SUFIT_LISTY,
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    select: { title: true },
+  });
+  const hiddenSet = new Set([
+    ...hidden.map((h) => h.fingerprint),
+    ...monitorowane.map((t) => fingerprintOf(t.title)),
+  ]);
 
   const headlines = articles.map((a) => `[${a.source.name}] ${a.title}`);
 
@@ -866,8 +889,9 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   }
 
   return {
-    // Odrzucone odfiltrowujemy PO odczycie z pamięci, a nie przed zapisem — dzięki temu cofnięcie
-    // odrzucenia przywraca temat od razu, bez płacenia za ponowne wygenerowanie listy.
+    // Odrzucone i monitorowane odfiltrowujemy PO odczycie z pamięci, a nie przed zapisem — dzięki
+    // temu cofnięcie odrzucenia (albo usunięcie tematu) przywraca propozycję od razu, bez płacenia
+    // za ponowne wygenerowanie listy.
     topics: (remembered.value.topics ?? []).filter((t) => !hiddenSet.has(t.fingerprint)),
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
