@@ -110,8 +110,14 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
 
 - [ ] **AC-17** — Given szerokość ekranu 360 px, when użytkownik otworzy Wiadomości i przewinie
       stronę, then strona **nie przewija się w poziomie** w żadnym momencie.
-- [ ] **AC-18** — Given ta sama szerokość, when użytkownik patrzy na wybór tematu, then **widzi
-      nazwę wybranego tematu** (a nie sam skrawek).
+- [ ] **AC-18** — Given ta sama szerokość, when użytkownik patrzy na wejście do listy tematów,
+      then jest ono **czytelnie opisane i nie ucięte**.
+      > **Korekta na etapie planowania (C-54).** Pierwotnie kryterium brzmiało „widzi nazwę
+      > **wybranego** tematu". Napisałem je pod stan obecny, w którym drop-down jest filtrem — a AC-11
+      > i AC-13 ten filtr **usuwają**, więc „wybrany temat" przestaje istnieć jako pojęcie. Nie ma
+      > czego pokazywać w wyzwalaczu poza stałą etykietą. Nazwa tematu, przy którym akurat jesteś,
+      > była i zostaje w **przyklejonym nagłówku jego sekcji** — to rozstrzygnięcie z 083 (AC-18 tamże)
+      > pozostaje w mocy. Zostaje istotna połowa: wejście ma być czytelne, a nie ucięte do skrawka.
 - [ ] **AC-19** — Given ta sama szerokość, when użytkownik patrzy na zakładki modułu, then widzi
       **nazwy wszystkich trzech**, ewentualnie przewijając sam pasek zakładek — nigdy całą stronę.
 - [ ] **AC-20** — Given ta sama szerokość, when użytkownik przełącza Wiadomości ⇄ Linia czasu, then
@@ -122,6 +128,13 @@ przewijać ją w bok — to jest błąd twardy (C-31), nie kwestia gustu.
 - [ ] **AC-21** — Given wiadomość, dla której pierwsza próba streszczenia się nie powiodła, when
       trwa odświeżanie, then podejmowana jest **automatyczna ponowna próba**, a użytkownik nie musi
       niczego klikać.
+      > **Doprecyzowanie na etapie planowania (C-54).** Rekonesans pokazał, że **połowa tego
+      > mechanizmu już działa** (przebieg 080): gdy model **pominie** pozycję w partii, wraca ona do
+      > kolejnego podejścia (do trzech). Brakuje drugiej połowy: gdy **całe wywołanie modelu się
+      > wywali** (błąd dostawcy, ucięta odpowiedź, limit), wyjątek przerywa **cały** etap streszczania
+      > — pozostałe partie nie są nawet próbowane i cała porcja zostaje bez streszczeń. To kryterium
+      > dotyczy więc przede wszystkim tego przypadku: awaria jednej partii nie może kosztować
+      > wszystkich pozostałych.
 - [ ] **AC-22** — Given wiadomość ze źródła obcojęzycznego, when użytkownik czyta listę, then
       **tytuł jest po polsku**, tak samo jak streszczenie.
 - [ ] **AC-23** — Given wiadomość, której mimo ponowienia nie udało się streścić, when użytkownik ją
