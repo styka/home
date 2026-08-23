@@ -110,8 +110,14 @@ sam układ akcji jak w pozostałych modułach.
 - [ ] **AC-19** — Given wybrany temat, when użytkownik przejdzie do sąsiedniego (strzałką lub
       z listy), then treść przesuwa się **płynnie w bok**, a nie skacze.
 - [ ] **AC-20** — Given przewijanie w dół przez kolejne tematy, when zmienia się temat bieżący, then
-      wskaźnik w pasku przesuwa się **w bok** za treścią — i strona **nie cofa się** (zachowanie
-      wywalczone w 082-poprawce nie może zniknąć).
+      strona **nie cofa się** i pasek nawigacji **pozostaje przyklejony** (zachowanie wywalczone
+      w 082-poprawce nie może zniknąć).
+      > **Korekta po decyzji z AC-18 (C-54).** Pierwotnie to kryterium wymagało też, żeby „wskaźnik
+      > w pasku przesuwał się w bok za treścią". To było napisane pod pasek chipów z 082 — a AC-18
+      > usuwa z paska nazwę tematu bieżącego, bo właśnie ona dublowała przyklejony nagłówek sekcji.
+      > Bez chipów nie ma czego przesuwać: wyzwalacz listy pokazuje **wybrany filtr** („Wszystkie"
+      > albo nazwę tematu), a to się przy przewijaniu nie zmienia. Zostaje istotna połowa —
+      > brak szarpania stroną. Wrażenie ruchu w bok daje AC-19 (przejście przy zmianie tematu).
 - [ ] **AC-21** — Given akcje tematu (edycja, usunięcie, dodanie nowego), when użytkownik ich szuka,
       then są **przy temacie**, którego dotyczą, a nie w pasku nawigacji.
 - [ ] **AC-22** — Given użytkownik z kilkunastoma źródłami, when patrzy na widok, then wybór źródeł

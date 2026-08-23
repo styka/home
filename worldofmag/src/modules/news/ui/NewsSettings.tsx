@@ -2,12 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Trash2, Settings2, Library } from "lucide-react";
+import { Plus, Trash2, Library } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { SUMMARY_LENGTHS } from "@/lib/news/format";
 import { SourceCatalogPicker } from "./SourceCatalogPicker";
+import { NaglowekSekcji } from "./sekcjeTematow";
 import {
   createSource,
   updateSource,
@@ -64,52 +65,68 @@ export function NewsSettings({
     }, "Dodano źródło");
   }
 
+  /**
+   * 083 (AC-26..AC-28): zakładka Źródeł przestała być „krzywa".
+   *
+   * Trzy rzeczy naraz, wszystkie z jednego zgłoszenia właściciela („prezentacja listy jest krzywa…
+   * ustawienie długości streszczeń na samym dole… natłok elementów"):
+   *
+   *  1. **Ustawienie długości streszczeń stoi NAD listą.** Było pod nią — a lista rośnie z każdym
+   *     dodanym kanałem, więc ustawienie, które zmienia się raz, uciekało coraz niżej i przy
+   *     kilkunastu źródłach trzeba było przewinąć ekran, żeby je zobaczyć.
+   *  2. **Wiersz ma STAŁĄ strukturę.** Poprzednia wersja stawiała nazwę, opis, adres i kosz obok
+   *     siebie w zawijanym `flex`, więc szerokość każdej kolumny zależała od DŁUGOŚCI NAZWY danego
+   *     kanału — pola opisu zaczynały się w innym miejscu w każdym wierszu i to właśnie wyglądało
+   *     na krzywe. Siatka o zadanych kolumnach ustawia je w jednej osi niezależnie od treści.
+   *  3. **Ten sam przyklejony nagłówek sekcji, co w pozostałych zakładkach** (`NaglowekSekcji`) —
+   *     spójność, o którą właściciel prosił wprost, wynika ze wspólnego komponentu, a nie z
+   *     przepisanego na nowo, podobnego kawałka JSX.
+   */
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
-          <Settings2 size={18} /> {t("zrodlaWiadomosci")}
-        </h2>
-        <div className="space-y-2">
-          {sources.map((s) => (
-            <div
-              key={s.id}
-              className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3"
+      <section>
+        <NaglowekSekcji tytul={t("domyslnaDlugoscStreszczen")} />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {SUMMARY_LENGTHS.map((l) => (
+            <button
+              key={l.key}
+              onClick={() => run(() => setDefaultSummaryLength(l.key), "Zapisano")}
+              className={cn(
+                "rounded-md border px-3 py-2.5 text-sm transition-colors",
+                defaultLength === l.key
+                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              )}
             >
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={s.enabled}
-                  onChange={() => run(() => updateSource(s.id, { enabled: !s.enabled }))}
-                  className="h-4 w-4 accent-[var(--accent-blue)]"
-                />
-                <span className="font-medium text-[var(--text-primary)]">{s.name}</span>
-              </label>
-              {/* 040: dowolny opis zamiast wyboru z trzech kategorii — zestaw kanałów dawno
-                  wyszedł poza politykę. Zapis na `blur`, żeby nie strzelać akcją przy każdej
-                  wpisanej literze. */}
-              <SourceDescriptorInput
-                value={s.descriptor}
-                onSave={(next) => run(() => updateSource(s.id, { descriptor: next }))}
-              />
-              {/* 040: `min-w-0` jest tu WARUNKIEM działania `truncate`, nie ozdobą. Element `flex-1`
-                  ma domyślnie `min-width: auto`, więc nie potrafi zwęzić się poniżej swojej treści —
-                  długi adres RSS rozpychał wiersz, a przez niego całą stronę (poziomy scroll na
-                  telefonie). `truncate` nigdy nie dostawał szansy zadziałać, bo nie było czego
-                  przycinać: tekst ucinała dopiero krawędź ekranu. */}
-              <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">{s.rssUrl}</span>
-              <button
-                onClick={() => run(() => deleteSource(s.id), "Usunięto źródło")}
-                className="text-[var(--text-muted)] hover:text-[var(--accent-red)]"
-                title={t("usunZrodlo")}
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
+              {l.label}
+            </button>
           ))}
         </div>
+      </section>
 
-        {showAdd ? (
+      <section>
+        <NaglowekSekcji
+          tytul={t("zrodlaWiadomosci")}
+          licznik={sources.length}
+          akcje={
+            !showAdd ? (
+              /* 082: dwie drogi obok siebie. Biblioteka jest wariantem podstawowym, bo dla
+                 większości kanałów jest po prostu szybsza; ręczne wpisanie adresu zostaje dla
+                 tego, czego w bibliotece nie ma. Obie stoją w nagłówku sekcji, a nie pod listą —
+                 dzięki temu nie odjeżdżają w dół razem z nią. */
+              <div className="flex shrink-0 items-center gap-1">
+                <Button size="sm" onClick={() => setShowCatalog(true)}>
+                  <Library size={14} /> {t("dodajZBiblioteki")}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowAdd(true)}>
+                  <Plus size={14} /> {t("dodajRecznie")}
+                </Button>
+              </div>
+            ) : undefined
+          }
+        />
+
+        {showAdd && (
           <div className="mt-3 space-y-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
             <input
               value={name}
@@ -145,46 +162,63 @@ export function NewsSettings({
               </Button>
             </div>
           </div>
-        ) : (
-          /* 082: dwie drogi obok siebie. Biblioteka stoi PIERWSZA i jest wariantem podstawowym
-             (`primary`), bo dla większości źródeł jest po prostu szybsza — ręczne wpisanie adresu
-             kanału zostaje dla tego, czego w bibliotece nie ma. */
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setShowCatalog(true)}>
-              <Library size={14} /> {t("dodajZBiblioteki")}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setShowAdd(true)}>
-              <Plus size={14} /> {t("dodajRecznie")}
-            </Button>
-          </div>
         )}
 
-        {showCatalog && (
-          <SourceCatalogPicker onClose={() => setShowCatalog(false)} onAdded={onChanged} />
-        )}
-      </div>
+        <div className="mt-3 space-y-2">
+          {sources.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
+              {t("brakZrodel")}
+            </p>
+          ) : (
+            sources.map((s) => (
+              <div
+                key={s.id}
+                /* Siatka, nie zawijany `flex`: kolumny mają stałe udziały, więc pole opisu zaczyna
+                   się w każdym wierszu w tym samym miejscu. Na telefonie jedna kolumna — cztery
+                   ściśnięte kolumny na 360 px byłyby gorsze niż cztery wiersze. */
+                className="grid grid-cols-1 items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3 md:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1.1fr)_auto]"
+              >
+                <label className="flex min-w-0 cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={s.enabled}
+                    onChange={() => run(() => updateSource(s.id, { enabled: !s.enabled }))}
+                    className="h-5 w-5 shrink-0 accent-[var(--accent-blue)]"
+                  />
+                  <span className="min-w-0 truncate font-medium text-[var(--text-primary)]">{s.name}</span>
+                </label>
 
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
-          {t("domyslnaDlugoscStreszczen")}
-        </h2>
-        <div className="flex gap-2">
-          {SUMMARY_LENGTHS.map((l) => (
-            <button
-              key={l.key}
-              onClick={() => run(() => setDefaultSummaryLength(l.key), "Zapisano")}
-              className={cn(
-                "rounded-md border px-3 py-1.5 text-sm",
-                defaultLength === l.key
-                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-              )}
-            >
-              {l.label}
-            </button>
-          ))}
+                {/* 040: dowolny opis zamiast wyboru z trzech kategorii — zestaw kanałów dawno
+                    wyszedł poza politykę. Zapis na `blur`, żeby nie strzelać akcją przy każdej
+                    wpisanej literze. */}
+                <SourceDescriptorInput
+                  value={s.descriptor}
+                  onSave={(next) => run(() => updateSource(s.id, { descriptor: next }))}
+                />
+
+                {/* 040: `min-w-0` jest tu WARUNKIEM działania `truncate`, nie ozdobą. Element siatki
+                    ma domyślnie `min-width: auto`, więc nie potrafi zwęzić się poniżej swojej
+                    treści — długi adres RSS rozpychał wiersz, a przez niego całą stronę (poziomy
+                    scroll na telefonie). */}
+                <span className="min-w-0 truncate text-xs text-[var(--text-muted)]" title={s.rssUrl}>
+                  {s.rssUrl}
+                </span>
+
+                <button
+                  onClick={() => run(() => deleteSource(s.id), "Usunięto źródło")}
+                  className="justify-self-start rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)] md:justify-self-end"
+                  title={t("usunZrodlo")}
+                  aria-label={`Usuń źródło: ${s.name}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))
+          )}
         </div>
-      </div>
+
+        {showCatalog && <SourceCatalogPicker onClose={() => setShowCatalog(false)} onAdded={onChanged} />}
+      </section>
     </div>
   );
 }
@@ -229,7 +263,9 @@ function SourceDescriptorInput({
       maxLength={60}
       placeholder={t("opisZrodla")}
       aria-label={t("opisZrodla")}
-      className="w-32 min-w-0 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-primary)]"
+      // Szerokość należy do KOLUMNY siatki, nie do pola — inaczej pole i kolumna kłóciłyby się
+      // o rozmiar i wiersz znów wyglądałby krzywo.
+      className="w-full min-w-0 rounded border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-2 text-xs text-[var(--text-primary)]"
     />
   );
 }

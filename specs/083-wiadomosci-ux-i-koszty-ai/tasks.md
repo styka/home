@@ -50,7 +50,7 @@
   *Gotowe, gdy:* przy przewinięciu `/wiadomosci` narożniki **nie zmieniają położenia**, a wygląd
   `/pogoda` (treść krótka) jest identyczny jak przed zmianą — porównanie zrzutów (AC-31).
 
-- [ ] **T-6** — **Commit fazy 1** + przebieg bramek UI (`check:i18n`, `check:ui-contract`,
+- [x] **T-6** — **Commit fazy 1** + przebieg bramek UI (`check:i18n`, `check:ui-contract`,
   `check:tailwind`, `tsc`, `lint`).
   *Gotowe, gdy:* bramki zielone, zrzuty „po" potwierdzają jedną gwiazdkę i nieruchome narożniki.
 
@@ -94,7 +94,7 @@
   *Gotowe, gdy:* AC-8, AC-9 klikalne; przy `ai_cost_badge_enabled=0` **nie ma** ani przełącznika,
   ani powiadomień (AC-15); konto bez `module.admin` nie dostaje `usage` na drut (AC-6).
 
-- [ ] **T-13** — **Commit fazy 2** + bramki (`check:cost-badge`, `check:ai-coverage`, `check:i18n`,
+- [x] **T-13** — **Commit fazy 2** + bramki (`check:cost-badge`, `check:ai-coverage`, `check:i18n`,
   `check:client-safe`, `tsc`, `lint`).
   *Gotowe, gdy:* zielone; klikaczem sprawdzone: brak kosztu → przełącznik → koszt + składowe.
 
@@ -102,62 +102,62 @@
 
 ## Faza 3 — Moduł Wiadomości *(AC-16..AC-28)*
 
-- [ ] **T-14** — **Odchudzenie widoku.** Usuń sekcję historii odświeżeń (komponent + akcję
+- [x] **T-14** — **Odchudzenie widoku.** Usuń sekcję historii odświeżeń (komponent + akcję
   `getNewsRefreshHistory` + wpis w `action-coverage.json`) oraz przełącznik „Strumień / Jeden temat".
   Model `NewsRefreshRun` i zapis przebiegów **zostają** — to dane administracyjne.
   *Gotowe, gdy:* AC-16 spełnione; `check:ai-coverage` zielone (martwy wpis wywala bramkę).
 
-- [ ] **T-15** — **Wspólny nawigator.** `src/components/ui/nav/GroupNavigator.tsx`: `grupy`,
+- [x] **T-15** — **Wspólny nawigator.** `src/components/ui/nav/GroupNavigator.tsx`: `grupy`,
   `aktywnaId`, `onWybor`, `akcje`, `pozycjaWszystkie`. Układ `[◀] [wyzwalacz listy] [▶] [akcje]`,
   lista z wyszukiwarką, `Esc`, cele dotyku `py-3`, jeden mechanizm na telefon i desktop.
   **Nie importuje niczego z `modules/`.**
   *Gotowe, gdy:* `check:boundaries` zielone; test jednostkowy reguł wyboru (następny/poprzedni,
   pozycja zbiorcza na pierwszym miejscu).
 
-- [ ] **T-16** — **Nawigator w module + „Wszystkie".** `NewsPage` używa `GroupNavigator` zamiast
+- [x] **T-16** — **Nawigator w module + „Wszystkie".** `NewsPage` używa `GroupNavigator` zamiast
   `TopicPicker` (plik **usuwany**); pierwsza pozycja to „Wszystkie"; pasek **nie pokazuje** nazwy
   tematu bieżącego jako osobnego znacznika. Wybór tematu i źródeł w stanie widoku (adres).
   *Gotowe, gdy:* AC-17, AC-18 spełnione; wybór da się zapisać gwiazdką jako ulubiony widok.
 
-- [ ] **T-17** — **Przejście w bok.** Zmiana tematu przesuwa kontener sekcji `translateX` (~24 px,
+- [x] **T-17** — **Przejście w bok.** Zmiana tematu przesuwa kontener sekcji `translateX` (~24 px,
   ~180 ms, z poszanowaniem `prefers-reduced-motion`), potem pionowe przewinięcie do sekcji.
   **Przewijamy wyłącznie ramę widoku** — nigdy mechanizmem sięgającym przodków (lekcja z 082).
   *Gotowe, gdy:* AC-19 widoczne w przeglądarce, a AC-20 potwierdzone pomiarem: `scrollTop` nie
   maleje przy przewijaniu przez tematy.
 
-- [ ] **T-18** — **Akcje tematu przy temacie.** Edycja, usunięcie i „dodaj temat" wychodzą z paska:
+- [x] **T-18** — **Akcje tematu przy temacie.** Edycja, usunięcie i „dodaj temat" wychodzą z paska:
   edycja i usunięcie do przyklejonego nagłówka sekcji tematu (obok „słuchaj" i „oznacz"),
   „dodaj temat" do `headerAction` obok „Odśwież". Usunięcie za `confirmDialog` (C-34).
   *Gotowe, gdy:* AC-21 spełnione; pasek zawiera wyłącznie nawigację i filtr.
 
-- [ ] **T-19** — **Filtr źródeł o stałej wysokości.** Ikona z licznikiem („Wszystkie" / „3 z 12")
+- [x] **T-19** — **Filtr źródeł o stałej wysokości.** Ikona z licznikiem („Wszystkie" / „3 z 12")
   w `akcje` nawigatora; panel na `AnchoredLayer` z listą, szukaniem i „zaznacz/odznacz wszystkie".
   Pas chipsów **znika**.
   *Gotowe, gdy:* wysokość paska **taka sama** przy 3 i przy 15 źródłach (pomiar) — AC-22, AC-23.
 
-- [ ] **T-20** — **Linia czasu dla wszystkich tematów.** Przełącznik `Wiadomości ⇄ Linia czasu`
+- [x] **T-20** — **Linia czasu dla wszystkich tematów.** Przełącznik `Wiadomości ⇄ Linia czasu`
   przestaje zależeć od wyboru pojedynczego tematu; akcja odczytu zwraca wpisy ze wszystkich tematów
   z identyfikatorem i tytułem tematu; widok grupuje je w te same sekcje z przyklejonym nagłówkiem,
   co widok wiadomości.
   *Gotowe, gdy:* AC-24, AC-25 spełnione; `check:pagination` zielone (`take: SUFIT_LISTY`).
 
-- [ ] **T-21** — **Zakładka Źródła.** Wiersz o stałej strukturze (nazwa + znacznik opisu / adres
+- [x] **T-21** — **Zakładka Źródła.** Wiersz o stałej strukturze (nazwa + znacznik opisu / adres
   z `truncate` / akcje w stałej kolumnie); ustawienie domyślnej długości streszczeń **nad** listą;
   ten sam nagłówek sekcji co pozostałe zakładki.
   *Gotowe, gdy:* AC-26..AC-28 potwierdzone zrzutem; ustawienie widoczne bez przewijania.
 
-- [ ] **T-22** — **Test przewijania po zmianie.** Zaktualizuj `e2e/specs/news-stream-scroll.spec.ts`
+- [x] **T-22** — **Test przewijania po zmianie.** Zaktualizuj `e2e/specs/news-stream-scroll.spec.ts`
   do nowych selektorów (nawigator zamiast paska chipów) tak, żeby **dalej pilnował AC-20**.
   *Gotowe, gdy:* test zielony na nowym kodzie i **czerwony** po sztucznym cofnięciu przewijania —
   sprawdzony w obie strony, jak w 082-poprawce.
 
-- [ ] **T-23** — **Commit fazy 3** + bramki modułowe.
+- [x] **T-23** — **Commit fazy 3** + bramki modułowe.
 
 ---
 
 ## Faza 4 — Domknięcie
 
-- [ ] **T-24** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13, zatrzymanie przed
+- [x] **T-24** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13, zatrzymanie przed
   `migrate.js`): `check:i18n`, `check:ui-contract`, `check:boundaries`, `check:module-registry`,
   `check:ai-coverage`, `check:actions`, `check:pagination`, `check:tailwind`, `check:client-safe`,
   `check:e2e-waits`, `check:logs`, `check:owner-columns`, `check:cost-badge`, `check:content-memory`,

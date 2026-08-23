@@ -11,7 +11,7 @@ import { fingerprintOf } from "@/lib/textKey";
 import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
 import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
-import { usageFromChat, parseStoredUsage, type AiUsageInfo } from "@/platform/ai/usage";
+import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { visibleUsage } from "@/platform/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
@@ -142,15 +142,22 @@ export async function getTopics(): Promise<TopicDTO[]> {
   }));
 }
 
+/**
+ * 083: preferencje modułu to już TYLKO domyślna długość streszczeń.
+ *
+ * `activeSourceKey` (wybrane źródło) wyszedł stąd do stanu widoku w adresie — bo filtr źródeł stał
+ * się wielokrotnym wyborem, a przede wszystkim dlatego, że widok zapisywany gwiazdką do ulubionych
+ * musi nieść swój filtr w adresie. Zapis w bazie byłby DRUGIM nośnikiem tej samej informacji:
+ * ulubiony „Wiadomości z jednego portalu" pokazywałby po powrocie coś innego niż w chwili zapisu.
+ * Kolumna zostaje w tabeli (nic jej nie czyta) — kasowanie jej to osobna migracja porządkowa.
+ */
 export async function getNewsPref(): Promise<{
   defaultSummaryLength: SummaryLength;
-  activeSourceKey: string | null;
 }> {
   const user = await requireAuth();
   const p = await prisma.newsPref.findUnique({ where: { ...(await filtrMoichRekordow(user.id)) } });
   return {
     defaultSummaryLength: (p?.defaultSummaryLength as SummaryLength) ?? "medium",
-    activeSourceKey: p?.activeSourceKey ?? null,
   };
 }
 
@@ -286,6 +293,69 @@ export async function getTopicTimeline(topicId: string): Promise<TimelineEntryDT
   }));
 }
 
+/** 083: linia czasu jednego tematu — jednostka przeglądu osi w tych samych sekcjach co wiadomości. */
+export interface StreamTimelineTopicDTO {
+  id: string;
+  title: string;
+  entries: TimelineEntryDTO[];
+}
+
+/**
+ * 083: linia czasu WSZYSTKICH tematów w jednym odczycie.
+ *
+ * Zgłoszenie właściciela: „linia czasu nie działa przy wybranych wszystkich tematach i nie widać,
+ * który wpis do którego tematu należy". Do 082 przełącznik `Wiadomości ⇄ Linia czasu` czytał
+ * `getTopicTimeline(topicId)`, więc przy pozycji zbiorczej nie miał czego zapytać i pokazywał pustkę.
+ *
+ * Kształt jest CELOWO taki sam jak `getStreamView`: oba widoki rysuje ten sam układ sekcji z
+ * przyklejonym nagłówkiem tematu, więc przynależność wpisu do tematu wynika z miejsca na ekranie,
+ * a nie z dodatkowej etykietki przy każdym wierszu.
+ *
+ * Adresy materiałów dociągamy JEDNYM zapytaniem dla wszystkich tematów naraz — pętla po tematach
+ * dawałaby N+1 przy każdym wejściu na oś.
+ */
+export async function getStreamTimeline(): Promise<StreamTimelineTopicDTO[]> {
+  const user = await requireAuth();
+  const topics = await prisma.newsTopic.findMany({
+    take: SUFIT_LISTY,
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      timeline: {
+        orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
+        include: { source: true },
+      },
+    },
+  });
+
+  const articleIds = Array.from(
+    new Set(topics.flatMap((t) => t.timeline.map((r) => r.articleId).filter((id): id is string => !!id)))
+  );
+  const articles = articleIds.length
+    ? await prisma.newsArticle.findMany({
+        take: SUFIT_LISTY,
+        where: { id: { in: articleIds } },
+        select: { id: true, url: true },
+      })
+    : [];
+  const urlById = new Map(articles.map((a) => [a.id, a.url]));
+
+  return topics.map((t) => ({
+    id: t.id,
+    title: t.title,
+    entries: t.timeline.map((r) => ({
+      id: r.id,
+      eventDate: r.eventDate.toISOString(),
+      dateConfidence: r.dateConfidence as DateConfidence,
+      fact: r.fact,
+      sourceName: r.source?.name ?? null,
+      sourceKey: r.source?.key ?? null,
+      sourceDescriptor: r.source?.descriptor ?? null,
+      url: r.articleId ? urlById.get(r.articleId) ?? null : null,
+    })),
+  }));
+}
+
 // ─── Topic / source / pref mutations ───────────────────────────────────────
 
 export async function createTopic(data: {
@@ -409,15 +479,6 @@ export async function setDefaultSummaryLength(length: SummaryLength): Promise<vo
     update: { defaultSummaryLength: length },
   });
   revalidatePath("/wiadomosci");
-}
-
-export async function setActiveSource(key: string | null): Promise<void> {
-  const user = await requireAuth();
-  await prisma.newsPref.upsert({
-    where: { ...(await filtrMoichRekordow(user.id)) },
-    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), activeSourceKey: key },
-    update: { activeSourceKey: key },
-  });
 }
 
 // ─── LLM helpers ───────────────────────────────────────────────────────────
@@ -554,54 +615,6 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
     result,
     startedAt: job.createdAt.toISOString(),
   };
-}
-
-/** 041: jeden zakończony przebieg odświeżania — do historii kosztów. */
-export interface NewsRefreshRunDTO {
-  id: string;
-  startedAt: string;
-  finishedAt: string;
-  status: "done" | "failed";
-  sources: number;
-  fetched: number;
-  assigned: number;
-  summarized: number;
-  timelineAdded: number;
-  error: string | null;
-  usage?: AiUsageInfo;
-}
-
-/**
- * 041: historia przebiegów odświeżania — „ile mnie to kosztowało" DA SIĘ odczytać po fakcie.
- *
- * Do 040 koszt widniał wyłącznie przy ostatnim przebiegu i znikał razem z zadaniem sprzątanym po
- * 24 godzinach. Tu czytamy trwałą tabelę, a zużycie przepuszczamy przez `visibleUsage` — czyli
- * konto bez uprawnień administratora nie dostaje danych kosztowych PO STRONIE SERWERA, a nie tylko
- * ich nie widzi w interfejsie.
- */
-export async function getNewsRefreshHistory(limit = 10): Promise<NewsRefreshRunDTO[]> {
-  const user = await requireAuth();
-  const rows = await prisma.newsRefreshRun.findMany({
-    where: { ...(await filtrMoichRekordow(user.id)) },
-    orderBy: { finishedAt: "desc" },
-    take: Math.min(Math.max(1, limit), 30),
-  });
-
-  return Promise.all(
-    rows.map(async (r) => ({
-      id: r.id,
-      startedAt: r.startedAt.toISOString(),
-      finishedAt: r.finishedAt.toISOString(),
-      status: (r.status === "failed" ? "failed" : "done") as "done" | "failed",
-      sources: r.sources,
-      fetched: r.fetched,
-      assigned: r.assigned,
-      summarized: r.summarized,
-      timelineAdded: r.timelineAdded,
-      error: r.error,
-      usage: await visibleUsage(parseStoredUsage(r.usage)),
-    }))
-  );
 }
 
 // ─── Item actions ──────────────────────────────────────────────────────────

@@ -851,6 +851,14 @@
       "PrzelacznikKosztow": {
         "pokazKoszty": "Pokaż koszty AI przy treściach",
         "ukryjKoszty": "Ukryj koszty AI przy treściach"
+      },
+      "GroupNavigator": {
+        "poprzednia": "Poprzednia grupa",
+        "nastepna": "Następna grupa",
+        "listaGrup": "Lista grup",
+        "szukaj": "Szukaj…",
+        "nicNiePasuje": "Nic nie pasuje do wyszukiwania.",
+        "brakGrup": "Brak grup"
       }
     }
   },
@@ -1301,19 +1309,18 @@
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",
-        "strumien": "Strumień",
         "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
         "brakNowychIstotnychWiadomosci": "Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać najświeższe materiały (tylko z ostatnich 24 godzin).",
         "widokiModuluWiadomosci": "Widoki modułu Wiadomości",
         "ostatnieOdswiezanieNiePowiodlo": "Ostatnie odświeżanie nie powiodło się.",
         "modelNieskonfigurowanyMaterialPobrany": "model nieskonfigurowany — materiał pobrany, analiza pominięta",
-        "historiaOdswiezen": "Historia odświeżeń",
-        "wczytuje": "Wczytuję…",
-        "brakZapisanychPrzebiegowPierwszy": "Brak zapisanych przebiegów. Pierwszy pojawi się tu po najbliższym odświeżeniu.",
         "usunTemat": "Usuń temat",
         "tytulTematu": "Tytuł tematu",
         "filtrSemantycznyOpiszDokladnie": "Filtr semantyczny (opisz dokładnie, co Cię interesuje)",
-        "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych"
+        "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych",
+        "wszystkieTematy": "Wszystkie tematy",
+        "wiadomosciKrotko": "Wiadomości",
+        "liniaCzasuKrotko": "Linia czasu"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
@@ -1333,7 +1340,8 @@
         "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",
         "opisZrodla": "Opis źródła",
         "dodajZBiblioteki": "Dodaj z biblioteki",
-        "dodajRecznie": "Dodaj ręcznie"
+        "dodajRecznie": "Dodaj ręcznie",
+        "brakZrodel": "Nie masz jeszcze żadnych źródeł. Dodaj je z biblioteki albo ręcznie."
       },
       "NewsStream": {
         "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
@@ -1362,6 +1370,19 @@
         "dodaj": "Dodaj",
         "dodane": "Dodane",
         "dodano": "Dodano źródło „{nazwa}”"
+      },
+      "NewsTimelineStream": {
+        "dodajPierwszyTemat": "Dodaj pierwszy temat, żeby zobaczyć linię czasu.",
+        "brakFaktowDlaFiltra": "Żaden fakt nie pasuje do wybranego filtra.",
+        "brakFaktowWcale": "Linia czasu jest jeszcze pusta — pojawi się po pierwszym odświeżeniu."
+      },
+      "SourceFilter": {
+        "wszystkie": "Wszystkie",
+        "filtrPortali": "Filtr portali",
+        "szukajPortalu": "Szukaj portalu…",
+        "wszystkiePortale": "Wszystkie portale",
+        "nicNiePasuje": "Nic nie pasuje",
+        "wyczyscWybor": "Wyczyść wybór"
       }
     },
     "notes": {

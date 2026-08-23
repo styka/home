@@ -1,12 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCheck, Headphones, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { CheckCheck, Headphones, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsReader, type ReaderBlock } from "./NewsReader";
+import { SekcjaTematu } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
   acknowledgeAllItems,
@@ -22,14 +23,11 @@ import {
  * że po odświeżeniu danych będę miał możliwość łatwego przeczytania wszystkich nowych wiadomości,
  * tylko scrollując, ale jednocześnie dobrze wiedząc, z jakiego tematu są wiadomości".
  *
- * Do 043 moduł pokazywał JEDEN temat naraz, więc przejrzenie porcji oznaczało ręczne przełączanie
- * tematu i czekanie na wczytanie za każdym razem. Tutaj wszystko jest już wczytane (jeden odczyt
- * `getStreamView`), a nawigacja działa w obie strony:
- *  - przewijanie → aktywny temat podąża za tym, co widać (obserwator przecięć),
- *  - wybór tematu → strona przewija się do jego sekcji (bez przeładowania widoku).
- *
- * Dwukierunkowość jest tu największą pułapką: skok zmienia przewijanie, a przewijanie zmienia
- * wskazanie tematu, więc bez strażnika `programmaticUntil` wybór „uciekałby" w trakcie animacji.
+ * 083: strumień przestał być TRYBEM, a stał się widokiem filtrowanym. „Wszystkie tematy" pokazuje
+ * wszystkie sekcje, wybrany temat — jedną; to ta sama lista, więc przełącznik „Strumień / Jeden
+ * temat" (044) zniknął jako drugi nośnik tej samej decyzji. Razem z nim wyszły stąd: obserwator
+ * czytanego tematu, przewijanie do sekcji i skoki do sąsiada — należą do paska nawigacji, który
+ * jest jeden dla wiadomości i dla linii czasu (`sekcjeTematow.tsx`).
  */
 
 /** Poziom, na którym gra lektor. Union TS, nie enum (C-12). */
@@ -38,148 +36,49 @@ type ReaderScope =
   | { kind: "topic"; topicId: string }
   | { kind: "stream" };
 
-/** Ile milisekund po skoku ignorujemy obserwatora — tyle mniej więcej trwa płynne przewinięcie. */
-const PROGRAMMATIC_SCROLL_MS = 700;
-/** Gest w bok liczy się od tylu pikseli i musi być tyle razy bardziej poziomy niż pionowy. */
-// 080 (Z12): próg obniżony z 60 px / 1.5. Zgłoszenie: „zmiana tematów gestem w lewo prawo jest
-// jakby zbyt trudna do wykonania, jakieś zbyt wyostrzona weryfikacja". 60 px to na telefonie
-// wyraźny, świadomy ruch — a gest ma być SKRÓTEM, nie ćwiczeniem. Dominacja 1.2 zamiast 1.5
-// nadal odróżnia ruch w bok od przewijania w pionie, ale wybacza naturalny łuk kciuka.
-//
-// Gest przestał być też JEDYNĄ drogą: nazwa tematu ma teraz widoczne strzałki (TopicPicker),
-// bo o istnieniu gestu nie da się dowiedzieć inaczej niż przypadkiem.
-const SWIPE_MIN_PX = 40;
-const SWIPE_DOMINANCE = 1.2;
-
 export function NewsStream({
   topics,
   loading,
-  sourceFilter,
-  activeTopicId,
-  onActiveTopicChange,
-  zaslonaGory,
+  filtrAktywny,
+  czytanyTemat,
+  zarejestruj,
   onChanged,
-  registerScrollToTopic,
+  onPrzewinDoPozycji,
+  akcjeTematu,
 }: {
+  /** Tematy JUŻ przefiltrowane przez pasek nawigacji — widok nie zna reguł filtrowania. */
   topics: StreamTopicDTO[];
   loading: boolean;
-  /** Klucz źródła albo „all" — filtr jest ustawieniem użytkownika, więc działa na cały strumień. */
-  sourceFilter: string;
-  activeTopicId: string | null;
-  /**
-   * 082 (poprawka): ile pikseli u góry zasłania PRZYKLEJONY pasek tematów. Wcześniej ta liczba
-   * była wpisana na sztywno (64 px pod nagłówek sekcji) i przestała być prawdziwa, gdy nad
-   * sekcjami stanął drugi przyklejony pasek.
-   */
-  zaslonaGory: number;
-  onActiveTopicChange: (topicId: string) => void;
+  /** Czy działa jakikolwiek filtr (temat albo portale) — zmienia treść komunikatu pustki. */
+  filtrAktywny: boolean;
+  czytanyTemat: string | null;
+  zarejestruj: (id: string, el: HTMLElement | null) => void;
   /** Wołane po każdej zmianie stanu pozycji — odświeża liczniki tematów po stronie serwera. */
   onChanged: () => void;
-  /** Udostępnia rodzicowi funkcję „przewiń do tematu", żeby selektor tematu mógł jej użyć. */
-  registerScrollToTopic: (fn: (topicId: string) => void) => void;
+  /** Przewinięcie do karty czytanej przez lektora — należy do ramy widoku, nie do tego komponentu. */
+  onPrzewinDoPozycji: (itemId: string) => void;
+  /** Akcje tematu (edycja, usunięcie) wstawiane do przyklejonego nagłówka sekcji. */
+  akcjeTematu?: (topicId: string) => ReactNode;
 }) {
   const t = useTranslations("modules.news.NewsStream");
   const confirmDialog = useConfirm();
   const { showToast } = useToast();
-  const sectionRefs = useRef(new Map<string, HTMLElement>());
-  const programmaticUntil = useRef(0);
   const [busyTopicId, setBusyTopicId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
   const [reader, setReader] = useState<ReaderScope>({ kind: "none" });
 
-  const visible = useMemo(
-    () =>
-      topics.map((t) => ({
-        ...t,
-        items: t.items.filter((i) => sourceFilter === "all" || i.sourceKey === sourceFilter),
-      })),
-    [topics, sourceFilter]
-  );
-
-  const totalItems = visible.reduce((n, t) => n + t.items.length, 0);
-  const topicOrder = visible.map((t) => t.id);
-
-  // ── Nawigacja: wybór tematu → przewinięcie ────────────────────────────────
-  const scrollToTopic = useCallback((topicId: string) => {
-    const el = sectionRefs.current.get(topicId);
-    if (!el) return;
-    // Strażnik MUSI być ustawiony przed przewinięciem: w trakcie płynnej animacji obserwator
-    // zobaczy po drodze każdą mijaną sekcję i bez tego przestawiałby wybór na przypadkową.
-    programmaticUntil.current = Date.now() + PROGRAMMATIC_SCROLL_MS;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
-  useEffect(() => {
-    registerScrollToTopic(scrollToTopic);
-  }, [registerScrollToTopic, scrollToTopic]);
-
-  // ── Nawigacja: przewijanie → wybór tematu ─────────────────────────────────
-  useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (Date.now() < programmaticUntil.current) return;
-        // Bierzemy sekcję najwyżej na ekranie spośród widocznych — to ta, której nagłówek jest
-        // aktualnie przyklejony u góry, więc wskazanie zgadza się z tym, co użytkownik widzi.
-        const top = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        const id = top?.target.getAttribute("data-topic-id");
-        if (id) onActiveTopicChange(id);
-      },
-      // Górna krawędź przycięta pod OBA przyklejone paski — nawigację modułu (`zaslonaGory`)
-      // i nagłówek sekcji (64 px). Bez pierwszego składnika obserwator uznawał za aktywny temat,
-      // którego nagłówek chował się właśnie za paskiem nawigacji.
-      { rootMargin: `-${zaslonaGory + 64}px 0px -55% 0px`, threshold: 0 }
-    );
-    sectionRefs.current.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-    // Przeliczamy obserwatora, gdy zmieni się zestaw sekcji.
-  }, [onActiveTopicChange, zaslonaGory, topicOrder.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Gest w bok: skok do sąsiedniego tematu ────────────────────────────────
-  const touchStart = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
-
-  function handleTouchStart(e: React.TouchEvent) {
-    const t = e.touches[0];
-    if (!t) return;
-    // Gest zaczęty na przycisku/linku/polu to nie jest nawigacja po tematach — to próba użycia
-    // tego elementu. Przechwycenie takiego ruchu odbierałoby możliwość np. przewinięcia lektora.
-    const interactive = !!(e.target as HTMLElement).closest?.(
-      "button, a, input, textarea, select, [role='button'], [data-no-swipe]"
-    );
-    touchStart.current = { x: t.clientX, y: t.clientY, interactive };
-  }
-
-  function handleTouchEnd(e: React.TouchEvent) {
-    const start = touchStart.current;
-    touchStart.current = null;
-    if (!start || start.interactive) return;
-    const t = e.changedTouches[0];
-    if (!t) return;
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-    // Świadomie NIE wołamy `preventDefault` w `touchmove`: przewijanie w pionie ma zostać w 100%
-    // natywne. Rozstrzygamy dopiero po zakończeniu gestu, na podstawie jego kształtu.
-    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * SWIPE_DOMINANCE) return;
-    const from = activeTopicId ? topicOrder.indexOf(activeTopicId) : 0;
-    if (from < 0) return;
-    const next = dx < 0 ? from + 1 : from - 1;
-    if (next < 0 || next >= topicOrder.length) return;
-    onActiveTopicChange(topicOrder[next]);
-    scrollToTopic(topicOrder[next]);
-  }
+  const totalItems = topics.reduce((n, t) => n + t.items.length, 0);
 
   // ── Lektor ────────────────────────────────────────────────────────────────
   const readerBlocks = useMemo<ReaderBlock[]>(() => {
     const toBlock = (i: NewsItemDTO): ReaderBlock => ({ title: i.title, text: i.summary });
     if (reader.kind === "topic") {
-      const t = visible.find((x) => x.id === reader.topicId);
+      const t = topics.find((x) => x.id === reader.topicId);
       return t ? t.items.map(toBlock) : [];
     }
     if (reader.kind === "stream") {
       const out: ReaderBlock[] = [];
-      for (const t of visible) {
+      for (const t of topics) {
         t.items.forEach((item, idx) => {
           const b = toBlock(item);
           // Zapowiedź tematu na PIERWSZEJ wiadomości każdego tematu — słuchacz nie widzi ekranu,
@@ -191,27 +90,23 @@ export function NewsStream({
       return out;
     }
     return [];
-  }, [reader, visible]);
+  }, [reader, topics]);
 
   /** Pozycje w tej samej kolejności co bloki lektora — po nich przewijamy do czytanej karty. */
   const readerItemIds = useMemo<string[]>(() => {
     if (reader.kind === "topic") {
-      return visible.find((x) => x.id === reader.topicId)?.items.map((i) => i.id) ?? [];
+      return topics.find((x) => x.id === reader.topicId)?.items.map((i) => i.id) ?? [];
     }
-    if (reader.kind === "stream") return visible.flatMap((t) => t.items.map((i) => i.id));
+    if (reader.kind === "stream") return topics.flatMap((t) => t.items.map((i) => i.id));
     return [];
-  }, [reader, visible]);
+  }, [reader, topics]);
 
   const handleBlockChange = useCallback(
     (blockIndex: number) => {
       const id = readerItemIds[blockIndex];
-      if (!id) return;
-      const el = document.querySelector<HTMLElement>(`[data-news-item="${id}"]`);
-      if (!el) return;
-      programmaticUntil.current = Date.now() + PROGRAMMATIC_SCROLL_MS;
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (id) onPrzewinDoPozycji(id);
     },
-    [readerItemIds]
+    [readerItemIds, onPrzewinDoPozycji],
   );
 
   function toggleReader(next: ReaderScope) {
@@ -220,7 +115,7 @@ export function NewsStream({
       prev.kind === next.kind &&
       (prev.kind !== "topic" || (next.kind === "topic" && prev.topicId === next.topicId))
         ? { kind: "none" }
-        : next
+        : next,
     );
   }
 
@@ -231,7 +126,7 @@ export function NewsStream({
       const { count } = await acknowledgeTopicItems(topicId);
       showToast(
         count > 0 ? `Oznaczono jako przeczytane: ${count}` : `Temat „${title}" nie ma nowych pozycji`,
-        count > 0 ? "success" : "info"
+        count > 0 ? "success" : "info",
       );
       if (reader.kind === "topic" && reader.topicId === topicId) setReader({ kind: "none" });
       onChanged();
@@ -276,13 +171,13 @@ export function NewsStream({
   }
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div>
       {/* Pasek strumienia: ile jest nowych + odsłuch całości + zamknięcie porcji. */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-xs text-[var(--text-muted)]">
           {totalItems === 0
             ? "Brak nowych wiadomości"
-            : `Nowych wiadomości: ${totalItems} w ${visible.filter((t) => t.items.length > 0).length} tematach`}
+            : `Nowych wiadomości: ${totalItems} w ${topics.filter((t) => t.items.length > 0).length} tematach`}
         </span>
         <div className="ml-auto flex items-center gap-1">
           <button
@@ -293,7 +188,7 @@ export function NewsStream({
               "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs transition-colors disabled:opacity-40",
               reader.kind === "stream"
                 ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
             )}
           >
             <Headphones size={14} />
@@ -318,77 +213,58 @@ export function NewsStream({
 
       {totalItems === 0 && (
         <p className="mb-4 rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--text-muted)]">
-          {sourceFilter === "all"
-            ? "Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać najświeższe materiały (tylko z ostatnich 24 godzin)."
-            : "Żadne z nowych wiadomości nie pochodzi z tego portalu. Wróć do „Wszystkie”, żeby zobaczyć całą porcję."}
+          {filtrAktywny
+            ? "Żadna z nowych wiadomości nie pasuje do wybranego filtra. Wyczyść wybór, żeby zobaczyć całą porcję."
+            : "Brak nowych, istotnych wiadomości. Kliknij „Odśwież” w nagłówku, żeby pobrać najświeższe materiały (tylko z ostatnich 24 godzin)."}
         </p>
       )}
 
       <div className="space-y-6">
-        {visible.map((topic) => (
-          <section
+        {topics.map((topic) => (
+          <SekcjaTematu
             key={topic.id}
-            data-topic-id={topic.id}
-            ref={(el) => {
-              if (el) sectionRefs.current.set(topic.id, el);
-              else sectionRefs.current.delete(topic.id);
-            }}
-            // Margines celu przewijania odsuwa skok spod przyklejonej nawigacji — bez tego
-            // kliknięcie tematu zatrzymuje go dokładnie ZA paskiem i nagłówek jest niewidoczny.
-            // Liczony ze zmierzonej wysokości paska (`--news-pasek-h`), nie z wpisanej liczby:
-            // skórki Omnii zmieniają gęstość i typografię, więc stała byłaby prawdziwa dla jednej.
-            style={{ scrollMarginTop: "calc(var(--news-pasek-h, 0px) + 0.5rem)" }}
+            id={topic.id}
+            tytul={topic.title}
+            licznik={topic.items.length}
+            czytana={topic.id === czytanyTemat}
+            zarejestruj={zarejestruj}
+            akcje={
+              <>
+                {topic.items.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => toggleReader({ kind: "topic", topicId: topic.id })}
+                      aria-pressed={reader.kind === "topic" && reader.topicId === topic.id}
+                      title={t("sluchajCalegoTematu")}
+                      aria-label={`Słuchaj tematu: ${topic.title}`}
+                      className={cn(
+                        "shrink-0 rounded-md p-2 transition-colors",
+                        reader.kind === "topic" && reader.topicId === topic.id
+                          ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                          : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                      )}
+                    >
+                      <Headphones size={16} />
+                    </button>
+                    <button
+                      onClick={() => markTopic(topic.id, topic.title)}
+                      disabled={busyTopicId === topic.id}
+                      title={t("oznaczCalyTematJako")}
+                      aria-label={`Oznacz temat jako przeczytany: ${topic.title}`}
+                      className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-green)] disabled:opacity-40"
+                    >
+                      {busyTopicId === topic.id ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <CheckCheck size={16} />
+                      )}
+                    </button>
+                  </>
+                )}
+                {akcjeTematu?.(topic.id)}
+              </>
+            }
           >
-            {/* Nagłówek tematu przyklejony u góry: właściciel ma „dobrze wiedzieć, z jakiego tematu
-                są wiadomości" przez CAŁY czas przewijania, nie tylko na granicy sekcji. */}
-            <div
-              className={cn(
-                "sticky z-20 -mx-1 flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] px-1 py-2",
-                topic.id === activeTopicId && "border-[var(--accent-blue)]"
-              )}
-              // Nagłówek sekcji zatrzymuje się POD paskiem nawigacji, a nie na krawędzi ramy —
-              // inaczej oba przyklejone paski rysowałyby się jeden na drugim.
-              style={{ top: "var(--news-pasek-h, 0px)" }}
-            >
-              <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-primary)]">
-                {topic.title}
-              </h3>
-              <span className="shrink-0 rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]">
-                {topic.items.length}
-              </span>
-              {topic.items.length > 0 && (
-                <>
-                  <button
-                    onClick={() => toggleReader({ kind: "topic", topicId: topic.id })}
-                    aria-pressed={reader.kind === "topic" && reader.topicId === topic.id}
-                    title={t("sluchajCalegoTematu")}
-                    aria-label={`Słuchaj tematu: ${topic.title}`}
-                    className={cn(
-                      "shrink-0 rounded-md p-2 transition-colors",
-                      reader.kind === "topic" && reader.topicId === topic.id
-                        ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                        : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                    )}
-                  >
-                    <Headphones size={16} />
-                  </button>
-                  <button
-                    onClick={() => markTopic(topic.id, topic.title)}
-                    disabled={busyTopicId === topic.id}
-                    title={t("oznaczCalyTematJako")}
-                    aria-label={`Oznacz temat jako przeczytany: ${topic.title}`}
-                    className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-green)] disabled:opacity-40"
-                  >
-                    {busyTopicId === topic.id ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <CheckCheck size={16} />
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
-
             {reader.kind === "topic" && reader.topicId === topic.id && readerBlocks.length > 0 && (
               <div className="mt-3" data-no-swipe>
                 <NewsReader blocks={readerBlocks} onBlockChange={handleBlockChange} />
@@ -410,71 +286,9 @@ export function NewsStream({
                 ))}
               </div>
             )}
-          </section>
+          </SekcjaTematu>
         ))}
       </div>
-
-      {/* Skok do sąsiedniego tematu również dotknięciem — gest w bok jest SKRÓTEM, a nie jedyną
-          drogą (na desktopie i przy obsłudze klawiaturą nie ma go wcale). */}
-      {topicOrder.length > 1 && (
-        <div className="mt-6 flex items-center justify-between gap-2 border-t border-[var(--border)] pt-3">
-          <StepTopicButton
-            direction="prev"
-            topicOrder={topicOrder}
-            activeTopicId={activeTopicId}
-            onGo={(id) => {
-              onActiveTopicChange(id);
-              scrollToTopic(id);
-            }}
-            titleOf={(id) => visible.find((t) => t.id === id)?.title ?? ""}
-          />
-          <StepTopicButton
-            direction="next"
-            topicOrder={topicOrder}
-            activeTopicId={activeTopicId}
-            onGo={(id) => {
-              onActiveTopicChange(id);
-              scrollToTopic(id);
-            }}
-            titleOf={(id) => visible.find((t) => t.id === id)?.title ?? ""}
-          />
-        </div>
-      )}
     </div>
-  );
-}
-
-function StepTopicButton({
-  direction,
-  topicOrder,
-  activeTopicId,
-  onGo,
-  titleOf,
-}: {
-  direction: "prev" | "next";
-  topicOrder: string[];
-  activeTopicId: string | null;
-  onGo: (topicId: string) => void;
-  titleOf: (topicId: string) => string;
-}) {
-  const from = activeTopicId ? topicOrder.indexOf(activeTopicId) : 0;
-  const target = topicOrder[direction === "next" ? from + 1 : from - 1];
-  const disabled = from < 0 || !target;
-
-  return (
-    <button
-      onClick={() => target && onGo(target)}
-      disabled={disabled}
-      className={cn(
-        "inline-flex min-w-0 items-center gap-1.5 rounded-md px-3 py-3 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-40",
-        direction === "next" && "ml-auto"
-      )}
-    >
-      {direction === "prev" && <ChevronLeft size={14} className="shrink-0" />}
-      <span className="min-w-0 truncate">
-        {disabled ? (direction === "prev" ? "Pierwszy temat" : "Ostatni temat") : titleOf(target)}
-      </span>
-      {direction === "next" && <ChevronRight size={14} className="shrink-0" />}
-    </button>
   );
 }

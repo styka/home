@@ -1169,12 +1169,6 @@
     "reason": "settings",
     "access": "self"
   },
-  "news:getNewsRefreshHistory": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
   "news:getNewsRefreshState": {
     "kind": "read",
     "status": "excluded",
@@ -1185,6 +1179,12 @@
     "kind": "read",
     "status": "ai",
     "action": "list_news_sources",
+    "access": "owner"
+  },
+  "news:getStreamTimeline": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "news:getStreamView": {
@@ -1219,11 +1219,6 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
-  },
-  "news:setActiveSource": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
   },
   "news:setDefaultSummaryLength": {
     "status": "excluded",
