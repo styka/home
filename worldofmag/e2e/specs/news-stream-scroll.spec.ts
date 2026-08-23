@@ -94,8 +94,11 @@ test.describe("Wiadomości — strumień", () => {
       poprzedni = s.scrollTop;
     }
 
-    // AC-18: pasek pokazuje WYBRANY FILTR, a nie mijany temat — przewinięcie przez kilka sekcji nie
-    // ma prawa podmienić etykiety nawigatora.
+    // 084 (C-54): kryterium ZOSTAJE, ale z innego powodu niż w 083. Tam pasek pokazywał WYBRANY
+    // FILTR i nie miał prawa pokazywać mijanego tematu. Od 084 filtru nie ma wcale — lista tematów
+    // jest skokiem — więc wyzwalacz nosi STAŁĄ etykietę („Tematy"). Nazwa tematu, przy którym
+    // jesteś, była i pozostaje w przyklejonym nagłówku jego sekcji. Warunek jest ten sam:
+    // przewijanie nie podmienia etykiety w pasku.
     expect(
       await etykietaNawigatora(),
       "pasek nawigacji zmienił etykietę w trakcie przewijania — znów pokazuje temat czytany",

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useViewChrome } from "./ViewChrome";
+import { ViewChromeMenu } from "./ViewChromeMenu";
 
 /**
  * 045 — pasek bieżącego widoku. Trzy strefy:
@@ -46,10 +47,23 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
   if (!compact && !filters && !actions && chromeItems.length === 0) return null;
 
   return (
+    /**
+     * 084: NA TELEFONIE PASEK MA DWA WIERSZE.
+     *
+     * Zgłoszenie właściciela: „ten pasek z zakładkami to taki wąski jest, że nie widać nazw
+     * wszystkich zakładek, a do tego switch wiadomości/linia czasu już nawet rozszerza stronę poza
+     * ekran i trzeba scrolować na boki, co jest nieakceptowalne".
+     *
+     * Przyczyna: w jednym wierszu tytuł, filtry, akcje i chrom dzieliły 360 px, a kurczyć się mogły
+     * wyłącznie filtry — więc to one traciły wszystko. Od `md` układ zostaje dokładnie taki jak był
+     * (na komputerze miejsca starcza), a niżej filtry dostają WŁASNY wiersz i całą jego szerokość.
+     *
+     * Świadomie `flex-col md:flex-row`, a nie osobny komponent mobilny: jeden mechanizm na oba
+     * ekrany (C-31), więc nie da się poprawić jednego i zapomnieć o drugim.
+     */
     <div
+      className="flex flex-col md:flex-row md:items-center"
       style={{
-        display: "flex",
-        alignItems: "center",
         gap: 8,
         minHeight: compact ? 48 : 44,
         paddingTop: compact ? 0 : 8,
@@ -57,10 +71,19 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
         borderBottom: "var(--border-width) var(--border-style) var(--border)",
       }}
     >
+      {/* Wiersz pierwszy na telefonie: tytuł, akcje modułu i chrom. Na komputerze — po prostu
+          początek jedynego wiersza. */}
+      {/* `md:contents` rozpuszcza to opakowanie na komputerze, żeby jego dzieci stały się wprost
+          elementami paska. Kolejność musi być wtedy podana JAWNIE (`md:order-*`) — bez tego filtry,
+          które w drzewie stoją na końcu, wylądowałyby na komputerze za chromem zamiast pośrodku. */}
+      <div
+        className="flex min-w-0 items-center gap-2 md:contents"
+        style={{ minHeight: compact ? 48 : undefined }}
+      >
       {/* Wariant gęsty: tytuł w pasku, nie nad nim. */}
       {compact && title && (
         <h1
-          className="hidden md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
+          className="hidden md:order-1 md:flex items-center gap-2 text-sm font-semibold truncate min-w-0"
           style={{ color: "var(--text-primary)", margin: 0, flexShrink: 0, maxWidth: "40%" }}
         >
           {icon && <span style={{ color: iconColor, display: "flex", flexShrink: 0 }}>{icon}</span>}
@@ -73,8 +96,38 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
           )}
         </h1>
       )}
-      {/* Filtry — jedyna strefa, która się kurczy i przewija. */}
+        {/* Akcje modułu — nie kurczą się. */}
+        {actions && (
+          <div className="ml-auto md:order-3 md:ml-0" style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {actions}
+          </div>
+        )}
+
+        {/* 084: chrom powłoki zwinięty do JEDNEJ kontrolki. Kolejność w środku zostaje ta sama,
+            żeby ręka trafiała bez patrzenia — zmienia się tylko to, ile miejsca odbiera filtrom. */}
+        {chromeItems.length > 0 && (
+          <div
+            className="md:order-4"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flexShrink: 0,
+              paddingLeft: 6,
+              marginLeft: 2,
+              borderLeft: "var(--border-width) var(--border-style) var(--border)",
+            }}
+          >
+            <ViewChromeMenu pozycje={chromeItems} />
+          </div>
+        )}
+      </div>
+
+      {/* Filtry — na telefonie WŁASNY wiersz o pełnej szerokości, na komputerze środkowa strefa.
+          Przewijanie poziome należy do TEGO kontenera i tylko do niego: przewijanie całej strony
+          w bok jest zawsze błędem (C-31), a to jest najczęstszy sposób, w jaki pasek narzędzi je
+          powoduje. */}
       <div
+        className="order-last md:order-2"
         style={{
           flex: 1,
           minWidth: 0,
@@ -89,33 +142,6 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
       >
         {filters}
       </div>
-
-      {/* Akcje modułu — nie kurczą się. */}
-      {actions && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>{actions}</div>
-      )}
-
-      {/* Chrom powłoki — zawsze na końcu, zawsze w tej samej kolejności,
-          żeby ręka trafiała w gwiazdkę bez patrzenia. */}
-      {chromeItems.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            flexShrink: 0,
-            paddingLeft: 6,
-            marginLeft: 2,
-            borderLeft: "var(--border-width) var(--border-style) var(--border)",
-          }}
-        >
-          {chromeItems.map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center" }}>
-              {item}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

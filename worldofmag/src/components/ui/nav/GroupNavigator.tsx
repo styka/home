@@ -74,6 +74,7 @@ export function GroupNavigator({
   onWybor,
   etykietaWszystkich,
   onSasiad,
+  etykietaStala,
   moznaWstecz,
   moznaDalej,
   akcje,
@@ -89,6 +90,14 @@ export function GroupNavigator({
    * filtru, tylko przewija do następnej grupy w treści — a tego komponent nie umie i nie powinien.
    */
   onSasiad?: (kierunek: -1 | 1) => void;
+  /**
+   * Stała etykieta wyzwalacza zamiast nazwy aktywnej grupy.
+   *
+   * Dla konsumentów, u których lista jest SKOKIEM, a nie filtrem: nazwa grupy, w której akurat
+   * jesteś, należy wtedy do jej własnego nagłówka, a powtórzenie jej w pasku jest duplikatem.
+   * Pominięta — wyzwalacz pokazuje nazwę aktywnej grupy, jak dotąd.
+   */
+  etykietaStala?: string;
   /**
    * Czy jest dokąd iść w każdą stronę. Liczy to KONSUMENT, bo tylko on wie, czym jest „sąsiad"
    * w jego widoku — przy pozycji zbiorczej strzałka zwykle przewija treść, a nie zmienia wyboru.
@@ -149,7 +158,10 @@ export function GroupNavigator({
     "flex shrink-0 items-center justify-center rounded-md border border-[var(--border)] px-1.5 py-3 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:hover:bg-transparent";
 
   return (
-    <div ref={korzenRef} className="relative flex min-w-0 items-center gap-1">
+    // 084 (AC-18): `flex-1 min-w-0` — wyzwalacz ma BRAĆ dostępną szerokość, a nie zajmować tyle,
+    // ile mierzy jego treść. Bez tego przy wąskim ekranie kurczył się do skrawka („nie widać
+    // wybranej wartości"), a jednocześnie rozpychał pasek, gdy nazwa była długa.
+    <div ref={korzenRef} className="relative flex min-w-0 flex-1 items-center gap-1">
       {onSasiad && grupy.length > 1 && (
         <button
           type="button"
@@ -171,14 +183,14 @@ export function GroupNavigator({
         className={cn(
           // `py-3` = cel dotyku na telefonie (C-31); `min-w-0` + `truncate` — długa nazwa ma się
           // przyciąć, a nie rozepchnąć paska w bok (usterka z 040).
-          "flex min-w-0 items-center gap-2 rounded-md border px-3 py-3 text-left text-sm transition-colors",
+          "flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-3 text-left text-sm transition-colors",
           otwarta
             ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
             : "border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
         )}
       >
-        <span className="min-w-0 max-w-[16rem] truncate">
-          {aktywna ? aktywna.etykieta : t("brakGrup")}
+        <span className="min-w-0 flex-1 truncate">
+          {etykietaStala ?? (aktywna ? aktywna.etykieta : t("brakGrup"))}
         </span>
         {aktywna?.licznik ? (
           <span className="shrink-0 rounded-full bg-[var(--accent-blue)] px-1.5 text-[10px] font-medium text-[var(--on-accent)]">

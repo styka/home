@@ -859,6 +859,9 @@
         "szukaj": "Szukaj…",
         "nicNiePasuje": "Nic nie pasuje do wyszukiwania.",
         "brakGrup": "Brak grup"
+      },
+      "ViewChromeMenu": {
+        "wiecej": "Więcej: ulubione, świeżość danych, skróty"
       }
     }
   },
@@ -1325,7 +1328,8 @@
         "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych",
         "wszystkieTematy": "Wszystkie tematy",
         "wiadomosciKrotko": "Wiadomości",
-        "liniaCzasuKrotko": "Linia czasu"
+        "liniaCzasuKrotko": "Linia czasu",
+        "tematy": "Tematy"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",

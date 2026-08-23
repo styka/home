@@ -125,46 +125,46 @@
 
 > Ta faza dotyka **wszystkich 22 widoków** — stąd osobno i stąd pełny klikacz w domknięciu.
 
-- [ ] **T-20** — **`ViewChromeMenu`.** Nowy komponent: przycisk `MoreHorizontal` + `AnchoredLayer`
+- [x] **T-20** — **`ViewChromeMenu`.** Nowy komponent: przycisk `MoreHorizontal` + `AnchoredLayer`
   z gwiazdką, świeżością i skrótami. Elementy przychodzą jak dotąd z `ViewChromeProvider` — kontrakt
   bez zmian.
   *Gotowe, gdy:* AC-15 — wszystkie trzy rzeczy nadal dostępne jednym dotknięciem.
 
-- [ ] **T-21** — **`ViewBar` rysuje menu zamiast rzędu.**
+- [x] **T-21** — **`ViewBar` rysuje menu zamiast rzędu.**
   *Gotowe, gdy:* AC-14 i AC-16 — pomiar: chrom to jeden element, filtry mają mierzalnie więcej
   miejsca niż w T-1.
 
-- [ ] **T-22** — **Dwa wiersze na telefonie.** `ViewBar` w wariancie gęstym: `flex-col md:flex-row`;
+- [x] **T-22** — **Dwa wiersze na telefonie.** `ViewBar` w wariancie gęstym: `flex-col md:flex-row`;
   filtry w drugim wierszu z własnym `overflow-x`. Na komputerze bez zmian.
   *Gotowe, gdy:* AC-19 — nazwy wszystkich trzech zakładek widoczne przy 360 px.
 
-- [ ] **T-23** — **Commit fazy 4** + `check:ui-contract`.
+- [x] **T-23** — **Commit fazy 4** + `check:ui-contract`.
 
 ---
 
 ## Faza 5 — Usterki z testów: moduł Wiadomości *(AC-11..AC-13, AC-17, AC-18, AC-20)*
 
-- [ ] **T-24** — **Drop-down przestaje być filtrem.** Klucz `temat` znika ze stanu widoku;
+- [x] **T-24** — **Drop-down przestaje być filtrem.** Klucz `temat` znika ze stanu widoku;
   `wybierzTemat` wyłącznie przewija; filtrowanie po temacie znika z `widoczneWiadomosci`
   i `widocznaOs`. Wyzwalacz pokazuje stałą etykietę „Tematy", nie nazwę.
   *Gotowe, gdy:* AC-11 i AC-13 — po wyborze tematu liczba sekcji na stronie **się nie zmienia**.
 
-- [ ] **T-25** `[P]` — **Strzałki znikają.** `onSasiad` nie jest podawany przez Wiadomości; prop
+- [x] **T-25** `[P]` — **Strzałki znikają.** `onSasiad` nie jest podawany przez Wiadomości; prop
   **zostaje** w `GroupNavigator` dla innych konsumentów (C-53).
   *Gotowe, gdy:* AC-12 — w pasku nie ma strzałek.
 
-- [ ] **T-26** — **Pasek Wiadomości bez poziomego przewijania strony.** `min-w-0` na elastycznych
+- [x] **T-26** — **Pasek Wiadomości bez poziomego przewijania strony.** `min-w-0` na elastycznych
   przodkach, `overflow-x` wyłącznie na kontenerze filtrów, przełącznik treści zwijany do ikon
   z `aria-label` przy braku miejsca.
   *Gotowe, gdy:* AC-17, AC-18, AC-20 — pomiar: `scrollWidth <= clientWidth` przy 360 px, przed
   i po przewinięciu.
 
-- [ ] **T-27** — **Testy klikacza.** `news-czytnik.spec.ts` (AC-2, AC-4, AC-5) i
+- [x] **T-27** — **Testy klikacza.** `news-czytnik.spec.ts` (AC-2, AC-4, AC-5) i
   `pasek-widoku-mobile.spec.ts` (AC-17..AC-20). Oba **sprawdzone w obie strony** — zielone na
   poprawionym kodzie, czerwone po sztucznym cofnięciu poprawki.
   *Gotowe, gdy:* obie strony potwierdzone, tak jak w 082 i 083.
 
-- [ ] **T-28** — **Commit fazy 5.**
+- [x] **T-28** — **Commit fazy 5.**
 
 ---
 

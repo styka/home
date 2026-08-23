@@ -79,6 +79,7 @@ export function NewsReader({
   onZamknij,
   podazanie = true,
   onPodazanie,
+  autoStart = false,
 }: {
   blocks: ReaderBlock[];
   /** Wywoływane, gdy lektor przechodzi do innej wiadomości — pozwala przewinąć widok do niej. */
@@ -96,6 +97,15 @@ export function NewsReader({
   /** 084 (AC-6): podążanie za czytanym tekstem — stan WIDOKU, nie lektora. */
   podazanie?: boolean;
   onPodazanie?: (wlaczone: boolean) => void;
+  /**
+   * 084 (AC-10): odsłuch rusza OD RAZU po otwarciu lektora.
+   *
+   * Do 083 „Słuchaj" tylko pokazywało pasek, a czytanie zaczynało się dopiero po drugim dotknięciu
+   * („Czytaj"). Dwa kliknięcia na jedną intencję — a właściciel poprosił wprost o lepszy UX
+   * otwierania lektora. Odblokowanie dźwięku (`primeSpeech`) należy wtedy do konsumenta i musi
+   * nastąpić SYNCHRONICZNIE w geście otwarcia, inaczej iOS odmówi.
+   */
+  autoStart?: boolean;
 }) {
   const t = useTranslations("modules.news.NewsReader");
   // Zdania wszystkich bloków w jednej, płaskiej liście: łańcuch `onEnd` nie musi wtedy wiedzieć nic
@@ -202,6 +212,7 @@ export function NewsReader({
     setSupported(speechAvailable());
   }, []);
 
+
   /** Ucisza TEN lektor. Tożsamość jest stała, więc nadaje się na klucz w rejestrze globalnym. */
   const silence = useCallback(() => {
     activeRef.current = false;
@@ -286,6 +297,15 @@ export function NewsReader({
     },
     [sentences, silence, t]
   );
+
+  // 084: start przy otwarciu. Zależność `blocksKey`, a nie `[]`: zmiana zestawu wiadomości
+  // (np. przełączenie odsłuchu tematu na inny) ma zacząć czytać nowy zestaw, a nie milczeć.
+  const autoStartRef = useRef(autoStart);
+  autoStartRef.current = autoStart;
+  useEffect(() => {
+    if (!autoStartRef.current) return;
+    playFrom(0);
+  }, [blocksKey, playFrom]);
 
   /**
    * 084 (AC-5): przewijania WEWNĄTRZ lektora już nie ma, bo nie ma czego przewijać — lista zdań
@@ -387,7 +407,24 @@ export function NewsReader({
      * `sticky bottom-0` względem RAMY WIDOKU — pasek jest w zasięgu kciuka przez cały czas
      * przewijania i nie chowa się pod paskiem systemowym telefonu (C-31).
      */
-    <div className="sticky bottom-0 z-30 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg">
+    <div
+      // Uchwyt dla klikacza: przyklejenie paska jest przedmiotem AC-4, a klasy Tailwinda nie są
+      // kontraktem. Ten sam wzorzec co `data-news-pasek` dla paska nawigacji.
+      data-news-lektor
+      /**
+       * 084 (AC-4): pasek stoi przy DOLNEJ KRAWĘDZI EKRANU przez cały czas przewijania.
+       *
+       * Świadomie `fixed`, a nie `sticky`. `sticky bottom-0` na końcu długiej treści przykleja się
+       * dopiero wtedy, gdy przewiniemy do jego miejsca w przepływie — czyli dokładnie wtedy, gdy
+       * już go nie potrzebujemy. Zmierzone: przy wejściu na stronę pasek był 4000 px poniżej ekranu.
+       *
+       * Lewy odstęp bierzemy ze zmiennej `--sidebar-width`, a nie z wpisanej liczby: pasek boczny
+       * jest `hidden md:flex`, więc na telefonie odstęp musi być zerowy, a jego szerokość i tak
+       * zmienia się razem ze skórką.
+       */
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--bg-surface)] shadow-lg md:left-[var(--sidebar-width)]"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       {/* 084 (AC-2): stan ciszy zamiast udawania. Gdy urządzenie nie wydało dźwięku, pasek MÓWI
           o tym i daje wyjście — kliknięcie „Odtwórz ponownie" JEST gestem użytkownika, a ścieżka
           serwerowa jest już wtedy zatrzaśnięta, więc synteza rusza synchronicznie i gra. */}
@@ -419,8 +456,7 @@ export function NewsReader({
           przyklejały się jeden po drugim — stąd zgłoszenie „jakoś dziwnie przypinają się elementy
           strony". Od `sm` mamy jeden rząd z grupami: nawigacja · odtwarzanie · prędkość · podążanie. */}
       <div
-        className="sticky bottom-0 flex flex-wrap items-center gap-1 border-t border-[var(--border)] bg-[var(--bg-surface)] px-2 py-2 sm:flex-nowrap"
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-1 px-2 py-2 sm:flex-nowrap"
       >
         {/* Skok o całą wiadomość pojawia się tylko wtedy, gdy jest po czym skakać — przy jednym
             bloku pasek zostaje dokładnie taki, jaki był przed 044. */}

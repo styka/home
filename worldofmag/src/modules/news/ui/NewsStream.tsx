@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
 import { NewsReader, type ReaderBlock } from "./NewsReader";
+import { primeSpeech } from "@/lib/tts";
 import { SekcjaTematu } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import {
@@ -156,6 +157,10 @@ export function NewsStream({
   );
 
   function toggleReader(next: ReaderScope) {
+    // 084: odblokowanie dźwięku MUSI paść tutaj — w obsłudze dotknięcia. Lektor startuje z efektu
+    // po zamontowaniu, czyli już poza gestem, a iOS pozwala grać tylko elementowi odblokowanemu
+    // w geście użytkownika.
+    if (next.kind !== "none") primeSpeech();
     // W danej chwili gra JEDEN lektor. Dwa głosy naraz to błąd, nie funkcja.
     setCzytaneZdanie(null);
     setCzytanaPozycja(null);
@@ -355,6 +360,10 @@ export function NewsStream({
           Do 083 lektor renderował się w trzech miejscach naraz (nad listą, w sekcji tematu,
           w karcie) i każdy z nich niósł własną kopię treści. Teraz jest jeden i steruje wszystkim,
           niezależnie od tego, czy słuchasz pojedynczej wiadomości, tematu, czy całej porcji. */}
+      {/* Zapas na wysokość przyklejonego paska — bez niego ostatnie wiadomości chowają się pod nim
+          i nie da się ich doczytać ani oznaczyć. */}
+      {reader.kind !== "none" && <div aria-hidden style={{ height: 72 }} />}
+
       {reader.kind !== "none" && readerBlocks.length > 0 && (
         <div data-no-swipe>
           <NewsReader
@@ -367,6 +376,7 @@ export function NewsStream({
             onZamknij={() => toggleReader({ kind: "none" })}
             podazanie={podazanie}
             onPodazanie={onPodazanie}
+            autoStart
           />
         </div>
       )}
