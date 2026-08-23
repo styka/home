@@ -57,6 +57,7 @@ export function NewsStream({
   sourceFilter,
   activeTopicId,
   onActiveTopicChange,
+  zaslonaGory,
   onChanged,
   registerScrollToTopic,
 }: {
@@ -65,6 +66,12 @@ export function NewsStream({
   /** Klucz źródła albo „all" — filtr jest ustawieniem użytkownika, więc działa na cały strumień. */
   sourceFilter: string;
   activeTopicId: string | null;
+  /**
+   * 082 (poprawka): ile pikseli u góry zasłania PRZYKLEJONY pasek tematów. Wcześniej ta liczba
+   * była wpisana na sztywno (64 px pod nagłówek sekcji) i przestała być prawdziwa, gdy nad
+   * sekcjami stanął drugi przyklejony pasek.
+   */
+  zaslonaGory: number;
   onActiveTopicChange: (topicId: string) => void;
   /** Wołane po każdej zmianie stanu pozycji — odświeża liczniki tematów po stronie serwera. */
   onChanged: () => void;
@@ -120,14 +127,15 @@ export function NewsStream({
         const id = top?.target.getAttribute("data-topic-id");
         if (id) onActiveTopicChange(id);
       },
-      // Górna krawędź przycięta pod przyklejony nagłówek; dolna mocno, żeby „widoczna" znaczyła
-      // „w górnej części ekranu", a nie „gdziekolwiek na dole".
-      { rootMargin: "-64px 0px -55% 0px", threshold: 0 }
+      // Górna krawędź przycięta pod OBA przyklejone paski — nawigację modułu (`zaslonaGory`)
+      // i nagłówek sekcji (64 px). Bez pierwszego składnika obserwator uznawał za aktywny temat,
+      // którego nagłówek chował się właśnie za paskiem nawigacji.
+      { rootMargin: `-${zaslonaGory + 64}px 0px -55% 0px`, threshold: 0 }
     );
     sectionRefs.current.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
     // Przeliczamy obserwatora, gdy zmieni się zestaw sekcji.
-  }, [onActiveTopicChange, topicOrder.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onActiveTopicChange, zaslonaGory, topicOrder.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Gest w bok: skok do sąsiedniego tematu ────────────────────────────────
   const touchStart = useRef<{ x: number; y: number; interactive: boolean } | null>(null);
@@ -325,17 +333,22 @@ export function NewsStream({
               if (el) sectionRefs.current.set(topic.id, el);
               else sectionRefs.current.delete(topic.id);
             }}
-            // `scroll-mt` odsuwa cel przewijania spod przyklejonego nagłówka — bez tego skok
-            // zatrzymywałby się dokładnie pod nim i pierwszy wiersz byłby zasłonięty.
-            className="scroll-mt-2"
+            // Margines celu przewijania odsuwa skok spod przyklejonej nawigacji — bez tego
+            // kliknięcie tematu zatrzymuje go dokładnie ZA paskiem i nagłówek jest niewidoczny.
+            // Liczony ze zmierzonej wysokości paska (`--news-pasek-h`), nie z wpisanej liczby:
+            // skórki Omnii zmieniają gęstość i typografię, więc stała byłaby prawdziwa dla jednej.
+            style={{ scrollMarginTop: "calc(var(--news-pasek-h, 0px) + 0.5rem)" }}
           >
             {/* Nagłówek tematu przyklejony u góry: właściciel ma „dobrze wiedzieć, z jakiego tematu
                 są wiadomości" przez CAŁY czas przewijania, nie tylko na granicy sekcji. */}
             <div
               className={cn(
-                "sticky top-0 z-20 -mx-1 flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] px-1 py-2",
+                "sticky z-20 -mx-1 flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] px-1 py-2",
                 topic.id === activeTopicId && "border-[var(--accent-blue)]"
               )}
+              // Nagłówek sekcji zatrzymuje się POD paskiem nawigacji, a nie na krawędzi ramy —
+              // inaczej oba przyklejone paski rysowałyby się jeden na drugim.
+              style={{ top: "var(--news-pasek-h, 0px)" }}
             >
               <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-primary)]">
                 {topic.title}

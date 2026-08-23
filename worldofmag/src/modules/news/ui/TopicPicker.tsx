@@ -49,6 +49,7 @@ export function TopicPicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const aktywnyChipRef = useRef<HTMLButtonElement>(null);
+  const paskRef = useRef<HTMLDivElement>(null);
 
   const selected = topics.find((t) => t.id === selectedId) ?? null;
 
@@ -74,14 +75,42 @@ export function TopicPicker({
    * 082: aktywny temat sam wjeżdża w widoczny obszar paska.
    *
    * Efekt wisi na `selectedId`, a nie na obsłudze kliknięcia w chip — dzięki temu działa tak samo
-   * dla wszystkich trzech dróg zmiany tematu (chip, strzałka, wybór z listy) oraz dla gestu
-   * w `NewsStream`. Gdyby siedział w `pick`, wybór strzałką przesuwałby zaznaczenie poza ekran.
+   * dla wszystkich dróg zmiany tematu (chip, strzałka, wybór z listy, gest w `NewsStream`) oraz
+   * dla trybu strumienia, gdzie temat zmienia się SAM w miarę przewijania.
    *
-   * `inline: "center"` zamiast `"nearest"`: przy wyborze strzałką „nearest" dosuwa chip dokładnie
-   * do krawędzi, więc sąsiedni temat — to, co ten pasek ma pokazywać — zostaje poza kadrem.
+   * **Przewijamy WYŁĄCZNIE pasek, ustawiając mu `scrollLeft` — nigdy przez `scrollIntoView`.**
+   * To nie jest szczegół stylu, tylko cała treść usterki zgłoszonej po 082: `scrollIntoView`
+   * przewija KAŻDY przewijalny kontener nad elementem, łącznie z ramą widoku modułu. W strumieniu
+   * obserwator przestawia temat co kilka sekund przewijania, a pasek bywał wtedy wysoko poza
+   * ekranem — więc każde takie przestawienie szarpało stroną z powrotem do góry (zmierzone
+   * w przeglądarce: skok o 4719 px). `block: "nearest"` tego nie ratuje: „nearest" znaczy
+   * „najmniejszy możliwy ruch, ŻEBY element był widoczny", a nie „nie ruszaj". Ustawienie
+   * `scrollLeft` na samym pasku nie może dotknąć niczego poza nim.
+   *
+   * Drugi warunek: **jeśli chip jest już wygodnie widoczny, nie ruszamy paskiem wcale.** Bez tego
+   * pasek drgałby przy każdym przeliczeniu tematu w trakcie czytania.
    */
   useEffect(() => {
-    aktywnyChipRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    const pasek = paskRef.current;
+    const chip = aktywnyChipRef.current;
+    if (!pasek || !chip) return;
+
+    // `offsetLeft` liczy się od najbliższego pozycjonowanego przodka — pasek ma `relative`
+    // właśnie po to, żeby ta liczba była w tym samym układzie współrzędnych co `scrollLeft`.
+    const lewa = chip.offsetLeft;
+    const prawa = lewa + chip.offsetWidth;
+    const widokOd = pasek.scrollLeft;
+    const widokDo = widokOd + pasek.clientWidth;
+    // Margines oddechu: chip dotykający krawędzi jest formalnie widoczny, ale wygląda na ucięty
+    // i nie widać, że obok jest następny temat — czyli gubi to, po co ten pasek powstał.
+    const oddech = 32;
+    if (lewa >= widokOd + oddech && prawa <= widokDo - oddech) return;
+
+    const cel = lewa - (pasek.clientWidth - chip.offsetWidth) / 2;
+    const bezRuchu =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    pasek.scrollTo({ left: Math.max(0, cel), behavior: bezRuchu ? "auto" : "smooth" });
   }, [selectedId]);
 
   // Zamknięcie: `Esc` (C-31) i kliknięcie poza listą. Bez tego drugiego lista zostawałaby otwarta po
@@ -148,7 +177,8 @@ export function TopicPicker({
           działania, a nie ozdobą: bez niego kontener przyjąłby szerokość swojej zawartości
           i rozepchnął stronę w bok zamiast się przewijać — dokładnie usterka z 040. */}
       <div
-        className="omnia-pasek-tematow flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+        ref={paskRef}
+        className="omnia-pasek-tematow relative flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
         role="tablist"
         aria-label={t("pasekTematow")}
       >
