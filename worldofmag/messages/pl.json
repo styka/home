@@ -1353,13 +1353,6 @@
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",
         "materialZrodlowy": "Materiał źródłowy"
       },
-      "TopicPicker": {
-        "poprzedniTemat": "Poprzedni temat",
-        "nastepnyTemat": "Następny temat",
-        "pasekTematow": "Tematy",
-        "brakTematow": "Brak tematów",
-        "wszystkieTematy": "Wszystkie tematy — szukaj po nazwie"
-      },
       "SourceCatalogPicker": {
         "tytul": "Biblioteka źródeł",
         "szukaj": "Szukaj źródła po nazwie lub opisie…",

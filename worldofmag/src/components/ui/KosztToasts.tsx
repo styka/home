@@ -35,6 +35,14 @@ interface Wpis {
   znany: boolean;
   /** Ile razy ta sama akcja wystąpiła, zanim powiadomienie zniknęło. */
   powtorzenia: number;
+  /**
+   * Chwila, o której wpis ma zniknąć — ustawiana przy JEGO UTWORZENIU i nietykana przy scalaniu
+   * powtórzeń. Bez tego pola seria wywołań pod tą samą etykietą (np. kolejne tury rozmowy
+   * z asystentem częściej niż raz na 6 s) trzymałaby kafelek na ekranie w nieskończoność, bo każde
+   * scalenie zakładało zegar od nowa (usterka znaleziona w recenzji 083 — komentarz obiecywał
+   * dokładnie to, czego kod nie robił).
+   */
+  wygasaO: number;
 }
 
 let licznik = 0;
@@ -58,23 +66,35 @@ export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) 
               : w,
           );
         }
-        const nowy: Wpis = { id: ++licznik, akcja, usd, znany, powtorzenia: 1 };
+        const nowy: Wpis = {
+          id: ++licznik,
+          akcja,
+          usd,
+          znany,
+          powtorzenia: 1,
+          wygasaO: Date.now() + CZAS_ZYCIA_MS,
+        };
         return [...poprzednie, nowy].slice(-MAKS_NARAZ);
       });
     });
   }, []);
 
-  // Znikanie: jeden zegar na wpis, ustawiany po jego pojawieniu się. Przy łączeniu powtórzeń wpis
-  // zachowuje pierwotny czas życia — inaczej seria wywołań trzymałaby kafelek na ekranie w
-  // nieskończoność.
+  /**
+   * Znikanie: jeden zegar, zawsze na NAJSTARSZY wpis, liczony do jego `wygasaO`.
+   *
+   * Zależnością jest `id` i `wygasaO` najstarszego wpisu, a nie cała tablica: scalenie powtórzenia
+   * tworzy nową tablicę (React wymaga niemutowalności), więc zależność od `wpisy` restartowałaby
+   * odliczanie przy każdym doliczonym koszcie.
+   */
+  const najstarszy = wpisy[0];
   useEffect(() => {
-    if (wpisy.length === 0) return;
-    const najstarszy = wpisy[0];
-    const timer = setTimeout(() => {
-      setWpisy((poprzednie) => poprzednie.filter((w) => w.id !== najstarszy.id));
-    }, CZAS_ZYCIA_MS);
+    if (!najstarszy) return;
+    const timer = setTimeout(
+      () => setWpisy((poprzednie) => poprzednie.filter((w) => w.id !== najstarszy.id)),
+      Math.max(0, najstarszy.wygasaO - Date.now()),
+    );
     return () => clearTimeout(timer);
-  }, [wpisy]);
+  }, [najstarszy?.id, najstarszy?.wygasaO]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (wpisy.length === 0) return null;
 

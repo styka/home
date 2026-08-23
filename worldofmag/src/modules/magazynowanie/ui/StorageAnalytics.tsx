@@ -23,7 +23,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
   const a = analytics;
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
-  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
+  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean; fromMemory?: boolean }>({});
   /** 041: obowiązujący tryb sekcji — do przełącznika w pasku pod wnioskami. */
   const [aiMode, setAiMode] = useState<AiSectionMode | undefined>();
   const [loadingTips, setLoadingTips] = useState(false);
@@ -35,6 +35,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
       usage?: AiCostUsage;
       generatedAt?: string;
       stale?: boolean;
+      fromMemory?: boolean;
       pending?: boolean;
       mode?: AiSectionMode;
     }>("magazyn.insights", {
@@ -60,7 +61,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
       if (res?.pending) res = await runInsights(true);
       setTips(res.tips ?? []);
       setAiUsage(res.usage);
-      setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+      setAiMemory({ generatedAt: res.generatedAt, stale: res.stale, fromMemory: res.fromMemory });
       if (res.mode) setAiMode(res.mode);
     } finally {
       setLoadingTips(false);
@@ -135,6 +136,7 @@ export function StorageAnalytics({ analytics, exportRows }: Props) {
               refreshLabel="Nowe wnioski"
               staleHint="Stan magazynu zmienił się od czasu wygenerowania tych wniosków"
               usage={aiUsage}
+              swiezy={aiMemory.fromMemory === false}
               sectionKind="storage.insights"
               mode={aiMode}
             />

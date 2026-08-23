@@ -19,10 +19,12 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
+import { zglosKoszt } from "@/platform/ai/kosztBus";
 import { ModuleView } from "@/components/ui/view";
 import {
   GroupNavigator,
   WSZYSTKIE,
+  pozycjeNawigatora,
   sasiadujacaGrupa,
   type GrupaNawigatora,
 } from "@/components/ui/nav/GroupNavigator";
@@ -197,6 +199,10 @@ export function NewsPage({
     wasRunning.current = false;
 
     const r = refresh?.result;
+    // 083 (recenzja): koszt przebiegu melduje się DOKŁADNIE TU — w chwili jego domknięcia — a nie
+    // z renderu `RefreshStatus`. Tamten pokazuje stan ostatniego przebiegu także przy zwykłym
+    // wejściu na moduł, więc meldunek stamtąd alarmowałby o wydatku sprzed wielu godzin.
+    if (r?.usage) zglosKoszt({ akcja: "Odświeżanie wiadomości", usage: { costUsd: r.usage.costUsd, costKnown: r.usage.costKnown, tokens: r.usage.tokens, model: r.usage.model } });
     if (refresh?.status === "FAILED") {
       showToast(refresh.error || "Odświeżanie nie powiodło się", "error");
     } else if (r?.llmUnconfigured) {
@@ -263,7 +269,6 @@ export function NewsPage({
   const { zarejestruj, przewinDo, programoweDo } = useSekcjeTematow({
     ramaRef,
     zaslonaGory: pasekH,
-    kolejnosc,
     onCzytana: setCzytanyTemat,
   });
 
@@ -286,6 +291,28 @@ export function NewsPage({
     return () => ro.disconnect();
     // Pasek istnieje tylko w widoku wiadomości — przy zmianie zakładki mierzymy od nowa.
   }, [view, topics.length]);
+
+  // ── Nawigator ─────────────────────────────────────────────────────────────
+  const grupy = useMemo<GrupaNawigatora[]>(
+    () =>
+      topics.map((x) => ({
+        id: x.id,
+        etykieta: x.title,
+        licznik: stream?.find((s) => s.id === x.id)?.items.length,
+        szukajTakze: x.semanticFilter,
+      })),
+    [topics, stream]
+  );
+
+  /**
+   * Identyfikatory w kolejności, w jakiej stoją W LIŚCIE nawigatora — czyli z pozycją zbiorczą na
+   * początku. Bierzemy je z `pozycjeNawigatora`, a nie składamy tu ręcznie: reguła „«Wszystkie»
+   * pierwsze" ma jedno miejsce, więc strzałki i lista nie mogą się rozjechać.
+   */
+  const idyNawigatora = useMemo(
+    () => pozycjeNawigatora(grupy, t("wszystkieTematy")).map((g) => g.id),
+    [grupy, t]
+  );
 
   // ── Zmiana tematu: przesunięcie w bok, potem skok pionowy ─────────────────
   /**
@@ -339,6 +366,8 @@ export function NewsPage({
    */
   const sasiad = useCallback(
     (kierunek: -1 | 1) => {
+      // Przy pozycji zbiorczej strzałka PRZEWIJA do sąsiedniej sekcji, nie zmienia filtra: wszystkie
+      // tematy są już na ekranie, więc „dalej" znaczy „następny temat w treści".
       if (wybranyTemat === WSZYSTKIE) {
         const cel = sasiadujacaGrupa(kolejnosc, czytanyTemat ?? kolejnosc[0] ?? null, kierunek);
         if (cel) {
@@ -347,10 +376,22 @@ export function NewsPage({
         }
         return;
       }
-      const cel = sasiadujacaGrupa(topics.map((x) => x.id), wybranyTemat, kierunek);
+      // Przy wybranym temacie krok idzie po pozycjach NAWIGATORA, czyli razem z „Wszystkimi" na
+      // początku (recenzja 083). Liczenie po samych tematach czyniło pozycję zbiorczą nieosiągalną
+      // strzałką, choć w liście stoi pierwsza — a to jedyna droga powrotu do pełnego strumienia.
+      const cel = sasiadujacaGrupa(idyNawigatora, wybranyTemat, kierunek);
       if (cel) wybierzTemat(cel);
     },
-    [topics, wybranyTemat, czytanyTemat, kolejnosc, przewinDo, wybierzTemat]
+    [idyNawigatora, wybranyTemat, czytanyTemat, kolejnosc, przewinDo, wybierzTemat]
+  );
+
+  /** Czy strzałka ma dokąd pójść — liczone dokładnie tą samą regułą co samo przejście. */
+  const sasiadIstnieje = useCallback(
+    (kierunek: -1 | 1) =>
+      wybranyTemat === WSZYSTKIE
+        ? sasiadujacaGrupa(kolejnosc, czytanyTemat ?? kolejnosc[0] ?? null, kierunek) !== null
+        : sasiadujacaGrupa(idyNawigatora, wybranyTemat, kierunek) !== null,
+    [wybranyTemat, czytanyTemat, kolejnosc, idyNawigatora]
   );
 
   // ── Gest w bok ────────────────────────────────────────────────────────────
@@ -436,17 +477,6 @@ export function NewsPage({
   );
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
-  const grupy = useMemo<GrupaNawigatora[]>(
-    () =>
-      topics.map((x) => ({
-        id: x.id,
-        etykieta: x.title,
-        licznik: stream?.find((s) => s.id === x.id)?.items.length,
-        szukajTakze: x.semanticFilter,
-      })),
-    [topics, stream]
-  );
-
   const filtrAktywny = wybranyTemat !== WSZYSTKIE || wybraneZrodla.length > 0;
 
   return (
@@ -516,6 +546,8 @@ export function NewsPage({
                 onWybor={wybierzTemat}
                 etykietaWszystkich={t("wszystkieTematy")}
                 onSasiad={sasiad}
+                moznaWstecz={sasiadIstnieje(-1)}
+                moznaDalej={sasiadIstnieje(1)}
                 akcje={
                   <div className="ml-auto flex shrink-0 items-center gap-1">
                     <SourceFilter
@@ -704,7 +736,9 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
       {r.llmUnconfigured && (
         <span className="text-[var(--accent-amber)]">{t("modelNieskonfigurowanyMaterialPobrany")}</span>
       )}
-      <AiCostBadge usage={r.usage} akcja="Odświeżanie wiadomości" align="left" />
+      {/* `swiezy={false}`: to jest OPIS ostatniego przebiegu, a nie doniesienie o zdarzeniu —
+          meldunek idzie z efektu domykającego przebieg, wyżej. */}
+      <AiCostBadge usage={r.usage} akcja="Odświeżanie wiadomości" swiezy={false} align="left" />
     </div>
   );
 }

@@ -60,7 +60,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
-  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
+  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean; fromMemory?: boolean }>({});
   /** 041: obowiązujący tryb sekcji — do przełącznika w pasku pod planem. */
   const [aiMode, setAiMode] = useState<AiSectionMode | undefined>();
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
@@ -98,6 +98,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
           usage?: AiCostUsage;
           generatedAt?: string;
           stale?: boolean;
+          fromMemory?: boolean;
           pending?: boolean;
           mode?: AiSectionMode;
         }>("kitchen.planWeek", {
@@ -129,7 +130,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
       }
       setSuggestions(res.suggestions);
       setAiUsage(res.usage);
-      setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+      setAiMemory({ generatedAt: res.generatedAt, stale: res.stale, fromMemory: res.fromMemory });
       if (res.mode) setAiMode(res.mode);
       setExcluded(new Set());
       setStep("review");
@@ -380,6 +381,7 @@ export function PlanWeekDialog({ open, onClose, weekStart, recipeCount }: PlanWe
                   refreshLabel="Nowy plan"
                   staleHint="Ustawienia planu zmieniły się od czasu wygenerowania tych propozycji"
                   usage={aiUsage}
+                  swiezy={aiMemory.fromMemory === false}
                   sectionKind="kitchen.planWeek"
                   mode={aiMode}
                 />

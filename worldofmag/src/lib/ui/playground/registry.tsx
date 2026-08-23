@@ -490,7 +490,13 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
     summary: "Koszt wywołania modelu przy wygenerowanej treści. Widoczny wyłącznie dla administratora i tylko gdy wskaźnik jest włączony w konfiguracji.",
     importPath: 'import { AiCostBadge } from "@/components/ui/AiCostBadge";',
     render: () => (
-      <AiCostBadge akcja="Przykład w galerii komponentów" usage={{ model: "demo/model", tokens: 1620, costUsd: 0.0042, costKnown: true }} />
+      // `swiezy={false}`: demonstracja nie jest wywołaniem modelu — bez tego samo wejście do
+      // galerii wyrzucało powiadomienie o koszcie, którego nikt nie poniósł.
+      <AiCostBadge
+        akcja="Przykład w galerii komponentów"
+        swiezy={false}
+        usage={{ model: "demo/model", tokens: 1620, costUsd: 0.0042, costKnown: true }}
+      />
     ),
   },
   {

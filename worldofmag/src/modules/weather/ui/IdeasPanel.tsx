@@ -319,6 +319,7 @@ export function IdeasPanel({
             refreshLabel="Nowe propozycje"
             staleHint="Prognoza zmieniła się od czasu wygenerowania tych propozycji"
             usage={listUsage}
+            swiezy={memory.fromMemory === false}
             sectionKind="weather.ideas"
             mode={mode}
             onModeChange={setMode}

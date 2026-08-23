@@ -55,6 +55,9 @@ export async function magazynInsightsHandler(payload: InsightsPayload, ctx: JobC
     usage: remembered.usage,
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    // 083 (recenzja): odbiorca musi odróżnić „koszt właśnie powstał" od „koszt odczytany
+    // z pamięci" — inaczej samo wejście na zakładkę alarmuje o wydatku sprzed tygodnia.
+    fromMemory: remembered.fromMemory,
     pending: false,
     mode,
   };

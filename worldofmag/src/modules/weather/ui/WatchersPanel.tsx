@@ -85,6 +85,8 @@ export function WatchersPanel({
   const [pending, setPending] = useState(true);
   const [generatedAt, setGeneratedAt] = useState<string | undefined>();
   const [stale, setStale] = useState(false);
+  /** 083 (recenzja): czy ocena przyszła z pamięci — decyduje, czy meldować koszt jako świeży. */
+  const [zPamieci, setZPamieci] = useState(true);
   const [mode, setMode] = useState<AiSectionMode>("onDemand");
   const [, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
@@ -116,6 +118,7 @@ export function WatchersPanel({
           setMode(r.mode);
           setGeneratedAt(r.generatedAt ?? undefined);
           setStale(r.stale);
+          setZPamieci(r.fromMemory);
           if (!r.pending) {
             setVerdicts(r.verdicts);
             setUsage(r.usage);
@@ -448,6 +451,7 @@ export function WatchersPanel({
             refreshLabel={t("ocenPonownie")}
             staleHint={t("prognozaAlboObserwatoryZmienily")}
             usage={usage}
+            swiezy={!zPamieci}
             sectionKind="weather.watchers"
             mode={mode}
             onModeChange={setMode}

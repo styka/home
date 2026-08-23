@@ -34,6 +34,7 @@ export function AiContentMeta({
   refreshLabel = "Odśwież",
   staleHint = "Dane źródłowe zmieniły się od czasu wygenerowania tej treści",
   usage,
+  swiezy,
   sectionKind,
   mode,
   onModeChange,
@@ -46,6 +47,16 @@ export function AiContentMeta({
   staleHint?: string;
   /** 041: koszt tej konkretnej treści — pokazywany tylko wtedy, gdy serwer go przepuścił. */
   usage?: AiCostUsage;
+  /**
+   * 083 (recenzja): czy pokazywane zużycie pochodzi ze świeżego wywołania modelu.
+   *
+   * **Wymagane, bez wartości domyślnej** — i to jest ta sama decyzja, co przy `akcja`. Sekcja AI
+   * jest z definicji miejscem, gdzie treść bywa ODCZYTANA z pamięci (`rememberedContent`), więc
+   * domyślnik byłby fałszywy w połowie renderów: albo powiadomienia o kosztach, których nikt teraz
+   * nie poniósł, albo cisza przy prawdziwym wywołaniu. Konsument zna odpowiedź (`!fromMemory`),
+   * więc niech ją poda.
+   */
+  swiezy: boolean;
   /** 041: rodzaj sekcji. Podany razem z `mode` włącza wybór trybu pod „⚙". */
   sectionKind?: AiContentKind;
   mode?: AiSectionMode;
@@ -105,6 +116,7 @@ export function AiContentMeta({
           <AiCostBadge
             usage={usage}
             akcja={sectionKind ? AI_SECTION_LABELS[sectionKind] : t("trescAi")}
+            swiezy={swiezy}
             align="left"
           />
         )}
@@ -209,7 +221,8 @@ export function AiContentPending({
       </button>
       {sectionKind && mode && (
         <div className="mt-3">
-          <AiContentMeta sectionKind={sectionKind} mode={mode} onModeChange={onModeChange} />
+          {/* Stan oczekiwania nie niesie żadnego zużycia, więc nie ma czego meldować. */}
+          <AiContentMeta sectionKind={sectionKind} mode={mode} onModeChange={onModeChange} swiezy={false} />
         </div>
       )}
     </div>

@@ -154,6 +154,7 @@ export function HotTopics({ onTopicsChanged }: { onTopicsChanged: () => void }) 
             refreshLabel="Przeanalizuj na nowo"
             staleHint="Od czasu tej analizy przybyło świeżych materiałów"
             usage={data?.usage}
+            swiezy={data?.fromMemory === false}
             sectionKind="news.hotTopics"
             mode={data?.mode}
             onModeChange={() => load()}

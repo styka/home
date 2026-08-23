@@ -74,6 +74,8 @@ export function GroupNavigator({
   onWybor,
   etykietaWszystkich,
   onSasiad,
+  moznaWstecz,
+  moznaDalej,
   akcje,
 }: {
   grupy: GrupaNawigatora[];
@@ -87,6 +89,16 @@ export function GroupNavigator({
    * filtru, tylko przewija do następnej grupy w treści — a tego komponent nie umie i nie powinien.
    */
   onSasiad?: (kierunek: -1 | 1) => void;
+  /**
+   * Czy jest dokąd iść w każdą stronę. Liczy to KONSUMENT, bo tylko on wie, czym jest „sąsiad"
+   * w jego widoku — przy pozycji zbiorczej strzałka zwykle przewija treść, a nie zmienia wyboru.
+   *
+   * Pominięte = strzałka zawsze czynna (zachowanie sprzed recenzji 083). Podane — przycisk na
+   * krańcu listy jest **wyłączony**, zamiast wyglądać na czynny i nie robić nic: milczące nic to
+   * najgorsza odpowiedź na dotknięcie, bo użytkownik nie wie, czy chybił, czy lista się skończyła.
+   */
+  moznaWstecz?: boolean;
+  moznaDalej?: boolean;
   /** Kontrolki po prawej (filtry, akcje zbiorcze). */
   akcje?: React.ReactNode;
 }) {
@@ -142,6 +154,7 @@ export function GroupNavigator({
         <button
           type="button"
           onClick={() => onSasiad(-1)}
+          disabled={moznaWstecz === false}
           aria-label={t("poprzednia")}
           title={t("poprzednia")}
           className={strzalka}
@@ -182,6 +195,7 @@ export function GroupNavigator({
         <button
           type="button"
           onClick={() => onSasiad(1)}
+          disabled={moznaDalej === false}
           aria-label={t("nastepna")}
           title={t("nastepna")}
           className={strzalka}

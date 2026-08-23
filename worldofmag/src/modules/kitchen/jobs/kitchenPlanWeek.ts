@@ -46,6 +46,8 @@ export async function kitchenPlanWeekHandler(
   usage?: AiUsageInfo;
   generatedAt?: string;
   stale?: boolean;
+  /** 083 (recenzja): czy zużycie pochodzi ze świeżego wywołania modelu, czy z pamięci treści. */
+  fromMemory?: boolean;
   pending?: boolean;
   mode?: string;
 }> {
@@ -86,6 +88,9 @@ export async function kitchenPlanWeekHandler(
     usage: remembered.usage,
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    // 083 (recenzja): odbiorca musi odróżnić „koszt właśnie powstał" od „koszt odczytany
+    // z pamięci" — inaczej samo wejście na zakładkę alarmuje o wydatku sprzed tygodnia.
+    fromMemory: remembered.fromMemory,
     pending: false,
     mode,
   };

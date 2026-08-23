@@ -4,6 +4,39 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-23 — Lista DANYCH jako sygnał o WĘZŁACH DOM: zamrożony obserwator przecięć
+**Problem:** Obserwator wyznaczający „czytany temat" był przeliczany efektem zależnym od listy
+identyfikatorów (`kolejnosc.join(",")`), a obserwował **węzły DOM** rejestrowane osobną drogą przez
+`ref`. Przy przełączeniu `Wiadomości ⇄ Linia czasu` oba widoki rysują sekcje TYCH SAMYCH tematów
+w tej samej kolejności, więc lista nie zmieniała się ani o znak — a React odmontowywał jeden widok
+i montował drugi, czyli węzły były nowe. Efekt się nie przeliczał, obserwator trzymał odpięte węzły
+i wskazanie zamarzało: podświetlenie nagłówka zostawało na przypadkowej sekcji, a strzałka „dalej"
+skakała względem zamrożonej wartości. Przeszło `tsc`, lint, 32 bramki statyczne i 1153 testy.
+**Rozwiązanie:** Obserwacja wynika teraz z REJESTRACJI: `zarejestruj` sam woła `observe`/`unobserve`
+na instancji trzymanej w `ref`, a efekt tworzący obserwatora zależy wyłącznie od `rootMargin`.
+Dopisany klikacz `news-observer-remount` sprawdzony w obie strony — na poprawionym kodzie zielony,
+po cofnięciu poprawki czerwony („wskazanie czytanego tematu zamarło po przemontowaniu sekcji").
+**Lekcja:** Tożsamość DANYCH i tożsamość WĘZŁÓW to dwie różne rzeczy i nie wolno jednej używać jako
+sygnału o drugiej. Gdy efekt dotyczy elementów DOM, jego źródłem prawdy musi być moment ich
+przypięcia (`ref`), a nie lista, z której zostały narysowane.
+
+## 2026-08-23 — Powiadomienie o koszcie AI za wydatek sprzed tygodnia
+**Problem:** `AiCostBadge` meldował koszt przy każdym zamontowaniu, a `usage` przychodzi tam z dwóch
+źródeł nie do odróżnienia po kształcie: ze świeżego wywołania modelu **i** z pamięci treści
+(`rememberedContent`) albo z historii przebiegu w kolejce. Efekt: samo wejście na „Gorące tematy",
+Pogodę czy Magazynowanie — bez ani jednego wywołania modelu — wyrzucało powiadomienie „ta akcja
+kosztowała X". Nawet galeria komponentów alarmowała o koszcie swojego statycznego przykładu.
+**Rozwiązanie:** `AiCostBadge` dostał `swiezy` (domyślnie `true` — w większości miejsc plakietka stoi
+przy wyniku wywołania z tego samego gestu), a `AiContentMeta` — `swiezy` **wymagane bez domyślnika**,
+bo sekcja AI jest z definicji miejscem, gdzie treść bywa odczytana. Konsumenci podają `!fromMemory`;
+`fromMemory` dopisane do czterech DTO, które go nie niosły. Koszt przebiegu odświeżania melduje się
+teraz z efektu domykającego przebieg, a nie z renderu stanu. RYSOWANIE nie zależy od `swiezy` —
+zapamiętany koszt nadal wolno pokazać przy treści, bo tam jest jej opisem, a nie doniesieniem.
+**Lekcja:** Powtarzalny fałszywy alarm zabija dokładnie tę wartość, dla której mechanizm powstał.
+Gdy komponent nie potrafi odróżnić „zdarzyło się teraz" od „odczytane z zapisu", tej informacji musi
+mu dostarczyć wywołujący — a tam, gdzie obie możliwości są równie częste, parametr ma być **wymagany**,
+bo domyślnik będzie fałszywy w połowie renderów.
+
 ## 2026-08-23 — Dwa nośniki tej samej decyzji: „tryb przeglądania" obok „wybranego tematu"
 **Problem:** Wiadomości miały przełącznik „Strumień / Jeden temat" (044) ORAZ selektor tematu (041).
 To były dwa nośniki jednej decyzji, więc dawały stany bez sensu: „tryb: jeden temat" bez wybranego

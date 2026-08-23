@@ -75,6 +75,7 @@ const PANEL_MAX_WIDTH = 360;
 export function AiCostBadge({
   usage,
   akcja,
+  swiezy = true,
   rate = DEFAULT_USD_PLN_RATE,
   align = "right",
 }: {
@@ -91,6 +92,24 @@ export function AiCostBadge({
    * To NIE jest typ operacji LLM — „reasoning" nie odróżnia dwóch sekcji na tej samej stronie.
    */
   akcja: string;
+  /**
+   * 083 (recenzja): czy to zużycie POWSTAŁO WŁAŚNIE TERAZ, czy jest odczytane z zapisu.
+   *
+   * Rozróżnienie jest konieczne, bo `usage` przychodzi tu z dwóch źródeł nie do odróżnienia po
+   * kształcie: ze świeżego wywołania modelu **i** z pamięci treści (`rememberedContent`) albo
+   * z historii przebiegu w kolejce. Bez tego samo wejście na stronę z zapamiętaną sekcją AI
+   * wywoływało powiadomienie „ta akcja kosztowała X" o koszcie, który poniesiono dawno temu —
+   * czyli dokładny fałszywy alarm, a powtarzalny fałszywy alarm zabija wiarygodność całego
+   * mechanizmu, dla której on istnieje (AC-11 mówi „gdy operacja **wygeneruje** koszt").
+   *
+   * Domyślnie `true`, bo w większości miejsc plakietka stoi zaraz przy wyniku wywołania zrobionego
+   * w tym samym geście. Miejsca pokazujące zużycie ODCZYTANE — `AiContentMeta`, stan przebiegu
+   * odświeżania, galeria komponentów — podają `false` jawnie.
+   *
+   * RYSOWANIE nie zależy od tej wartości: zapamiętany koszt nadal wolno pokazać przy treści, bo
+   * tam jest opisem tej treści, a nie doniesieniem o zdarzeniu.
+   */
+  swiezy?: boolean;
   rate?: number;
   /**
    * 037: w bąblu czatu wskaźnik dociska się do prawej (`marginLeft:auto`) i tak zostaje domyślnie.
@@ -129,12 +148,13 @@ export function AiCostBadge({
    */
   useEffect(() => {
     if (!usage) return;
+    if (!swiezy) return;
     if (usage.costUsd === undefined && !usage.tokens) return;
     zglosKoszt({
       akcja,
       usage: { costUsd: usage.costUsd, costKnown: usage.costKnown, tokens: usage.tokens, model: usage.model },
     });
-  }, [usage, akcja]);
+  }, [usage, akcja, swiezy]);
 
   if (!usage) return null;
   // Przełącznik administratora: wskaźnik przy treści domyślnie NIE ZAJMUJE MIEJSCA (AC-7).

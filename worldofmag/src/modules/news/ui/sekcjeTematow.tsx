@@ -46,22 +46,42 @@ export function przewinDoSekcji(
 export function useSekcjeTematow({
   ramaRef,
   zaslonaGory,
-  kolejnosc,
   onCzytana,
 }: {
   ramaRef: RefObject<HTMLDivElement>;
   /** Ile pikseli u góry zasłania przyklejony pasek nawigacji. */
   zaslonaGory: number;
-  /** Identyfikatory sekcji w kolejności renderowania — obserwator przelicza się przy zmianie. */
-  kolejnosc: string[];
   onCzytana: (topicId: string) => void;
 }) {
   const sekcje = useRef(new Map<string, HTMLElement>());
   const programoweDo = useRef(0);
+  const obserwatorRef = useRef<IntersectionObserver | null>(null);
+  const onCzytanaRef = useRef(onCzytana);
+  onCzytanaRef.current = onCzytana;
 
+  /**
+   * 083 (recenzja): obserwacja wynika z REJESTRACJI WĘZŁA, a nie z listy identyfikatorów.
+   *
+   * Pierwsza wersja przeliczała obserwatora efektem zależnym od `kolejnosc.join(",")` i obserwowała
+   * to, co akurat leżało w mapie. Rozjeżdżało się to przy przełączeniu `Wiadomości ⇄ Linia czasu`:
+   * oba widoki rysują sekcje TYCH SAMYCH tematów w tej samej kolejności, więc lista identyfikatorów
+   * nie zmieniała się ani o znak — a React odmontowywał jeden widok i montował drugi, czyli węzły
+   * DOM były nowe. Efekt się nie przeliczał, obserwator trzymał odpięte węzły poprzedniego widoku
+   * i `czytanyTemat` zamarzał: podświetlenie nagłówka zostawało na przypadkowej sekcji, a strzałka
+   * „dalej" przy „Wszystkich" skakała względem zamrożonej wartości.
+   *
+   * Sedno pomyłki: `kolejnosc` opisuje DANE, a obserwator dotyczy WĘZŁÓW. To dwie różne tożsamości
+   * i nie wolno jednej używać jako sygnału o drugiej.
+   */
   const zarejestruj = useCallback((id: string, el: HTMLElement | null) => {
-    if (el) sekcje.current.set(id, el);
-    else sekcje.current.delete(id);
+    const poprzedni = sekcje.current.get(id);
+    if (poprzedni && poprzedni !== el) obserwatorRef.current?.unobserve(poprzedni);
+    if (el) {
+      sekcje.current.set(id, el);
+      obserwatorRef.current?.observe(el);
+    } else {
+      sekcje.current.delete(id);
+    }
   }, []);
 
   const przewinDo = useCallback(
@@ -85,16 +105,23 @@ export function useSekcjeTematow({
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
         const id = gorna?.target.getAttribute("data-topic-id");
-        if (id) onCzytana(id);
+        // Wywołanie zwrotne przez ref: gdyby weszło do zależności efektu, każda zmiana jego
+        // tożsamości kasowałaby i zakładała obserwatora od nowa, gubiąc po drodze rejestracje.
+        if (id) onCzytanaRef.current(id);
       },
       // Górna krawędź przycięta pod OBA przyklejone paski — nawigację modułu (`zaslonaGory`)
       // i nagłówek sekcji (64 px).
       { rootMargin: `-${zaslonaGory + 64}px 0px -55% 0px`, threshold: 0 },
     );
+    obserwatorRef.current = obserwator;
+    // Sekcje zarejestrowane, ZANIM obserwator powstał (pierwszy render), trzeba dopiąć ręcznie.
     sekcje.current.forEach((el) => obserwator.observe(el));
-    return () => obserwator.disconnect();
-    // Przeliczamy obserwatora, gdy zmieni się zestaw sekcji.
-  }, [onCzytana, zaslonaGory, kolejnosc.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      obserwator.disconnect();
+      if (obserwatorRef.current === obserwator) obserwatorRef.current = null;
+    };
+    // Przeliczamy WYŁĄCZNIE przy zmianie zasłony — to jedyne, co wpływa na `rootMargin`.
+  }, [zaslonaGory]);
 
   return { zarejestruj, przewinDo, programoweDo };
 }

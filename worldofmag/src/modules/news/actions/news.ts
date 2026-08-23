@@ -293,6 +293,16 @@ export async function getTopicTimeline(topicId: string): Promise<TimelineEntryDT
   }));
 }
 
+/**
+ * 083: ile faktów z osi czasu wczytujemy NA JEDEN TEMAT w widoku zbiorczym.
+ *
+ * Nie `SUFIT_LISTY`: przy kilkunastu tematach ten sam sufit na każdym z nich dałby kilkanaście
+ * tysięcy wpisów w jednej odpowiedzi. Sto faktów to znacznie więcej, niż da się przeczytać jednym
+ * posiedzeniem, a oś jest z natury chronologiczna — starsze wpisy czyta się w widoku pojedynczego
+ * tematu (`getTopicTimeline`, tam sufit jest pełny).
+ */
+const SUFIT_OSI_NA_TEMAT = 100;
+
 /** 083: linia czasu jednego tematu — jednostka przeglądu osi w tych samych sekcjach co wiadomości. */
 export interface StreamTimelineTopicDTO {
   id: string;
@@ -322,6 +332,13 @@ export async function getStreamTimeline(): Promise<StreamTimelineTopicDTO[]> {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       timeline: {
+        // Sufit NA TEMAT, nie na całość. `NewsTimelineEntry` nie podlega retencji (patrz
+        // `retention.ts` — kasujemy materiał z puli, nie fakty na osi), więc oś rośnie w
+        // nieskończoność: po pół roku monitorowania kilkunastu tematów jedno kliknięcie „Linia
+        // czasu" ściągałoby całą historię wszystkich tematów naraz. `getStreamView` nie ma tego
+        // problemu, bo tam pozycje są zawężone do `status: "PENDING"` — tu odpowiednika nie ma,
+        // więc granica musi być jawna.
+        take: SUFIT_OSI_NA_TEMAT,
         orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
         include: { source: true },
       },
@@ -331,14 +348,7 @@ export async function getStreamTimeline(): Promise<StreamTimelineTopicDTO[]> {
   const articleIds = Array.from(
     new Set(topics.flatMap((t) => t.timeline.map((r) => r.articleId).filter((id): id is string => !!id)))
   );
-  const articles = articleIds.length
-    ? await prisma.newsArticle.findMany({
-        take: SUFIT_LISTY,
-        where: { id: { in: articleIds } },
-        select: { id: true, url: true },
-      })
-    : [];
-  const urlById = new Map(articles.map((a) => [a.id, a.url]));
+  const urlById = new Map(await adresyMaterialow(articleIds));
 
   return topics.map((t) => ({
     id: t.id,
@@ -354,6 +364,30 @@ export async function getStreamTimeline(): Promise<StreamTimelineTopicDTO[]> {
       url: r.articleId ? urlById.get(r.articleId) ?? null : null,
     })),
   }));
+}
+
+/**
+ * Adresy materiałów źródłowych dla podanych identyfikatorów — pobierane PARTIAMI.
+ *
+ * Jedno zapytanie z `take: SUFIT_LISTY` wyglądałoby na bezpieczne, a przy większej liczbie
+ * identyfikatorów po cichu zwracałoby część: brakujące wpisy dostawałyby `url: null`, czyli fakt na
+ * osi traciłby odnośnik „sprawdź u źródła" — bez błędu i bez śladu, zależnie od kolejności zwróconej
+ * przez bazę. Skoro pytamy o konkretne klucze główne, granicą jest ROZMIAR PARTII, nie sufit wyniku.
+ */
+async function adresyMaterialow(articleIds: string[]): Promise<Array<[string, string]>> {
+  const pary: Array<[string, string]> = [];
+  for (let i = 0; i < articleIds.length; i += SUFIT_LISTY) {
+    const partia = articleIds.slice(i, i + SUFIT_LISTY);
+    if (partia.length === 0) break;
+    // paginacja: kompletny — pytamy o konkretne klucze główne jednej partii (rozmiar partii JEST
+    // granicą); brak choćby jednego wiersza znaczy „fakt bez odnośnika", a nie „krótsza lista".
+    const rows = await prisma.newsArticle.findMany({
+      where: { id: { in: partia } },
+      select: { id: true, url: true },
+    });
+    for (const a of rows) pary.push([a.id, a.url]);
+  }
+  return pary;
 }
 
 // ─── Topic / source / pref mutations ───────────────────────────────────────
@@ -741,6 +775,8 @@ export interface HotTopicsResult {
   pending: boolean;
   /** 041: obowiązujący tryb odświeżania tej sekcji (do przełącznika w pasku). */
   mode: AiSectionMode;
+  /** 083 (recenzja): czy treść przyszła z pamięci, czy z właśnie wykonanego wywołania modelu. */
+  fromMemory: boolean;
 }
 
 export interface HiddenTopicDTO {
@@ -774,7 +810,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   const mode = await resolveSectionMode(user.id, "news.hotTopics");
 
   if (articles.length === 0) {
-    return { topics: [], generatedAt: null, stale: false, pending: false, mode };
+    return { topics: [], generatedAt: null, stale: false, fromMemory: false, pending: false, mode };
   }
 
   const hidden = await prisma.newsHiddenTopic.findMany({
@@ -823,7 +859,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
 
   // Lista jeszcze nie powstała, a tryb zabrania generować samoczynnie.
   if (remembered.pending) {
-    return { topics: [], generatedAt: null, stale: false, pending: true, mode };
+    return { topics: [], generatedAt: null, stale: false, fromMemory: false, pending: true, mode };
   }
 
   return {
@@ -832,6 +868,7 @@ export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
     topics: (remembered.value.topics ?? []).filter((t) => !hiddenSet.has(t.fingerprint)),
     generatedAt: remembered.generatedAt,
     stale: remembered.stale,
+    fromMemory: remembered.fromMemory,
     usage: await visibleUsage(remembered.usage),
     pending: false,
     mode,

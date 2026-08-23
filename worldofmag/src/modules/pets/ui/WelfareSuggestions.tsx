@@ -25,7 +25,7 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
   const t = useTranslations("modules.pets.WelfareSuggestions");
   const [tips, setTips] = useState<string[] | null>(null);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
-  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean }>({});
+  const [aiMemory, setAiMemory] = useState<{ generatedAt?: string; stale?: boolean; fromMemory?: boolean }>({});
   const [loadingTips, setLoadingTips] = useState(false);
   /** 041: porady czekają na kliknięcie — stan osobny od „jeszcze się ładuje" i od „brak porad". */
   const [pending, setPending] = useState(false);
@@ -38,6 +38,7 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
       usage?: AiCostUsage;
       generatedAt?: string;
       stale?: boolean;
+      fromMemory?: boolean;
       pending?: boolean;
       mode?: AiSectionMode;
     }>("pets.insights", {
@@ -60,7 +61,7 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
         if (res.pending) return;
         setTips(res.tips ?? []);
         setAiUsage(res.usage);
-        setAiMemory({ generatedAt: res.generatedAt, stale: res.stale });
+        setAiMemory({ generatedAt: res.generatedAt, stale: res.stale, fromMemory: res.fromMemory });
       })
       .catch(() => setTips([]))
       .finally(() => setLoadingTips(false));
@@ -145,6 +146,7 @@ export function WelfareSuggestions({ suggestions, pets, agenda }: Props) {
               refreshLabel="Nowe porady"
               staleHint="Zwierzęta lub zadania opieki zmieniły się od czasu wygenerowania tych porad"
               usage={aiUsage}
+              swiezy={aiMemory.fromMemory === false}
               sectionKind="pets.insights"
               mode={mode}
               onModeChange={(m) => setMode(m)}
