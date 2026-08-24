@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/test";
-import { kliknijGwiazdkeUlubionych } from "../pages/chromWidoku";
+import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWidoku";
 
 /**
  * 043 — rejestr skrótów klawiszowych (AC-9..AC-12).
@@ -90,7 +90,7 @@ test.describe("043 — skróty klawiszowe", () => {
     await page.getByRole("button", { name: "Zapisz", exact: true }).click();
     // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
     // i w nawigacji. Sprawdzamy tę z paska widoku.
-    await page.getByRole("main").getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
+    await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
 
     // Na stronie z zakładkami filtrów: adres startowy bez parametrów.
     await page.goto("/tasks/all");

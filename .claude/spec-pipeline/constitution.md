@@ -134,8 +134,16 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   `env(safe-area-inset-bottom)`. Min. cel dotyku `py-3`, checkboxy 20×20px. Skróty: `j/k`, `x/Space`,
   `e`, `d`, `a/n`, `/`, `Ctrl+K`, `Esc`.
 - **C-33 — Widok modułu deklaruje się przez `ModuleView`, nie rysuje własnego nagłówka.**
-  Moduł podaje `title`/`icon`/`filters`/`actions`/`state`; ramę i chrom (gwiazdka „zapisz widok",
-  świeżość danych, ściągawka skrótów) dokłada powłoka przez `ViewChromeProvider`. Stany brzegowe
+  Moduł podaje `title`/`icon`/`filters`/`actions`/`state`; ramę rysuje powłoka. **Od 085 rama nie
+  wstrzykuje już do paska żadnego chromu** — gwiazdka „zapisz widok" i ściągawka skrótów mieszkają
+  w **chromie konta** (telefon: górny pasek obok dzwonka; komputer: rząd w stopce panelu bocznego),
+  a wskaźnik świeżości został skasowany, bo mierzył moment przeładowania strony przez powłokę, a nie
+  świeżość danych modułu. `ViewChromeProvider` już nie istnieje; został po nim wyłącznie typ
+  `ViewResource` (prop `ModuleView`, zarezerwowany na Fazy 2 i 4). **Pasek widoku jest PRZYKLEJONY**
+  u góry obszaru przewijania — i jest to przebudowa struktury, nie sam `position: sticky`: element
+  przyklejony trzyma się tylko w granicach swojego rodzica, więc pasek musi być BEZPOŚREDNIM
+  dzieckiem kontenera przewijania. Moduł z własnym przyklejonym paskiem odsuwa go o `--view-bar-h`.
+  Stany brzegowe
   (pusty / ładowanie / błąd / brak dostępu) idą **wyłącznie** przez prop `state` — nigdy rysowane
   ręcznie. Wymusza to `npm run check:ui-contract` (w `build`): katalog trasy bez wpisu w manifeście
   albo `ModuleView` bez `state` = build pada. **Gdy rama nie pasuje do widoku — poszerz ramę

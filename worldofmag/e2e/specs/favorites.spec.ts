@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/test";
-import { kliknijGwiazdkeUlubionych } from "../pages/chromWidoku";
+import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWidoku";
 
 /**
  * 042 — weryfikacja zachowania ulubionych widoków i poprawek UX.
@@ -33,7 +33,7 @@ async function saveCurrentAs(page: import("@playwright/test").Page, name: string
   await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
   await page.getByPlaceholder("Nazwa widoku…").fill(name);
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-  await page.getByRole("main").getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
+  await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
 }
 
 
@@ -97,8 +97,8 @@ test.describe("042 — ulubione widoki", () => {
     await expect(page).toHaveURL(/\/tasks\?status=DONE&x=1/);
 
     // AC-3: ponowny klik gwiazdki usuwa wpis.
-    await page.getByRole("main").getByRole("button", { name: STAR_REMOVE }).click();
-    await expect(page.getByRole("main").getByRole("button", { name: STAR_SAVE })).toBeVisible({ timeout: 10_000 });
+    await gwiazdkaUlubionych(page, STAR_REMOVE).click();
+    await expect(gwiazdkaUlubionych(page, STAR_SAVE)).toBeVisible({ timeout: 10_000 });
   });
 
   test("[fav-AC9] ponowny zapis tego samego adresu nie tworzy duplikatu", async ({ page }) => {

@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/test";
-import { kliknijGwiazdkeUlubionych } from "../pages/chromWidoku";
+import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWidoku";
 
 /**
  * 043 — stan widoku w adresie strony (faza A: Zadania, Zakupy, Notatki).
@@ -157,7 +157,7 @@ test.describe("043 — stan widoku w adresie", () => {
     await page.getByRole("button", { name: "Zapisz", exact: true }).click();
     // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
     // i w nawigacji. Sprawdzamy tę z paska widoku.
-    await page.getByRole("main").getByRole("button", { name: /Usuń to miejsce z ulubionych/i }).waitFor({ timeout: 15_000 });
+    await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
 
     // Wyjście gdzie indziej i powrót przez ulubione — adres musi nieść komplet ustawień.
     await page.goto("/notes/all");

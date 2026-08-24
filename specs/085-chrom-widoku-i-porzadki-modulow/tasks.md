@@ -142,21 +142,21 @@
 
 ## Faza 6 — Teksty, testy, dokumentacja
 
-- [ ] **T-26** — **`messages/pl.json`**: nowe klucze, usunięcie osieroconych (menu chromu, świeżość,
+- [x] **T-26** — **`messages/pl.json`**: nowe klucze, usunięcie osieroconych (menu chromu, świeżość,
   stary przełącznik, komunikat filtra obserwatorów).
   *Gotowe, gdy:* `npm run check:i18n` zielone — zero literałów i każdy `t()` się rozwiązuje.
 
-- [ ] **T-27** — **Klikacz: `e2e/specs/chrom-konta.spec.ts`** (AC-1..AC-5, AC-8..AC-11).
+- [x] **T-27** — **Klikacz: `e2e/specs/chrom-konta.spec.ts`** (AC-1..AC-5, AC-8..AC-11).
   *Gotowe, gdy:* testy zielone i sprawdzone **w obie strony** dla AC-4 i AC-8.
 
-- [ ] **T-28** `[P]` — **Klikacz: `e2e/specs/pogoda-obserwatory-pasek.spec.ts`** (AC-18, AC-21, AC-22).
+- [x] **T-28** `[P]` — **Klikacz: `e2e/specs/pogoda-obserwatory-pasek.spec.ts`** (AC-18, AC-21, AC-22).
   *Gotowe, gdy:* zielone i sprawdzone w obie strony dla AC-22.
 
-- [ ] **T-29** `[P]` — **Poprawki istniejących specyfikacji klikacza** po przeprowadzce gwiazdki
+- [x] **T-29** `[P]` — **Poprawki istniejących specyfikacji klikacza** po przeprowadzce gwiazdki
   (`favorites`, `shortcuts`, `view-state`, helper `e2e/pages/chromWidoku.ts`).
   *Gotowe, gdy:* pełna suita bez czerwonych z powodu selektorów.
 
-- [ ] **T-30** — **`CLAUDE.md` i `.claude/spec-pipeline/constitution.md` (C-33)**: opis kontraktu
+- [x] **T-30** — **`CLAUDE.md` i `.claude/spec-pipeline/constitution.md` (C-33)**: opis kontraktu
   widoku mówi dziś, że powłoka wstrzykuje chrom przez `ViewChromeProvider` — po tej zmianie to
   nieprawda. Zaktualizować oba, opisać chrom konta, przyklejony pasek, tryb administratora i nowe
   zakładki Wiadomości.
@@ -172,7 +172,7 @@
   porównane.
   *Gotowe, gdy:* liczby zapisane, zero regresji.
 
-- [ ] **T-33** — **`doświadczenia.md`** (C-51): co najmniej wpis o pułapce `position: sticky`
+- [x] **T-33** — **`doświadczenia.md`** (C-51): co najmniej wpis o pułapce `position: sticky`
   w zagnieżdżonym opakowaniu (przykleja się tylko w granicach rodzica) — to jest nieoczywisty problem
   tego przebiegu.
 
