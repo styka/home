@@ -764,6 +764,24 @@ model ProjectGroup {
   @@map("TaskView")
 }
 
+// 088: załącznik zadania — dziś JEDEN konsument: zrzut wskazanego elementu dołączany do
+// zgłoszenia z trybu wskazywania. Kalka `NoteAttachment`/`HealthAttachment`: obraz jako data URL
+// w `url`. Bez `workspaceId`/`ownerId` — rekord podrzędny, właściciela ma przez zadanie, a ginie
+// razem z nim (kaskada). Rodzaj to `String` + unia TS (C-12), nigdy enum Prisma.
+model TaskAttachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  name      String
+  /// TaskAttachmentKind = "screenshot" | "file"
+  kind      String   @default("screenshot")
+  url       String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
 model TaskTagDef {
   id    String @id @default(cuid())
   name  String @unique
@@ -804,6 +822,7 @@ model Task {
   tags            TaskTaskTag[]
   comments        TaskComment[]
   shares          TaskShare[]
+  attachments     TaskAttachment[]
 
   // Z-031: indeksy pod realne zapytania list zadań (model nie miał żadnych).
   // (projectId, parentTaskId) pokrywa główny widok listy (WHERE projectId=… AND

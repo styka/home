@@ -39,13 +39,13 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-4** — **Migracja `0259_task_attachment`** (plan §2). Ręcznie pisany `migration.sql`:
+- [x] **T-4** — **Migracja `0259_task_attachment`** (plan §2). Ręcznie pisany `migration.sql`:
   tabela `TaskAttachment` (`id`, `taskId`, `name`, `kind` DEFAULT `'screenshot'`, `url`, `createdAt`),
   indeks po `taskId`, FK do `Task` `ON DELETE CASCADE`. Bez `migrate diff` (C-15).
   *Gotowe, gdy:* `npm run check:migrations` zielone, a `migrate deploy` przechodzi na lokalnym
   Postgresie (C-13).
 
-- [ ] **T-5** — **`schema.prisma` zgodne z migracją**: model `TaskAttachment` (rodzaj jako `String`,
+- [x] **T-5** — **`schema.prisma` zgodne z migracją**: model `TaskAttachment` (rodzaj jako `String`,
   **bez enuma** — C-12; bez `workspaceId`/`ownerId`, właściciela daje rodzic) + `attachments
   TaskAttachment[]` w `Task`. Typ TS `TaskAttachmentKind = "screenshot" | "file"`.
   *Gotowe, gdy:* `npx prisma generate` czysto i `npm run check:schema-drift` zielone.
