@@ -21,7 +21,7 @@ export function SystemSkinManager({ skins }: { skins: SkinView[] }) {
   const [editor, setEditor] = useState<EditorState>({ open: false });
 
   async function remove(id: string) {
-    if (!(await confirmDialog("Usunąć tę skórkę systemową? Użytkownicy z nią ustawioną wrócą do domyślnej."))) return;
+    if (!(await confirmDialog({ title: "Usunąć tę skórkę systemową? Użytkownicy z nią ustawioną wrócą do domyślnej.", destructive: true }))) return;
     start(async () => {
       await deleteSkin(id);
       router.refresh();

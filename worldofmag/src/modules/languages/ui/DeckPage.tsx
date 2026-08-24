@@ -93,7 +93,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   }
 
   async function removeDeck() {
-    if (!(await confirmDialog(`Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć talię „${deck.name}" wraz ze wszystkimi słówkami?`, destructive: true }))) return;
     await deleteDeck(deck.id);
     router.push("/languages");
   }

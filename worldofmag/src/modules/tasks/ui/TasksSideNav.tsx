@@ -161,7 +161,7 @@ export function TasksSideNav() {
       count > 0
         ? `Usunąć projekt „${name}"?\n\n${count} zadań NIE zostanie usuniętych — stracą przypisanie do projektu, ale pozostaną widoczne w „Wszystkie".`
         : `Usunąć projekt „${name}"?`;
-    if (!(await confirmDialog(msg))) return;
+    if (!(await confirmDialog({ title: msg, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteTaskProject(id);
@@ -226,7 +226,7 @@ export function TasksSideNav() {
   async function handleDeleteGroup(g: ProjectGroup, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!(await confirmDialog(`Usunąć grupę „${g.name}"?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko tę grupę.`))) return;
+    if (!(await confirmDialog({ title: `Usunąć grupę „${g.name}"?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko tę grupę.`, destructive: true }))) return;
     startTransition(async () => {
       try { await deleteProjectGroup(g.id); } catch { /* ignore */ }
       reload();

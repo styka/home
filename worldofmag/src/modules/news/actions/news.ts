@@ -21,7 +21,12 @@ import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/pl
 import { SUFIT_LISTY } from "@/platform/pagination";
 
 export type SummaryLength = "short" | "medium" | "long";
-export type ItemStatus = "PENDING" | "ACKNOWLEDGED" | "DISMISSED";
+/**
+ * 086: `DISMISSED` USUNIĘTY. Zapisywała go akcja „Odrzuć", a **żaden odczyt go nie rozróżniał** —
+ * z punktu widzenia użytkownika „Odrzuć" i „Przeczytane" robiły dokładnie to samo. Została jedna
+ * akcja, a migracja 0258 znormalizowała istniejące wiersze. String + unia TS, bez enumów (C-12).
+ */
+export type ItemStatus = "PENDING" | "ACKNOWLEDGED";
 
 const FRESHNESS_MS = 24 * 60 * 60 * 1000;
 
@@ -766,17 +771,6 @@ export async function acknowledgeAllItems(): Promise<{ count: number }> {
   });
   revalidatePath("/wiadomosci");
   return { count: r.count };
-}
-
-export async function dismissItem(itemId: string): Promise<void> {
-  const user = await requireAuth();
-  const item = await prisma.newsItem.findUnique({
-    where: { id: itemId },
-    include: { topic: { select: { workspaceId: true } } },
-  });
-  if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
-  await prisma.newsItem.update({ where: { id: itemId }, data: { status: "DISMISSED" } });
-  revalidatePath("/wiadomosci");
 }
 
 // ─── Hot topics ────────────────────────────────────────────────────────────

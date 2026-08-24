@@ -83,7 +83,7 @@ export function ShoppingSideNav() {
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!(await confirmDialog("Usunąć tę listę i wszystkie jej pozycje?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć tę listę i wszystkie jej pozycje?", destructive: true }))) return;
     startTransition(async () => {
       await deleteList(id);
       const remaining = lists.filter((l) => l.id !== id);

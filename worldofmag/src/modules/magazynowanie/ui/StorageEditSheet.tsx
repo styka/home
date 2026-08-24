@@ -187,7 +187,7 @@ export function StorageEditSheet({ open, onClose, item, defaultWarehouse, suppli
 
   async function handleDelete() {
     if (!item) return;
-    if (!(await confirmDialog("Usunąć tę pozycję z magazynu?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć tę pozycję z magazynu?", destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteStorageItem(item.id);

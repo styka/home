@@ -117,7 +117,7 @@ function OrderRow({
   }
 
   async function remove() {
-    if (!(await confirmDialog("Usunąć zamówienie?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć zamówienie?", destructive: true }))) return;
     startTransition(async () => {
       await deletePurchaseOrder(order.id);
     });

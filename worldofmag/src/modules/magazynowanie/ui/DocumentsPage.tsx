@@ -107,7 +107,7 @@ export function DocumentsPage({
   }
 
   async function remove(id: string) {
-    if (!(await confirmDialog("Usunąć dokument? (stan nie zostanie cofnięty)"))) return;
+    if (!(await confirmDialog({ title: "Usunąć dokument? (stan nie zostanie cofnięty)", destructive: true }))) return;
     startTransition(async () => {
       await deleteDocument(id);
     });

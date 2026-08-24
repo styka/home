@@ -141,7 +141,7 @@ export function NewsSourceCatalogManager({ initial }: { initial: AdminCatalogEnt
   }
 
   async function usun(e: AdminCatalogEntry) {
-    if (!(await confirmDialog(t("potwierdzUsuniecie", { nazwa: e.name })))) return;
+    if (!(await confirmDialog({ title: t("potwierdzUsuniecie", { nazwa: e.name }), destructive: true }))) return;
     dzialanie(() => deleteCatalogEntry(e.id));
   }
 

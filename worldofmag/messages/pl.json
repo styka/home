@@ -1308,8 +1308,9 @@
         "przestanMonitorowac": "Przestań monitorować"
       },
       "NewsItemCard": {
-        "odrzuc": "Odrzuć",
-        "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła."
+        "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła.",
+        "przeczytane": "Przeczytane",
+        "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu."
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",

@@ -1146,11 +1146,6 @@
     "status": "ai",
     "access": "owner"
   },
-  "news:dismissItem": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
   "news:getHiddenTopics": {
     "kind": "read",
     "status": "excluded",

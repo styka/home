@@ -25,7 +25,17 @@ export interface ConfirmOptions {
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** Domyślnie `true` — najczęstszym potwierdzeniem w aplikacji jest usunięcie. */
+  /**
+   * 086 (AC-5..AC-7): domyślnie **`false`**, czyli przycisk neutralny („Potwierdź").
+   *
+   * Do 086 było odwrotnie, a **żadne** z 54 wywołań w aplikacji nie przekazywało opcji — więc
+   * KAŻDE potwierdzenie, także „oznaczyć wszystkie jako przeczytane?", zamykało się czerwonym
+   * przyciskiem „Usuń". Właściciel zapytał wprost: „czy przypadkiem usuń i przeczytane to nie dwie
+   * różne rzeczy?". Są, i to okno ma tę różnicę pokazywać.
+   *
+   * Skutek uboczny, który jest właściwym celem: czerwony przycisk, który stoi wszędzie, przestaje
+   * ostrzegać. Usuwanie deklarujemy odtąd jawnie.
+   */
   destructive?: boolean;
 }
 
@@ -64,9 +74,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         <ConfirmDialog
           title={options.title}
           description={options.description}
-          confirmLabel={options.confirmLabel ?? (options.destructive === false ? "Potwierdź" : "Usuń")}
+          confirmLabel={options.confirmLabel ?? (options.destructive ? "Usuń" : "Potwierdź")}
           cancelLabel={options.cancelLabel}
-          destructive={options.destructive !== false}
+          destructive={options.destructive === true}
           onConfirm={() => settle(true)}
           onCancel={() => settle(false)}
         />

@@ -53,7 +53,7 @@ export function UserFactsPanel({ users }: { users: Array<{ id: string; email: st
   }, [load]);
 
   async function remove(f: UserFactDTO) {
-    if (!(await confirmDialog(`Usunąć fakt „${f.text}”?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć fakt „${f.text}”?`, destructive: true }))) return;
     startBusy(async () => {
       try {
         await deleteUserFactByAdmin(f.id);

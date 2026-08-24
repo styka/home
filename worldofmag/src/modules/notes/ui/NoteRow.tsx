@@ -153,7 +153,7 @@ export function NoteRow({
   }
 
   async function handleDelete() {
-    if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
+    if (!(await confirmDialog({ title: "Usunąć notatkę? Tej operacji nie można cofnąć.", destructive: true }))) return;
     startTransition(() => { deleteNote(note.id); });
   }
 

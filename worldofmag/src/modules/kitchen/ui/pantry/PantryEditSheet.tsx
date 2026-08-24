@@ -80,7 +80,7 @@ export function PantryEditSheet({ open, onClose, item, defaultLocation }: Pantry
 
   async function handleDelete() {
     if (!item) return;
-    if (!(await confirmDialog("Usunąć tę pozycję ze spiżarni?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć tę pozycję ze spiżarni?", destructive: true }))) return;
     startTransition(async () => {
       try {
         await deletePantryItem(item.id);

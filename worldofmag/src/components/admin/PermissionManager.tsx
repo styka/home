@@ -120,7 +120,7 @@ function PermissionsTab({ permissions, users, rolePermissions }: { permissions: 
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirmDialog("Usunąć to uprawnienie? Zostanie też usunięte z ról."))) return
+    if (!(await confirmDialog({ title: "Usunąć to uprawnienie? Zostanie też usunięte z ról.", destructive: true }))) return
     try { await deletePermission(id) } catch (e) { alert(e instanceof Error ? e.message : "Nie udało się usunąć uprawnienia.") }
   }
 

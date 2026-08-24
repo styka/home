@@ -79,7 +79,7 @@ export function AdminJobsPage({ initial }: { initial: JobsOverview }) {
   }
 
   async function cleanup() {
-    if (!(await confirmDialog("Usunąć zakończone zadania starsze niż 24h?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć zakończone zadania starsze niż 24h?", destructive: true }))) return;
     startTransition(async () => {
       const n = await cleanupJobsAction(24);
       showToast(`Usunięto ${n} zadań`, "success");

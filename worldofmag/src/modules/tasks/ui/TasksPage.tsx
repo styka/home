@@ -395,7 +395,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   async function deleteBulk() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!(await confirmDialog(`Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`))) return;
+    if (!(await confirmDialog({ title: `Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`, destructive: true }))) return;
     startBulkTransition(async () => {
       const res = await bulkDeleteTasks(ids);
       finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
@@ -456,7 +456,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       },
       onDelete: async () => {
         if (!focusedTaskId) return;
-        if (!(await confirmDialog("Usunąć zadanie?"))) return;
+        if (!(await confirmDialog({ title: "Usunąć zadanie?", destructive: true }))) return;
         const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);

@@ -120,7 +120,7 @@ export function HotTopics({
    * się ją wycofać.
    */
   async function przestanMonitorowac(temat: TopicDTO) {
-    if (!(await confirmDialog(`Przestać monitorować temat „${temat.title}" i usunąć jego linię czasu?`))) return;
+    if (!(await confirmDialog({ title: `Przestać monitorować temat „${temat.title}" i usunąć jego linię czasu?`, destructive: true }))) return;
     startBusy(async () => {
       try {
         await deleteTopic(temat.id);

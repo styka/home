@@ -48,35 +48,35 @@
 
 ## Faza 2 — Tryb administratora, dwie korekty *(AC-12..AC-15)*
 
-- [ ] **T-8** — **Powiadomienia o koszcie wychodzą spod przełącznika** (AC-12, AC-13): `KosztToasts`
+- [x] **T-8** — **Powiadomienia o koszcie wychodzą spod przełącznika** (AC-12, AC-13): `KosztToasts`
   bez bramki trybu; widoczność zależy wyłącznie od danych z serwera (`visibleUsage`).
   **`AiCostBadge` zostaje pod przełącznikiem** — to rozróżnienie jest sednem zgłoszenia.
   *Gotowe, gdy:* administrator widzi powiadomienie przy obu stanach przełącznika, a nie-admin nie widzi.
 
-- [ ] **T-9** — **Techniczny log rozumowania pod przełącznikiem** (AC-14): `isAdmin` → `isAdmin &&
+- [x] **T-9** — **Techniczny log rozumowania pod przełącznikiem** (AC-14): `isAdmin` → `isAdmin &&
   trybAdmina`. Log opisany po ludzku (dla wszystkich) bez zmian.
   *Gotowe, gdy:* przy wyłączonym trybie nie ma wejścia do technicznego logu.
 
-- [ ] **T-10** `[P]` — **Zapas od wcięcia aparatu** (AC-15): 12 px → 28 px ponad obszar bezpieczny.
+- [x] **T-10** `[P]` — **Zapas od wcięcia aparatu** (AC-15): 12 px → 28 px ponad obszar bezpieczny.
   *Gotowe, gdy:* pomiar pokazuje górną krawędź ≥ 28 px.
 
 ## Faza 3 — Semantyka akcji w Wiadomościach *(AC-1..AC-4)*
 
-- [ ] **T-11** — **Koniec `dismissItem`**: akcja serwerowa usunięta, `ItemStatus` bez `DISMISSED`,
+- [x] **T-11** — **Koniec `dismissItem`**: akcja serwerowa usunięta, `ItemStatus` bez `DISMISSED`,
   wpis w `src/lib/ai/action-coverage.json` skasowany.
   *Gotowe, gdy:* `check:actions` i `check:ai-coverage` zielone, `tsc` czysto.
 
-- [ ] **T-12** — **Karta wiadomości: jedna akcja zamykająca** (AC-1..AC-3): „Odrzuć" znika,
+- [x] **T-12** — **Karta wiadomości: jedna akcja zamykająca** (AC-1..AC-3): „Odrzuć" znika,
   „Przeczytane" dostaje podpowiedź mówiącą, że dotyczy MOJEJ listy i nie kasuje treści.
   *Gotowe, gdy:* na karcie jest dokładnie jedna akcja zamykająca, a linia czasu tematu zostaje nietknięta.
 
 ## Faza 4 — Domyślna etykieta potwierdzeń *(AC-5..AC-7)*
 
-- [ ] **T-13** — **Odwrócenie domyślności** w `ConfirmProvider`: `destructive` domyślnie `false`,
+- [x] **T-13** — **Odwrócenie domyślności** w `ConfirmProvider`: `destructive` domyślnie `false`,
   etykieta „Potwierdź".
   *Gotowe, gdy:* wywołanie z samym napisem daje neutralny przycisk.
 
-- [ ] **T-14** — **Przegląd 54 wywołań w 43 plikach**: każde klasyfikowane osobno; operacje usuwające
+- [x] **T-14** — **Przegląd 54 wywołań w 43 plikach**: każde klasyfikowane osobno; operacje usuwające
   dostają jawne `{ title, destructive: true }`. Reguła: destrukcyjne = po potwierdzeniu ginie rekord
   albo treść.
   *Gotowe, gdy:* lista klasyfikacji spisana w `verify.md` (jeden wpis na wywołanie), a `grep` nie

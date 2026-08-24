@@ -390,7 +390,7 @@ export function MedicationsPage({ schedules, today }: { schedules: MedicationSch
   const doneCount = today.slots.filter((s) => s.done).length;
 
   async function removeSchedule(s: MedicationSchedule) {
-    if (!(await confirmDialog("Usunąć harmonogram?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć harmonogram?", destructive: true }))) return;
     await deleteMedicationSchedule(s.id);
     router.refresh();
   }

@@ -35,6 +35,7 @@ import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } 
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/assistant/AssistantLevelSettings";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
+import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 
 interface RouteContext {
   context: string[];
@@ -240,6 +241,15 @@ function buildChatProblemReport(opts: {
 //    widoczny WYŁĄCZNIE dla administratora (zwykły użytkownik nie ma po co widzieć wnętrza).
 // Stare rozmowy bez logu renderują się bez żadnego przełącznika (wsteczna zgodność).
 function ReasoningLog({ log, isAdmin = false }: { log?: LogEntry[]; isAdmin?: boolean }) {
+  /**
+   * 086 (AC-14): techniczny log to DODATEK DLA ADMINISTRATORA, więc chowa się razem z resztą.
+   *
+   * Zgłoszenie właściciela: „w trybie niepokazywania dodatków admina admin nie powinien widzieć
+   * logów technicznych rozumowania w asystencie". Uprawnienie (`isAdmin`) decyduje, czy log w ogóle
+   * może być pokazany; przełącznik decyduje, czy JEST pokazywany — i to jest ta sama zasada, co przy
+   * wskaźniku kosztu przy treści. Log opisany po ludzku zostaje dla wszystkich bez zmian.
+   */
+  const { wlaczony: trybAdmina } = useTrybAdmina();
   const [expanded, setExpanded] = useState(false);
   const [techExpanded, setTechExpanded] = useState(false);
   if (!log?.length) return null;
@@ -268,7 +278,7 @@ function ReasoningLog({ log, isAdmin = false }: { log?: LogEntry[]; isAdmin?: bo
           )}
         </>
       )}
-      {isAdmin && (
+      {isAdmin && trybAdmina && (
         <>
           <button onClick={() => setTechExpanded((v) => !v)} style={toggleStyle} aria-expanded={techExpanded}>
             {techExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}

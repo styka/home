@@ -74,7 +74,7 @@ export function PetDetailPage({ pet, teams, viewParams = {} }: { pet: PetWithRel
   ];
 
   async function handleDelete() {
-    if (!(await confirmDialog(`Usunąć zwierzę „${pet.name}" wraz ze wszystkimi danymi?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć zwierzę „${pet.name}" wraz ze wszystkimi danymi?`, destructive: true }))) return;
     deletePet(pet.id)
       .then(() => { showToast("Usunięto zwierzę", "success"); router.push("/pets"); })
       .catch((e) => showToast(e instanceof Error ? e.message : "Błąd", "error"));

@@ -97,7 +97,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
       onDelete: async () => {
         if (!selectedId) return;
         const c = contacts.find((x) => x.id === selectedId);
-        if (!c || !(await confirmDialog(`Usunąć kontakt „${c.name}"?`))) return;
+        if (!c || !(await confirmDialog({ title: `Usunąć kontakt „${c.name}"?`, destructive: true }))) return;
         const idx = contacts.findIndex((x) => x.id === selectedId);
         const next = contacts[idx + 1] ?? contacts[idx - 1];
         setSelectedId(next?.id ?? null);
@@ -239,7 +239,7 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
         <button onClick={onEdit} style={secondaryBtn} aria-label="Edytuj"><Pencil size={14} /></button>
-        <button onClick={async () => { if (await confirmDialog(`Usunąć kontakt „${contact.name}"?`)) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label={t("usun")}><Trash2 size={14} /></button>
+        <button onClick={async () => { if (await confirmDialog({ title: `Usunąć kontakt „${contact.name}"?`, destructive: true })) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label={t("usun")}><Trash2 size={14} /></button>
       </div>
     </div>
   );

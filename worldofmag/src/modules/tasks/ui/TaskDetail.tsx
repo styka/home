@@ -264,7 +264,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   }
 
   async function handleDelete() {
-    if (!(await confirmDialog("Usunąć zadanie?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć zadanie?", destructive: true }))) return;
     startTransition(async () => {
       await deleteTask(task.id);
       onDelete();

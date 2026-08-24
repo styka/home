@@ -68,7 +68,7 @@ export function StaffManager({ onChange }: { onChange?: () => void }) {
               <button onClick={() => startTransition(async () => { await updateStaff(s.id, { active: !s.active }); await reload(); onChange?.(); })} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer" }}>
                 {s.active ? "Wyłącz" : "Włącz"}
               </button>
-              <button onClick={async () => { if (await confirmDialog(`Usunąć pracownika „${s.name}"?`)) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title={t("usun")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+              <button onClick={async () => { if (await confirmDialog({ title: `Usunąć pracownika „${s.name}"?`, destructive: true })) startTransition(async () => { await deleteStaff(s.id); await reload(); onChange?.(); }); }} title={t("usun")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
                 <Trash2 size={13} />
               </button>
             </div>

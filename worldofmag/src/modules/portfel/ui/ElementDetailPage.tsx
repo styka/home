@@ -80,7 +80,7 @@ export function ElementDetailPage({ element }: { element: ElementWithEntries }) 
   }
 
   async function remove() {
-    if (!(await confirmDialog(`Usunąć element „${element.name}" wraz z historią?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć element „${element.name}" wraz z historią?`, destructive: true }))) return;
     startTransition(async () => { await deleteElement(element.id); router.push("/portfel"); });
   }
 

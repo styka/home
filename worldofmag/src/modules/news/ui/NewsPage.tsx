@@ -463,7 +463,7 @@ export function NewsPage({
 
   const usunTemat = useCallback(
     async (topic: TopicDTO) => {
-      if (!(await confirmDialog(`Usunąć temat „${topic.title}" wraz z linią czasu?`))) return;
+      if (!(await confirmDialog({ title: `Usunąć temat „${topic.title}" wraz z linią czasu?`, destructive: true }))) return;
       startTopicAction(async () => {
         try {
           await deleteTopic(topic.id);

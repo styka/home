@@ -28,7 +28,7 @@ export function IcalFeedCard() {
   }
 
   async function regen() {
-    if (!(await confirmDialog("Wygenerować nowy link subskrypcji? Stary przestanie działać."))) return
+    if (!(await confirmDialog({ title: "Wygenerować nowy link subskrypcji? Stary przestanie działać.", destructive: true }))) return
     setLoading(true)
     try {
       const u = await regenerateIcalFeed()
