@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { assertProjectAccess } from "@/modules/tasks/contract";
 import { SUFIT_LISTY } from "@/platform/pagination";
-import { enqueue } from "@/platform/jobs/queue";
+import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
 import { roboczyTytul, poprawnyZrzut } from "@/lib/ai/zgloszenie";
 import { logEvent } from "@/platform/observability/log";
@@ -102,7 +102,6 @@ export interface SubmitFeedbackResult {
   hasScreenshot: boolean;
 }
 
-
 /**
  * Tworzy zgłoszenie (zadanie) w skrzynce administratora. Świadomie POMIJA `assertProjectAccess`
  * — to jedyne miejsce w aplikacji z takim odstępstwem (patrz komentarz na górze pliku).
@@ -166,7 +165,15 @@ export async function submitFeedbackTask(input: {
       await enqueue(
         "tasks.feedbackTitle",
         { taskId: task.id, tytulRoboczy: title },
-        { ownerId: user.id, dedupeKey: `tasks.feedbackTitle:${task.id}`, maxAttempts: 2 }
+        {
+          ownerId: user.id,
+          dedupeKey: `tasks.feedbackTitle:${task.id}`,
+          maxAttempts: 2,
+          // Limit uczciwości jak w Wiadomościach: seria zgłoszeń jednej osoby nie może zapchać
+          // kolejki wszystkim. Przekroczenie łapie `catch` niżej — zgłoszenie i tak powstaje,
+          // zostaje przy tytule roboczym.
+          maxActivePerOwner: MAX_ACTIVE_JOBS_PER_OWNER,
+        }
       );
       // Worker startuje leniwie i tylko z tras `/api/jobs`; ta ścieżka ich nie dotyka.
       ensureJobWorker();

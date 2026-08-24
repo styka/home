@@ -16,6 +16,7 @@ import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig
 import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
 import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { Modal } from "@/components/ui/Modal";
 
 interface TaskDetailProps {
   task: Task;
@@ -953,21 +954,17 @@ function TaskAttachments({ taskId }: { taskId: string }) {
         ))}
       </div>
 
+      {/* Podgląd idzie wspólnym `Modal`-em, a nie własną nakładką (C-35): stamtąd biorą się Escape,
+          pułapka fokusu i margines na kreskę iPhone'a, których ręcznie rysowana warstwa nie ma. */}
       {podglad && (
-        <div
-          role="dialog"
-          aria-label={podglad.name}
-          onClick={() => setPodglad(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.7)" }}
-        >
+        <Modal open onClose={() => setPodglad(null)} title={podglad.name} wide>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={podglad.url}
             alt={podglad.name}
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: "var(--radius-lg)" }}
+            style={{ maxWidth: "100%", height: "auto", display: "block", borderRadius: "var(--radius-md)" }}
           />
-        </div>
+        </Modal>
       )}
     </div>
   );

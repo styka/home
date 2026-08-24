@@ -120,9 +120,10 @@ export function FeedbackInspector() {
   const capture = useCallback(async (el: HTMLElement) => {
     const context = describeElement(el, pathname);
     setActive(false);
-    // 099: podświetlenie znika PRZED zrzutem — inaczej na obrazie zostałaby nasza własna ramka
-    // wskaźnika i zgłoszenie pokazywałoby narzędzie zamiast usterki. `setRect(null)` jest tu
-    // pierwszym krokiem, a nie porządkiem po wszystkim.
+    // 099: podświetlenie gaśnie PRZED zrzutem, a nie po nim. Na sam obraz i tak by nie trafiło
+    // (nakładka jest rodzeństwem wskazanego elementu, a rasteryzujemy wyłącznie jego poddrzewo) —
+    // chodzi o to, że rasteryzacja trwa i bez tego tryb wskazywania wyglądałby przez tę chwilę na
+    // zawieszony.
     setRect(null);
     const shot = await zrzutElementu(el);
     // 031: nie tworzymy tu żadnego projektu — skrzynkę zgłoszeń wyznacza serwer

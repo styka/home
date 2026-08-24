@@ -976,6 +976,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   function resetConversation() {
     saveDraftNow();
     collapseSections();
+    // 099: „Nowa rozmowa" kończy też TRYB ZGŁOSZENIA. Bez tego wskazany kontekst i zrzut przeżywały
+    // wyczyszczenie wątku i następne — zupełnie niezwiązane — pytanie stawało się po cichu
+    // zgłoszeniem tamtego miejsca. Od 099 waży to więcej niż wcześniej: zgłoszenie zapisuje się od
+    // razu, więc nie ma już karty planu, na której dałoby się pomyłkę zauważyć i odrzucić.
+    feedbackRef.current = null;
+    feedbackShotRef.current = null;
+    setFeedbackTryb(false);
     // 035: nowa rozmowa = nowy powód, by pokazać skrót (poprzednie odrzucenie już nie obowiązuje).
     setLastConversationDismissed(false);
     // 032: świadome „Nowa rozmowa" też czyni poprzednią historyczną — udostępniamy do niej powrót
