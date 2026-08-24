@@ -1,7 +1,7 @@
 # Zadania: Semantyka akcji w Wiadomościach, świeże gorące tematy i poprawki układu
 
 - **Plan:** ./plan.md (086-semantyka-wiadomosci-i-poprawki-ukladu)
-- **Status:** todo
+- **Status:** zaimplementowane (wszystkie zadania odhaczone)
 - **Data:** 2026-08-24
 
 > Kolejność: najpierw pomiar punktu odniesienia (bez niego AC-20 jest opinią), potem drobne poprawki
@@ -126,10 +126,13 @@
   Wiadomości bez akcji „Odrzuć"; potwierdzenia z neutralną domyślnością (C-34).
   *Gotowe, gdy:* żaden dokument nie opisuje stanu sprzed zmiany.
 
-- [ ] **T-25** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
+- [x] **T-25** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
   `tsc` ×2, `next lint`, `next build`, budżet wydajnościowy, testy jednostkowe.
 
-- [ ] **T-26** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
+- [x] **T-26** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
+  *Wynik:* 180 zielonych, 0 czerwonych. Pierwszy przebieg wykazał REGRESJĘ poza zgłoszeniami:
+  `[085-rama] /calendar` — sufit `max-width: 55%` z T-5 przycinał nawigator miesiąca, który nie
+  potrafi się zwęzić. Naprawione podłogą dla tytułu; doszedł test `[086-AC18]` z kontrolą negatywną.
 
 - [x] **T-27** — **`doświadczenia.md`** (C-51): co najmniej wpis o różnicy między miarą POZYCYJNĄ
   a WYSOKOŚCIOWĄ przy przyklejaniu (własny błąd z 085) oraz o domyślnej etykiecie potwierdzeń, która
