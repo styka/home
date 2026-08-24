@@ -189,7 +189,7 @@ Lokalnie, przeciw **lokalnemu** Postgresowi (C-13): `migrate deploy`, komplet `c
 | AC-12, AC-13, AC-14 | klikacz: powiadomienie o koszcie przy obu stanach przełącznika; brak dla nie-admina; techniczny log tylko przy włączonym trybie |
 | AC-15 | pomiar: górna krawędź powiadomienia ≥ 28 px |
 | AC-16..AC-19 | pomiar w przeglądarce: odstęp, kolejność w pasku, szerokość tytułu przy 360 px, pozycja rzędu chromu |
-| AC-20 | **pomiar przy przewinięciu 0**: odstęp między dolną krawędzią paska modułu a górną krawędzią przyklejonego nagłówka ≤ 4 px |
+| AC-20 | **test różnicujący**: wstawiamy element nad paskiem modułu i wymuszamy przeliczenie — zasłona ma zostać na sumie wysokości obu pasków (ze starą, pozycyjną miarą rośnie 107 → 147 px). Sam pomiar odstępu niczego nie rozstrzyga: przy przylegających paskach obie formuły dają tę samą liczbę |
 
 Testy dla AC-1, AC-5 i AC-20 sprawdzamy **w obie strony**.
 

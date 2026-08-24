@@ -101,7 +101,8 @@
 
 - [x] **T-18** — **Zasłona liczona z WYSOKOŚCI, nie z pozycji**: `--view-bar-h` + `offsetHeight`
   paska modułu, zamiast odległości dolnej krawędzi paska od góry ramy (diagnoza w planie §5).
-  *Gotowe, gdy:* pomiar PRZY PRZEWINIĘCIU ZERO pokazuje odstęp ≤ 4 px (punkt odniesienia z T-1).
+  *Gotowe, gdy:* po wstawieniu elementu nad paskiem modułu zasłona zostaje na sumie wysokości obu
+  pasków (107 px), podczas gdy ze starą miarą rośnie do 147 px — patrz T-23.
 
 ## Faza 7 — Testy, teksty, domknięcie
 

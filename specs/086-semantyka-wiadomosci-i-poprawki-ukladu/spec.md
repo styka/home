@@ -42,7 +42,9 @@ w zakładce „Tematy".
   - **zero** okien potwierdzenia proponujących „Usuń" dla operacji, która niczego nie usuwa,
   - lista gorących tematów odzwierciedla ostatnie pobranie materiałów **bez** dodatkowego kliknięcia,
   - powiadomienie o koszcie widoczne dla administratora przy **obu** stanach przełącznika,
-  - przyklejony nagłówek tematu styka się z paskiem nad nim (odstęp ≤ 4 px, dziś wyraźnie większy),
+  - zasłona dla przyklejonych nagłówków tematu **nie rośnie**, gdy nad paskiem nawigacji modułu
+    stanie dodatkowy element (miara poprawiona po pomiarze — patrz uwaga przy AC-20; pierwotne
+    „odstęp ≤ 4 px” opisywało stan, który przy przylegających paskach zachodzi także przed naprawą),
   - tytuł modułu Pogoda czytelny przy 360 px niezależnie od długości nazwy lokalizacji.
 
 ## 3. Historyjki użytkownika
