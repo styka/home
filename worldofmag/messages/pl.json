@@ -853,12 +853,13 @@
         "ukryjKoszty": "Ukryj koszty AI przy treściach"
       },
       "GroupNavigator": {
-        "poprzednia": "Poprzednia grupa",
-        "nastepna": "Następna grupa",
         "listaGrup": "Lista grup",
         "szukaj": "Szukaj…",
         "nicNiePasuje": "Nic nie pasuje do wyszukiwania.",
         "brakGrup": "Brak grup"
+      },
+      "ViewChromeMenu": {
+        "wiecej": "Więcej: ulubione, świeżość danych, skróty"
       }
     }
   },
@@ -1302,10 +1303,15 @@
         "nieUdaloSiePrzygotowac": "Nie udało się przygotować gorących tematów.",
         "sprobujPonownie": "Spróbuj ponownie",
         "goraceTematyPowstanaPo": "Gorące tematy powstaną po kliknięciu",
-        "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach."
+        "brakSwiezychMaterialowDo": "Brak świeżych materiałów do analizy. Odśwież wiadomości, żeby napełnić pulę, albo sprawdź źródła w ustawieniach.",
+        "monitorowane": "Monitorowane",
+        "odrzucone": "Odrzucone",
+        "tematyKtoreMonitorujesz": "Tematy, które monitorujesz. Ich propozycje nie pojawią się już na liście gorących tematów.",
+        "przestanMonitorowac": "Przestań monitorować"
       },
       "NewsItemCard": {
-        "odrzuc": "Odrzuć"
+        "odrzuc": "Odrzuć",
+        "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła."
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",
@@ -1318,9 +1324,9 @@
         "tytulTematu": "Tytuł tematu",
         "filtrSemantycznyOpiszDokladnie": "Filtr semantyczny (opisz dokładnie, co Cię interesuje)",
         "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych",
-        "wszystkieTematy": "Wszystkie tematy",
         "wiadomosciKrotko": "Wiadomości",
-        "liniaCzasuKrotko": "Linia czasu"
+        "liniaCzasuKrotko": "Linia czasu",
+        "tematy": "Tematy"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
@@ -1330,7 +1336,10 @@
         "nastepnaWiadomosc": "Następna wiadomość",
         "predkoscCzytania": "Prędkość czytania",
         "wlaczPodazanie": "Podążaj za czytaniem (przewijaj stronę do czytanej wiadomości)",
-        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)"
+        "wylaczPodazanie": "Nie podążaj za czytaniem (strona zostaje na miejscu)",
+        "ciszaOpis": "To urządzenie nie odtworzyło dźwięku. Dotknij „Odtwórz ponownie” — powinno ruszyć.",
+        "odtworzPonownie": "Odtwórz ponownie",
+        "zamknijLektora": "Zamknij lektora"
       },
       "NewsSettings": {
         "zrodlaWiadomosci": "Źródła wiadomości",
@@ -1347,7 +1356,9 @@
         "dodajPierwszyTematDo": "Dodaj pierwszy temat do monitorowania albo zajrzyj w „Gorące tematy”.",
         "sluchajCalegoTematu": "Słuchaj całego tematu",
         "oznaczCalyTematJako": "Oznacz cały temat jako przeczytany",
-        "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie."
+        "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie.",
+        "wlaczPodazanie": "Podążaj za czytanym tekstem",
+        "wylaczPodazanie": "Nie podążaj za czytanym tekstem"
       },
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",

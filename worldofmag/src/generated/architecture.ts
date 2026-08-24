@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-23T16:49:07.950Z",
+  "wygenerowano": "2026-08-24T00:13:56.186Z",
   "zdolnosciPlatformy": [
     "ai",
     "audit",
@@ -112,7 +112,7 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "generate-architecture"
   ],
   "liczbaModeli": 157,
-  "liczbaMigracji": 268,
+  "liczbaMigracji": 269,
   "modeleZWersja": [
     "ShoppingList",
     "Note",

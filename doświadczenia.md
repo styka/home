@@ -4,6 +4,128 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Czujka na ciszę mierzyła czas nie tej ścieżki, co trzeba
+**Problem:** Lektor dostał zabezpieczenie: jeśli w 1,5 s od wywołania nie przyjdzie ani `onstart`,
+ani `onend`, uznajemy, że urządzenie **nie wydało dźwięku**, i mówimy o tym wprost. Uzbroiłem tę
+czujkę w `speak()` — czyli w miejscu, przez które przechodzą OBIE ścieżki. Na ścieżce serwerowej te
+1,5 s musiało pokryć `fetch` do `/api/tts`, syntezę po stronie dostawcy i start odtwarzania: typowo
+około 2 s. Działający lektor byłby więc regularnie zgłaszany jako niemy — dokładna odwrotność
+usterki, którą naprawiałem.
+**Rozwiązanie:** Czujka uzbraja się WYŁĄCZNIE w `speakViaBrowser`, gdzie okno startu jest
+natychmiastowe. Doszedł test, który mierzy nie „czy zgłoszono ciszę", tylko **kiedy** — orzeczenie
+musi paść nie wcześniej niż po 1800 ms.
+**Lekcja:** Limit czasu to zawsze twierdzenie o KONKRETNEJ ścieżce. Wspólne miejsce w kodzie, przez
+które przechodzą dwie ścieżki o różnych czasach, jest najgorszym miejscem na taki limit — nawet gdy
+wygląda na „to jedno miejsce, gdzie wszystko widać". I limit czasu testuje się pomiarem momentu,
+a nie samego faktu, że coś się zdarzyło; test na sam fakt przechodzi także wtedy, gdy próg
+zsunął się o rząd wielkości.
+
+## 2026-08-24 — Automatyczne wyłączenie zapisane jako decyzja użytkownika
+**Problem:** „Podążanie za lektorem" gaśnie po ręcznym przewinięciu — to celowe. Gaszenie szło
+jednak przez tę samą funkcję co przełącznik, więc **zapisywało się do ustawień konta**, a nasłuch
+wisiał niezależnie od tego, czy lektor w ogóle gra. Ktoś, kto nigdy nie włączył odsłuchu, jednym
+przewinięciem listy trwale wyłączał sobie funkcję, o której nie wiedział, że ją ma — i nie miał jak
+skojarzyć przyczyny ze skutkiem.
+**Rozwiązanie:** Nasłuch działa tylko przy grającym lektorze (lektor zgłasza to wywołaniem `onGra`),
+a automatyczne wyłączenie rusza wyłącznie stan bieżący. Do ustawień trafia tylko jawne przełączenie.
+**Lekcja:** Rozróżniaj „stan na teraz" od „preferencji konta". Utrwalanie decyzji, której użytkownik
+nie podjął, jest gorsze od nieutrwalania żadnej: cofnąć się nie da, bo nie widać, co się zmieniło.
+
+## 2026-08-24 — Sukces zwracany na końcu przepada razem z wyjątkiem
+**Problem:** Wykonawca partii streszczeń zapisywał pozycje do bazy w pętli, zbierał ich
+identyfikatory do tablicy i **zwracał ją na końcu**. Gdy rzucił w środku (odmowa dostawcy przy
+kolejnym zapisie), tablica przepadała razem z wyjątkiem — a pozycje, które streszczenie już miały,
+dostawały znacznik „bez streszczenia". Znacznik kłamał tym mocniej, im bliżej końca partii padło.
+**Rozwiązanie:** Sukces zgłaszany NATYCHMIAST po zapisie, przez wywołanie zwrotne (`zglosSukces`),
+a nie wartością zwracaną. Co zapisane, to policzone, niezależnie od tego, co stanie się dalej.
+**Lekcja:** Gdy pętla robi skutki uboczne, jej raport nie może czekać do `return` — wartość zwracana
+istnieje tylko na ścieżce bez wyjątku, a skutki uboczne istnieją na obu. To ta sama reguła co
+w księgowości: zapisuj w chwili zdarzenia, nie na koniec dnia.
+
+## 2026-08-24 — Martwe API w komponencie WSPÓŁDZIELONYM jest gorsze niż jego brak
+**Problem:** `GroupNavigator` niósł trzy drogi nawigacji: listę, strzałki i pozycję zbiorczą
+„Wszystkie". Po zmianie znaczenia listy (skok, nie filtr) jedyny konsument przestał podawać dwie
+z nich. Zostawiłem je „dla innych konsumentów", powołując się na minimalizm — i zapisałem to nawet
+w weryfikacji jako świadomą decyzję.
+**Rozwiązanie:** Usunięte razem z komunikatami i testami. Sam krok przetrwał jako czysta funkcja
+`sasiadujacaGrupa`, bo ma realnego konsumenta (gest w bok na telefonie).
+**Lekcja:** „Zostawiam, bo ktoś może użyć" to nie minimalizm, tylko jego przeciwieństwo — a
+w komponencie współdzielonym kosztuje podwójnie: następny moduł czyta niekonsumowane API jako drogę
+REKOMENDOWANĄ i buduje na czymś, czego nikt nigdy nie sprawdził w działaniu. Kasuj; przywrócenie
+z historii kosztuje minutę.
+
+---
+
+## 2026-08-23 — Trzy specyfikacje klikacza walczą o ulubione jednego konta
+**Problem:** Po przeniesieniu chromu paska widoku zaczęły migotać testy `favorites`, `shortcuts`
+i `view-state` — raz jeden, raz drugi. Pierwsze podejrzenie (moja zmiana zepsuła ulubione) okazało
+się fałszywe: **każdy z tych plików uruchomiony osobno jest zielony** (14/14, 7/7, 11/11), a razem
+pada jeden albo dwa. Wszystkie trzy czyszczą ulubione „do zera" i zapisują własne wpisy — na tym
+samym koncie administratora, w równoległych workerach. Moje zmiany dołożyły kilka kliknięć, timing
+się przesunął i wyścig zaczął przegrywać.
+Po drodze wyszły dwa **zastane** błędy w tych pętlach czyszczących, oba maskowane przypadkiem:
+selektor nie wykluczał GWIAZDKI bieżącego widoku (klikanie jej przełącza `/settings` w kółko —
+naprawione w `favorites` w 098, ale nie w pozostałych dwóch), i nie zawężał wyszukiwania do treści
+strony, więc `count()` liczył też ukryty mobilny overlay powłoki, którego skasować się nie da.
+**Rozwiązanie:** Oba zastane błędy naprawione. Sam wyścig **nie** — i to jest świadoma decyzja,
+a nie przeoczenie: usunięcie go wymaga albo osobnego konta na plik, albo szeregowego przebiegu, czyli
+zmiany infrastruktury testów, a nie tego przebiegu. Zapisane jako znane ograniczenie z dowodem
+pomiarowym (izolacja = zielone).
+**Lekcja:** Gdy test migocze po zmianie w kodzie, **najpierw uruchom go w izolacji**. Zielony
+w izolacji i czerwony w zestawie to nie regresja funkcji, tylko współdzielony stan — a ściganie go
+w kodzie produkcyjnym kosztuje godziny i kończy się „naprawą", która niczego nie naprawia.
+Test, który czyści stan globalny „do zera", jest z definicji niezgodny z równoległością.
+
+## 2026-08-23 — Cztery niezależne drogi do tej samej ciszy w lektorze
+**Problem:** Właściciel zgłosił „lektor przestał działać… niby leci a nie słyszę". Objaw był jeden,
+przyczyny cztery — i trzy z nich znalazłem dopiero pisząc testy. (1) Lektor Wiadomości **nigdy nie
+ustawiał własnego głosu**: `setServerVoiceId` wołał wyłącznie asystent, a to zmienna modułowa
+w `lib/tts`, więc lektor dziedziczył ją przypadkiem — zależnie od tego, czy użytkownik otworzył
+wcześniej asystenta w tej samej sesji strony. Stąd „czasem działa". (2) Zatrzask porażki głosu
+serwerowego z 080 ratował **drugie** zdanie, którego nigdy nie było: pierwsze szło do sieci,
+a po odmowie synteza startowała po `await`, czyli poza gestem, gdzie WebKit odrzuca ją **bez żadnego
+zdarzenia** — łańcuch `onEnd` zamierał na pierwszym zdaniu przy pokazanym liczniku. (3) Brak syntezy
+wołał `onEnd`, więc na urządzeniu bez TTS lektor przelatywał **całą porcję w milczeniu**, pokazując
+rosnący postęp. (4) Pusty `catch` przy niesprawnej syntezie nie zgłaszał niczego.
+**Rozwiązanie:** Lektor konfiguruje własny głos i rozstrzyga jego dostępność (`getSpeechOptions`)
+PRZED pierwszym dotknięciem — przy nieskonfigurowanym dostawcy pierwsze zdanie rusza przeglądarką
+synchronicznie w geście. Nad tym stoi **czujka ciszy**: `speak()` przyjmuje `onSilent`, a brak
+dowodu startu (`onstart` albo udane `play()`) przez 1,5 s zgłasza ciszę. Czujka i `onEnd` wykluczają
+się wzajemnie. Interfejs przestał udawać: przy ciszy pokazuje komunikat i „Odtwórz ponownie" —
+kliknięcie JEST gestem, więc ponowienie gra.
+**Lekcja:** Gdy objaw brzmi „nic nie słychać", nie szukaj **jednej** przyczyny — policz wszystkie
+ścieżki, którymi kod może dojść do braku dźwięku, i zamknij każdą. A ponad nimi postaw zabezpieczenie,
+które **nie zna przyczyny**: tylko ono złapie tę piątą, której nie przewidziałeś. Zabezpieczenie,
+które ratuje „następną iterację", jest bezużyteczne w pętli, która zamiera na pierwszej.
+
+## 2026-08-23 — Ujemny margines na przyklejonym nagłówku rozpychał całą stronę
+**Problem:** Na telefonie strona Wiadomości przewijała się w bok (zmierzone: korzeń 377 px przy
+ekranie 360 px). Podejrzenie padało na zawartość paska — a rozpychały **sekcje tematów**. Przyczyną
+był idiom `-mx-1 px-1` na przyklejonych nagłówkach, użyty po to, żeby tło sięgało krawędzi:
+ujemny margines czyni element o 8 px szerszym od rodzica, a przy `min-width: auto` elementu `flex`
+nie ma czego skurczyć.
+**Rozwiązanie:** Ujemne marginesy usunięte; `min-w-0` na pasku i jego elastycznych dzieciach;
+wyzwalacz listy dostał `flex-1`, żeby BRAŁ dostępną szerokość zamiast zajmować tyle, ile mierzy jego
+treść (wcześniej robił obie złe rzeczy naraz: kurczył się do skrawka i rozpychał przy długiej nazwie).
+**Lekcja:** Poziomego przewijania nie szukaj po `document.documentElement.scrollWidth` — w aplikacji,
+która przewija się we własnej ramie, ten pomiar **nie wykryje niczego**. Szukaj elementów szerszych
+od swojego pola widzenia, które nie deklarują własnego przewijania, i pomijaj te przycinające tekst
+(`text-overflow: ellipsis`), bo one są szersze z definicji i to jest poprawne.
+
+## 2026-08-23 — Filtr, który miał być skokiem: odwrócona decyzja z poprzedniego przebiegu
+**Problem:** W 083 zrobiłem z listy tematów FILTR — wybór zawężał widok do jednej sekcji. Przeszło
+komplet bramek i weryfikację, bo było wewnętrznie spójne. Właściciel po testach powiedział wprost coś
+przeciwnego: „drop-down powinien dawać tylko możliwość łatwego przeskoku do wybranego tematu, a nie
+ograniczenie widoku. Na widoku powinny być wiadomości z wszystkich tematów."
+**Rozwiązanie:** Filtr zniknął w całości — klucz `temat` w adresie, filtrowanie, strzałki
+i przejście „między kolumnami" (kolumn nie ma, więc animacja opisywałaby zmianę, która się nie
+odbywa). Wyzwalacz nosi stałą etykietę, bo nazwa tematu, przy którym jesteś, należy do nagłówka jego
+sekcji. Zmiana zapisana w specyfikacji jako świadome odwrócenie decyzji, nie jako usterka.
+**Lekcja:** „Jedna kontrolka = jedno znaczenie" nie rozstrzyga, KTÓRE to ma być znaczenie — to
+rozstrzyga się dopiero w rękach użytkownika. Gdy wracasz do tej samej kontrolki drugi raz, usuwaj
+poprzednie znaczenie do końca (stan, adres, animacje), zamiast zostawiać je „na wszelki wypadek":
+inaczej zostaną dwa nośniki jednej decyzji, czyli dokładnie to, co ten przebieg naprawiał.
+
 ## 2026-08-23 — Lista DANYCH jako sygnał o WĘZŁACH DOM: zamrożony obserwator przecięć
 **Problem:** Obserwator wyznaczający „czytany temat" był przeliczany efektem zależnym od listy
 identyfikatorów (`kolejnosc.join(",")`), a obserwował **węzły DOM** rejestrowane osobną drogą przez

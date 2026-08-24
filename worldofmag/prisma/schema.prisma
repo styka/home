@@ -2669,6 +2669,9 @@ model NewsItem {
   summary       String
   // "short" | "medium" | "long" — poziom szczegółowości streszczenia.
   summaryLength String   @default("medium")
+  // 084: mimo ponowień nie udało się streścić — pozycja pokazuje surowy skrót z kanału i MA to
+  // powiedzieć wprost. Bez tego znacznika wygląda na kompletną (skrót z kanału bywa zdaniem).
+  summaryFailed Boolean  @default(false)
   // Co nowego wnosi względem stanu wiedzy (uzasadnienie „nowości").
   noveltyNote   String?
   imageUrl      String?

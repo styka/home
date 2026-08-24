@@ -11,9 +11,9 @@ import {
   type CSSProperties,
 } from "react";
 import { useViewState } from "@/hooks/useViewState";
-import { idList, oneOf, text, type RawParams } from "@/platform/viewState/viewState";
+import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Settings2, Plus, Loader2, Trash2, Pencil } from "lucide-react";
+import { Newspaper, RefreshCw, Flame, Settings2, Plus, Loader2, Trash2, Pencil, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -23,8 +23,6 @@ import { zglosKoszt } from "@/platform/ai/kosztBus";
 import { ModuleView } from "@/components/ui/view";
 import {
   GroupNavigator,
-  WSZYSTKIE,
-  pozycjeNawigatora,
   sasiadujacaGrupa,
   type GrupaNawigatora,
 } from "@/components/ui/nav/GroupNavigator";
@@ -35,6 +33,7 @@ import { NewsSettings } from "./NewsSettings";
 import { SourceFilter } from "./SourceFilter";
 import { useSekcjeTematow, przewinDoSekcji, PROGRAMOWE_PRZEWIJANIE_MS } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
 import {
   getStreamView,
   getStreamTimeline,
@@ -58,9 +57,6 @@ type ContentKey = "items" | "timeline";
 /** Gest w bok liczy się od tylu pikseli i musi być tyle razy bardziej poziomy niż pionowy. */
 const SWIPE_MIN_PX = 40;
 const SWIPE_DOMINANCE = 1.2;
-/** Ile pikseli i jak długo trwa przesunięcie treści przy zmianie tematu (AC-19). */
-const PRZESUW_PX = 24;
-const PRZESUW_MS = 180;
 
 export function NewsPage({
   topics,
@@ -88,7 +84,6 @@ export function NewsPage({
   const viewSpec = useMemo(
     () => ({
       widok: oneOf(["feed", "hot", "settings"] as const, "feed"),
-      temat: text(WSZYSTKIE),
       tresc: oneOf(["items", "timeline"] as const, "items"),
       zrodla: idList(),
     }),
@@ -97,20 +92,52 @@ export function NewsPage({
   const [viewState, setViewState] = useViewState(viewSpec, viewParams);
   const view = viewState.widok;
   const setView = useCallback((value: View) => setViewState({ widok: value }), [setViewState]);
-  const wybranyTemat = viewState.temat;
   const tresc = viewState.tresc;
   const wybraneZrodla = viewState.zrodla;
 
   /**
-   * 083: temat CZYTANY to co innego niż temat WYBRANY.
+   * 084: NIE MA JUŻ „TEMATU WYBRANEGO" — jest tylko temat CZYTANY.
    *
-   * Wybrany (`wybranyTemat`, w adresie) jest filtrem — decyduje, co w ogóle jest na liście.
-   * Czytany (tutaj, w pamięci) wynika z przewijania i służy WYŁĄCZNIE do podświetlenia nagłówka
-   * sekcji. Zgłoszenie właściciela po 082 brzmiało dokładnie o to: „podwójnie mamy bieżący temat,
-   * ten jako input i ten ładny" — więc pasek nawigacji nie pokazuje już nazwy tematu czytanego,
-   * a nazwa tematu stoi tam, gdzie jego treść.
+   * 083 zrobiło z listy tematów FILTR (wybór zawężał widok do jednej sekcji). Właściciel po testach
+   * zdecydował inaczej: „drop-down powinien dawać tylko możliwość łatwego przeskoku do wybranego
+   * tematu, a nie ograniczenie widoku do jednego tematu. Więc na widoku powinny być wiadomości
+   * z wszystkich tematów."
+   *
+   * Została więc jedna wartość: który temat użytkownik akurat CZYTA. Wynika z przewijania
+   * (obserwator sekcji) i służy do podświetlenia nagłówka. Filtr zniknął razem z kluczem `temat`
+   * w adresie — jedna kontrolka ma mieć jedno znaczenie, a dwa nośniki tej samej decyzji już raz
+   * dały stany bez sensu (lekcja z 083).
    */
   const [czytanyTemat, setCzytanyTemat] = useState<string | null>(null);
+
+  /**
+   * 084 (AC-6, AC-7): PODĄŻANIE ZA CZYTANYM TEKSTEM — jeden stan na cały widok.
+   *
+   * Mieszka tutaj, a nie w lektorze, bo ma dwa wejścia (pasek lektora i nagłówek sekcji) i jedno
+   * wyjście: samoczynne wyłączenie, gdy użytkownik przewinie widok SAM. Dwa stany dałyby sytuację,
+   * w której przełącznik pokazuje co innego niż robi widok.
+   */
+  const [podazanie, setPodazanie] = useState(true);
+  /**
+   * Jawne przełączenie przez użytkownika — i TYLKO ono trafia do ustawień konta.
+   *
+   * Recenzja 084: automatyczne wyłączenie (po ręcznym przewinięciu) zapisywało się tak samo, więc
+   * jedno muśnięcie ekranu trwale gasiło funkcję, o której użytkownik nawet nie wiedział, że ją ma.
+   * Wyłączenie „na teraz" nie jest decyzją o ustawieniach.
+   */
+  const zmienPodazanie = useCallback((wlaczone: boolean) => {
+    setPodazanie(wlaczone);
+    void updateAssistantPrefs({ readerFollow: wlaczone }).catch(() => {});
+  }, []);
+
+  /** Czy lektor faktycznie czyta — decyduje, czy w ogóle pilnujemy ręcznego przewijania. */
+  const [lektorGra, setLektorGra] = useState(false);
+
+  useEffect(() => {
+    getAssistantPrefs()
+      .then((p) => setPodazanie(p.readerFollow))
+      .catch(() => {});
+  }, []);
 
   const [stream, setStream] = useState<StreamTopicDTO[] | null>(null);
   const [timeline, setTimeline] = useState<StreamTimelineTopicDTO[] | null>(null);
@@ -161,13 +188,6 @@ export function NewsPage({
     // Oś czasu czytamy dopiero, gdy jest na ekranie — to osobne, niemałe zapytanie.
     if (view === "feed" && tresc === "timeline") loadTimeline();
   }, [view, tresc, loadTimeline]);
-
-  // Temat usunięty gdzie indziej nie może zostać jako filtr — inaczej widok jest pusty bez powodu.
-  useEffect(() => {
-    if (wybranyTemat !== WSZYSTKIE && !topics.some((x) => x.id === wybranyTemat)) {
-      setViewState({ temat: WSZYSTKIE });
-    }
-  }, [topics, wybranyTemat, setViewState]);
 
   // ── Stan przebiegu odświeżania ────────────────────────────────────────────
   // 039: czytamy z KOLEJKI, nie z pamięci komponentu — powrót na stronę pokazuje trwający przebieg.
@@ -239,25 +259,17 @@ export function NewsPage({
     (key: string | null) => wybraneZrodla.length === 0 || key === null || wybraneZrodla.includes(key),
     [wybraneZrodla]
   );
-  const pasujeTemat = useCallback(
-    (id: string) => wybranyTemat === WSZYSTKIE || wybranyTemat === id,
-    [wybranyTemat]
-  );
-
   const widoczneWiadomosci = useMemo(
     () =>
-      (stream ?? [])
-        .filter((x) => pasujeTemat(x.id))
-        .map((x) => ({ ...x, items: x.items.filter((i) => pasujeZrodlo(i.sourceKey)) })),
-    [stream, pasujeTemat, pasujeZrodlo]
+      // 084 (AC-13): filtrujemy WYŁĄCZNIE po portalach. Tematy są zawsze wszystkie.
+      (stream ?? []).map((x) => ({ ...x, items: x.items.filter((i) => pasujeZrodlo(i.sourceKey)) })),
+    [stream, pasujeZrodlo]
   );
 
   const widocznaOs = useMemo(
     () =>
-      (timeline ?? [])
-        .filter((x) => pasujeTemat(x.id))
-        .map((x) => ({ ...x, entries: x.entries.filter((e) => pasujeZrodlo(e.sourceKey)) })),
-    [timeline, pasujeTemat, pasujeZrodlo]
+      (timeline ?? []).map((x) => ({ ...x, entries: x.entries.filter((e) => pasujeZrodlo(e.sourceKey)) })),
+    [timeline, pasujeZrodlo]
   );
 
   const kolejnosc = useMemo(
@@ -274,12 +286,40 @@ export function NewsPage({
 
   const przewinDoPozycji = useCallback(
     (itemId: string) => {
+      // 084 (AC-7): wyłączone podążanie znaczy „nie ruszaj widoku" — można wtedy czytać jedno,
+      // a słuchać drugiego.
+      if (!podazanie) return;
       const el = document.querySelector<HTMLElement>(`[data-news-item="${itemId}"]`);
       programoweDo.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
       przewinDoSekcji(ramaRef.current, el, pasekH + 80);
     },
-    [pasekH, programoweDo]
+    [pasekH, programoweDo, podazanie]
   );
+
+  /**
+   * 084 (AC-7): ręczne przewinięcie GASI podążanie — ale tylko wtedy, gdy jest co gasić.
+   *
+   * Dwie poprawki po recenzji. **Po pierwsze**, nasłuch działa wyłącznie, gdy lektor CZYTA: wcześniej
+   * wisiał zawsze, więc zwykłe przewinięcie listy przez kogoś, kto nigdy nie włączył odsłuchu,
+   * trwale wyłączało mu ustawienie. **Po drugie**, gaśnie tylko stan bieżący (`setPodazanie`), a nie
+   * preferencja konta — automatyczne wyłączenie nie jest decyzją użytkownika o ustawieniach.
+   *
+   * Rozróżnienie „kto przewinął" opiera się na strażniku czasu Z HOOKA sekcji — tym samym, którego
+   * używa przewijanie do sekcji i do pozycji. Drugi, własny ref (pierwsza wersja) nie był aktualizowany
+   * przez `przewinDo`, więc skok do tematu — czyli sedno AC-11 — gasił podążanie użytkownikowi,
+   * który zrobił dokładnie to, o co go poproszono.
+   */
+  useEffect(() => {
+    const rama = ramaRef.current;
+    if (!rama || !podazanie || !lektorGra) return;
+    const naPrzewiniecie = () => {
+      if (Date.now() < programoweDo.current) return;
+      setPodazanie(false);
+    };
+    rama.addEventListener("scroll", naPrzewiniecie, { passive: true });
+    return () => rama.removeEventListener("scroll", naPrzewiniecie);
+  }, [podazanie, lektorGra, programoweDo]);
+
 
   useEffect(() => {
     const el = pasekRef.current;
@@ -304,94 +344,37 @@ export function NewsPage({
     [topics, stream]
   );
 
+  // ── Skok do tematu ────────────────────────────────────────────────────────
   /**
-   * Identyfikatory w kolejności, w jakiej stoją W LIŚCIE nawigatora — czyli z pozycją zbiorczą na
-   * początku. Bierzemy je z `pozycjeNawigatora`, a nie składamy tu ręcznie: reguła „«Wszystkie»
-   * pierwsze" ma jedno miejsce, więc strzałki i lista nie mogą się rozjechać.
-   */
-  const idyNawigatora = useMemo(
-    () => pozycjeNawigatora(grupy, t("wszystkieTematy")).map((g) => g.id),
-    [grupy, t]
-  );
-
-  // ── Zmiana tematu: przesunięcie w bok, potem skok pionowy ─────────────────
-  /**
-   * 083 (AC-19/AC-20): zmiana tematu ma wyglądać jak przejście między kolumnami.
+   * 084 (AC-11): wybór z listy PRZEWIJA do sekcji tematu i nic poza tym.
    *
-   * Przesuwamy WYŁĄCZNIE własny kontener treści (`transform`), a pionowo przewijamy WYŁĄCZNIE ramę
-   * widoku (`przewinDo`). To jest wprost lekcja z 082: mechanizm sięgający przodków (`scrollIntoView`)
-   * przy okazji cofał stronę o kilka tysięcy pikseli, bo jego zasięgiem jest cały łańcuch
-   * przewijalnych rodziców.
+   * Nie ma już przesunięcia w bok ani przejścia „między kolumnami" (083/AC-19): kolumn nie ma, bo
+   * nie ma filtru — wszystkie tematy są na ekranie przez cały czas, a lista służy do skoku między
+   * nimi. Animacja przejścia opisywałaby zmianę, która się nie odbywa.
+   *
+   * Przewijamy WYŁĄCZNIE ramę widoku (`przewinDo` → `przewinDoSekcji`), nigdy mechanizmem
+   * sięgającym przodków — to zostaje z 082 i jest nadal jedyną rzeczą, która stoi między nami
+   * a skokiem strony o kilka tysięcy pikseli.
    */
-  const [przesuw, setPrzesuw] = useState(0);
-  const bezRuchu = useCallback(
-    () =>
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    []
-  );
-
-  const wybierzTemat = useCallback(
+  const skoczDoTematu = useCallback(
     (id: string) => {
-      if (id === wybranyTemat) return;
-      const kolejnoscPelna = topics.map((x) => x.id);
-      const skad = wybranyTemat === WSZYSTKIE ? -1 : kolejnoscPelna.indexOf(wybranyTemat);
-      const dokad = id === WSZYSTKIE ? -1 : kolejnoscPelna.indexOf(id);
-      const kierunek = dokad > skad ? 1 : -1;
-      const wracamyDoWszystkich = id === WSZYSTKIE && wybranyTemat !== WSZYSTKIE;
-      const poprzedni = wybranyTemat;
-
-      if (!bezRuchu()) {
-        setPrzesuw(kierunek * PRZESUW_PX);
-        requestAnimationFrame(() => setPrzesuw(0));
-      }
-      setViewState({ temat: id });
-
-      // Po zmianie filtra treść jest inna, więc pozycja przewinięcia z poprzedniego tematu nic nie
-      // znaczy. Wracając do „Wszystkich" wracamy do sekcji, przy której użytkownik był — inaczej
-      // gubi miejsce w strumieniu.
-      requestAnimationFrame(() => {
-        if (wracamyDoWszystkich) przewinDo(poprzedni, false);
-        else ramaRef.current?.scrollTo({ top: 0, behavior: "auto" });
-      });
+      setCzytanyTemat(id);
+      przewinDo(id);
     },
-    [wybranyTemat, topics, setViewState, przewinDo, bezRuchu]
+    [przewinDo]
   );
 
   /**
-   * Strzałki: przy wybranym temacie przechodzą do sąsiedniego, przy „Wszystkich" — przewijają do
-   * sąsiedniej SEKCJI. To dwie różne czynności pod tym samym gestem, bo z punktu widzenia
-   * czytającego robią to samo: pokazują następny temat.
+   * Strzałki „poprzednia / następna grupa" ZNIKAJĄ z paska (AC-12) — właściciel poprosił wprost.
+   * Skok do sąsiada zostaje jednak dostępny GESTEM w bok na telefonie, bo tam jest skrótem, a nie
+   * jedyną drogą: lista tematów daje to samo jednym dotknięciem.
    */
   const sasiad = useCallback(
     (kierunek: -1 | 1) => {
-      // Przy pozycji zbiorczej strzałka PRZEWIJA do sąsiedniej sekcji, nie zmienia filtra: wszystkie
-      // tematy są już na ekranie, więc „dalej" znaczy „następny temat w treści".
-      if (wybranyTemat === WSZYSTKIE) {
-        const cel = sasiadujacaGrupa(kolejnosc, czytanyTemat ?? kolejnosc[0] ?? null, kierunek);
-        if (cel) {
-          setCzytanyTemat(cel);
-          przewinDo(cel);
-        }
-        return;
-      }
-      // Przy wybranym temacie krok idzie po pozycjach NAWIGATORA, czyli razem z „Wszystkimi" na
-      // początku (recenzja 083). Liczenie po samych tematach czyniło pozycję zbiorczą nieosiągalną
-      // strzałką, choć w liście stoi pierwsza — a to jedyna droga powrotu do pełnego strumienia.
-      const cel = sasiadujacaGrupa(idyNawigatora, wybranyTemat, kierunek);
-      if (cel) wybierzTemat(cel);
+      const cel = sasiadujacaGrupa(kolejnosc, czytanyTemat ?? kolejnosc[0] ?? null, kierunek);
+      if (cel) skoczDoTematu(cel);
     },
-    [idyNawigatora, wybranyTemat, czytanyTemat, kolejnosc, przewinDo, wybierzTemat]
-  );
-
-  /** Czy strzałka ma dokąd pójść — liczone dokładnie tą samą regułą co samo przejście. */
-  const sasiadIstnieje = useCallback(
-    (kierunek: -1 | 1) =>
-      wybranyTemat === WSZYSTKIE
-        ? sasiadujacaGrupa(kolejnosc, czytanyTemat ?? kolejnosc[0] ?? null, kierunek) !== null
-        : sasiadujacaGrupa(idyNawigatora, wybranyTemat, kierunek) !== null,
-    [wybranyTemat, czytanyTemat, kolejnosc, idyNawigatora]
+    [kolejnosc, czytanyTemat, skoczDoTematu]
   );
 
   // ── Gest w bok ────────────────────────────────────────────────────────────
@@ -477,7 +460,8 @@ export function NewsPage({
   );
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
-  const filtrAktywny = wybranyTemat !== WSZYSTKIE || wybraneZrodla.length > 0;
+  // 084: jedynym filtrem został wybór portali — tematy są zawsze wszystkie.
+  const filtrAktywny = wybraneZrodla.length > 0;
 
   return (
     <ModuleView
@@ -515,7 +499,7 @@ export function NewsPage({
       <div className="mx-auto w-full max-w-6xl">
         <RefreshStatus state={refresh} running={refreshRunning} />
 
-        {view === "hot" && <HotTopics onTopicsChanged={() => router.refresh()} />}
+        {view === "hot" && <HotTopics monitorowane={topics} onTopicsChanged={() => router.refresh()} />}
 
         {view === "settings" && (
           <NewsSettings sources={sources} defaultLength={defaultLength} onChanged={() => router.refresh()} />
@@ -538,16 +522,26 @@ export function NewsPage({
               // Uchwyt dla klikacza: pasek jest jedynym elementem, którego przyklejenie i wysokość
               // są przedmiotem testu AC-20, a klasy Tailwinda nie są kontraktem.
               data-news-pasek
-              className="sticky top-0 z-30 -mx-1 flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] px-1 pb-2 pt-1"
+              /* 084 (AC-17): `min-w-0` na pasku i na jego elastycznych dzieciach. Element `flex`
+                 ma domyślnie `min-width: auto`, więc NIE POTRAFI zwęzić się poniżej swojej treści —
+                 i to on, a nie jego zawartość, rozpychał stronę: zmierzone 377 px przy ekranie
+                 360 px, czyli poziome przewijanie CAŁEJ strony (C-31, błąd twardy). */
+              className="sticky top-0 z-30 flex min-w-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] pb-2 pt-1"
             >
+              {/* 084 (AC-11, AC-12, AC-18): lista tematów jest SKOKIEM, nie filtrem.
+                  `aktywnaId` wskazuje temat CZYTANY, więc lista pokazuje, gdzie jesteś, a wybór
+                  przewija tam, gdzie chcesz być. Strzałek nie podajemy — `onSasiad` zostaje
+                  w komponencie dla innych konsumentów (C-53), a tutaj gest w bok na telefonie robi
+                  to samo i jest skrótem, nie jedyną drogą. */}
               <GroupNavigator
                 grupy={grupy}
-                aktywnaId={wybranyTemat}
-                onWybor={wybierzTemat}
-                etykietaWszystkich={t("wszystkieTematy")}
-                onSasiad={sasiad}
-                moznaWstecz={sasiadIstnieje(-1)}
-                moznaDalej={sasiadIstnieje(1)}
+                aktywnaId={czytanyTemat ?? kolejnosc[0] ?? ""}
+                onWybor={skoczDoTematu}
+                /* 084 (AC-18): wyzwalacz nosi STAŁĄ etykietę, nie nazwę tematu. Nazwa tematu, przy
+                   którym jesteś, stoi w przyklejonym nagłówku jego sekcji — pokazywanie jej także
+                   tutaj było zgłoszeniem właściciela po 083 („podwójnie mamy bieżący temat").
+                   Przy okazji: stała etykieta ma stałą szerokość, więc pasek przestaje skakać. */
+                etykietaStala={t("tematy")}
                 akcje={
                   <div className="ml-auto flex shrink-0 items-center gap-1">
                     <SourceFilter
@@ -561,14 +555,7 @@ export function NewsPage({
               />
             </div>
 
-            <div
-              className="mt-3"
-              style={{
-                transform: `translateX(${przesuw}px)`,
-                opacity: przesuw === 0 ? 1 : 0.4,
-                transition: `transform ${PRZESUW_MS}ms var(--motion-easing, ease-out), opacity ${PRZESUW_MS}ms var(--motion-easing, ease-out)`,
-              }}
-            >
+            <div className="mt-3">
               {tresc === "items" ? (
                 <NewsStream
                   topics={widoczneWiadomosci}
@@ -578,6 +565,9 @@ export function NewsPage({
                   zarejestruj={zarejestruj}
                   onChanged={onItemChanged}
                   onPrzewinDoPozycji={przewinDoPozycji}
+                  podazanie={podazanie}
+                  onPodazanie={zmienPodazanie}
+                  onGra={setLektorGra}
                   akcjeTematu={akcjeTematu}
                 />
               ) : (
@@ -606,7 +596,9 @@ export function NewsPage({
             setCreating(false);
             setEditing(null);
             router.refresh();
-            if (id) setViewState({ temat: id });
+            // 084: po dodaniu tematu SKACZEMY do niego zamiast go „wybierać" — filtru już nie ma,
+            // a użytkownik i tak chce zobaczyć, co właśnie stworzył.
+            if (id) skoczDoTematu(id);
           }}
         />
       )}
@@ -666,26 +658,39 @@ function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void 
  */
 function ContentSwitch({ value, onChange }: { value: ContentKey; onChange: (v: ContentKey) => void }) {
   const t = useTranslations("modules.news.NewsPage");
-  const opcje: Array<{ key: ContentKey; label: string }> = [
-    { key: "items", label: t("wiadomosciKrotko") },
-    { key: "timeline", label: t("liniaCzasuKrotko") },
+  const opcje: Array<{ key: ContentKey; label: string; Ikona: typeof Newspaper }> = [
+    { key: "items", label: t("wiadomosciKrotko"), Ikona: Newspaper },
+    { key: "timeline", label: t("liniaCzasuKrotko"), Ikona: CalendarClock },
   ];
   return (
+    /**
+     * 084 (AC-20): na wąskim ekranie przełącznik zwija się do IKON.
+     *
+     * Zgłoszenie właściciela: „switch wiadomości/linia czasu już nawet rozszerza stronę poza ekran
+     * i trzeba scrolować na boki, co jest nieakceptowalne". Dwie etykiety tekstowe to ~150 px —
+     * przy 360 px ekranu nie da się ich zmieścić obok listy tematów i filtra portali.
+     *
+     * Chowamy TEKST, nie funkcję: `aria-label` niesie pełną nazwę, więc dla czytnika ekranu i dla
+     * testu nic się nie zmienia, a cel dotyku zostaje pełnowymiarowy.
+     */
     <div className="flex shrink-0 items-center rounded-md border border-[var(--border)] p-0.5">
       {opcje.map((o) => (
         <button
           key={o.key}
           type="button"
           aria-pressed={value === o.key}
+          aria-label={o.label}
+          title={o.label}
           onClick={() => onChange(o.key)}
           className={cn(
-            "rounded px-2 py-2.5 text-xs transition-colors",
+            "inline-flex items-center gap-1.5 rounded px-2 py-2.5 text-xs transition-colors",
             value === o.key
               ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           )}
         >
-          {o.label}
+          <o.Ikona size={15} className="shrink-0" />
+          <span className="hidden lg:inline">{o.label}</span>
         </button>
       ))}
     </div>

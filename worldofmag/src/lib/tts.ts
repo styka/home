@@ -174,7 +174,29 @@ export function onVoicesChanged(cb: () => void): () => void {
 }
 
 /** Opcje wypowiedzi. `onEnd` odpala się po naturalnym zakończeniu lub błędzie syntezy. */
-export type SpeakOptions = { onEnd?: () => void };
+export type SpeakOptions = {
+  onEnd?: () => void;
+  /**
+   * 084 (AC-2): CZUJKA CISZY — „minęło tyle czasu, a mowa nie ruszyła".
+   *
+   * Powód, dla którego to musi istnieć: iOS odrzuca `speechSynthesis.speak()` wywołane poza gestem
+   * użytkownika **bez żadnego zdarzenia** — nie przychodzi ani `onstart`, ani `onend`, ani
+   * `onerror`. Lektor łańcuchuje zdania po `onEnd`, więc łańcuch po prostu ZAMIERA, a interfejs
+   * dalej pokazuje „wiadomość 1/10 · zdanie 2/4". Dokładnie to zgłosił właściciel: „niby leci
+   * a nie słyszę".
+   *
+   * Czujka nie zna przyczyny i to jest jej wartość: łapie także te powody milczenia, których nie
+   * przewidzieliśmy. Wywoływana NAJWYŻEJ RAZ na wypowiedź i nigdy razem z `onEnd`.
+   */
+  onSilent?: () => void;
+};
+
+/**
+ * Ile czekamy na dowód, że mowa faktycznie ruszyła. 1,5 s to z zapasem więcej niż start syntezy
+ * systemowej (dziesiątki milisekund) i mniej, niż użytkownik jest gotów wpatrywać się w licznik,
+ * który nic nie robi.
+ */
+const CZAS_NA_START_MS = 1500;
 
 // ── Głos SERWEROWY (031) ──────────────────────────────────────────────────────
 // Gdy użytkownik wybrał głos serwerowy, czytamy tekst przez `/api/tts` i odtwarzamy `Audio`.
@@ -383,12 +405,63 @@ function zatrzasnijGlosSerwerowy(reason: string | null): void {
   onFallbackNotice?.(reason);
 }
 
+/**
+ * Uzbraja czujkę ciszy wokół opcji wypowiedzi.
+ *
+ * Zwraca opakowane `opts` (rozbrajające czujkę przy `onEnd`) i funkcję potwierdzającą start.
+ * Kluczowe: czujka i `onEnd` wykluczają się wzajemnie — wypowiedź kończy się albo dźwiękiem,
+ * albo ciszą, nigdy jednym i drugim.
+ */
+function uzbrojCzujke(opts?: SpeakOptions): { opts: SpeakOptions | undefined; potwierdzStart: () => void } {
+  if (!opts?.onSilent) return { opts, potwierdzStart: () => {} };
+  let rozbrojona = false;
+  const rozbroj = () => {
+    if (rozbrojona) return true;
+    rozbrojona = true;
+    clearTimeout(timer);
+    return false;
+  };
+  const timer = setTimeout(() => {
+    if (rozbrojona) return;
+    rozbrojona = true;
+    opts.onSilent!();
+  }, CZAS_NA_START_MS);
+
+  return {
+    opts: {
+      ...opts,
+      onEnd: () => {
+        if (rozbroj()) return; // czujka już orzekła ciszę — nie wołamy obu
+        opts.onEnd?.();
+      },
+    },
+    potwierdzStart: () => {
+      // Start rozbraja czujkę, ale NIE kończy wypowiedzi — `onEnd` przyjdzie własną drogą.
+      if (!rozbrojona) clearTimeout(timer);
+    },
+  };
+}
+
 /** Wypowiada tekst w danym języku (BCP-47 lub nazwa). Przerywa poprzednią wypowiedź. */
 export function speak(text: string, lang?: string | null, opts?: SpeakOptions): void {
   if (!text.trim()) return;
   // Głos serwerowy ma pierwszeństwo; przy jakimkolwiek problemie wracamy do przeglądarki.
   // Po zatrzaśnięciu (080/Z4) omijamy go BEZ żądania — dzięki temu synteza przeglądarki startuje
   // synchronicznie, wciąż w geście użytkownika. To jest cała różnica między „inny głos" a ciszą.
+  /**
+   * 084 (recenzja): czujka pilnuje PRÓBY ODTWORZENIA, a nie całej drogi z siecią.
+   *
+   * Pierwsza wersja uzbrajała ją tutaj, przed `fetch("/api/tts")` — więc 1,5 s musiało wystarczyć
+   * na limiter, żądanie, syntezę u dostawcy, pobranie dźwięku i start odtwarzania. Przy
+   * skonfigurowanym głosie serwerowym (a 084 właśnie go włącza dla lektora) typowa odpowiedź
+   * przychodzi po ~2 s: czujka odpalała fałszywy alarm, lektor zatrzymywał łańcuch i pokazywał
+   * „nie odtworzyło dźwięku" — a chwilę później dźwięk ruszał. Użytkownik słyszał JEDNO zdanie
+   * i komunikat o awarii, której nie było. To byłoby gorsze niż stan sprzed przebiegu.
+   *
+   * Ścieżka serwerowa ma własną, jawną drogę zgłaszania awarii (`zatrzasnijGlosSerwerowy` +
+   * przejście na przeglądarkę), więc nie potrzebuje czujki. Potrzebuje jej wyłącznie synteza
+   * przeglądarki, bo to ona potrafi odmówić BEZ ŻADNEGO zdarzenia.
+   */
   if (serverVoiceId && !serverVoiceFailed) {
     stopSpeaking(); // zwiększa `speechGeneration`
     const generation = speechGeneration;
@@ -401,9 +474,24 @@ export function speak(text: string, lang?: string | null, opts?: SpeakOptions): 
   speakViaBrowser(text, lang, opts);
 }
 
-function speakViaBrowser(text: string, lang?: string | null, opts?: SpeakOptions): void {
+function speakViaBrowser(text: string, lang?: string | null, wejscie?: SpeakOptions): void {
+  // Czujka uzbraja się DOKŁADNIE tutaj: od tego momentu do `onstart` powinny minąć dziesiątki
+  // milisekund, a nie sekundy. Poza tą ścieżką nie ma czego pilnować (patrz komentarz w `speak`).
+  const { opts, potwierdzStart } = uzbrojCzujke(wejscie);
   if (!ttsSupported() || !text.trim()) {
-    opts?.onEnd?.();
+    /**
+     * 084: brak syntezy to CISZA, a nie „przeczytane".
+     *
+     * Wołanie `onEnd` w tym miejscu było trzecią, niezależną drogą do zgłoszonego objawu: lektor
+     * łańcuchuje zdania po `onEnd`, więc na urządzeniu bez syntezy przelatywał **całą porcję
+     * w milczeniu**, pokazując rosnący licznik „wiadomość 3/10 · zdanie 2/4". Użytkownik widział
+     * postęp i nie słyszał nic — dokładnie to zgłosił właściciel.
+     *
+     * Gdy nikt nie pyta o ciszę (`onSilent` nie podane), zachowujemy stare zachowanie: dla
+     * konsumentów, którzy tylko chcą wiedzieć „skończone", nagła zmiana byłaby regresją.
+     */
+    if (opts?.onSilent) opts.onSilent();
+    else opts?.onEnd?.();
     return;
   }
   try {
@@ -419,6 +507,9 @@ function speakViaBrowser(text: string, lang?: string | null, opts?: SpeakOptions
       if (match) u.voice = match;
     }
     u.rate = speechRate;
+    // `onstart` jest JEDYNYM dowodem, że WebKit przyjął wypowiedź. Jego brak (przy odrzuceniu poza
+    // gestem użytkownika nie przychodzi żadne zdarzenie) jest tym, co wykrywa czujka ciszy.
+    u.onstart = () => potwierdzStart?.();
     if (opts?.onEnd) {
       u.onend = () => opts.onEnd!();
       u.onerror = () => opts.onEnd!();
@@ -427,7 +518,15 @@ function speakViaBrowser(text: string, lang?: string | null, opts?: SpeakOptions
     // iOS/Safari (i Chrome) potrafią wejść w stan „paused" — resume() gwarantuje, że mowa ruszy.
     window.speechSynthesis.resume();
   } catch {
-    /* środowisko bez TTS — ignorujemy */
+    /**
+     * 084: wyjątek z syntezy to CISZA, a nie „nic się nie stało".
+     *
+     * Dawny pusty `catch` był czwartą drogą do zgłoszonego objawu: przy niesprawnej syntezie lektor
+     * nie dostawał ani `onEnd`, ani `onerror`, więc łańcuch zamierał w milczeniu przy pokazanym
+     * postępie. Czujka ciszy złapałaby to po sekundzie i pół — ale skoro wiemy TERAZ, nie ma powodu
+     * kazać użytkownikowi czekać.
+     */
+    opts?.onSilent?.();
   }
 }
 

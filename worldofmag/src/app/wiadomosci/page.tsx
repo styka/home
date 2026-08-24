@@ -10,11 +10,11 @@ import { NewsPage } from "@/modules/news/ui/NewsPage";
 export default async function WiadomosciRootPage({
   searchParams,
 }: {
-  // 083: `temat` = wybrany temat albo pozycja zbiorcza, `tresc` = wiadomości ⇄ linia czasu,
-  // `zrodla` = wybrane portale. Wartości startowe MUSZĄ przyjść propsem z serwera, a nie z `window`
-  // w pierwszym renderze — czytanie adresu na kliencie to rozjazd hydratacji (patrz wpis
-  // z 2026-08-02 w `doświadczenia.md`).
-  searchParams?: { widok?: string; temat?: string; tresc?: string; zrodla?: string };
+  // 084: `tresc` = wiadomości ⇄ linia czasu, `zrodla` = wybrane portale. Klucz `temat` ZNIKŁ —
+  // lista tematów jest skokiem, nie filtrem, więc nie ma stanu do przeniesienia w adres.
+  // Wartości startowe MUSZĄ przyjść propsem z serwera, a nie z `window` w pierwszym renderze —
+  // czytanie adresu na kliencie to rozjazd hydratacji (wpis z 2026-08-02 w `doświadczenia.md`).
+  searchParams?: { widok?: string; tresc?: string; zrodla?: string };
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");

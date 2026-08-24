@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/test";
+import { kliknijGwiazdkeUlubionych } from "../pages/chromWidoku";
 
 /**
  * 043 — stan widoku w adresie strony (faza A: Zadania, Zakupy, Notatki).
@@ -13,16 +14,18 @@ test.describe.configure({ mode: "serial" });
 
 /** Sprząta ulubione przez interfejs ustawień, żeby test nie zależał od kolejności. */
 async function clearFavorites(page: import("@playwright/test").Page) {
-  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]';
+  // 084: patrz `shortcuts.spec.ts` — gwiazdka bieżącego widoku ma być wykluczona, inaczej pętla
+  // przełącza ją w kółko zamiast kasować wpisy listy.
+  const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]:not([aria-label*="to miejsce"])';
   for (let i = 0; i < 40; i++) {
     await page.goto("/settings");
     // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
     // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
     await page.waitForLoadState("load").catch(() => {});
-    const n = await page.locator(sel).count();
+    const n = await page.getByRole("main").locator(sel).count();
     if (n === 0) return;
-    await page.locator(sel).first().click();
-    await expect(page.locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
+    await page.getByRole("main").locator(sel).first().click();
+    await expect(page.getByRole("main").locator(sel)).toHaveCount(n - 1, { timeout: 15_000 });
   }
   throw new Error("Nie udalo sie wyczyscic ulubionych w 40 iteracjach");
 }
@@ -149,7 +152,7 @@ test.describe("043 — stan widoku w adresie", () => {
     // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
     // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
     // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
-    await page.getByRole("main").getByRole("button", { name: /Zapisz to miejsce w ulubionych/i }).click();
+    await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
     await page.getByPlaceholder("Nazwa widoku…").fill("Kanban wszystkich");
     await page.getByRole("button", { name: "Zapisz", exact: true }).click();
     // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
