@@ -688,6 +688,10 @@
       },
       "FavoritesSwitcher": {
         "zarzadzajUlubionymiWUstawieniach": "Zarządzaj ulubionymi w ustawieniach"
+      },
+      "FavoriteViewForm": {
+        "usunBiezacyWidok": "Usuń bieżący widok z ulubionych",
+        "dodajBiezacyWidok": "Dodaj bieżący widok do ulubionych"
       }
     },
     "legal": {

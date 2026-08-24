@@ -1,154 +1,56 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Star, X } from "lucide-react";
-import { addFavoriteView, removeFavoriteViewByPath } from "@/actions/favoriteViews";
-import {
-  DEFAULT_FAVORITE_ICON,
-  FAVORITE_COLORS,
-  MAX_FAVORITE_LABEL_LENGTH,
-  normalizeFavoritePath,
-  suggestFavoriteLabel,
-  type FavoriteViewDTO,
-} from "@/platform/favorites/favoriteViews";
-import { MODULES } from "@/lib/modules";
-
-const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "📊", "🐾", "🍳"];
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Star } from "lucide-react";
+import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
+import { normalizeFavoritePath, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface FavoriteStarButtonProps {
   favorites: FavoriteViewDTO[];
   /**
    * `topbar` — sama ikona w górnym pasku (telefon) · `chrome` — sama ikona w rzędzie chromu
-   * w stopce panelu bocznego (komputer).
-   *
-   * 085: warianty `sidebar`, `viewbar` i `viewbar-inline` **usunięte**. Pierwsze dwa były martwe
-   * od 083, trzeci umarł tutaj, gdy gwiazdka wyszła z paska widoku do chromu konta. Martwe warianty
-   * w komponencie, który stoi w powłoce, są gorsze niż ich brak: następna osoba czyta je jako
-   * dostępną drogę i buduje na czymś, czego nikt nie sprawdza (lekcja z 084).
+   * pod nazwą aplikacji (komputer). Od 087 wariant wpływa już wyłącznie na kontekst, w jakim ikona
+   * stoi — dialog jest jeden i pełnoekranowy, więc nie ma kierunku otwierania do wyboru.
    */
   placement: "topbar" | "chrome";
 }
 
 /**
- * 042: gwiazdka „zapisz to miejsce" — jedyny punkt zapisu ulubionego widoku.
+ * 042/087: gwiazdka — JEDNO wejście do ulubionych.
  *
- * Montowana RAZ w powłoce (pasek boczny na desktopie, górny na telefonie), a nie w nagłówku
- * każdego modułu — powłoka i tak zna bieżący adres, więc kilkanaście osobnych przycisków byłoby
- * kopiowaniem tego samego kodu (C-53).
+ * Do 087 gwiazdka miała własne okienko „zapisz to miejsce", a obok stał drugi przycisk otwierający
+ * listę zapisanych widoków. Dwa wejścia do jednej rzeczy nie dawały wyboru, tylko niepewność, które
+ * jest właściwe — i to było zgłoszenie właściciela. Teraz gwiazdka otwiera **ten sam** dialog co
+ * `Alt+0`, a dodanie i usunięcie bieżącego widoku jest jego pierwszą pozycją (`FavoriteViewForm`).
  *
- * 043: wariant `viewbar` odpowiada na zgłoszenie „ulubionych nie ma na komputerze". Punkt zapisu
- * przestaje być ostatnią pozycją nawigacji, a staje się pierwszym elementem sekcji ulubionych —
- * z etykietą tekstową, nie samą ikoną. Wspólnego górnego paska na desktopie w Omnii nie ma
- * (`AppShell` renderuje `<main>{children}</main>`, nagłówek należy do modułu), a dokładanie go
- * oznaczałoby podwójne nagłówki w ~20 modułach — stąd góra nawigacji zamiast nagłówka strony.
+ * Sam przycisk pokazuje stan bieżącego adresu (pełna/pusta gwiazdka), bo to jedyna informacja,
+ * której dialog nie zdąży przekazać przed otwarciem.
  */
 export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonProps) {
-  const t = useTranslations("components.favorites.FavoriteStarButton");
   const pathname = usePathname();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
-  // Pełny adres (ze `?query`) czytamy z przeglądarki, a NIE przez `useSearchParams`.
-  // `useSearchParams` w komponencie powłoki wymusza granicę Suspense i potrafi zepchnąć
-  // całą aplikację w renderowanie po stronie klienta — a powłoka opakowuje każdą stronę.
-  //
-  // 042/T-22: stan z efektu służy WYŁĄCZNIE do wyglądu (gwiazdka pełna/pusta). Przycisk NIE jest
-  // przez niego blokowany, bo `disabled={!fullPath}` sprawiało, że przy pierwszym renderze — i przy
-  // każdym ponownym zamontowaniu drzewa — gwiazdka była nieklikalna. Weryfikacja E2E wielokrotnie
-  // trafiała wtedy na `<button disabled>`. Adres do zapisu wyliczamy synchronicznie w momencie
-  // kliknięcia (`currentPath()`), więc poprawność nie zależy od tego, czy efekt zdążył się wykonać.
+  // Pełny adres (ze `?query`) czytamy z przeglądarki, a NIE przez `useSearchParams`: ten ostatni
+  // w komponencie powłoki wymusza granicę Suspense i potrafi zepchnąć całą aplikację
+  // w renderowanie po stronie klienta (lekcja z 042), a powłoka opakowuje każdą stronę.
   const [fullPath, setFullPath] = useState<string | null>(null);
   useEffect(() => {
     setFullPath(normalizeFavoritePath(window.location.pathname + window.location.search));
   }, [pathname]);
 
-  /** Bieżący adres liczony na żądanie — jedyne źródło prawdy przy zapisie/usuwaniu. */
-  function currentPath(): string | null {
-    if (typeof window === "undefined") return null;
-    return normalizeFavoritePath(window.location.pathname + window.location.search);
-  }
+  const zapisany = !!fullPath && favorites.some((f) => f.path === fullPath);
+  const tytul = zapisany ? "Ulubione — ten widok jest zapisany" : "Ulubione widoki";
 
-  const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState("");
-  const [icon, setIcon] = useState(DEFAULT_FAVORITE_ICON);
-  const [color, setColor] = useState<string | null>(FAVORITE_COLORS[0]);
-  const [error, setError] = useState<string | null>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const saved = fullPath ? favorites.find((f) => f.path === fullPath) ?? null : null;
-  const isSaved = !!saved;
-
-  // Zamykanie: Esc (C-31) oraz klik poza popoverem.
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") { e.stopPropagation(); setOpen(false); }
-    }
-    function onDown(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onDown);
-    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onDown); };
-  }, [open]);
-
-  useEffect(() => { if (open) setTimeout(() => inputRef.current?.select(), 20); }, [open]);
-
-  function handleClick() {
-    const path = currentPath();
-    if (!path) return;
-    setError(null);
-    // Stan „zapisane" liczymy tu ponownie z aktualnego adresu, a nie z `isSaved` — to ostatnie
-    // pochodzi z efektu i przy świeżym montowaniu może być jeszcze nieustawione.
-    const alreadySaved = favorites.some((f) => f.path === path);
-
-    if (alreadySaved) {
-      startTransition(async () => {
-        await removeFavoriteViewByPath(path);
-        router.refresh();
-      });
-      return;
-    }
-
-    const activeModule = MODULES.find((m) => (m.exact ? pathname === m.href : pathname.startsWith(m.href)));
-    setLabel(suggestFavoriteLabel(path, activeModule?.label));
-    setIcon(DEFAULT_FAVORITE_ICON);
-    setColor(activeModule?.color && (FAVORITE_COLORS as readonly string[]).includes(activeModule.color)
-      ? activeModule.color
-      : FAVORITE_COLORS[0]);
-    setOpen(true);
-  }
-
-  function handleSave() {
-    const path = currentPath();
-    if (!path) return;
-    startTransition(async () => {
-      try {
-        await addFavoriteView({ label, path, icon, color });
-        setOpen(false);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Nie udało się zapisać widoku");
-      }
-    });
-  }
-
-  const title = isSaved ? "Usuń to miejsce z ulubionych" : "Zapisz to miejsce w ulubionych";
-  const triggerClassName = "flex items-center justify-center rounded focus:outline-none";
-
-  const trigger = (
+  return (
     <button
-      onClick={handleClick}
-      disabled={isPending}
-      title={title}
-      aria-label={title}
-      aria-pressed={isSaved}
-      className={triggerClassName}
+      onClick={openFavoritesSwitcher}
+      title={tytul}
+      aria-label={tytul}
+      aria-pressed={zapisany}
+      data-placement={placement}
+      className="flex items-center justify-center rounded focus:outline-none"
       style={{
-        color: isSaved ? "var(--accent-amber)" : "var(--text-secondary)",
+        color: zapisany ? "var(--accent-amber)" : "var(--text-secondary)",
         background: "transparent",
         border: "none",
         cursor: "pointer",
@@ -157,115 +59,7 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
         height: 32,
       }}
     >
-      <Star size={18} fill={isSaved ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
+      <Star size={18} fill={zapisany ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
     </button>
-  );
-
-  return (
-    <div style={{ position: "relative" }}>
-      {trigger}
-
-      {open && (
-        <div
-          ref={popoverRef}
-          role="dialog"
-          aria-label="Zapisz widok w ulubionych"
-          style={{
-            position: "absolute",
-            zIndex: 60,
-            width: 268,
-            // 086: oba warianty siedzą teraz U GÓRY (rząd chromu przeniósł się ze stopki panelu
-            // pod nazwę aplikacji), więc okienko otwiera się w DÓŁ. Kotwiczenie różni się stroną:
-            // w panelu bocznym do lewej, w górnym pasku telefonu do prawej — inaczej wyjeżdża
-            // poza ekran.
-            ...(placement === "chrome"
-              ? { top: "100%", left: 0, marginTop: 6 }
-              : { top: "100%", right: 0, marginTop: 6 }),
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-lg, 10px)",
-            padding: 12,
-            boxShadow: "0 8px 28px rgba(0,0,0,0.35)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Zapisz widok</span>
-            <button onClick={() => setOpen(false)} aria-label="Zamknij" style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>
-              <X size={13} />
-            </button>
-          </div>
-
-          <input
-            ref={inputRef}
-            value={label}
-            maxLength={MAX_FAVORITE_LABEL_LENGTH}
-            onChange={(e) => setLabel(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-            placeholder="Nazwa widoku…"
-            className="w-full text-sm focus:outline-none"
-            style={{
-              background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 6,
-              padding: "6px 8px", color: "var(--text-primary)", marginBottom: 8,
-            }}
-          />
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-            {ICON_CHOICES.map((e) => (
-              <button
-                key={e}
-                onClick={() => setIcon(e)}
-                aria-label={`Ikona ${e}`}
-                style={{
-                  width: 26, height: 26, borderRadius: 6, fontSize: 14, cursor: "pointer",
-                  background: icon === e ? "var(--bg-hover)" : "transparent",
-                  border: `1px solid ${icon === e ? "var(--accent-blue)" : "var(--border)"}`,
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {FAVORITE_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                aria-label={`Kolor ${c}`}
-                style={{
-                  width: 20, height: 20, borderRadius: "50%", background: c, cursor: "pointer",
-                  border: color === c ? "2px solid var(--text-primary)" : "1px solid var(--border)",
-                }}
-              />
-            ))}
-          </div>
-
-          {error && (
-            <p style={{ fontSize: 11, color: "var(--accent-red)", margin: "0 0 8px" }}>{error}</p>
-          )}
-
-          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-xs px-2.5 py-1.5 rounded"
-              style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", cursor: "pointer" }}
-            >
-              Anuluj
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isPending}
-              className="text-xs px-2.5 py-1.5 rounded"
-              style={{
-                background: "var(--accent-blue)", color: "var(--on-accent)", fontWeight: 600,
-                border: "none", cursor: "pointer", opacity: isPending ? 0.6 : 1,
-              }}
-            >
-              Zapisz
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

@@ -102,22 +102,22 @@
 
 ## Faza 6 — Chrom konta i nawigacja *(AC-17..AC-21)*
 
-- [ ] **T-14** — **Scalony dialog ulubionych** (AC-18): gwiazdka otwiera jeden panel z listą
+- [x] **T-14** — **Scalony dialog ulubionych** (AC-18): gwiazdka otwiera jeden panel z listą
   wszystkich ulubionych (istniejący `FavoritesSwitcher` jako część) i operacją na widoku bieżącym
   (dodaj/usuń, zależnie od stanu). `Alt+0` otwiera ten sam panel.
   *Gotowe, gdy:* z jednego panelu da się przejść do zapisanego widoku ORAZ dodać/usunąć bieżący.
 
-- [ ] **T-15** — **Panel boczny: nowy układ ikon** (AC-19, AC-20): przy nazwie aplikacji przełącznik
+- [x] **T-15** — **Panel boczny: nowy układ ikon** (AC-19, AC-20): przy nazwie aplikacji przełącznik
   admina, za nim dzwonek (wyrównane do prawej); w rzędzie niżej dom, gwiazdka, skróty.
   *Gotowe, gdy:* kolejność zgodna ze zgłoszeniem, wszystkie ikony działają, panele otwierają się w dół.
 
-- [ ] **T-16** — **Nawigacja bez „Ulubionych" i „Strony głównej"** (AC-17): sekcja ulubionych znika
+- [x] **T-16** — **Nawigacja bez „Ulubionych" i „Strony głównej"** (AC-17): sekcja ulubionych znika
   z nawigacji i **plik zostaje usunięty** (traci konsumenta, C-53); moduł `home` filtrowany z listy
   `enabled` **i** z „Więcej…", ale zostaje w rejestrze i ma trasę.
   *Gotowe, gdy:* obu pozycji nie ma w nawigacji ani w „Więcej…", `check:module-registry` zielone,
   a `/` nadal działa.
 
-- [ ] **T-17** — **Telefon: jedno wejście do ulubionych i menu bez dwóch pozycji** (AC-21): przycisk
+- [x] **T-17** — **Telefon: jedno wejście do ulubionych i menu bez dwóch pozycji** (AC-21): przycisk
   „Ulubione widoki" znika z górnego paska, menu pełnoekranowe traci obie pozycje, kolejność ikon
   w górnym pasku zgodna z komputerem.
   *Gotowe, gdy:* w widoku telefonu jest dokładnie jedno wejście do ulubionych i nie ma dwóch pozycji
@@ -125,7 +125,7 @@
 
 ## Faza 7 — Testy, teksty, domknięcie
 
-- [ ] **T-18** — **Teksty do `messages/pl.json`** (C-32) dla wszystkiego, co doszło.
+- [x] **T-18** — **Teksty do `messages/pl.json`** (C-32) dla wszystkiego, co doszło.
   *Gotowe, gdy:* `npm run check:i18n` zielone, zero literałów w komponentach.
 
 - [ ] **T-19** `[P]` — **Klikacz: Wiadomości** (`wiadomosci-tryb-czytania.spec.ts`) — AC-1..AC-4,

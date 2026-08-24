@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { Star, X, Settings } from "lucide-react";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
+import { FavoriteViewForm } from "./FavoriteViewForm";
 
 interface FavoritesSwitcherProps {
   /** Ulubione JUŻ przefiltrowane po uprawnieniach (AC-8) — komponent nie robi tego sam. */
@@ -69,6 +70,22 @@ export function FavoritesSwitcher({ favorites, open, onClose }: FavoritesSwitche
             <button onClick={onClose} aria-label="Zamknij" style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}>
               <X size={14} />
             </button>
+          </div>
+
+          {/**
+            * 087 (AC-18): OPERACJA NA BIEŻĄCYM WIDOKU stoi w tym samym dialogu, co lista.
+            *
+            * Do 087 ulubione miały dwa wejścia: gwiazdkę z własnym okienkiem zapisu i osobny
+            * przycisk otwierający tę listę. Właściciel: „klik w ikonę gwiazdki powinien otworzyć
+            * ten dialog co teraz otwiera się po »Wszystkie ulubione«, tylko żeby w tym dialogu
+            * była także możliwość dodania/usunięcia z ulubionych bieżącego widoku". Stoi NAD
+            * listą, bo dotyczy miejsca, z którego użytkownik właśnie tu przyszedł.
+            *
+            * Poza `Command.List`: to nie jest pozycja do wyszukania, tylko czynność na tym widoku —
+            * wpisana we `wyszukiwarkę` znikałaby przy pierwszej wpisanej literze.
+            */}
+          <div style={{ borderBottom: "1px solid var(--border)" }}>
+            <FavoriteViewForm favorites={favorites} onDone={onClose} />
           </div>
 
           <Command.List className="overflow-y-auto" style={{ maxHeight: 360 }}>

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus, ArrowLeftRight } from "lucide-react";
+import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
@@ -28,7 +28,6 @@ import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
-import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
@@ -177,15 +176,9 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
                 Skok do ulubionych (poniżej) zostaje: to inna czynność i jedyne jej wejście na
                 telefonie. Świadomy koszt: na trasach bez `ModuleView` (`/admin/*`) nie da się już
                 zapisać widoku — zapis widoku administracyjnego nie jest realną potrzebą. */}
-            <button
-              onClick={openFavoritesSwitcher}
-              className="flex items-center justify-center rounded"
-              style={{ width: 32, height: 32, color: "var(--text-secondary)", background: "none", border: "none" }}
-              aria-label="Ulubione widoki"
-              title="Ulubione widoki"
-            >
-              <ArrowLeftRight size={16} />
-            </button>
+            {/* 087 (AC-21): osobny przycisk „Ulubione widoki" ZNIKA. Gwiazdka niżej otwiera ten sam
+                dialog i dokłada operację na bieżącym widoku, więc drugie wejście było wyłącznie
+                pytaniem „które z nich jest właściwe". */}
             {/* 085 (AC-1): gwiazdka „zapisz to miejsce" WRACA do górnego paska — tym razem jako
                 JEDYNE jej wejście na telefonie (w 083 wyszła stąd do paska widoku, a właściciel
                 poprosił, żeby stała przy ikonach obok dzwonka). Działa też na trasach bez ramy

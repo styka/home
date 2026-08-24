@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition, type ComponentType } from "react";
-import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
+import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus, Home } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
@@ -14,7 +14,6 @@ import { MODULES } from "@/lib/modules";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { FavoritesSidebarSection } from "@/components/favorites/FavoritesSidebarSection";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
@@ -268,18 +267,33 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         flexShrink: 0,
       }}
     >
-      {/* Logo → strona główna */}
-      <Link
-        href="/"
-        className="flex items-center gap-2 px-4 h-12 border-b"
-        style={{ borderColor: "var(--border)", textDecoration: "none" }}
-        title={t("stronaGlowna")}
-      >
-        <BrandLogo px={20} />
-        <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
-          <AppName />
-        </span>
-      </Link>
+      {/**
+       * 087 (AC-19): WIERSZ NAZWY APLIKACJI niesie też dwie ikony konta.
+       *
+       * Zgłoszenie właściciela co do kolejności jest dosłowne: „przełącznik admina daj przy nazwie
+       * aplikacji obok ikony notyfikacji tak by były wyrównane do prawej ale najpierw była ikona
+       * przełącznika dla admina a bardziej z prawej ikona notyfikacji".
+       *
+       * Nazwa aplikacji zostaje odnośnikiem do strony głównej, ale nie jest już jedynym wejściem —
+       * w rzędzie niżej stoi jawna ikona domu (AC-20).
+       */}
+      <div className="flex items-center gap-2 px-4 h-12 border-b" style={{ borderColor: "var(--border)" }}>
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2"
+          style={{ textDecoration: "none" }}
+          title={t("stronaGlowna")}
+        >
+          <BrandLogo px={20} />
+          <span className="truncate" style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+            <AppName />
+          </span>
+        </Link>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <PrzelacznikTrybuAdmina />
+          <NotificationBell placement="chrome" />
+        </div>
+      </div>
 
       {/* Modules — tylko dostępne i włączone, w kolejności użytkownika */}
       {/**
@@ -295,16 +309,31 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania).
        */}
       <div className="mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
-        <NotificationBell placement="chrome" />
+        {/* 087 (AC-20): od lewej dom, gwiazdka, skróty. Ikona domu zastępuje pozycję „Strona
+            główna" w nawigacji — stoi pierwsza, bo to najczęstszy powrót. */}
+        <Link
+          href="/"
+          title={t("stronaGlowna")}
+          aria-label={t("stronaGlowna")}
+          aria-current={pathname === "/" ? "page" : undefined}
+          className="flex items-center justify-center rounded"
+          style={{
+            width: 32,
+            height: 32,
+            color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
+            background: pathname === "/" ? "var(--bg-hover)" : "transparent",
+          }}
+        >
+          <Home size={18} />
+        </Link>
         <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
         <ShortcutsButton />
-        <PrzelacznikTrybuAdmina />
       </div>
 
       <nav className="flex-1 py-2 overflow-y-auto">
-        {/* 042: własne miejsca użytkownika stoją NAD nawigacją modułów — to do nich wraca
-            najczęściej, a sekcja znika całkowicie, gdy nie ma ani jednego ulubionego (AC-6). */}
-        <FavoritesSidebarSection favorites={favoriteViews} userPermissions={userPermissions} collapsed={menuPrefs.favoritesCollapsed} />
+        {/* 087 (AC-17): sekcja ulubionych ZNIKA z nawigacji — ulubione mają teraz jedno wejście,
+            gwiazdkę w rzędzie chromu, która otwiera pełny dialog z listą i z operacją na bieżącym
+            widoku. Dwa wejścia do jednej rzeczy były zgłoszeniem właściciela. */}
 
         {enabled.map(renderModule)}
 
