@@ -282,6 +282,25 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
       </Link>
 
       {/* Modules — tylko dostępne i włączone, w kolejności użytkownika */}
+      {/**
+       * 085/086 (AC-19): RZĄD CHROMU KONTA — pod nazwą aplikacji, NAD nawigacją.
+       *
+       * 085 postawiło go w stopce panelu, przy dzwonku. Właściciel poprosił o przeniesienie:
+       * „czy nie lepiej by było dać ten pasek z ikonami od razu pod nazwą aplikacji, przed pozycją
+       * strona główna? to takie miejsce na takie rzeczy". Zyskuje na tym spójność z telefonem, gdzie
+       * te same ikony stoją u góry ekranu — czyli ręka szuka ich w tym samym miejscu na obu
+       * szerokościach.
+       *
+       * Cztery ikony: dzwonek, zapis widoku, ściągawka skrótów, tryb administratora. Ściągawka jest
+       * TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania).
+       */}
+      <div className="mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
+        <NotificationBell placement="chrome" />
+        <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
+        <ShortcutsButton />
+        <PrzelacznikTrybuAdmina />
+      </div>
+
       <nav className="flex-1 py-2 overflow-y-auto">
         {/* 042: własne miejsca użytkownika stoją NAD nawigacją modułów — to do nich wraca
             najczęściej, a sekcja znika całkowicie, gdy nie ma ani jednego ulubionego (AC-6). */}
@@ -318,27 +337,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       </nav>
 
-      {/* Bottom: rząd chromu konta + Zaproszenia + Ustawienia + Admin */}
+      {/* Bottom: Zaproszenia + Ustawienia + Admin. Rząd chromu wyszedł stąd na górę panelu (086). */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        {/**
-         * 085 (AC-1, AC-7): RZĄD CHROMU KONTA.
-         *
-         * Zgłoszenie właściciela: „gwiazdka powinna być przy ikonach tam na górze danej strony obok
-         * ikon tych gdzie jest też ikona powiadomień". Na komputerze górnego paska nie ma — jego
-         * odpowiednikiem jest stopka panelu bocznego, i to tutaj mieszka dzwonek. Cztery ikony
-         * w jednym rzędzie zamiast czterech osobnych miejsc: dzwonek, zapis widoku, ściągawka
-         * skrótów, tryb administratora.
-         *
-         * Ściągawka skrótów jest TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania,
-         * więc wejście do nich zabierałoby miejsce bez pożytku).
-         */}
-        <div className="mx-2 mb-1 flex items-center gap-1 px-2">
-          <NotificationBell placement="chrome" />
-          <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
-          <ShortcutsButton />
-          <PrzelacznikTrybuAdmina />
-        </div>
-
         <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>
           {invitationCount > 0 && !isLocked("/invitations") && (
             <span

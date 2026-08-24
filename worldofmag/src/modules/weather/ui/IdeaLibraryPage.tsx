@@ -117,7 +117,10 @@ export function IdeaLibraryPage({
       subtitle="Propozycje, które rozważałeś albo odrzuciłeś. Zablokowane nie wrócą w „Co robić?”, dopóki ich nie przywrócisz."
     >
 
-      <div className="flex flex-wrap items-center gap-2">
+      {/* 086 (AC-16): odstęp nad chipsami. Opis modułu jest podtytułem RAMY, a chipsy pierwszym
+          elementem treści — bez własnego marginesu stykały się z nim i czytały się jak jedno zdanie
+          rozbite na dwa wiersze. */}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
             <button

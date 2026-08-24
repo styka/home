@@ -127,12 +127,18 @@ export function WeatherPage({
         action: { label: "Wybierz lokalizację", onClick: () => setShowLocations(true) },
       }}
       headerAction={
+        /* 086 (AC-18): długa nazwa lokalizacji („Kocoń, województwo śląskie") przycinała TYTUŁ
+           modułu. Przyczyna jest ta sama, co w 084: element `flex` ma domyślnie `min-width: auto`,
+           więc NIE POTRAFI zwęzić się poniżej swojej treści i rośnie kosztem sąsiada. `min-w-0`
+           odblokowuje zwężanie, a `truncate` przycina nazwę — czyli tę część, którą można przyciąć
+           bez straty (pełna nazwa zostaje w podpowiedzi). */
         <button
           onClick={() => setShowLocations(true)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+          title={coords?.label ?? undefined}
+          className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
         >
-          <MapPin size={15} className="text-[var(--accent-blue)]" />
-          {coords?.label ?? "Lokalizacja"}
+          <MapPin size={15} className="shrink-0 text-[var(--accent-blue)]" />
+          <span className="truncate">{coords?.label ?? "Lokalizacja"}</span>
         </button>
       }
     >

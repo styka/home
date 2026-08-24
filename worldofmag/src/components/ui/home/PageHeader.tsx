@@ -65,7 +65,10 @@ export function PageHeader({ icon, iconColor, title, subtitle, action, href }: P
           </p>
         )}
       </div>
-      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+      {/* 086 (AC-18): akcja nagłówka MOŻE się zwęzić i nie bierze więcej niż połowy szerokości.
+          Do 086 miała `flex-shrink: 0` bez ograniczenia, więc długa treść (nazwa lokalizacji
+          w Pogodzie) rosła kosztem tytułu i przycinała go do kilku liter. */}
+      {action && <div style={{ flexShrink: 1, minWidth: 0, maxWidth: "55%" }}>{action}</div>}
     </div>
   );
 }

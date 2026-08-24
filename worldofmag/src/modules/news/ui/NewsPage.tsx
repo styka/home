@@ -608,7 +608,11 @@ export function NewsPage({
                    którym jesteś, stoi w przyklejonym nagłówku jego sekcji — pokazywanie jej także
                    tutaj było zgłoszeniem właściciela po 083 („podwójnie mamy bieżący temat").
                    Przy okazji: stała etykieta ma stałą szerokość, więc pasek przestaje skakać. */
-                etykietaStala={t("tematy")}
+                /* 086 (AC-21): etykieta mówi, CO robi kontrolka, a nie powtarza nazwy zakładki.
+                   Zgłoszenie właściciela: „zakładka nazywa się tematy i ten input nazywa się tematy,
+                   co wprawia usera w dezorientację. Skoro to już jest tylko element do nawigacji do
+                   konkretnego tematu, a nie filtr". */
+                etykietaStala={t("przejdzDoTematu")}
                 akcje={
                   <div className="ml-auto flex shrink-0 items-center gap-1">
                     <SourceFilter

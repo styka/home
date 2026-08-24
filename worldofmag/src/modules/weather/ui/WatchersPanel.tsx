@@ -334,53 +334,58 @@ export function WatchersPanel({
            * AI (po prawej) stoją razem, u góry. Nic nie ubyło: `AiContentMeta` dostaje ten sam komplet
            * propsów, co w bloku, który zniknął ze stopki.
            */}
-          <div className="flex flex-wrap items-center gap-1.5 pb-1">
-              {/* Wybór układu ma sens dopiero przy więcej niż jednym obserwatorze — przy jednym
-                  trzy przyciski sortowania niczego nie zmieniają (warunek zachowany z 082). */}
-              <div className={cn("flex items-center gap-0.5", watchers.length < 2 && "hidden")}>
-                {(
-                  [
-                    { key: "status" as const, Icon: ArrowDownUp, label: t("ukladWgStanu") },
-                    { key: "grouped" as const, Icon: Rows3, label: t("ukladSekcje") },
-                    { key: "manual" as const, Icon: ListFilter, label: t("ukladKolejnosc") },
-                  ]
-                ).map(({ key, Icon, label }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => zapisz({ layout: key })}
-                    disabled={!oceniono && key !== "manual"}
-                    aria-pressed={layout === key}
-                    title={oceniono || key === "manual" ? label : t("najpierwOcen")}
-                    aria-label={label}
-                    className={cn(
-                      "rounded-md border p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-                      layout === key
-                        ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                        : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
-                    )}
-                  >
-                    <Icon size={14} />
-                  </button>
-                ))}
-              </div>
+          {/**
+           * 086 (AC-17): DWA WIERSZE zamiast jednego — najpierw stan treści, pod nim wybór układu.
+           *
+           * 085 postawiło je obok siebie w jednej linii i właściciel poprosił o odwrotną kolejność
+           * w pionie: „ikony wyboru widoku obserwatorów powinny być pod informacjami o odświeżaniu".
+           * Ma to też skutek uboczny, który był problemem w 085: przy wąskim ekranie dwa elementy
+           * w jednym wierszu zawijały się nieprzewidywalnie, a teraz każdy ma własny wiersz.
+           */}
+          <div className="flex flex-col gap-1.5 pb-1">
+            <AiContentMeta
+              generatedAt={generatedAt}
+              stale={stale}
+              busy={loading}
+              onRefresh={() => evaluate(true)}
+              refreshLabel={t("przeanalizujNaNowo")}
+              staleHint={t("prognozaAlboObserwatoryZmienily")}
+              usage={usage}
+              swiezy={!zPamieci}
+              sectionKind="weather.watchers"
+              mode={mode}
+              onModeChange={setMode}
+            />
 
-              {/* Stan treści AI po prawej — ten sam komponent, co w pozostałych sekcjach AI. */}
-              <div className="ml-auto min-w-0">
-                <AiContentMeta
-                  generatedAt={generatedAt}
-                  stale={stale}
-                  busy={loading}
-                  onRefresh={() => evaluate(true)}
-                  refreshLabel={t("przeanalizujNaNowo")}
-                  staleHint={t("prognozaAlboObserwatoryZmienily")}
-                  usage={usage}
-                  swiezy={!zPamieci}
-                  sectionKind="weather.watchers"
-                  mode={mode}
-                  onModeChange={setMode}
-                />
-              </div>
+            {/* Wybór układu ma sens dopiero przy więcej niż jednym obserwatorze — przy jednym
+                trzy przyciski sortowania niczego nie zmieniają (warunek zachowany z 082). */}
+            <div className={cn("flex items-center gap-0.5", watchers.length < 2 && "hidden")}>
+              {(
+                [
+                  { key: "status" as const, Icon: ArrowDownUp, label: t("ukladWgStanu") },
+                  { key: "grouped" as const, Icon: Rows3, label: t("ukladSekcje") },
+                  { key: "manual" as const, Icon: ListFilter, label: t("ukladKolejnosc") },
+                ]
+              ).map(({ key, Icon, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => zapisz({ layout: key })}
+                  disabled={!oceniono && key !== "manual"}
+                  aria-pressed={layout === key}
+                  title={oceniono || key === "manual" ? label : t("najpierwOcen")}
+                  aria-label={label}
+                  className={cn(
+                    "rounded-md border p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                    layout === key
+                      ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                      : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                  )}
+                >
+                  <Icon size={14} />
+                </button>
+              ))}
+            </div>
           </div>
 
           {sekcje
