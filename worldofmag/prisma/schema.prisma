@@ -2676,7 +2676,8 @@ model NewsItem {
   noveltyNote   String?
   imageUrl      String?
   publishedAt   DateTime
-  // "PENDING" | "ACKNOWLEDGED" | "DISMISSED".
+  // "PENDING" | "ACKNOWLEDGED". 086: `DISMISSED` usunięty — zapisywała go akcja „Odrzuć", której
+  // żaden odczyt nie odróżniał od „Przeczytane" (migracja 0258 przepisała istniejące wiersze).
   status        String   @default("PENDING")
   // 039: artykuł z puli, z którego powstała ta pozycja. Opcjonalny — pozycje sprzed puli nie mają
   // czego wskazywać.

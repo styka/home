@@ -4,6 +4,22 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Bramka zielona dzięki martwym importom
+**Problem:** Po przeniesieniu rdzenia gorących tematów z akcji do `lib/goraceTematy.ts` w
+`actions/news.ts` zostały importy, których nikt już nie wołał (`rememberedContent`, `hashInputs`,
+`resolveSectionMode`). Lint ich nie zgłasza. Bramka `check:content-memory` klasyfikuje plik po tym,
+czy **importuje** `rememberedContent` — więc przez cały etap implementacji i weryfikacji świeciła na
+zielono, opisując plik jako „treść zapamiętywana", choć plik nie pamięta już niczego. Dopiero
+sprzątnięcie martwych importów w recenzji zaczerwieniło bramkę i pokazało, że wpis w manifeście
+opisuje stan sprzed przeniesienia.
+**Rozwiązanie:** Usunięte trzy martwe importy, wpis w `content-memory-coverage.json` przeklasyfikowany
+na `on-demand` (zostało jedno wywołanie: `resummarizeItem`), a uzasadnienie przy `newsRefresh.ts`
+wskazuje teraz nowy plik rdzenia.
+**Lekcja:** Bramka, która rozpoznaje wzorzec po IMPORCIE, dziedziczy wszystkie martwe importy jako
+fałszywe potwierdzenia. Po każdym przeniesieniu logiki między plikami sprzątnij importy **zanim**
+uznasz bramki za dowód — inaczej dowodzą stanu sprzed przeniesienia. Prosty test: policz wystąpienia
+nazwy w pliku; jedno znaczy „tylko import".
+
 ## 2026-08-24 — Sufit na sąsiedzie zamiast podłogi dla siebie
 **Problem:** Długa nazwa lokalizacji w Pogodzie („Kocoń, województwo śląskie") przycinała TYTUŁ
 modułu do jednej litery — akcja nagłówka miała `flex-shrink: 0`, więc rosła kosztem sąsiada.

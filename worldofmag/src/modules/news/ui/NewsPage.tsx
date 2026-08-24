@@ -359,16 +359,18 @@ export function NewsPage({
    * 086 (AC-20): zasłona liczona z WYSOKOŚCI, nie z POZYCJI. To jest poprawka błędu z 085.
    *
    * 085 mierzyło „odległość dolnej krawędzi paska modułu od górnej krawędzi ramy" i nazywało to
-   * jedną miarą odporną na to, co stanie wyżej. Miara jest jednak POZYCYJNA: dopóki użytkownik nie
-   * przewinie, pasek modułu stoi nisko (pod blokiem nagłówka i paskiem stanu odświeżania), więc
-   * odległość jest dużo większa od docelowej zasłony. Zmierzone przed poprawką: nagłówki sekcji
-   * przyklejały się na 107 px zamiast ~49 — czyli 58 px za nisko, dokładnie jak w zgłoszeniu
-   * („tematy wiadomości przyklejają się za nisko").
+   * jedną miarą odporną na to, co stanie wyżej. Miara jest jednak POZYCYJNA i rośnie o wszystko, co
+   * stanie MIĘDZY górą ramy a paskiem modułu — u właściciela o pasek stanu odświeżania.
+   *
+   * Uwaga na pułapkę pomiarową: dopóki pasek modułu PRZYLEGA do paska widoku, obie formuły dają tę
+   * samą liczbę (zmierzone 107 px = 48 px paska widoku + 59 px paska modułu — wartość poprawna).
+   * Dlatego pierwsza diagnoza („58 px za nisko") była nadinterpretacją, a test, który tylko czytał
+   * tę liczbę, przechodził w obu wersjach kodu. Różnicę widać dopiero, gdy nad paskiem modułu coś
+   * stanie: ze starą miarą zasłona rośnie 107 → 147 px, z nową zostaje na 107.
    *
    * Suma dwóch WYSOKOŚCI — paska widoku (rama publikuje ją jako `--view-bar-h`) i własnej wysokości
-   * paska modułu — nie zależy od przewinięcia, bo obie składowe są wysokościami. Pomiar
-   * weryfikacyjny robimy przy przewinięciu ZERO, bo tam objawia się usterka; po przewinięciu obie
-   * wersje dawały tę samą, poprawną liczbę i dlatego 085 przeszło weryfikację z tym błędem.
+   * paska modułu — nie zależy od tego, co stoi wyżej ani od przewinięcia, bo obie składowe są
+   * wysokościami.
    */
   useEffect(() => {
     const el = pasekRef.current;

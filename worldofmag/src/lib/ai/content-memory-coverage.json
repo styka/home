@@ -1,7 +1,7 @@
 {
   "src/modules/news/actions/news.ts": {
-    "mode": "remembered",
-    "reason": "Plik ma dwa rodzaje wywolan i decyduje o nich osobno. getHotTopics przechodzi przez rememberedContent (kind news.hotTopics) — wejscie na zakladke nie moze kosztowac za kazdym razem, a nowe artykuly w puli tylko zapalaja znacznik „nieaktualne”. resummarizeItem zostaje na zadanie: kliknięcie w inną długość JEST wyraźną prośbą, a wynik zależy od wybranej długości, wiec pamiec zwrocilaby nie to, o co uzytkownik poprosil."
+    "mode": "on-demand",
+    "reason": "086: po przeniesieniu rdzenia goracych tematow do modules/news/lib/goraceTematy.ts w tym pliku zostalo JEDNO wywolanie modelu — resummarizeItem. Jest na zadanie: klikniecie w inna dlugosc streszczenia JEST wyrazna prosba, a wynik zalezy od wybranej dlugosci, wiec pamiec zwrocilaby nie to, o co uzytkownik poprosil."
   },
   "src/modules/weather/actions/weather.ts": {
     "mode": "remembered",
@@ -121,7 +121,7 @@
   },
   "src/modules/news/jobs/newsRefresh.ts": {
     "mode": "on-demand",
-    "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (modules/news/actions/news.ts, kind news.hotTopics)."
+    "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (modules/news/lib/goraceTematy.ts, kind news.hotTopics) — od 086 ten przebieg sam ja przelicza, gdy przyszly nowe materialy."
   },
   "src/modules/pets/jobs/petsInsights.ts": {
     "mode": "remembered",

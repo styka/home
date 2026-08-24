@@ -8,9 +8,6 @@ import { parseJsonLoose } from "@/platform/llm/json";
 import { fetchArticle } from "@/lib/news/article";
 import { DEFAULT_SOURCES } from "@/lib/news/sources";
 import { fingerprintOf } from "@/lib/textKey";
-import { rememberedContent, hashInputs } from "@/platform/ai/contentMemory";
-import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
-import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { visibleUsage } from "@/platform/ai/costVisibility";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
@@ -19,7 +16,7 @@ import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
-import { przeliczGoraceTematy, type HotTopic } from "../lib/goraceTematy";
+import { przeliczGoraceTematy, type HotTopic, type WynikGoracychTematow } from "../lib/goraceTematy";
 
 export type SummaryLength = "short" | "medium" | "long";
 /**
@@ -776,20 +773,13 @@ export async function acknowledgeAllItems(): Promise<{ count: number }> {
 
 // ─── Hot topics ────────────────────────────────────────────────────────────
 
-export interface HotTopicsResult {
-  topics: HotTopic[];
-  /** Kiedy powstała ta lista (pamięć treści) — puste, gdy nie ma z czego jej zbudować. */
-  generatedAt: string | null;
-  /** Materiał się zmienił od czasu wygenerowania — informacja, nie powód do regeneracji. */
-  stale: boolean;
-  usage?: AiUsageInfo;
-  /** 041: lista czeka na kliknięcie — tryb sekcji zabrania generować przy wejściu na zakładkę. */
-  pending: boolean;
-  /** 041: obowiązujący tryb odświeżania tej sekcji (do przełącznika w pasku). */
-  mode: AiSectionMode;
-  /** 083 (recenzja): czy treść przyszła z pamięci, czy z właśnie wykonanego wywołania modelu. */
-  fromMemory: boolean;
-}
+/**
+ * 086: kształt wyniku jest JEDEN — ten z rdzenia (`WynikGoracychTematow`). Akcja różni się od
+ * rdzenia wyłącznie tym, komu pokazuje koszt, a nie zestawem pól; osobna, ręcznie powtórzona
+ * deklaracja rozjechałaby się przy pierwszym nowym polu, bo `return { ...wynik, usage }` przepuszcza
+ * nadmiarowe właściwości bez błędu kompilacji.
+ */
+export type HotTopicsResult = WynikGoracychTematow;
 
 export interface HiddenTopicDTO {
   id: string;
