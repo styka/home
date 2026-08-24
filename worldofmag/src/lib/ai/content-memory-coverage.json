@@ -138,5 +138,9 @@
   "src/platform/jobs/handlers/userFacts.ts": {
     "mode": "on-demand",
     "reason": "Wnioskowanie faktow o uzytkowniku odpalane jawnie i pracujace za kazdym razem na INNYM materiale (nowe zapisane/zablokowane pomysly, nowe tematy). Trwalosc daje tabela UserFact — hipotezy zostaja zapisane, wiec nic nie powstaje dwa razy; pamiec tresci zwrocilaby tu wynik sprzed zmiany zachowan, czyli dokladnie to, czego ten mechanizm ma nie robic."
+  },
+  "src/modules/news/lib/goraceTematy.ts": {
+    "mode": "remembered",
+    "reason": "Gorące tematy to treść DO CZYTANIA — lista powstaje raz i wraca z pamięci; 086 przeniosło rdzeń z akcji, żeby wołało go też zadanie odświeżania (force przy nowych materiałach)."
   }
 }

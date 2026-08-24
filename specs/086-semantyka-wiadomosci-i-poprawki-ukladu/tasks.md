@@ -84,22 +84,22 @@
 
 ## Faza 5 — Świeże gorące tematy *(AC-8..AC-11)*
 
-- [ ] **T-15** — **Rdzeń generowania do `lib/goraceTematy.ts`**: `przeliczGoraceTematy(ownerId,
+- [x] **T-15** — **Rdzeń generowania do `lib/goraceTematy.ts`**: `przeliczGoraceTematy(ownerId,
   { force })`; Server Action staje się cienką nakładką (`requireAuth` → rdzeń → `visibleUsage`).
   *Gotowe, gdy:* zachowanie zakładki bez zmian, a rdzeń nie woła `requireAuth`.
 
-- [ ] **T-16** — **Etap 5 w zadaniu odświeżania** (AC-8, AC-9): po linii czasu, tylko gdy
+- [x] **T-16** — **Etap 5 w zadaniu odświeżania** (AC-8, AC-9): po linii czasu, tylko gdy
   `pool.fetched > 0`, z `ctx.progress` i doliczeniem zużycia do wspólnego `sink`.
   *Gotowe, gdy:* po pobraniu materiałów zakładka pokazuje świeżą listę bez klikania.
 
-- [ ] **T-17** — **Odporność etapu 5** (AC-11): własny `try/catch` + `logEvent("warn", …)`; wyjątek
+- [x] **T-17** — **Odporność etapu 5** (AC-11): własny `try/catch` + `logEvent("warn", …)`; wyjątek
   **nie przerywa** przebiegu. Test jednostkowy dokładnie tego scenariusza.
   *Gotowe, gdy:* test dowodzi, że przy wyjątku z przeliczania przebieg kończy się sukcesem i zwraca
   policzone wiadomości.
 
 ## Faza 6 — Przyklejanie nagłówków tematów *(AC-20)*
 
-- [ ] **T-18** — **Zasłona liczona z WYSOKOŚCI, nie z pozycji**: `--view-bar-h` + `offsetHeight`
+- [x] **T-18** — **Zasłona liczona z WYSOKOŚCI, nie z pozycji**: `--view-bar-h` + `offsetHeight`
   paska modułu, zamiast odległości dolnej krawędzi paska od góry ramy (diagnoza w planie §5).
   *Gotowe, gdy:* pomiar PRZY PRZEWINIĘCIU ZERO pokazuje odstęp ≤ 4 px (punkt odniesienia z T-1).
 

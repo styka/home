@@ -19,6 +19,7 @@ import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { przeliczGoraceTematy, type HotTopic } from "../lib/goraceTematy";
 
 export type SummaryLength = "short" | "medium" | "long";
 /**
@@ -775,15 +776,6 @@ export async function acknowledgeAllItems(): Promise<{ count: number }> {
 
 // ─── Hot topics ────────────────────────────────────────────────────────────
 
-export interface HotTopic {
-  title: string;
-  summary: string;
-  suggestedFilter: string;
-  sources: string[];
-  /** Odcisk tytułu — po nim rozpoznajemy temat odrzucony przez użytkownika. */
-  fingerprint: string;
-}
-
 export interface HotTopicsResult {
   topics: HotTopic[];
   /** Kiedy powstała ta lista (pamięć treści) — puste, gdy nie ma z czego jej zbudować. */
@@ -817,106 +809,11 @@ export interface HiddenTopicDTO {
  */
 export async function getHotTopics(force?: boolean): Promise<HotTopicsResult> {
   const user = await requireAuth();
-  const cutoff = new Date(Date.now() - FRESHNESS_MS);
-
-  const articles = await prisma.newsArticle.findMany({
-    where: { ...(await filtrMoichRekordow(user.id)), publishedAt: { gte: cutoff } },
-    orderBy: { publishedAt: "desc" },
-    take: 60,
-    include: { source: { select: { name: true } } },
-  });
-  // 041: tryb rozstrzygamy PRZED sprawdzeniem materiału, bo trafia do wyniku w obu ścieżkach —
-  // przełącznik w pasku ma działać także wtedy, gdy nie ma jeszcze z czego budować listy.
-  const mode = await resolveSectionMode(user.id, "news.hotTopics");
-
-  if (articles.length === 0) {
-    return { topics: [], generatedAt: null, stale: false, fromMemory: false, pending: false, mode };
-  }
-
-  const hidden = await prisma.newsHiddenTopic.findMany({
-    take: SUFIT_LISTY,
-    where: { ...(await filtrMoichRekordow(user.id)) },
-    select: { fingerprint: true },
-  });
-
-  /**
-   * 084 (AC-25, AC-26): propozycja, którą JUŻ MONITORUJESZ, nie jest propozycją.
-   *
-   * Do 083 odsiewaliśmy wyłącznie tematy odrzucone, więc temat dodany do monitorowanych wracał na
-   * listę propozycji przy każdym odświeżeniu — użytkownik dodawał go, widział go z powrotem
-   * i nie miał jak stwierdzić, czy dodanie w ogóle zadziałało.
-   *
-   * Odcisk liczymy TĄ SAMĄ funkcją co dla odrzuconych (`fingerprintOf`), a nie drugą regułą
-   * podobieństwa: dwie reguły rozjechałyby się przy pierwszej zmianie i dałyby stan, w którym temat
-   * jest „odrzucony, ale nie taki sam jak monitorowany".
-   *
-   * To załatwia też AC-26 bez osobnego stanu „przeniesione": dodana propozycja znika, bo od tej
-   * chwili jest tematem, a nie propozycją.
-   */
-  const monitorowane = await prisma.newsTopic.findMany({
-    take: SUFIT_LISTY,
-    where: { ...(await filtrMoichRekordow(user.id)) },
-    select: { title: true },
-  });
-  const hiddenSet = new Set([
-    ...hidden.map((h) => h.fingerprint),
-    ...monitorowane.map((t) => fingerprintOf(t.title)),
-  ]);
-
-  const headlines = articles.map((a) => `[${a.source.name}] ${a.title}`);
-
-  const remembered = await rememberedContent<{ topics: HotTopic[] }>({
-    ownerId: user.id,
-    kind: "news.hotTopics",
-    scopeKey: "default",
-    // Warunki = materiał, z którego lista powstała. Nowe artykuły w puli zapalają „nieaktualne",
-    // ale NIE generują listy od nowa — o tym decyduje kliknięcie użytkownika.
-    inputHash: hashInputs(articles.length, articles[0]?.id ?? "", articles[articles.length - 1]?.id ?? ""),
-    force,
-    mode,
-    generate: async () => {
-      const system =
-        "Analizujesz nagłówki wiadomości z ostatnich 24h z kilku polskich portali. Pogrupuj je w " +
-        "6–8 najważniejszych, wyraźnie różnych gorących tematów. Pisz po polsku. Zwróć WYŁĄCZNIE JSON.";
-      const userPrompt =
-        `NAGŁÓWKI:\n${headlines.join("\n")}\n\n` +
-        `Zwróć JSON: {"topics":[{"title":"krótka nazwa tematu","summary":"1–2 zdania o co chodzi",` +
-        `"suggestedFilter":"propozycja filtra semantycznego do monitorowania tego tematu",` +
-        `"sources":["nazwy portali, które o tym piszą"]}]}`;
-      const sink: LlmSink = [];
-      const out = await llmJson<{ topics: HotTopic[] }>(
-        "reasoning",
-        system,
-        userPrompt,
-        2000,
-        sink,
-        "gorące tematy"
-      );
-      const topics = (out.topics ?? []).slice(0, 8).map((t) => ({
-        ...t,
-        fingerprint: fingerprintOf(t.title ?? ""),
-      }));
-      return { value: { topics }, usage: usageFromChat(sink) };
-    },
-  });
-
-  // Lista jeszcze nie powstała, a tryb zabrania generować samoczynnie.
-  if (remembered.pending) {
-    return { topics: [], generatedAt: null, stale: false, fromMemory: false, pending: true, mode };
-  }
-
-  return {
-    // Odrzucone i monitorowane odfiltrowujemy PO odczycie z pamięci, a nie przed zapisem — dzięki
-    // temu cofnięcie odrzucenia (albo usunięcie tematu) przywraca propozycję od razu, bez płacenia
-    // za ponowne wygenerowanie listy.
-    topics: (remembered.value.topics ?? []).filter((t) => !hiddenSet.has(t.fingerprint)),
-    generatedAt: remembered.generatedAt,
-    stale: remembered.stale,
-    fromMemory: remembered.fromMemory,
-    usage: await visibleUsage(remembered.usage),
-    pending: false,
-    mode,
-  };
+  // 086: cała logika mieszka w rdzeniu, który przyjmuje właściciela parametrem — bo woła go też
+  // zadanie odświeżania, a ono nie ma sesji. Akcja robi trzy rzeczy: sprawdza sesję, woła rdzeń
+  // i decyduje, komu wolno zobaczyć koszt.
+  const wynik = await przeliczGoraceTematy(user.id, { force });
+  return { ...wynik, usage: await visibleUsage(wynik.usage) };
 }
 
 /** „Nie proponuj tego tematu" — odrzucenie po odcisku tytułu (gorący temat nie ma własnego id). */

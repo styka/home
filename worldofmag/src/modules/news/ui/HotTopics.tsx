@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import type { HotTopic } from "../lib/goraceTematy";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Plus, Loader2, EyeOff, Undo2, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +15,6 @@ import {
   hideHotTopic,
   unhideHotTopic,
   getHiddenTopics,
-  type HotTopic,
   type HotTopicsResult,
   deleteTopic,
   type HiddenTopicDTO,

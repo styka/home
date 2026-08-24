@@ -356,19 +356,28 @@ export function NewsPage({
 
 
   /**
-   * 085: mierzymy CAŁĄ ZASŁONĘ u góry ramy, a nie samą wysokość paska modułu.
+   * 086 (AC-20): zasłona liczona z WYSOKOŚCI, nie z POZYCJI. To jest poprawka błędu z 085.
    *
-   * Od 085 nad paskiem nawigacji stoi jeszcze przyklejony pasek widoku. Suma dwóch osobnych miar
-   * („wysokość tamtego" + „wysokość tego") rozjeżdżałaby się przy każdej zmianie któregokolwiek
-   * z nich; odległość DOLNEJ krawędzi paska modułu od GÓRNEJ krawędzi ramy jest jedną liczbą
-   * i jest poprawna niezależnie od tego, co jeszcze stanie wyżej.
+   * 085 mierzyło „odległość dolnej krawędzi paska modułu od górnej krawędzi ramy" i nazywało to
+   * jedną miarą odporną na to, co stanie wyżej. Miara jest jednak POZYCYJNA: dopóki użytkownik nie
+   * przewinie, pasek modułu stoi nisko (pod blokiem nagłówka i paskiem stanu odświeżania), więc
+   * odległość jest dużo większa od docelowej zasłony. Zmierzone przed poprawką: nagłówki sekcji
+   * przyklejały się na 107 px zamiast ~49 — czyli 58 px za nisko, dokładnie jak w zgłoszeniu
+   * („tematy wiadomości przyklejają się za nisko").
+   *
+   * Suma dwóch WYSOKOŚCI — paska widoku (rama publikuje ją jako `--view-bar-h`) i własnej wysokości
+   * paska modułu — nie zależy od przewinięcia, bo obie składowe są wysokościami. Pomiar
+   * weryfikacyjny robimy przy przewinięciu ZERO, bo tam objawia się usterka; po przewinięciu obie
+   * wersje dawały tę samą, poprawną liczbę i dlatego 085 przeszło weryfikację z tym błędem.
    */
   useEffect(() => {
     const el = pasekRef.current;
     const rama = ramaRef.current;
     if (!el || !rama || typeof ResizeObserver === "undefined") return;
-    const zmierz = () =>
-      setPasekH(Math.max(0, Math.round(el.getBoundingClientRect().bottom - rama.getBoundingClientRect().top)));
+    const zmierz = () => {
+      const pasekWidoku = parseFloat(getComputedStyle(rama).getPropertyValue("--view-bar-h")) || 0;
+      setPasekH(Math.max(0, Math.round(pasekWidoku + el.offsetHeight)));
+    };
     zmierz();
     const ro = new ResizeObserver(zmierz);
     ro.observe(el);
