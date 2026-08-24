@@ -148,7 +148,7 @@ w `src/modules/tasks/module.server.ts`.
   wyłącznie ze zmiennych CSS, cele dotyku `py-3` (C-30, C-31), teksty przez `t()` (C-32).
 - **`handleSend` w trybie zgłoszenia** przestaje wołać `callAgent`. Zamiast tego:
   1. tytuł roboczy: `roboczyTytul(text)` — `🐛 ` + pierwsze zdanie/≤80 znaków (czysta funkcja
-     w `src/lib/ai/feedbackTitle.ts`, testowalna bez bazy),
+     w `src/lib/ai/zgloszenie.ts`, testowalna bez bazy),
   2. opis: **dokładnie ten sam skład, co dziś** — opis zgłaszającego *verbatim* + „Kontekst
      wskazanego miejsca (UI)" (AC-5),
   3. `await submitFeedbackTask({ title, description, priority, screenshotDataUrl })`,
@@ -208,7 +208,7 @@ wraca do wnętrza kolumny (AC-12). Zero zmian w mechanizmie zasłony z C-33.
 | `src/modules/tasks/jobs/feedbackTitle.ts` | nowy | handler dorabiający tytuł (jedno `chatComplete`, `updateWithVersion`) |
 | `src/modules/tasks/jobs/index.ts` | nowy | mapa handlerów modułu (= allowlista kolejkowania) |
 | `src/modules/tasks/module.server.ts` | edycja | leniwe pole `jobs` |
-| `src/lib/ai/feedbackTitle.ts` | nowy | `roboczyTytul()` — czysta funkcja + test jednostkowy |
+| `src/lib/ai/zgloszenie.ts` | nowy | reguły zgłoszenia — `roboczyTytul()`, `czyTytulRoboczy()`, `poprawnyZrzut()`, `MAX_ZRZUT_ZNAKOW` + testy |
 | `src/lib/ai/content-memory-coverage.json` | edycja | wpis `on-demand` dla nowego handlera |
 | `src/lib/ai/action-coverage.json` | edycja | wpis dla `tasks:getTaskAttachments` |
 | `src/platform/ai/assistantBus.ts` | edycja | `feedbackShot?: string` w `AssistantOpenDetail` |
@@ -248,6 +248,18 @@ wraca do wnętrza kolumny (AC-12). Zero zmian w mechanizmie zasłony z C-33.
 | AC-12, AC-13 | Pomiar w klikaczu: `boundingBox().x` kropki ≥ `x` kolumny treści; kropka nadal na linii (odchyłka ≤1 px) |
 | AC-14, AC-15 | Pomiar wysokości pierwszego wiersza paska przy 360 px w widoku bez akcji (0 px) i z akcjami (bez zmian); desktop bez zmian |
 | AC-16..AC-18 | Klikacz przy 360 px: nagłówek „Proponowane" w jednym wierszu, pozycje w menu ⋮, brak pozycji przy zerowym liczniku |
+
+### 3.5 Reguły zgłoszenia w JEDNYM, czystym module (korekta planu, C-54)
+
+Pierwsza wersja trzymała walidację zrzutu jako prywatny helper w `src/actions/feedback.ts`.
+**Bramka warstwy reguł (`check:domain`) odrzuciła to i miała rację**: reguła w pliku `"use server"`
+jest niesprawdzalna, bo taki plik nie eksportuje funkcji synchronicznej, więc nie da się jej
+zaimportować do testu. Reguły zgłoszenia mieszkają więc razem w `src/lib/ai/zgloszenie.ts`
+(tytuł roboczy + dopuszczalność zrzutu + limit rozmiaru) i mają wspólny test.
+
+Efekt uboczny, który jest właściwym celem: **limit zrzutu ma jedno miejsce** — czyta go klient
+(decydując, czy degradować PNG do JPEG) i serwer (ostatnia linia obrony). Dwie kopie rozjechałyby
+się przy pierwszej zmianie, a objawem byłby zrzut cicho odrzucany po „udanym" wysłaniu.
 
 ## 9. Ryzyka techniczne i plan wycofania
 

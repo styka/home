@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { roboczyTytul, czyTytulRoboczy, PREFIKS_ZGLOSZENIA } from "../feedbackTitle";
+import { roboczyTytul, czyTytulRoboczy, poprawnyZrzut, PREFIKS_ZGLOSZENIA, MAX_ZRZUT_ZNAKOW } from "../zgloszenie";
 
 test("pusty opis daje nazwę zastępczą, nie błąd", () => {
   assert.equal(roboczyTytul(""), `${PREFIKS_ZGLOSZENIA}Zgłoszenie`);
@@ -33,4 +33,14 @@ test("czyTytulRoboczy odróżnia tytuł nadany od zmienionego ręcznie", () => {
   const roboczy = roboczyTytul("coś nie działa");
   assert.equal(czyTytulRoboczy(roboczy, roboczy), true);
   assert.equal(czyTytulRoboczy("🐛 Coś zupełnie innego", roboczy), false);
+});
+
+test("zrzut: przyjmujemy obraz w limicie, odrzucamy resztę — zawsze po cichu", () => {
+  assert.equal(poprawnyZrzut(`data:image/png;base64,${"A".repeat(100)}`), true);
+  assert.equal(poprawnyZrzut(`data:image/jpeg;base64,${"A".repeat(100)}`), true);
+  assert.equal(poprawnyZrzut(undefined), false);
+  assert.equal(poprawnyZrzut(null), false);
+  assert.equal(poprawnyZrzut("https://example.test/obrazek.png"), false, "tylko data URL");
+  assert.equal(poprawnyZrzut("data:text/html;base64,AAAA"), false, "tylko obraz");
+  assert.equal(poprawnyZrzut(`data:image/png;base64,${"A".repeat(MAX_ZRZUT_ZNAKOW)}`), false, "poza limitem");
 });

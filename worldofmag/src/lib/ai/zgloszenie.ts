@@ -1,5 +1,5 @@
 /**
- * 099: TYTUŁ ROBOCZY ZGŁOSZENIA.
+ * 099: REGUŁY ZGŁOSZENIA Z TRYBU WSKAZYWANIA — tytuł roboczy i dopuszczalność zrzutu.
  *
  * Zgłoszenie z trybu wskazywania zapisuje się NATYCHMIAST, zanim cokolwiek trafi do modelu —
  * zamknięcie asystenta przerywa trwające żądanie (`abort()` w `handleClose`), więc każda droga,
@@ -38,4 +38,28 @@ export function roboczyTytul(opis: string): string {
 /** Czy tytuł jest wciąż tym, który nadaliśmy przy zapisie (a nie zmienionym przez człowieka). */
 export function czyTytulRoboczy(tytul: string, oczekiwany: string): boolean {
   return tytul.trim() === oczekiwany.trim();
+}
+
+/**
+ * Górny limit zrzutu wskazanego elementu (długość data URL-a).
+ *
+ * Obraz trzymamy jako data URL w kolumnie tekstowej — dokładnie tak, jak załączniki notatek i wizyt.
+ * Limit jest po to, żeby zrzut z ekranu 4K nie rozdął wiersza zadania.
+ *
+ * Stoi TU, a nie osobno po obu stronach, bo tę samą liczbę musi znać klient (który decyduje, czy
+ * degradować PNG do JPEG) i serwer (który jest ostatnią linią obrony). Dwie kopie rozjechałyby się
+ * przy pierwszej zmianie, a objawem byłby zrzut cicho odrzucany po udanym wysłaniu.
+ */
+export const MAX_ZRZUT_ZNAKOW = 1_500_000;
+
+/**
+ * Czy zrzut nadaje się do zapisania.
+ *
+ * Zły zrzut MILCZY — zgłoszenie ma powstać zawsze, więc to nie jest walidacja formularza, tylko
+ * decyzja „dołączać czy nie". Stąd kształt predykatu, a nie funkcji rzucającej.
+ */
+export function poprawnyZrzut(dataUrl: string | undefined | null): dataUrl is string {
+  if (!dataUrl) return false;
+  if (!dataUrl.startsWith("data:image/")) return false;
+  return dataUrl.length <= MAX_ZRZUT_ZNAKOW;
 }

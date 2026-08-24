@@ -8,6 +8,7 @@ import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { openAssistant } from "@/platform/ai/assistantBus";
 import { FEEDBACK_START_EVENT } from "@/platform/ai/feedbackBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
+import { MAX_ZRZUT_ZNAKOW } from "@/lib/ai/zgloszenie";
 
 // Tryb wskazywania (admin-only): admin włącza tryb, najeżdża/klika dowolny element
 // UI, a my rozpoznajemy „miejsce" (route + obszar + element + tekst w pobliżu) i
@@ -77,7 +78,6 @@ function domPath(el: HTMLElement): string {
 //     wskazywania byłby gorszy od braku zrzutu;
 //   • degradacja PNG → JPEG → brak zrzutu — zamiast odrzucać za duży obraz, najpierw próbujemy
 //     go zmniejszyć; dopiero potem rezygnujemy, po cichu.
-const MAX_ZRZUT_ZNAKOW = 1_500_000;
 const LIMIT_CZASU_MS = 4000;
 
 async function zrzutElementu(el: HTMLElement): Promise<string | undefined> {

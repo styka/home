@@ -16,7 +16,7 @@ import { updateWithVersion } from "@/platform/concurrency/version";
 import { usageFromChat, type AiUsageInfo } from "@/platform/ai/usage";
 import { logEvent } from "@/platform/observability/log";
 import type { JobContext } from "@/platform/jobs/types";
-import { czyTytulRoboczy, PREFIKS_ZGLOSZENIA } from "@/lib/ai/feedbackTitle";
+import { czyTytulRoboczy, PREFIKS_ZGLOSZENIA } from "@/lib/ai/zgloszenie";
 
 export interface FeedbackTitlePayload {
   taskId: string;

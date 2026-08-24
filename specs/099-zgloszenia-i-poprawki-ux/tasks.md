@@ -66,9 +66,13 @@
   *Gotowe, gdy:* zgłoszenie z zrzutem tworzy zadanie **i** załącznik, a zgłoszenie z uszkodzonym
   zrzutem tworzy samo zadanie bez błędu (AC-6, AC-8, AC-9, AC-11).
 
-- [x] **T-8** — **Tytuł roboczy jako czysta funkcja**: `src/lib/ai/feedbackTitle.ts` `roboczyTytul(opis)`
-  → `🐛 ` + pierwsze zdanie/≤80 znaków + test jednostkowy (pusty opis, bardzo długi, wielozdaniowy).
-  *Gotowe, gdy:* test przechodzi w `npm run test:unit`, a funkcja nie dotyka bazy ani Reacta.
+- [x] **T-8** — **Reguły zgłoszenia jako czysty moduł**: `src/lib/ai/zgloszenie.ts` — `roboczyTytul(opis)`
+  (`🐛 ` + pierwsze zdanie/≤80 znaków), `czyTytulRoboczy`, `poprawnyZrzut`, `MAX_ZRZUT_ZNAKOW`
+  + testy jednostkowe. **Korekta wobec planu (C-54):** walidacja zrzutu miała być prywatnym helperem
+  w `src/actions/feedback.ts`; `check:domain` słusznie to odrzuciło — reguła w pliku `"use server"`
+  jest niesprawdzalna, bo taki plik nie eksportuje funkcji synchronicznej. Przy okazji limit zrzutu
+  ma teraz JEDNO miejsce, wspólne dla klienta i serwera.
+  *Gotowe, gdy:* testy przechodzą, `check:domain` zielone, funkcje nie dotykają bazy ani Reacta.
 
 - [x] **T-9** — **Zadanie w tle `tasks.feedbackTitle`** (plan §3.3):
   `src/modules/tasks/jobs/feedbackTitle.ts` + `src/modules/tasks/jobs/index.ts`, wpięcie **leniwym**

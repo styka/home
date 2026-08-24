@@ -7,7 +7,7 @@ import { assertProjectAccess } from "@/modules/tasks/contract";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { enqueue } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
-import { roboczyTytul } from "@/lib/ai/feedbackTitle";
+import { roboczyTytul, poprawnyZrzut } from "@/lib/ai/zgloszenie";
 import { logEvent } from "@/platform/observability/log";
 import type { TaskPriority } from "@/types";
 
@@ -29,15 +29,6 @@ const FEEDBACK_PROJECT_CONFIG_KEY = "feedback_project_id";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 60_000;
-
-/**
- * 099: górny limit zrzutu wskazanego elementu (długość data URL-a).
- *
- * Obraz trzymamy jako data URL w kolumnie tekstowej — dokładnie tak, jak załączniki notatek i wizyt.
- * Limit jest po to, żeby zrzut z ekranu 4K nie rozdął wiersza zadania; klient próbuje najpierw PNG,
- * potem JPEG, a gdy i to nie wystarczy — nie przysyła nic. Tu jest ostatnia linia obrony.
- */
-const MAX_SHOT_CHARS = 1_500_000;
 
 /** Priorytet domyślny zgłoszenia: „coś do zrobienia", ale nie awaria. */
 const DEFAULT_PRIORITY: TaskPriority = "MEDIUM";
@@ -111,12 +102,6 @@ export interface SubmitFeedbackResult {
   hasScreenshot: boolean;
 }
 
-/** 099: czy zrzut nadaje się do zapisania. Zły zrzut MILCZY — zgłoszenie ma powstać zawsze. */
-function poprawnyZrzut(dataUrl: string | undefined): dataUrl is string {
-  if (!dataUrl) return false;
-  if (!dataUrl.startsWith("data:image/")) return false;
-  return dataUrl.length <= MAX_SHOT_CHARS;
-}
 
 /**
  * Tworzy zgłoszenie (zadanie) w skrzynce administratora. Świadomie POMIJA `assertProjectAccess`
