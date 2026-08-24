@@ -109,18 +109,42 @@ problem powrotu — bez zakładki nie byłoby zaznaczonego widoku, do którego m
   - Lektor (`NewsReader`) to osobny, przyklejony pasek na dole — nietknięty.
   Przełącznik trybu w stanie wyłączonym stoi w tym samym miejscu (w pasku modułu), żeby wejście
   i wyjście były tym samym przyciskiem.
-- **Szczelność pasków (AC-15).** Zgłoszenie mówi o dwóch rzeczach i obie sprawdzamy **pomiarem przed
-  zmianą** (T-1), a nie z lektury kodu — lekcja z 086, gdzie diagnoza „z oka" okazała się
-  nadinterpretacją:
-  1. *pionowa przerwa* — treść widoczna między paskiem widoku a paskiem modułu,
-  2. *boczny prześwit* — treść szersza niż paski.
-  Hipotezy do potwierdzenia pomiarem: (1) pasek modułu jest przyklejony na `top: var(--view-bar-h)`,
-  ale sam nie ma górnego wypełnienia równego swojemu `pt-1`, więc między dolną krawędzią tamtego
-  a górną tego zostaje szczelina wysokości marginesu; (2) pasek modułu i nagłówki sekcji leżą
-  w kontenerze `mx-auto max-w-6xl`, a **karty wiadomości** — w tym samym kontenerze, ale pasek widoku
-  ramy rozciąga się na pełną szerokość, więc przy szerokim oknie tła nie pokrywają się na skrajach.
-  Naprawa idzie w stronę **rozciągnięcia tła pasków na szerokość kontenera przewijania** (ujemne
-  marginesy poziome równe wypełnieniu ramy albo tło na rodzicu), nigdy przez stałe liczby pikseli.
+- **Szczelność pasków (AC-15) — przyczyna ZMIERZONA, hipoteza z pierwszej wersji planu OBALONA.**
+  Pierwsza wersja tego paragrafu zgadywała, że między paskami zostaje szczelina wysokości marginesu.
+  Pomiar (T-1) tego nie potwierdził: w stanie ustalonym paski **przylegają** (przerwa 0 px).
+  Prawdziwa przyczyna jest inna i jest tego samego rodzaju, co błąd z 086 — **liczba, która nie
+  nadąża**:
+
+  `--news-pasek-h` (zasłona dla przyklejonych nagłówków sekcji) jest liczone jako
+  `--view-bar-h + wysokość paska modułu` w efekcie, którego `ResizeObserver` pilnuje **paska modułu
+  i ramy**. Zmiana wysokości **paska widoku** nie zmienia rozmiaru żadnego z nich, więc obserwator
+  się nie budzi. Zmierzone przy 360 px, po podniesieniu paska widoku o 40 px (u właściciela robi to
+  przycisk „Odświeżam…", który zawija drugi wiersz):
+
+  | | `--view-bar-h` | `--news-pasek-h` | dół paska modułu | góra nagłówka | przerwa |
+  |---|---|---|---|---|---|
+  | przed | 101 px | 160 px | 205 | 205 | 0 |
+  | po | **141 px** | **160 px — bez zmian** | 245 | 205 | **−40** |
+
+  W jedną stronę nagłówki wjeżdżają pod pasek, w drugą przyklejają się za nisko — i wtedy w powstałej
+  szczelinie widać przewijaną treść. Dokładnie to zgłosił właściciel.
+
+  **Naprawa usuwa liczbę, zamiast dokładać jej obserwatora.** Moduł publikuje wyłącznie **własną**
+  wysokość, a sumowanie zostawia CSS-owi:
+  `--news-pasek-h: calc(var(--view-bar-h, 0px) + <zmierzona wysokość paska modułu>px)`.
+  Przeglądarka przelicza `calc()` przy każdej zmianie `--view-bar-h` sama, więc nie ma czego
+  synchronizować i nie ma czym się rozjechać. Efekt uboczny, który jest właściwym celem: znika cała
+  klasa błędu „obserwator nie widzi zmiany, która stoi wyżej".
+  W jednym miejscu zasłona jest potrzebna jako **liczba** (`przewinDoSekcji`) — tam czytamy ją
+  z `getComputedStyle` w momencie użycia, a nie ze stanu komponentu.
+
+- **Boczny prześwit (druga połowa AC-15) — nie odtworzony pomiarem.** Przy 1280 px i przy 360 px
+  pasek modułu, sekcja i karta mają **identyczne** krawędzie (236..1264 oraz 16..344). Nie zgadujemy
+  przyczyny: naprawa jest **strukturalna** — tło przyklejonych pasków rozciągamy na pełną szerokość
+  kontenera przewijania (ujemne marginesy poziome równe wypełnieniu ramy plus to samo wypełnienie
+  z powrotem w środku), co usuwa tę klasę objawu niezależnie od tego, skąd bierze się nadmiarowa
+  szerokość treści. Gdyby pomiar po zmianie pokazał, że nie było czego naprawiać, zapiszemy to
+  uczciwie w `verify.md`.
 
 ### 5.5 Asystent — wejście do logu rozumowania *(AC-5)*
 

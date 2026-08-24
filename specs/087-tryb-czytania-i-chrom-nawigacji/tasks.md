@@ -14,15 +14,18 @@
 
 ## Faza 0 — Punkt odniesienia
 
-- [ ] **T-1** — **Pomiar PRZED zmianą** (bez tego trzy kryteria są opinią). Przy 360 px i przy
+- [x] **T-1** — **Pomiar PRZED zmianą** (bez tego trzy kryteria są opinią). Przy 360 px i przy
   1280 px zmierz w klikaczu: (a) odległość górnej krawędzi pierwszej wiadomości od góry ramy
   w Wiadomościach, (b) prostokąt między dolną krawędzią paska widoku a górną paska modułu przy
   przewinięciu > 0 — czy widać w nim treść, (c) szerokość paska modułu kontra szerokość karty
   wiadomości, (d) w Pogodzie odstęp między dolną krawędzią bloku nagłówka a górną pierwszego
   elementu treści, (e) w pasku akcji przy 360 px pozycję lewej krawędzi pierwszego przycisku,
   (f) odległość chipu licznika od tytułu w nagłówku sekcji.
-  *Gotowe, gdy:* liczby zapisane jako punkt odniesienia (trafią do `verify.md`), a hipotezy z planu
-  §5.4 są **potwierdzone albo obalone** — obalone poprawiamy w `plan.md` (C-54) przed kodowaniem.
+  *Wynik:* liczby w `verify.md`. Hipoteza o „szczelinie wysokości marginesu" **OBALONA** — w stanie
+  ustalonym paski przylegają (przerwa 0). Zmierzona przyczyna jest inna: `--news-pasek-h` nie nadąża
+  za zmianą wysokości paska widoku (101→141 px, zasłona zostaje 160 px, przerwa −40). `plan.md` §5.4
+  poprawiony (C-54), a `T-12` opisuje teraz naprawę przez `calc()` zamiast dokładania obserwatora.
+  Bocznego prześwitu **nie udało się odtworzyć** — pasek, sekcja i karta mają identyczne krawędzie.
 
 **Bez fazy migracji** — feature nie rusza schematu (plan §2). `check:migrations` i
 `check:schema-drift` mają przejść bez nowego pliku.
@@ -83,8 +86,9 @@
   *Gotowe, gdy:* wysokość chromu nad pierwszą wiadomością spada co najmniej o połowę wobec T-1,
   a wszystkie wymienione elementy nadal działają.
 
-- [ ] **T-12** — **Szczelność przyklejonych pasków** (AC-15): naprawa zgodnie z wnioskiem z T-1 —
-  brak treści widocznej między paskami i po ich bokach, tło liczone ze zmiennych ramy, nie ze stałych.
+- [ ] **T-12** — **Szczelność przyklejonych pasków** (AC-15): zasłona jako `calc(var(--view-bar-h) +
+  <własna wysokość>)` zamiast liczby przeliczanej w efekcie (dowód w T-1: liczba nie nadąża za paskiem
+  widoku); tło pasków rozciągnięte na szerokość kontenera przewijania.
   *Gotowe, gdy:* przy przewinięciu w prostokącie między paskami i w pasach po ich bokach nie ma
   piksela treści, przy 360 px i przy 1280 px.
 
