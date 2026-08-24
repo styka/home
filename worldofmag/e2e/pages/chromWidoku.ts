@@ -13,7 +13,13 @@ import type { Page } from "@playwright/test";
  * zakładkom modułu dokładnie tyle, ile sam zajmował — 43 px przy ekranie 360 px.
  */
 
-/** Gwiazdka „zapisz/odznacz to miejsce" — jedyne jej wejście w całej aplikacji. */
+/**
+ * Gwiazdka ulubionych — jedyne wejście w całej aplikacji.
+ *
+ * 087: nazwa dostępna zmieniła się z „Zapisz/Usuń to miejsce" na „Ulubione…", bo przycisk przestał
+ * być zapisem widoku i stał się wejściem do JEDNEGO dialogu ulubionych (lista + operacja na
+ * bieżącym widoku). Selektor mieszka tu, więc zmiana dotknęła jednego pliku, nie trzech.
+ */
 export function gwiazdkaUlubionych(page: Page, nazwa: RegExp) {
   return page.getByRole("button", { name: nazwa }).first();
 }

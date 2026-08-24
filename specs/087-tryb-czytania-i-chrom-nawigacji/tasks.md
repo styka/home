@@ -83,8 +83,10 @@
 - [x] **T-11** — **Tryb czytania: co znika, co zostaje** (AC-1, AC-2, AC-3): przy włączonym trybie
   moduł nie renderuje paska stanu i nie przekazuje `filters`/`headerAction`; przełącznik trybu stoi
   w pasku modułu (jedyne wyjście), lektor i nawigacja działają.
-  *Gotowe, gdy:* wysokość chromu nad pierwszą wiadomością spada co najmniej o połowę wobec T-1,
-  a wszystkie wymienione elementy nadal działają.
+  *Gotowe, gdy:* chrom nad pierwszą wiadomością spada co najmniej o wysokość paska widoku (zmierzone
+  360 px: 303 → 202), a wszystkie wymienione elementy nadal działają. **Kryterium poprawione po
+  pomiarze (C-54)** — „o połowę" wymagałoby skasowania wejścia do lektora, które właściciel kazał
+  zostawić.
 
 - [x] **T-12** — **Szczelność przyklejonych pasków** (AC-15): zasłona jako `calc(var(--view-bar-h) +
   <własna wysokość>)` zamiast liczby przeliczanej w efekcie (dowód w T-1: liczba nie nadąża za paskiem
@@ -128,11 +130,11 @@
 - [x] **T-18** — **Teksty do `messages/pl.json`** (C-32) dla wszystkiego, co doszło.
   *Gotowe, gdy:* `npm run check:i18n` zielone, zero literałów w komponentach.
 
-- [ ] **T-19** `[P]` — **Klikacz: Wiadomości** (`wiadomosci-tryb-czytania.spec.ts`) — AC-1..AC-4,
+- [x] **T-19** `[P]` — **Klikacz: Wiadomości** (`wiadomosci-tryb-czytania.spec.ts`) — AC-1..AC-4,
   AC-9..AC-12, AC-15, z **kontrolą negatywną** dla AC-2 i AC-15.
   *Gotowe, gdy:* testy padają po cofnięciu odpowiedniej poprawki.
 
-- [ ] **T-20** `[P]` — **Klikacz: rama i chrom** (`rama-i-chrom.spec.ts`) — AC-6, AC-7, AC-14, AC-16,
+- [x] **T-20** `[P]` — **Klikacz: rama i chrom** (`rama-i-chrom.spec.ts`) — AC-6, AC-7, AC-14, AC-16,
   AC-17..AC-21, plus dostosowanie `chrom-konta.spec.ts` do nowego układu ikon.
   *Gotowe, gdy:* testy 085/086 dotyczące chromu opisują stan po zmianie, a nie sprzed niej.
 

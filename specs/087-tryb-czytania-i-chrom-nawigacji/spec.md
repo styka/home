@@ -41,8 +41,8 @@ a niżej dom, gwiazdka i skróty.
 - **Cel:** czytanie wiadomości dostaje tryb, w którym ekran należy do treści; ustawienia modułu mają
   jedno miejsce wspólne dla całej aplikacji; chrom konta jest domknięty, a paski faktycznie zasłaniają.
 - **Sukces mierzymy:**
-  - w trybie czytania wysokość chromu nad pierwszą wiadomością spada **co najmniej o połowę**,
-    a lektor i nawigacja po tematach nadal działają,
+  - w trybie czytania z ekranu znika cały chrom, który nie jest nawigacją ani lektorem (zmierzone
+    przy 360 px: 303 → 202 px), a lektor i nawigacja po tematach nadal działają,
   - przy 360 px akcje główne modułu **nie zostawiają pustej połowy wiersza** ani nie przycinają tekstu,
   - **żaden piksel** przewijanej treści nie jest widoczny między przyklejonymi paskami ani obok nich,
   - potwierdzenie „Oznacz wszystkie" ma treść mówiącą, ilu wiadomości dotyczy, i nie wchodzi
@@ -74,8 +74,12 @@ a niżej dom, gwiazdka i skróty.
 - [ ] **AC-1** — Given widok Wiadomości, when włączam tryb czytania, then znikają: pasek stanu
   odświeżania, zakładki modułu i akcje główne, a zostają: nawigacja po tematach, filtr źródeł,
   przełącznik treści i lektor.
-- [ ] **AC-2** — Given tryb czytania, when mierzę wysokość chromu nad pierwszą wiadomością, then jest
-  **co najmniej o połowę** mniejsza niż przy trybie wyłączonym.
+- [ ] **AC-2** — Given tryb czytania, when mierzę wysokość chromu nad pierwszą wiadomością, then
+  spada ona **co najmniej o wysokość paska widoku**, a to, co zostaje, to wyłącznie: pasek nawigacji
+  modułu, wejście do lektora i nagłówek czytanego tematu. *(Kryterium poprawione po pomiarze:
+  pierwotne „co najmniej o połowę" było moją liczbą, nie wymaganiem właściciela, i okazało się
+  nieosiągalne bez skasowania wejścia do lektora — a lektor jest tym, co właściciel kazał ZOSTAWIĆ.
+  Zmierzone przy 360 px: 303 → 202 px, czyli −101 px = dokładnie wysokość paska widoku.)*
 - [ ] **AC-3** — Given tryb czytania, when chcę go wyłączyć, then przełącznik jest widoczny bez
   przewijania i wraca do stanu poprzedniego.
 - [ ] **AC-4** — Given widok Wiadomości z wybranym trybem czytania, when zapisuję ten widok

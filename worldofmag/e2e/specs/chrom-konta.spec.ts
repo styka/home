@@ -24,7 +24,7 @@ test.describe("085 — chrom konta", () => {
     // „gwiazdka zabiera przestrzeń na pasek zakładek".
     await expect(page.getByRole("main").getByRole("button", { name: STAR_SAVE })).toHaveCount(0);
     await expect(page.getByRole("main").getByRole("button", { name: STAR_REMOVE })).toHaveCount(0);
-    await expect(gwiazdkaUlubionych(page, /(Zapisz|Usuń) to miejsce/i)).toBeVisible({ timeout: 15_000 });
+    await expect(gwiazdkaUlubionych(page, /Ulubione/i)).toBeVisible({ timeout: 15_000 });
   });
 
   test("[085-AC1] gwiazdka stoi obok dzwonka — na telefonie i na komputerze", async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe("085 — chrom konta", () => {
     const mobil = await page.evaluate(() => {
       const widoczne = (el: Element | null) => !!el && el.getClientRects().length > 0;
       const gwiazdka = Array.from(document.querySelectorAll("button")).find((b) =>
-        /(Zapisz|Usuń) to miejsce/i.test(b.getAttribute("aria-label") ?? ""),
+        /Ulubione/i.test(b.getAttribute("aria-label") ?? ""),
       );
       const dzwonek = Array.from(document.querySelectorAll("button")).find((b) =>
         /Powiadomienia/i.test(b.getAttribute("aria-label") ?? ""),
@@ -59,7 +59,9 @@ test.describe("085 — chrom konta", () => {
     expect(mobil.wTymSamymRzedzie).toBe(true);
     expect(mobil.skrotyWidoczne, "ściągawka skrótów NIE ma się pokazywać na telefonie").toBe(false);
 
-    // DESKTOP: rząd chromu w stopce panelu bocznego, wszystkie cztery ikony w jednej linii.
+    // DESKTOP: od 087 chrom stoi w DWÓCH wierszach — patrz [087-AC19/AC20] niżej. Tutaj sprawdzamy
+    // już tylko to, co było przedmiotem zgłoszenia z 085: że wszystkie cztery ikony istnieją
+    // i są widoczne na komputerze.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/pogoda");
     await page.waitForLoadState("load").catch(() => {});
@@ -67,18 +69,22 @@ test.describe("085 — chrom konta", () => {
       // WIDOCZNE, nie „obecne w drzewie": mobilny pasek górny nadal istnieje w DOM (`md:hidden`
       // = display:none), więc bez tego filtra mierzylibyśmy jego elementy, które mają geometrię 0.
       const znajdz = (re: RegExp) =>
-        Array.from(document.querySelectorAll("button")).find(
+        Array.from(document.querySelectorAll("button, a")).find(
           (b) => re.test(b.getAttribute("aria-label") ?? "") && b.getClientRects().length > 0,
         );
-      const el = {
-        dzwonek: znajdz(/Powiadomienia/i),
-        gwiazdka: znajdz(/(Zapisz|Usuń) to miejsce/i),
-        skroty: znajdz(/skrót/i),
-        tryb: znajdz(/tryb administratora/i),
+      const y = (b?: Element) => (b ? Math.round(b.getBoundingClientRect().top) : null);
+      return {
+        dzwonek: y(znajdz(/Powiadomienia/i)),
+        gwiazdka: y(znajdz(/Ulubione/i)),
+        skroty: y(znajdz(/skrót/i)),
+        tryb: y(znajdz(/tryb administratora/i)),
       };
-      const y = (b?: HTMLElement) => (b ? Math.round(b.getBoundingClientRect().top) : null);
-      return { dzwonek: y(el.dzwonek), gwiazdka: y(el.gwiazdka), skroty: y(el.skroty), tryb: y(el.tryb) };
     });
+    console.log(`WERYFIKACJA desktop: ${JSON.stringify(desktop)}`);
+    for (const k of ["dzwonek", "gwiazdka", "skroty", "tryb"] as const) {
+      expect(desktop[k], `${k} musi być widoczny na komputerze`).not.toBeNull();
+    }
+  });
     console.log(`WERYFIKACJA desktop: ${JSON.stringify(desktop)}`);
     expect(desktop.dzwonek).not.toBeNull();
     for (const k of ["gwiazdka", "skroty", "tryb"] as const) {
@@ -97,7 +103,7 @@ test.describe("085 — chrom konta", () => {
 
   test("[085-AC3] zapis widoku działa też na trasie bez ramy modułu", async ({ page }) => {
     await otworz(page, "/admin");
-    await expect(gwiazdkaUlubionych(page, /(Zapisz|Usuń) to miejsce/i)).toBeVisible({ timeout: 15_000 });
+    await expect(gwiazdkaUlubionych(page, /Ulubione/i)).toBeVisible({ timeout: 15_000 });
   });
 
   test("[085-AC4] pasek widoku zostaje widoczny po przewinięciu treści", async ({ page }) => {
@@ -177,7 +183,7 @@ test("[086-AC19] rząd chromu stoi NAD nawigacją, pod nazwą aplikacji", async 
   const wynik = await page.evaluate(() => {
     const widoczny = (el: Element | null | undefined) => !!el && el.getClientRects().length > 0;
     const gwiazdka = Array.from(document.querySelectorAll("button")).find(
-      (b) => /(Zapisz|Usuń) to miejsce/i.test(b.getAttribute("aria-label") ?? "") && widoczny(b),
+      (b) => /Ulubione/i.test(b.getAttribute("aria-label") ?? "") && widoczny(b),
     );
     // Po TEKŚCIE, nie po adresie: `href="/"` ma także odnośnik z nazwą aplikacji na samej górze
     // panelu, więc selektor po adresie mierzyłby odległość do niego (0 px) i test byłby bez sensu.
