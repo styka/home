@@ -58,38 +58,18 @@ test.describe("084 — pasek widoku na telefonie", () => {
     expect(po, `układ rozpychany po przewinięciu: ${po.join(" | ")}`).toEqual([]);
   });
 
-  test("[084-AC14] rzadko używany chrom siedzi pod jedną kontrolką", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 780 });
-    await page.goto("/tasks");
-    await page.waitForLoadState("load").catch(() => {});
-    await page.waitForTimeout(1200);
-
-    // Gwiazdka, świeżość i skróty siedzą pod jednym przyciskiem — w pasku widać tylko jego.
-    const wPasku = await page.evaluate(() => {
-      const menu = document.querySelector('[aria-haspopup="menu"]');
-      const pasek = menu?.closest("div")?.parentElement;
-      if (!pasek) return null;
-      return Array.from(pasek.querySelectorAll("button, a")).filter((el) => {
-        // Sam wyzwalacz menu nie liczy się jako rozłożony chrom — jego etykieta wymienia to, co
-        // jest w środku, więc bez tego wyjątku liczyłby siebie.
-        if (el.getAttribute("aria-haspopup") === "menu") return false;
-        const t = ((el.getAttribute("title") ?? "") + " " + (el.getAttribute("aria-label") ?? "")).toLowerCase();
-        // 084: GWIAZDKA zostaje w pasku (najczęstsza akcja, ma własną warstwę — patrz `ViewBar`).
-        // W menu chowają się rzeczy rzadkie i bezstanowe: świeżość danych i ściągawka skrótów.
-        return t.includes("skrót") || t.includes("skrot") || t.includes("aktualn");
-      }).length;
-    });
-    expect(wPasku, "świeżość i skróty nie mogą stać rozłożone w pasku").toBe(0);
-
-    // …ale nic nie zniknęło: po otwarciu menu wszystkie trzy rzeczy są na miejscu (AC-15).
-    await page.locator('[aria-haspopup="menu"]').first().click();
-    const wMenu = page.locator('[role="menu"]');
-    await expect(wMenu).toBeVisible();
-    // Liczymy POZYCJE menu, nie przyciski: wskaźnik świeżości danych jest od 083 informacją,
-    // a nie kontrolką (`cursor: default`, ikona `aria-hidden`) — więc przyciskiem nie jest.
-    const pozycji = await wMenu.locator("> div > div").count();
-    expect(pozycji, "świeżość i skróty mają być nadal dostępne").toBeGreaterThanOrEqual(2);
-  });
+  /**
+   * 084 (AC-14, AC-15) — TEST USUNIĘTY W 085, świadomie.
+   *
+   * Sprawdzał, że rzadko używany chrom powłoki siedzi pod jedną kontrolką „⋯". 085 poszło dalej niż
+   * 084: chromu w pasku nie ma już WCALE — gwiazdka i ściągawka przeniosły się do chromu konta, a
+   * wskaźnik świeżości został skasowany (mierzył moment przeładowania strony przez powłokę, nie
+   * świeżość danych modułu). Menu „⋯" zniknęło razem z zawartością, więc test sprawdzałby obecność
+   * czegoś, co przestało istnieć.
+   *
+   * Nowe brzmienie tego samego wymagania („pasek widoku należy do modułu, chrom stoi gdzie indziej")
+   * pilnują `chrom-konta.spec.ts` [085-AC2] i [085-AC6]. Zostaje ono więc pokryte, tylko ostrzej.
+   */
 
   test("[084-AC19] nazwy zakładek modułu są widoczne przy 360 px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });

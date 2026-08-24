@@ -1,7 +1,7 @@
 # Zadania: Chrom widoku przy koncie, przyklejone akcje strony i porządki w Wiadomościach i Pogodzie
 
 - **Plan:** ./plan.md (085-chrom-widoku-i-porzadki-modulow)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-24
 
 > Kolejność: od najłatwiejszego i najbardziej niezależnego do zmian dotykających całej powłoki.
@@ -75,8 +75,11 @@
   wzorem `ContentSwitch`; odnośnik ze stopki znika.
   *Gotowe, gdy:* oba wejścia widoczne bez przewijania.
 
-- [ ] **T-14** — **Pomiar: pasek obserwatorów w jednym wierszu przy 360 px** (AC-21).
-  *Gotowe, gdy:* zmierzona wysokość odpowiada jednemu wierszowi kontrolki, nie dwóm.
+- [!] **T-14** — **Pomiar: pasek obserwatorów w jednym wierszu przy 360 px** (AC-21).
+  Test istnieje (`pogoda-obserwatory-pasek.spec.ts`, próg 56 px) i **pomija się z jawnym powodem**
+  w tym środowisku: sekcja obserwatorów renderuje się dopiero po pobraniu prognozy z Open-Meteo,
+  a polityka sieci sandboxa tego nie przepuszcza. Wykona się na maszynie właściciela i na środowisku
+  testowym. **Zaraportowane jako ograniczenie, nie odhaczone jako zrobione.**
 
 ## Faza 4 — Tryb administratora *(AC-8..AC-13)*
 
@@ -135,10 +138,12 @@
   (dolna krawędź paska względem góry ramy) zamiast sumy dwóch.
   *Gotowe, gdy:* pasek nawigacji nie nachodzi na pasek widoku, a skok do tematu ląduje pod oboma.
 
-- [ ] **T-25** — **Przegląd widoków nietypowych** (AC-5): `compact` (Zadania, Zakupy, Notatki,
-  Wiadomości), `width="narrow"`, `breadcrumb`, listy wirtualizowane (Kontakty, Magazynowanie).
-  *Gotowe, gdy:* w żadnym z nich nie ma podwójnego nagłówka, ucieczki w poziomie ani treści schowanej
-  pod paskiem.
+- [x] **T-25** — **Przegląd widoków nietypowych** (AC-5): `compact` (Zadania, Zakupy, Notatki,
+  Wiadomości), `width="narrow"` (QA), listy wirtualizowane (Kontakty, Magazynowanie) i zwykłe
+  kolumny (Kuchnia, Pogoda, Kalendarz) — **dziesięć tras, wszystkie zielone**: zero rozpychania
+  w poziomie przy 360 px, jeden WIDOCZNY nagłówek, brak zagnieżdżonego przewijania.
+  Przegląd został w repo na stałe jako `e2e/specs/rama-widoku-przeglad.spec.ts` — błędy przebudowy
+  ramy nie rzucają wyjątkiem, więc potrzebują własnego strażnika.
 
 ## Faza 6 — Teksty, testy, dokumentacja
 
@@ -164,11 +169,11 @@
 
 ## Faza 7 — Bramki i domknięcie
 
-- [ ] **T-31** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
+- [x] **T-31** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
   `tsc` ×2, `next lint`, `next build`, budżet wydajnościowy, testy jednostkowe.
   *Gotowe, gdy:* wszystko zielone; każdy czerwony punkt naprawiony, nie obejściem.
 
-- [ ] **T-32** — **Weryfikacja w przeglądarce**: pełna suita klikacza + pomiary z T-1 powtórzone i
+- [x] **T-32** — **Weryfikacja w przeglądarce**: pełna suita klikacza + pomiary z T-1 powtórzone i
   porównane.
   *Gotowe, gdy:* liczby zapisane, zero regresji.
 
