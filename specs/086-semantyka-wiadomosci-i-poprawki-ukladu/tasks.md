@@ -105,24 +105,24 @@
 
 ## Faza 7 — Testy, teksty, domknięcie
 
-- [ ] **T-19** — **`messages/pl.json`**: nowe klucze, usunięcie osieroconych po „Odrzuć".
+- [x] **T-19** — **`messages/pl.json`**: nowe klucze, usunięcie osieroconych po „Odrzuć".
   *Gotowe, gdy:* `check:i18n` zielone.
 
-- [ ] **T-20** — **Klikacz: `wiadomosci-akcje.spec.ts`** (AC-1..AC-4, AC-21).
+- [x] **T-20** — **Klikacz: `wiadomosci-akcje.spec.ts`** (AC-1..AC-4, AC-21).
   *Gotowe, gdy:* zielone i sprawdzone w obie strony dla AC-1.
 
-- [ ] **T-21** `[P]` — **Klikacz: `potwierdzenia.spec.ts`** (AC-5, AC-6): oznaczenie → neutralny,
+- [x] **T-21** `[P]` — **Klikacz: `potwierdzenia.spec.ts`** (AC-5, AC-6): oznaczenie → neutralny,
   usunięcie tematu → „Usuń".
   *Gotowe, gdy:* zielone i sprawdzone w obie strony dla AC-5.
 
-- [ ] **T-22** `[P]` — **Klikacz: aktualizacja `chrom-konta.spec.ts`** (AC-12, AC-19) — rząd chromu
+- [x] **T-22** `[P]` — **Klikacz: aktualizacja `chrom-konta.spec.ts`** (AC-12, AC-19) — rząd chromu
   nad nawigacją, powiadomienie o koszcie niezależne od przełącznika.
   *Gotowe, gdy:* zielone.
 
-- [ ] **T-23** — **Pomiar AC-20 jako test** przy przewinięciu zero.
+- [x] **T-23** — **Pomiar AC-20 jako test** przy przewinięciu zero.
   *Gotowe, gdy:* test pada po przywróceniu miary pozycyjnej.
 
-- [ ] **T-24** — **`CLAUDE.md` i konstytucja (C-33)**: opis zasłony i miejsca rzędu chromu po zmianie;
+- [x] **T-24** — **`CLAUDE.md` i konstytucja (C-33)**: opis zasłony i miejsca rzędu chromu po zmianie;
   Wiadomości bez akcji „Odrzuć"; potwierdzenia z neutralną domyślnością (C-34).
   *Gotowe, gdy:* żaden dokument nie opisuje stanu sprzed zmiany.
 
@@ -131,7 +131,7 @@
 
 - [ ] **T-26** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
 
-- [ ] **T-27** — **`doświadczenia.md`** (C-51): co najmniej wpis o różnicy między miarą POZYCYJNĄ
+- [x] **T-27** — **`doświadczenia.md`** (C-51): co najmniej wpis o różnicy między miarą POZYCYJNĄ
   a WYSOKOŚCIOWĄ przy przyklejaniu (własny błąd z 085) oraz o domyślnej etykiecie potwierdzeń, która
   przez 54 wywołania kazała aplikacji pytać „Usuń?" o rzeczy nieusuwające.
 

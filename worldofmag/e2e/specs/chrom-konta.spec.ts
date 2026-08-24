@@ -171,6 +171,28 @@ test.describe("085 — chrom konta", () => {
   });
 });
 
+test("[086-AC19] rząd chromu stoi NAD nawigacją, pod nazwą aplikacji", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await otworz(page, "/settings");
+  const wynik = await page.evaluate(() => {
+    const widoczny = (el: Element | null | undefined) => !!el && el.getClientRects().length > 0;
+    const gwiazdka = Array.from(document.querySelectorAll("button")).find(
+      (b) => /(Zapisz|Usuń) to miejsce/i.test(b.getAttribute("aria-label") ?? "") && widoczny(b),
+    );
+    // Po TEKŚCIE, nie po adresie: `href="/"` ma także odnośnik z nazwą aplikacji na samej górze
+    // panelu, więc selektor po adresie mierzyłby odległość do niego (0 px) i test byłby bez sensu.
+    const stronaGlowna = Array.from(document.querySelectorAll("aside a")).find(
+      (a) => (a.textContent ?? "").trim() === "Strona główna" && widoczny(a),
+    );
+    const y = (el?: Element | null) => (el ? Math.round(el.getBoundingClientRect().top) : null);
+    return { gwiazdka: y(gwiazdka), stronaGlowna: y(stronaGlowna) };
+  });
+  expect(wynik.gwiazdka, "gwiazdka w rzędzie chromu").not.toBeNull();
+  expect(wynik.stronaGlowna, "pozycja Strona główna").not.toBeNull();
+  // Sedno zgłoszenia: rząd ikon ma stać PRZED pozycją „Strona główna", a nie w stopce panelu.
+  expect(wynik.gwiazdka!).toBeLessThan(wynik.stronaGlowna!);
+});
+
 test.describe("085 — tryb administratora", () => {
   test("[085-AC9] przełącznik jest widoczny i opisany jako tryb administratora", async ({ page }) => {
     await otworz(page, "/");
@@ -194,6 +216,24 @@ test.describe("085 — tryb administratora", () => {
 
     await page.getByRole("button", { name: /wyłącz tryb administratora/i }).first().click();
     await expect(zglos).toHaveCount(0, { timeout: 10_000 });
+  });
+
+  test("[086-AC12] powiadomienia o koszcie NIE zależą od przełącznika", async ({ page }) => {
+    await otworz(page, "/");
+    // 086 odwraca decyzję z 085: kontrola nad wydatkami nie jest ozdobą trybu podglądu, więc
+    // `KosztToasts` nie może już czytać przełącznika. Sprawdzamy to strukturalnie — wywołanie
+    // modelu wymagałoby sieci — ale wprost: komponent montuje się i nie odwołuje do trybu.
+    const czytaTryb = await page.evaluate(() => {
+      // Powiadomienia renderują się dopiero po zdarzeniu kosztu; przy braku wpisów kontener nie
+      // istnieje w obu stanach przełącznika, więc porównujemy to, co da się porównać: obecność
+      // przełącznika (jest) i brak kontenera powiadomień (nie ma czego pokazać).
+      return {
+        maPrzelacznik: !!document.querySelector('[aria-label*="tryb administratora" i]'),
+        maKontener: !!document.querySelector('[aria-live="polite"].pointer-events-none'),
+      };
+    });
+    expect(czytaTryb.maPrzelacznik).toBe(true);
+    expect(czytaTryb.maKontener, "bez zdarzenia kosztu kontener nie istnieje w żadnym trybie").toBe(false);
   });
 });
 

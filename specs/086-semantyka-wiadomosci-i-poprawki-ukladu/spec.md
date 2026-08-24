@@ -117,8 +117,11 @@ w zakładce „Tematy".
   tytuł modułu jest w całości czytelny, a nazwa lokalizacji nie rozpycha ani nie przycina nagłówka.
 - [ ] **AC-19** — Given panel boczny na komputerze, when patrzę pod nazwę aplikacji, then rząd ikon
   konta stoi tam, **przed** pozycją „Strona główna", i wszystkie ikony działają jak dotąd.
-- [ ] **AC-20** — Given lista wiadomości, when przewijam do kolejnego tematu, then przyklejony
-  nagłówek tematu styka się z paskiem nad nim, bez widocznej przerwy.
+- [ ] **AC-20** — Given lista wiadomości, when nad paskiem nawigacji modułu pojawia się dodatkowy
+  element (np. pasek stanu odświeżania), then przyklejone nagłówki tematów **nie zsuwają się niżej** —
+  zasłona zostaje na wysokości obu pasków. *(Kryterium doprecyzowane po pomiarze: pierwotne brzmienie
+  „styka się bez przerwy" jest prawdziwe także przy błędnej mierze, więc nie dało się nim niczego
+  rozstrzygnąć.)*
 - [ ] **AC-21** — Given zakładka „Tematy", when patrzę na kontrolkę wyboru tematu, then jej nazwa
   mówi, że służy do **przejścia** do tematu, a nie powtarza nazwy zakładki.
 

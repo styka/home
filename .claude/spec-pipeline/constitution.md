@@ -136,13 +136,16 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 - **C-33 — Widok modułu deklaruje się przez `ModuleView`, nie rysuje własnego nagłówka.**
   Moduł podaje `title`/`icon`/`filters`/`actions`/`state`; ramę rysuje powłoka. **Od 085 rama nie
   wstrzykuje już do paska żadnego chromu** — gwiazdka „zapisz widok" i ściągawka skrótów mieszkają
-  w **chromie konta** (telefon: górny pasek obok dzwonka; komputer: rząd w stopce panelu bocznego),
+  w **chromie konta** (telefon: górny pasek obok dzwonka; komputer: rząd ikon **nad nawigacją**, pod
+  nazwą aplikacji — 086 przeniosło go tam ze stopki),
   a wskaźnik świeżości został skasowany, bo mierzył moment przeładowania strony przez powłokę, a nie
   świeżość danych modułu. `ViewChromeProvider` już nie istnieje; został po nim wyłącznie typ
   `ViewResource` (prop `ModuleView`, zarezerwowany na Fazy 2 i 4). **Pasek widoku jest PRZYKLEJONY**
   u góry obszaru przewijania — i jest to przebudowa struktury, nie sam `position: sticky`: element
   przyklejony trzyma się tylko w granicach swojego rodzica, więc pasek musi być BEZPOŚREDNIM
-  dzieckiem kontenera przewijania. Moduł z własnym przyklejonym paskiem odsuwa go o `--view-bar-h`.
+  dzieckiem kontenera przewijania. Moduł z własnym przyklejonym paskiem odsuwa go o `--view-bar-h`,
+  a zasłonę dla własnych elementów liczy jako **sumę WYSOKOŚCI** (pasek widoku + własny pasek), nigdy
+  jako odległość od góry ramy: miara pozycyjna rośnie o wszystko, co stanie pomiędzy (086).
   Stany brzegowe
   (pusty / ładowanie / błąd / brak dostępu) idą **wyłącznie** przez prop `state` — nigdy rysowane
   ręcznie. Wymusza to `npm run check:ui-contract` (w `build`): katalog trasy bez wpisu w manifeście
@@ -152,6 +155,11 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
 - **C-34 — Potwierdzenia przez `confirmDialog`, nigdy `window.confirm()`.**
   `if (!(await confirmDialog("Usunąć listę?"))) return;`. Natywne okno nie zna skórki, ma przyciski
   w języku systemu i blokuje wątek, więc nie pokaże, CO zostanie usunięte.
+  **Od 086 domyślny przycisk jest NEUTRALNY („Potwierdź"), a usuwanie deklaruje się jawnie:**
+  `confirmDialog({ title: "Usunąć listę?", destructive: true })`. Wcześniej było odwrotnie, a żadne
+  z 54 wywołań nie przekazywało opcji — więc każde potwierdzenie w aplikacji, także „oznaczyć jako
+  przeczytane?", zamykało się czerwonym „Usuń". Czerwony przycisk, który stoi wszędzie, przestaje
+  ostrzegać.
 - **C-35 — Nowy wspólny komponent dowozimy razem z pierwszym konsumentem.**
   „Gotowe" znaczy **wpięte**, nie „istnieje". Komponent bez konsumenta jest gorszy niż jego brak:
   w galerii ogłasza wspólne rozwiązanie, którego nikt nie stosuje, więc następna osoba i tak napisze

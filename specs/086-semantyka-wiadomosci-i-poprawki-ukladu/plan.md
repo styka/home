@@ -115,15 +115,29 @@ konsumenta — nie straci) sprzątamy razem ze zmianą.
 
 To **nie** jest kwestia dobrania liczby. W 085 zmieniłem pomiar zasłony na „odległość dolnej krawędzi
 paska modułu od górnej krawędzi ramy" i nazwałem to jedną miarą odporną na to, co stanie wyżej.
-Miara jest jednak **pozycyjna**, a nie wysokościowa: dopóki użytkownik nie przewinie, pasek modułu
-stoi nisko (pod blokiem nagłówka i paskiem stanu odświeżania), więc odległość od góry ramy jest
-**dużo większa** niż docelowa zasłona. Nagłówki sekcji dostają wtedy `top` rzędu 150–250 px zamiast
-~100 i przyklejają się „za nisko" — dokładnie jak w zgłoszeniu.
+Miara jest jednak **pozycyjna**, a nie wysokościowa.
+
+**KOREKTA WOBEC PIERWSZEJ WERSJI TEGO PLANU (C-54).** Napisałem tu wcześniej, że zasłona jest za duża
+„dopóki użytkownik nie przewinie", i powołałem się na pomiar z T-1 (`top` = 107 px). Pomiar tego nie
+dowodził: 107 px to **poprawna** wartość, gdy pasek modułu przylega do paska widoku (48 + 59). Miara
+pozycyjna daje wtedy dokładnie ten sam wynik co wysokościowa — i dlatego pierwsza wersja testu
+przechodziła także ze wstrzykniętą regresją.
+
+Różnica ujawnia się dopiero wtedy, gdy **między paskiem widoku a paskiem modułu coś stanie** —
+u właściciela robi to pasek stanu odświeżania, który pojawia się i znika wokół pobierania materiałów.
+Wtedy odległość od góry ramy rośnie o jego wysokość, a nagłówki sekcji zatrzymują się o tyle za
+nisko. Zmierzone w teście: po wstawieniu 40 px nad paskiem modułu zasłona rośnie **107 → 147 px**
+z miarą pozycyjną, a zostaje na 107 px z wysokościową.
 
 **Poprawka:** zasłona = `--view-bar-h` (wysokość przyklejonego paska widoku, publikowana przez ramę)
 **+ własna wysokość paska modułu** (`offsetHeight`). Obie składowe są wysokościami, więc nie zależą
-od pozycji przewinięcia. Wartość jest liczona w jednym miejscu i podawana dalej jako
+od tego, co i ile stoi wyżej. Wartość jest liczona w jednym miejscu i podawana dalej jako
 `--news-pasek-h`, tak jak dotąd.
+
+**Sposób weryfikacji wynika wprost z powyższego:** test wstawia element nad paskiem modułu, wymusza
+przeliczenie (szturchnięcie szerokości okna — bo `ResizeObserver` pilnuje paska i ramy, a nie tego,
+co stoi nad nimi) i sprawdza, że zasłona się nie zmieniła. Samo porównanie liczb w stanie spoczynku
+niczego nie dowodzi.
 
 ## 6. AI / integracje
 

@@ -4,6 +4,34 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Miara POZYCYJNA udaje wysokościową dopóki nic nad nią nie stoi
+**Problem:** W 085 policzyłem „zasłonę" dla przyklejonych nagłówków jako odległość dolnej krawędzi
+paska modułu od górnej krawędzi ramy i uznałem, że to jedna miara odporna na to, co stanie wyżej.
+Właściciel zgłosił, że nagłówki przyklejają się za nisko. Zmierzyłem 107 px i ogłosiłem „58 px za
+nisko" — **nadinterpretacja**: 107 px to dokładnie 48 (pasek widoku) + 59 (pasek modułu), czyli
+wartość poprawna. Miara pozycyjna i wysokościowa dają ten sam wynik zawsze wtedy, gdy pasek modułu
+przylega do paska widoku, a w środowisku testowym przylega. Różnica ujawnia się dopiero, gdy między
+nie coś wejdzie — u właściciela pasek stanu odświeżania.
+**Rozwiązanie:** Zasłona = suma dwóch WYSOKOŚCI. Test wstawia 40 px nad paskiem modułu i wymusza
+przeliczenie: ze starą miarą zasłona rośnie 107 → 147 px, z nową zostaje na 107. Plan i spec
+poprawione, bo pierwotna diagnoza i kryterium akceptacji opisywały coś, czego pomiar nie dowodził.
+**Lekcja:** Zanim ogłosisz przyczynę, sprawdź, czy zmierzona liczba **odróżnia** hipotezę od jej
+zaprzeczenia. „107 zamiast 49" brzmiało jak dowód, a było odczytaniem tej samej liczby przez złą
+formułę. I druga strona tego samego: gdy dwie implementacje dają identyczny wynik w warunkach
+testu, test nie mierzy różnicy między nimi — trzeba zbudować warunek, w którym się rozjeżdżają.
+
+## 2026-08-24 — Test, który nie może zauważyć, bo nikt go nie obudził
+**Problem:** Test miał dowieść, że zasłona nie rośnie po wstawieniu elementu nad paskiem. Wstawiał
+element, czekał i porównywał — i przechodził w OBU wersjach kodu. Przyczyna: wartość przelicza
+`ResizeObserver` pilnujący paska i ramy, a wstawienie czegoś NAD nimi nie zmienia ich rozmiaru.
+Nic się nie przeliczało, więc test porównywał dwie identyczne, stare wartości.
+**Rozwiązanie:** Test szturcha szerokość okna, żeby obserwator zadziałał — czyli odtwarza tę samą
+okoliczność, w której wartość przelicza się u użytkownika. Dopiero wtedy widać 107 → 147.
+**Lekcja:** Przy testowaniu czegoś, co liczy się reaktywnie, sprawdź osobno, czy przeliczenie
+w ogóle nastąpiło. Inaczej mierzysz stan sprzed zmiany i dostajesz zieleń za brak działania.
+
+---
+
 ## 2026-08-24 — `position: sticky` przykleja się tylko w granicach RODZICA
 **Problem:** Pasek widoku miał zostać widoczny przy przewijaniu (zgłoszenie właściciela: „czy to
 dobrze, że scrolując stronę w dół te akcje nie przyklejają się?"). Naturalny odruch — dopisać
