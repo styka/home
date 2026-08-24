@@ -1,7 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import { Settings2 } from "lucide-react";
 
 /**
  * 045 — pasek bieżącego widoku. Trzy strefy:
@@ -29,6 +30,8 @@ import Link from "next/link";
 export interface ViewBarProps {
   filters?: ReactNode;
   actions?: ReactNode;
+  /** 087 (AC-7, AC-8): wejście do ustawień modułu — ostatnia pozycja strefy akcji. */
+  settings?: { onClick?: () => void; href?: string; active?: boolean; label?: string };
   /** Wariant gęsty: tytuł widoku wchodzi do paska zamiast osobnego nagłówka. */
   compact?: boolean;
   title?: string;
@@ -37,10 +40,10 @@ export interface ViewBarProps {
   iconColor?: string;
 }
 
-export function ViewBar({ filters, actions, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
+export function ViewBar({ filters, actions, settings, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
   // Pusty pasek nie zajmuje miejsca — moduł bez filtrów i akcji, renderowany poza
   // powłoką, nie powinien dostawać pustej listwy z obramowaniem.
-  if (!compact && !filters && !actions) return null;
+  if (!compact && !filters && !actions && !settings) return null;
 
   return (
     /**
@@ -92,10 +95,23 @@ export function ViewBar({ filters, actions, compact, title, titleHref, icon, ico
           )}
         </h1>
       )}
-        {/* Akcje modułu — nie kurczą się. */}
-        {actions && (
-          <div className="ml-auto md:order-3 md:ml-0" style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {/**
+         * Akcje modułu — na komputerze nie kurczą się, na telefonie zajmują CAŁY wiersz.
+         *
+         * 087 (AC-6): do 087 ten wiersz miał `ml-auto` i nic więcej, a tytuł jest poniżej `md`
+         * ukryty — więc na telefonie stały w nim wyłącznie akcje, dosunięte do prawej krawędzi
+         * z pustą lewą połową. Zmierzone przy 360 px: „Nowy temat" zaczynał się na 202 px przy
+         * pasku 0..360. Zgłoszenie właściciela: „dziwnie wygląda z dosuniętymi akcjami do prawej,
+         * zostawiając dużo miejsca z lewej".
+         *
+         * Poniżej `md` wiersz i jego dzieci rozciągają się na całą szerokość (przy okazji: większe
+         * cele dotyku, C-31). Od `md` wszystko wraca do stanu sprzed zmiany — `md:flex-none`,
+         * `md:ml-0` i dzieci bez rozciągania.
+         */}
+        {(actions || settings) && (
+          <div className="ml-auto flex flex-1 items-center gap-1.5 [&>*]:flex-1 md:order-3 md:ml-0 md:flex-none md:shrink-0 md:[&>*]:flex-none">
             {actions}
+            {settings && <PrzyciskUstawien {...settings} />}
           </div>
         )}
 
@@ -122,5 +138,42 @@ export function ViewBar({ filters, actions, compact, title, titleHref, icon, ico
         {filters}
       </div>
     </div>
+  );
+}
+
+/**
+ * 087 (AC-7, AC-8): wejście do ustawień modułu rysowane przez RAMĘ, nie przez moduł.
+ *
+ * Dzięki temu każdy moduł, który zadeklaruje `settings`, dostaje je w tym samym miejscu i w tym
+ * samym kształcie — bez ani jednej linijki u siebie. `aria-pressed` jest tu istotne, a nie
+ * ozdobne: ten sam przycisk WCHODZI do ustawień i z nich WYCHODZI, więc jego stan jest jedyną
+ * informacją o tym, gdzie jesteś.
+ */
+function PrzyciskUstawien({ onClick, href, active, label }: NonNullable<ViewBarProps["settings"]>) {
+  const styl: CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 36,
+    minHeight: 36,
+    borderRadius: "var(--radius-control)",
+    border: "none",
+    cursor: "pointer",
+    background: active ? "var(--bg-elevated)" : "transparent",
+    color: active ? "var(--text-primary)" : "var(--text-muted)",
+    textDecoration: "none",
+  };
+  const wnetrze = <Settings2 size={16} />;
+  if (href) {
+    return (
+      <Link href={href} title={label} aria-label={label} style={styl}>
+        {wnetrze}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} title={label} aria-label={label} aria-pressed={active} style={styl}>
+      {wnetrze}
+    </button>
   );
 }

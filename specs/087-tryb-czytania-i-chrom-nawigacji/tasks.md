@@ -32,17 +32,17 @@
 
 ## Faza 1 — Rama widoku *(AC-6, AC-7, AC-8, AC-16)*
 
-- [ ] **T-2** — **Odstęp pod nagłówkiem, gdy nie ma paska widoku** (AC-16): blok nagłówka dostaje
+- [x] **T-2** — **Odstęp pod nagłówkiem, gdy nie ma paska widoku** (AC-16): blok nagłówka dostaje
   dolne wypełnienie wyłącznie przy `pasekMaTresc === false`, równe górnemu wypełnieniu paska.
   *Gotowe, gdy:* w Pogodzie odstęp > 0, a w widoku Z paskiem (Zadania, Wiadomości) pomiar z T-1
   nie zmienia się ani o piksel.
 
-- [ ] **T-3** — **Akcje modułu na telefonie** (AC-6): poniżej `md` wiersz akcji zajmuje pełną
+- [x] **T-3** — **Akcje modułu na telefonie** (AC-6): poniżej `md` wiersz akcji zajmuje pełną
   szerokość, przyciski dzielą ją równo; od `md` układ bez zmian.
   *Gotowe, gdy:* przy 360 px lewa krawędź pierwszego przycisku jest przy lewej krawędzi paska,
   a przy 1280 px pomiar z T-1 się nie zmienia.
 
-- [ ] **T-4** — **Slot ustawień w kontrakcie widoku** (AC-7, AC-8): pole `settings` w `ModuleViewProps`,
+- [x] **T-4** — **Slot ustawień w kontrakcie widoku** (AC-7, AC-8): pole `settings` w `ModuleViewProps`,
   rysowane przez `ViewBar` jako ostatnia pozycja strefy akcji (koło zębate, `aria-pressed` przy
   `active`). Moduł bez `settings` renderuje się identycznie jak dziś.
   *Gotowe, gdy:* przegląd ramy na dziesięciu trasach przechodzi bez zmian, a sonda z `settings`
