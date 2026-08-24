@@ -131,7 +131,9 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   nie `#fff`. Skórki mogą nadpisać każdą zmienną, więc hardcode łamie skinowalność.
 - **C-31 — Mobile-first i keyboard-first.** Desktopowy sidebar to `hidden md:flex`; mobilny dostaje
   top bar + overlay + dolny tab bar. **Nigdy dwa sidebary na mobile.** Respektuj
-  `env(safe-area-inset-bottom)`. Min. cel dotyku `py-3`, checkboxy 20×20px. Skróty: `j/k`, `x/Space`,
+  `env(safe-area-inset-bottom)` — **także w stopce okien modalnych** (087: na telefonie modal jest
+  arkuszem dolnym, więc jego przyciski lądowały na kresce do przełączania aplikacji).
+  Min. cel dotyku `py-3`, checkboxy 20×20px. Skróty: `j/k`, `x/Space`,
   `e`, `d`, `a/n`, `/`, `Ctrl+K`, `Esc`.
 - **C-33 — Widok modułu deklaruje się przez `ModuleView`, nie rysuje własnego nagłówka.**
   Moduł podaje `title`/`icon`/`filters`/`actions`/`state`; ramę rysuje powłoka. **Od 085 rama nie
@@ -146,6 +148,20 @@ Numeracja (`C-NN`) jest stała — odwołuj się do reguł po numerze w specach,
   dzieckiem kontenera przewijania. Moduł z własnym przyklejonym paskiem odsuwa go o `--view-bar-h`,
   a zasłonę dla własnych elementów liczy jako **sumę WYSOKOŚCI** (pasek widoku + własny pasek), nigdy
   jako odległość od góry ramy: miara pozycyjna rośnie o wszystko, co stanie pomiędzy (086).
+  **087 idzie o krok dalej: tę sumę wyraża CSS, nie kod.** Liczba przeliczana w efekcie zawsze kiedyś
+  nie nadąży — `ResizeObserver` modułu pilnuje własnego paska i ramy, więc zmiana wysokości PASKA
+  WIDOKU go nie budzi (zmierzone: 101 → 141 px, zasłona zostaje 160 px, nagłówki rozjeżdżają się
+  o 40 px). Moduł publikuje więc wyłącznie SWOJĄ wysokość, a zasłona to
+  `calc(var(--view-bar-h, 0px) + <własna wysokość>)`; gdzie potrzebna jest liczba, czytamy ją
+  w momencie użycia.
+  **Widok bez paska ma odstęp pod nagłówkiem** — dolne wypełnienie bloku nagłówka wraca wtedy,
+  gdy paska nie będzie (085 przeniosło je do górnego wypełnienia paska, więc znikało razem z nim
+  w ~10 widokach; w Pogodzie treść stykała się z nazwą modułu).
+  **Ustawienia modułu mają JEDNO miejsce w całej aplikacji** — slot `settings` w kontrakcie, rysowany
+  przez ramę jako ostatnia pozycja strefy akcji. Zakładki są miejscem na WIDOKI, nie na konfigurację;
+  gdyby każdy moduł wybierał sam, po dwudziestu modułach byłoby dwadzieścia miejsc.
+  **`chromeless`** pozwala widokowi poprosić o ramę bez nagłówka i paska (tryb czytania w
+  Wiadomościach) — pod warunkiem, że sam ma zawsze widoczne wyjście z tego stanu.
   Stany brzegowe
   (pusty / ładowanie / błąd / brak dostępu) idą **wyłącznie** przez prop `state` — nigdy rysowane
   ręcznie. Wymusza to `npm run check:ui-contract` (w `build`): katalog trasy bez wpisu w manifeście

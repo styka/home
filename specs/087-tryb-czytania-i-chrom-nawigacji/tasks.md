@@ -138,7 +138,7 @@
   AC-17..AC-21, plus dostosowanie `chrom-konta.spec.ts` do nowego układu ikon.
   *Gotowe, gdy:* testy 085/086 dotyczące chromu opisują stan po zmianie, a nie sprzed niej.
 
-- [ ] **T-21** — **`CLAUDE.md` i konstytucja**: slot ustawień w kontrakcie widoku (C-33), jedno
+- [x] **T-21** — **`CLAUDE.md` i konstytucja**: slot ustawień w kontrakcie widoku (C-33), jedno
   wejście do ulubionych i nowy układ chromu, tryb czytania jako element stanu widoku.
   *Gotowe, gdy:* żaden dokument nie opisuje stanu sprzed zmiany.
 
@@ -147,7 +147,7 @@
 
 - [ ] **T-23** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
 
-- [ ] **T-24** — **`doświadczenia.md`** (C-51) za każdy nieoczywisty problem — w szczególności za to,
+- [x] **T-24** — **`doświadczenia.md`** (C-51) za każdy nieoczywisty problem — w szczególności za to,
   co pokaże pomiar z T-1 wobec hipotez z planu.
 
 ---

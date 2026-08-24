@@ -4,6 +4,33 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Liczba przeliczana w efekcie zawsze kiedyś nie nadąży
+**Problem:** Przyklejone nagłówki tematów w Wiadomościach rozjeżdżały się z paskiem nawigacji —
+właściciel widział między nimi przewijaną treść. 086 liczyło zasłonę jako `--view-bar-h + wysokość
+paska modułu` w efekcie, którego `ResizeObserver` pilnuje paska modułu i ramy. Zmiana wysokości
+PASKA WIDOKU nie zmienia rozmiaru żadnego z nich, więc obserwator się nie budzi. Zmierzone przy
+360 px: pasek widoku 101 → 141 px, zasłona **bez zmian, 160 px**, nagłówki nie na miejscu o 40 px.
+**Rozwiązanie:** Moduł publikuje wyłącznie SWOJĄ wysokość, a sumowanie robi CSS:
+`calc(var(--view-bar-h, 0px) + <własna wysokość>)`. Przeglądarka przelicza to sama przy każdej
+zmianie zmiennej. Tam, gdzie zasłona jest potrzebna jako liczba (przewijanie do sekcji), czytamy ją
+w momencie użycia, a nie ze stanu komponentu.
+**Lekcja:** Gdy wartość zależy od czegoś, czego nie obserwujesz, dokładanie obserwatora tylko
+przesuwa problem — następna zależność znowu zostanie pominięta. Jeśli da się wyrazić zależność
+w CSS (`calc`, `var`), to zawsze wygrywa z liczbą w stanie: nie ma czego synchronizować, więc nie ma
+czym się rozjechać. Po 085 i 086 to jest trzecia odsłona tej samej pomyłki w tym samym miejscu.
+
+## 2026-08-24 — Test mierzył pudełko, do którego naprawa dokłada wypełnienie
+**Problem:** Test AC-16 („treść nie styka się z nazwą modułu") mierzył odległość górnej krawędzi
+pierwszego elementu treści od DOLNEJ KRAWĘDZI BLOKU nagłówka. Naprawa dokłada blokowi
+`padding-bottom` — czyli przesuwa jego dolną krawędź razem z treścią. Odstęp wychodził 0 zarówno
+przed poprawką, jak i po niej; test przechodził w obu wersjach kodu tylko dlatego, że akurat oczekiwał
+zera.
+**Rozwiązanie:** Mierzymy od dolnej krawędzi TEKSTU nagłówka (`h1`), która nie zmienia się przy
+zmianie wypełnienia. Po poprawce 13 px, po cofnięciu 1 px — test odróżnia.
+**Lekcja:** Zanim uznasz pomiar za dowód, sprawdź, czy naprawa nie przesuwa punktu, od którego
+mierzysz. Wypełnienie i marginesy są wewnątrz albo na zewnątrz pudełka — a `getBoundingClientRect()`
+widzi tylko pudełko z wypełnieniem. Mierz od czegoś, czego zmiana nie dotyczy.
+
 ## 2026-08-24 — Bramka zielona dzięki martwym importom
 **Problem:** Po przeniesieniu rdzenia gorących tematów z akcji do `lib/goraceTematy.ts` w
 `actions/news.ts` zostały importy, których nikt już nie wołał (`rememberedContent`, `hashInputs`,
