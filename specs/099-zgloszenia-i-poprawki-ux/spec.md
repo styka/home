@@ -1,6 +1,6 @@
 # Spec: Zgłoszenia bez czekania i pakiet poprawek UX
 
-- **ID:** 088-zgloszenia-i-poprawki-ux
+- **ID:** 099-zgloszenia-i-poprawki-ux
 - **Status:** draft
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-24
@@ -201,6 +201,17 @@ Zebrane w jedynym momencie pytań (C-55) — wszystkie odpowiedzi: **wariant zal
   zmniejszenie, nie odrzucenie.
 - Potwierdzenie zgłoszenia w asystencie pokazuje tytuł i — jeśli zgłaszający ma dostęp do skrzynki
   — przejście do zadania (tak jak dziś działa informacja o skrzynce).
+
+## 8a. Ślad zmiany artefaktów (C-54)
+
+- **2026-08-24 — przenumerowanie 088 → 099.** Katalog `specs/` kończył się na `087`, więc pierwszy
+  numer wyglądał na wolny. Nie był: przebiegi **088–098 zostały wykonane bez katalogu w `specs/`**
+  i żyją w komentarzach w kodzie (`088` to „rola procesu", zadanie 33 Fazy 6 — `platform/runtime/rola.ts`,
+  `platform/jobs/worker.ts`, `/api/health`). Numer przebiegu jest w tym repozytorium **adresem**:
+  po nim szuka się, dlaczego coś wygląda jak wygląda. Dwa różne przebiegi pod jednym numerem czynią
+  ten adres bezużytecznym. Feature dostał więc numer **099**, a wszystkie komentarze w kodzie i
+  nazwy artefaktów zostały przeliczone. Wniosek trafia do `doświadczenia.md`: **wolny numer bierze
+  się z kodu, nie z listy katalogów.**
 
 ## 9. Ryzyka
 

@@ -161,7 +161,7 @@ export function HotTopics({
           zakładce Źródeł. Właściciel prosił o spójność trzech zakładek wprost — a spójność, która
           bierze się ze wspólnego komponentu, nie rozjeżdża się przy pierwszej zmianie stylu; taka,
           która bierze się z podobnie wyglądającego, skopiowanego JSX-a, rozjeżdża się zawsze. */}
-      {/* 088 (AC-16, AC-17): nagłówek czyta „Proponowane", a nie „Gorące tematy" — że są gorące,
+      {/* 099 (AC-16, AC-17): nagłówek czyta „Proponowane", a nie „Gorące tematy" — że są gorące,
           mówi już zakładka, więc powtórzenie zjadało jedyny wiersz, w którym trzeba było zmieścić
           jeszcze dwa przełączniki. Same przełączniki schodzą do menu ⋮ — tego samego wzorca, którym
           087 schowało edycję i usuwanie tematu; przy 360 px trzy rzeczy w tym wierszu się nie
@@ -308,7 +308,7 @@ export function HotTopics({
 }
 
 /**
- * 088 (AC-17, AC-18): menu ⋮ sekcji „Proponowane".
+ * 099 (AC-17, AC-18): menu ⋮ sekcji „Proponowane".
  *
  * Stoi na tym samym prymitywie (`AnchoredLayer`) i ma ten sam kształt, co menu tematu z 087 —
  * dwa różnie wyglądające menu w jednym module rozjeżdżają się przy pierwszej zmianie stylu.

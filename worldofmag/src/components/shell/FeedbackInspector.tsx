@@ -65,7 +65,7 @@ function domPath(el: HTMLElement): string {
   return parts.join(" > ");
 }
 
-// 088: ZRZUT WSKAZANEGO ELEMENTU.
+// 099: ZRZUT WSKAZANEGO ELEMENTU.
 //
 // Opis miejsca (route + sekcja + selektor + tekst w pobliżu) mówi, GDZIE coś jest; nie mówi, jak to
 // wygląda. Administrator odtwarzał usterkę z opisu — zrzut oszczędza mu tę pracę.
@@ -120,7 +120,7 @@ export function FeedbackInspector() {
   const capture = useCallback(async (el: HTMLElement) => {
     const context = describeElement(el, pathname);
     setActive(false);
-    // 088: podświetlenie znika PRZED zrzutem — inaczej na obrazie zostałaby nasza własna ramka
+    // 099: podświetlenie znika PRZED zrzutem — inaczej na obrazie zostałaby nasza własna ramka
     // wskaźnika i zgłoszenie pokazywałoby narzędzie zamiast usterki. `setRect(null)` jest tu
     // pierwszym krokiem, a nie porządkiem po wszystkim.
     setRect(null);

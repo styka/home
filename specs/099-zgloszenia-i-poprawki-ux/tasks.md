@@ -1,6 +1,6 @@
 # Zadania: Zgłoszenia bez czekania i pakiet poprawek UX
 
-- **Plan:** ./plan.md (088-zgloszenia-i-poprawki-ux)
+- **Plan:** ./plan.md (099-zgloszenia-i-poprawki-ux)
 - **Status:** todo
 - **Data:** 2026-08-24
 

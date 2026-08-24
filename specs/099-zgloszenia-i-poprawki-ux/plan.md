@@ -1,6 +1,6 @@
 # Plan techniczny: Zgłoszenia bez czekania i pakiet poprawek UX
 
-- **Spec:** ./spec.md (088-zgloszenia-i-poprawki-ux)
+- **Spec:** ./spec.md (099-zgloszenia-i-poprawki-ux)
 - **Status:** draft
 - **Data:** 2026-08-24
 

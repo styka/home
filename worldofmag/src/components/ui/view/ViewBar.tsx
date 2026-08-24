@@ -76,7 +76,7 @@ export function ViewBar({ filters, actions, settings, compact, title, titleHref,
           elementami paska. Kolejność musi być wtedy podana JAWNIE (`md:order-*`) — bez tego filtry,
           które w drzewie stoją na końcu, wylądowałyby na komputerze za chromem zamiast pośrodku. */}
       {/**
-       * 088 (AC-14): wiersz, który na telefonie nie ma CO pokazać, nie może zajmować miejsca.
+       * 099 (AC-14): wiersz, który na telefonie nie ma CO pokazać, nie może zajmować miejsca.
        *
        * Poniżej `md` tytuł jest ukryty (`hidden md:flex`), więc jedyną treścią tego wiersza są
        * akcje i ustawienia. Widok, który ich nie ma (Zadania: `density="compact"` i same filtry),

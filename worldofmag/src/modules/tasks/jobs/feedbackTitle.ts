@@ -1,4 +1,4 @@
-// 088: dorobienie tytułu zgłoszenia — JEDYNE miejsce, w którym model bierze udział w zgłoszeniu.
+// 099: dorobienie tytułu zgłoszenia — JEDYNE miejsce, w którym model bierze udział w zgłoszeniu.
 //
 // Dlaczego zadanie w tle, a nie wywołanie z akcji albo strzał z przeglądarki:
 //   • z akcji — zgłaszający musiałby czekać na model, a to jest dokładnie ten ból, który usuwamy;

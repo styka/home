@@ -31,7 +31,7 @@ const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 60_000;
 
 /**
- * 088: górny limit zrzutu wskazanego elementu (długość data URL-a).
+ * 099: górny limit zrzutu wskazanego elementu (długość data URL-a).
  *
  * Obraz trzymamy jako data URL w kolumnie tekstowej — dokładnie tak, jak załączniki notatek i wizyt.
  * Limit jest po to, żeby zrzut z ekranu 4K nie rozdął wiersza zadania; klient próbuje najpierw PNG,
@@ -105,13 +105,13 @@ export interface SubmitFeedbackResult {
   projectId: string;
   /** Czy użytkownik może otworzyć utworzone zadanie (decyduje o przycisku „Otwórz w zadaniach"). */
   canRead: boolean;
-  /** 088: tytuł, pod jakim zgłoszenie faktycznie powstało — UI potwierdza nim utworzenie od ręki. */
+  /** 099: tytuł, pod jakim zgłoszenie faktycznie powstało — UI potwierdza nim utworzenie od ręki. */
   title: string;
-  /** 088: czy do zadania trafił zrzut wskazanego elementu (odrzucony zrzut nie jest błędem). */
+  /** 099: czy do zadania trafił zrzut wskazanego elementu (odrzucony zrzut nie jest błędem). */
   hasScreenshot: boolean;
 }
 
-/** 088: czy zrzut nadaje się do zapisania. Zły zrzut MILCZY — zgłoszenie ma powstać zawsze. */
+/** 099: czy zrzut nadaje się do zapisania. Zły zrzut MILCZY — zgłoszenie ma powstać zawsze. */
 function poprawnyZrzut(dataUrl: string | undefined): dataUrl is string {
   if (!dataUrl) return false;
   if (!dataUrl.startsWith("data:image/")) return false;
@@ -124,7 +124,7 @@ function poprawnyZrzut(dataUrl: string | undefined): dataUrl is string {
  */
 export async function submitFeedbackTask(input: {
   /**
-   * 088: tytuł jest OPCJONALNY.
+   * 099: tytuł jest OPCJONALNY.
    *
    * Podaje go wyłącznie asystent, gdy zgłoszenie wychodzi ze zwykłej rozmowy (akcja
    * `submit_feedback` — model już wtedy wymyślił tytuł). Tryb wskazywania go NIE podaje: zapis ma
@@ -132,9 +132,9 @@ export async function submitFeedbackTask(input: {
    */
   title?: string;
   description?: string;
-  /** 088: priorytet wybrany przez zgłaszającego w chwili opisywania. */
+  /** 099: priorytet wybrany przez zgłaszającego w chwili opisywania. */
   priority?: TaskPriority;
-  /** 088: zrzut wskazanego elementu jako data URL (PNG/JPEG). */
+  /** 099: zrzut wskazanego elementu jako data URL (PNG/JPEG). */
   screenshotDataUrl?: string;
 }): Promise<SubmitFeedbackResult> {
   const user = await requireAuth();
@@ -157,7 +157,7 @@ export async function submitFeedbackTask(input: {
     select: { id: true },
   });
 
-  // 088 (AC-6, AC-8): zrzut jest DODATKIEM. Zapisujemy go osobno i po zadaniu — gdyby poszedł
+  // 099 (AC-6, AC-8): zrzut jest DODATKIEM. Zapisujemy go osobno i po zadaniu — gdyby poszedł
   // wspólną transakcją, uszkodzony obraz kasowałby całe zgłoszenie, czyli to, po co tu przyszliśmy.
   const hasScreenshot = poprawnyZrzut(input.screenshotDataUrl);
   if (hasScreenshot) {
@@ -170,7 +170,7 @@ export async function submitFeedbackTask(input: {
     }
   }
 
-  // 088 (AC-1, AC-3, AC-4): ładny tytuł dorabia KOLEJKA, nie ta akcja.
+  // 099 (AC-1, AC-3, AC-4): ładny tytuł dorabia KOLEJKA, nie ta akcja.
   //
   // Żądanie wystrzelone z przeglądarki ginie razem z zamknięciem asystenta — a to jest dokładnie
   // ten scenariusz, dla którego cała zmiana powstała. Kolejka ma trwały stan i ponawianie, więc

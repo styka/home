@@ -628,7 +628,7 @@ export async function completeRecurringTask(
   return toTask(closed);
 }
 
-// ─── 088: załączniki zadania ────────────────────────────────────────────────
+// ─── 099: załączniki zadania ────────────────────────────────────────────────
 //
 // Dziś jedyny konsument to zrzut wskazanego elementu dołączany do zgłoszenia z trybu wskazywania.
 // Sam ZAPIS robi `submitFeedbackTask` (skrzynka zgłoszeń ma własny, wąski wyjątek dostępu — patrz

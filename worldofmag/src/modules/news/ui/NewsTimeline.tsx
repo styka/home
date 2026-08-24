@@ -24,7 +24,7 @@ export function NewsTimeline({ entries }: { entries: TimelineEntryDTO[] }) {
   }
 
   /**
-   * 088 (AC-12): oś ma WŁASNY margines z lewej, równy połowie kropki.
+   * 099 (AC-12): oś ma WŁASNY margines z lewej, równy połowie kropki.
    *
    * Kropka stoi `-left-[21px]` względem pozycji, a `ol` miało tylko `border-l` + `pl-4` — jej
    * skrajny piksel wypadał więc 4 px POZA lewą krawędź kolumny treści. Przyklejone paski (pasek

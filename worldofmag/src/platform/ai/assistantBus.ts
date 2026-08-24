@@ -12,7 +12,7 @@ export interface AssistantOpenDetail {
   // użytkownik wpisał ją w oknie czatu. Dzięki temu dokowana kolumna na stronie głównej
   // jest tylko polem wejściowym, a cały stan rozmowy zostaje w jednym komponencie.
   prompt?: string;
-  // 088: zrzut wskazanego elementu (data URL, PNG albo JPEG) zrobiony w chwili wskazania.
+  // 099: zrzut wskazanego elementu (data URL, PNG albo JPEG) zrobiony w chwili wskazania.
   // Idzie razem z kontekstem, bo po otwarciu asystenta tamtego elementu może już nie być na ekranie
   // — a zgłoszenie ma pokazywać to, co zgłaszający widział, gdy klikał.
   feedbackShot?: string;

@@ -464,12 +464,12 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const feedbackRef = useRef<string | null>(null);
   // 029: gdy ustawiony (tryb głównego robaczka), tytuły akcji create_task w powstałym planie
   // dostają deterministycznie prefiks 🐛 przy wykonaniu (nawet gdy model pominie emoji).
-  // 088: dotyczy już WYŁĄCZNIE zgłoszeń wychodzących ze zwykłej rozmowy (agent nadal potrafi
+  // 099: dotyczy już WYŁĄCZNIE zgłoszeń wychodzących ze zwykłej rozmowy (agent nadal potrafi
   // `submit_feedback`) — tryb wskazywania nie tworzy planu, więc tytuł nadaje serwer.
   const feedbackPrefixRef = useRef<string | null>(null);
-  // 088: zrzut wskazanego elementu przyniesiony razem z kontekstem (ref — jak kontekst).
+  // 099: zrzut wskazanego elementu przyniesiony razem z kontekstem (ref — jak kontekst).
   const feedbackShotRef = useRef<string | null>(null);
-  // 088: stan (a nie ref), bo od niego zależy WIDOK — chipy priorytetu pokazują się wyłącznie
+  // 099: stan (a nie ref), bo od niego zależy WIDOK — chipy priorytetu pokazują się wyłącznie
   // w trybie zgłoszenia, a ref nie budzi renderowania.
   const [feedbackTryb, setFeedbackTryb] = useState(false);
   const [feedbackPriority, setFeedbackPriority] = useState<TaskPriority>("MEDIUM");
@@ -1002,7 +1002,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     saveDraftNow();
     collapseSections();
     setIsOpen(false);
-    // 088: tryb zgłoszenia jest jednorazowy i związany z JEDNYM wskazanym miejscem — po zamknięciu
+    // 099: tryb zgłoszenia jest jednorazowy i związany z JEDNYM wskazanym miejscem — po zamknięciu
     // nie może przenieść tamtego kontekstu (ani zrzutu) do następnej, niezwiązanej rozmowy.
     feedbackRef.current = null;
     feedbackShotRef.current = null;
@@ -1331,7 +1331,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     saveDraftNow("");
 
     /**
-     * 088: TRYB ZGŁOSZENIA ZAPISUJE OD RAZU — bez pętli agenta i bez planu do zatwierdzenia.
+     * 099: TRYB ZGŁOSZENIA ZAPISUJE OD RAZU — bez pętli agenta i bez planu do zatwierdzenia.
      *
      * Do 087 opis jechał do agenta (model rozumujący + narzędzia), ten zwracał PLAN z jedną akcją
      * `submit_feedback`, a plan szedł drugim żądaniem do `/execute`. Trzy koszty tego układu,
@@ -2069,7 +2069,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     wiersz akcji. Pole NIE jest przy dolnej krawędzi karty (pod nim wiersz akcji), a
                     margines na kreskę iPhone siedzi na ZEWNĘTRZNEJ stopce warunkowo od fokusu (patrz
                     div wyżej) — dzięki temu karetka na iOS nie „ucieka" nad pole. */}
-                {/* 088 (AC-10): priorytet wybiera się TU, w chwili opisywania — nie później, w widoku
+                {/* 099 (AC-10): priorytet wybiera się TU, w chwili opisywania — nie później, w widoku
                     zadań. Rząd stoi nad kompozytorem, więc widać go bez dodatkowego kliknięcia i bez
                     wchodzenia w ustawienia. Pokazuje się wyłącznie w trybie zgłoszenia. */}
                 {feedbackTryb && (

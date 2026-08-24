@@ -764,7 +764,7 @@ model ProjectGroup {
   @@map("TaskView")
 }
 
-// 088: załącznik zadania — dziś JEDEN konsument: zrzut wskazanego elementu dołączany do
+// 099: załącznik zadania — dziś JEDEN konsument: zrzut wskazanego elementu dołączany do
 // zgłoszenia z trybu wskazywania. Kalka `NoteAttachment`/`HealthAttachment`: obraz jako data URL
 // w `url`. Bez `workspaceId`/`ownerId` — rekord podrzędny, właściciela ma przez zadanie, a ginie
 // razem z nim (kaskada). Rodzaj to `String` + unia TS (C-12), nigdy enum Prisma.

@@ -854,7 +854,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           />
         </div>
 
-        {/* 088: załączniki zadania — dziś w praktyce zrzut wskazanego elementu ze zgłoszenia.
+        {/* 099: załączniki zadania — dziś w praktyce zrzut wskazanego elementu ze zgłoszenia.
             Bloku nie ma, gdy nie ma czego pokazać: to nie jest widok, tylko dodatek do zadania,
             więc pusty stan byłby samym szumem. */}
         <TaskAttachments taskId={task.id} />
@@ -909,7 +909,7 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
 
 
 /**
- * 088: załączniki zadania. Kalka `NoteAttachments` z modułu Notatek (C-53 — ten sam kształt, ten
+ * 099: załączniki zadania. Kalka `NoteAttachments` z modułu Notatek (C-53 — ten sam kształt, ten
  * sam sposób ładowania), zawężona do tego, co dziś istnieje: ODCZYT i podgląd. Dodawania ani
  * kasowania tu nie ma — jedyny producent to zgłoszenie z trybu wskazywania, a załącznik ginie
  * kaskadą razem z zadaniem.
