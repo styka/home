@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/test";
-import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWidoku";
+import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych, zapiszBiezacyWidok, usunUlubioneONazwie } from "../pages/chromWidoku";
 
 /**
  * 043 — rejestr skrótów klawiszowych (AC-9..AC-12).
@@ -77,20 +77,14 @@ test.describe("043 — skróty klawiszowe", () => {
   });
 
   test("[sc-AC9] Alt+1 skacze do ulubionego i NIE zmienia zakładki filtra", async ({ page }) => {
-    await clearFavorites(page);
+    // 087: sprzątamy PO SOBIE, nie po całym koncie — patrz `usunUlubioneONazwie`.
+    await usunUlubioneONazwie(page, "Notatki skrót");
 
     // Zapisujemy ulubione prowadzące do INNEGO modułu — łatwo sprawdzić, że skok się wydarzył.
     await page.goto("/notes/all");
     await page.waitForLoadState("load").catch(() => {});
-    // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
-    // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
-    // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
-    await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
-    await page.getByPlaceholder("Nazwa widoku…").fill("Notatki skrót");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
-    // i w nawigacji. Sprawdzamy tę z paska widoku.
-    await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
+    // 087: zapis przez jedyne wejście, jakie ma użytkownik — gwiazdka i jej dialog.
+    await zapiszBiezacyWidok(page, "Notatki skrót");
 
     // Na stronie z zakładkami filtrów: adres startowy bez parametrów.
     await page.goto("/tasks/all");
@@ -104,7 +98,7 @@ test.describe("043 — skróty klawiszowe", () => {
     // …i po drodze NIE ustawił filtra zadań (to była kolizja z 042).
     expect(new URL(page.url()).searchParams.get("status")).toBeNull();
 
-    await clearFavorites(page);
+    await usunUlubioneONazwie(page, "Notatki skrót");
   });
 
   test("[sc-AC12] pisanie w polu nie wyzwala skrótów", async ({ page }) => {

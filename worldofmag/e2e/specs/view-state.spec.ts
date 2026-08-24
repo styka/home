@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/test";
-import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWidoku";
+import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych, zapiszBiezacyWidok, skoczDoUlubionego, usunUlubioneONazwie } from "../pages/chromWidoku";
 
 /**
  * 043 — stan widoku w adresie strony (faza A: Zadania, Zakupy, Notatki).
@@ -144,33 +144,21 @@ test.describe("043 — stan widoku w adresie", () => {
   });
 
   test("[vs-AC4] ulubiony zapisany z filtrami wraca z filtrami", async ({ page }) => {
-    await clearFavorites(page);
+    await usunUlubioneONazwie(page, "Kanban wszystkich");
 
     await page.goto("/tasks/all?layout=kanban");
     await page.waitForLoadState("load").catch(() => {});
 
-    // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
-    // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
-    // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
-    await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
-    await page.getByPlaceholder("Nazwa widoku…").fill("Kanban wszystkich");
-    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-    // 098: ta sama dwoistość co przy zapisie — gwiazdka „usuń z ulubionych" jest i w pasku widoku,
-    // i w nawigacji. Sprawdzamy tę z paska widoku.
-    await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
+    await zapiszBiezacyWidok(page, "Kanban wszystkich");
 
     // Wyjście gdzie indziej i powrót przez ulubione — adres musi nieść komplet ustawień.
     await page.goto("/notes/all");
     await page.waitForLoadState("load").catch(() => {});
-    // 080 (Z8): sekcja ulubionych startuje zwinięta — rozwijamy ją, tak jak zrobiłby użytkownik.
-    const naglowekUlubionych = page.getByRole("button", { name: /rozwiń ulubione/i }).first();
-    if (await naglowekUlubionych.count() > 0 && await naglowekUlubionych.isVisible().catch(() => false)) {
-      await naglowekUlubionych.click();
-    }
-    await page.getByRole("link", { name: "Kanban wszystkich" }).first().click();
+    // 087: powrót idzie przez dialog gwiazdki — sekcji ulubionych w nawigacji już nie ma.
+    await skoczDoUlubionego(page, "Kanban wszystkich");
 
     await expect.poll(() => new URL(page.url()).searchParams.get("layout"), { timeout: 15_000 }).toBe("kanban");
 
-    await clearFavorites(page);
+    await usunUlubioneONazwie(page, "Kanban wszystkich");
   });
 });

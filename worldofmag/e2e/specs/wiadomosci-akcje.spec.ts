@@ -10,7 +10,7 @@ import { test, expect } from "../fixtures/test";
 
 /** Włącza pokazywanie pustych tematów, żeby w widoku w ogóle były sekcje. Zwraca stan poprzedni. */
 async function pokazPusteTematy(page: import("@playwright/test").Page): Promise<boolean> {
-  const ustawienia = page.getByRole("tab", { name: "Ustawienia", exact: true });
+  const ustawienia = page.getByRole("button", { name: /Ustawienia modułu/i });
   await ustawienia.click();
   const przelacznik = page.getByRole("checkbox", { name: /Pokazuj tematy bez nowych wiadomości/i });
   await expect(przelacznik).toBeVisible({ timeout: 15_000 });
@@ -23,7 +23,7 @@ async function pokazPusteTematy(page: import("@playwright/test").Page): Promise<
 
 async function przywroc(page: import("@playwright/test").Page, bylo: boolean) {
   if (bylo) return;
-  await page.getByRole("tab", { name: "Ustawienia", exact: true }).click();
+  await page.getByRole("button", { name: /Ustawienia modułu/i }).click();
   await page.getByRole("checkbox", { name: /Pokazuj tematy bez nowych wiadomości/i }).uncheck();
 }
 

@@ -13,8 +13,12 @@ import { kliknijGwiazdkeUlubionych, gwiazdkaUlubionych } from "../pages/chromWid
  */
 test.describe.configure({ mode: "serial" });
 
-const STAR_SAVE = /Zapisz to miejsce w ulubionych/i;
-const STAR_REMOVE = /Usuń to miejsce z ulubionych/i;
+/**
+ * 087: gwiazdka ma JEDNĄ nazwę i JEDNO zadanie — otworzyć dialog ulubionych. Stan bieżącego widoku
+ * czytamy z `aria-pressed`, a nie z etykiety, bo etykieta przestała być czynnością („Zapisz to
+ * miejsce") i stała się nazwą miejsca („Ulubione widoki").
+ */
+const GWIAZDKA = /Ulubione/i;
 
 /**
  * Otwiera popover gwiazdki na BIEZACEJ stronie i zapisuje widok pod podana nazwa.
@@ -27,28 +31,24 @@ const STAR_REMOVE = /Usuń to miejsce z ulubionych/i;
  */
 async function saveCurrentAs(page: import("@playwright/test").Page, name: string) {
   await page.waitForLoadState("load").catch(() => {});
-  // 098: gwiazdka „zapisz widok" jest w DWÓCH miejscach naraz — w pasku widoku (`main`)
-  // i w sekcji ulubionych w nawigacji. Bez zawężenia Playwright zgłasza naruszenie trybu
-  // ścisłego, bo trafia w dwa elementy. Klikamy tę z paska widoku — to ona jest przedmiotem testu.
-  await kliknijGwiazdkeUlubionych(page, /Zapisz to miejsce w ulubionych/i);
+  // 087: gwiazdka otwiera JEDEN dialog — lista zapisanych plus operacja na bieżącym widoku.
+  // Zapis jest więc dwoma krokami zamiast jednego, ale za to całe ulubione mają jedno wejście.
+  await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
+  await page.getByRole("button", { name: /Dodaj bieżący widok/i }).click();
   await page.getByPlaceholder("Nazwa widoku…").fill(name);
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
-  await gwiazdkaUlubionych(page, /Usuń to miejsce z ulubionych/i).waitFor({ timeout: 15_000 });
+  await expect(gwiazdkaUlubionych(page, GWIAZDKA)).toHaveAttribute("aria-pressed", "true", { timeout: 15_000 });
+}
+
+/** Otwiera dialog ulubionych i przechodzi do zapisanego widoku o podanej nazwie. */
+async function skoczDoUlubionego(page: import("@playwright/test").Page, name: string) {
+  await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
+  const dialog = page.getByRole("dialog", { name: "Ulubione widoki" });
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await dialog.getByText(name, { exact: false }).first().click();
 }
 
 
-/**
- * 080 (Z8): sekcja ulubionych w pasku bocznym startuje ZWINIĘTA — właściciel zgłosił, że rozwinięta
- * spycha pozycje modułów poniżej pierwszego ekranu. Wejście przez ulubione kosztuje więc jedno
- * dodatkowe kliknięcie, dopóki użytkownik raz jej nie rozwinie (stan jest zapamiętywany na koncie).
- * Testy klikają jak człowiek, więc muszą to zrobić tak samo.
- */
-async function rozwinUlubione(page: import("@playwright/test").Page) {
-  const naglowek = page.getByRole("button", { name: /rozwiń ulubione/i }).first();
-  if (await naglowek.count() > 0 && await naglowek.isVisible().catch(() => false)) {
-    await naglowek.click();
-  }
-}
 
 /**
  * Sprząta ulubione przez interfejs ustawień, żeby testy nie zależały od kolejności.
@@ -92,13 +92,13 @@ test.describe("042 — ulubione widoki", () => {
     // AC-2: wejście z ulubionych wraca DOKŁADNIE pod ten sam adres z filtrami.
     await page.goto("/notes");
     await page.waitForLoadState("load").catch(() => {});
-    await rozwinUlubione(page);
-    await page.getByRole("link", { name: /Zrobione zadania/ }).first().click();
+    await skoczDoUlubionego(page, "Zrobione zadania");
     await expect(page).toHaveURL(/\/tasks\?status=DONE&x=1/);
 
-    // AC-3: ponowny klik gwiazdki usuwa wpis.
-    await gwiazdkaUlubionych(page, STAR_REMOVE).click();
-    await expect(gwiazdkaUlubionych(page, STAR_SAVE)).toBeVisible({ timeout: 10_000 });
+    // AC-3: usunięcie bieżącego widoku z tego samego dialogu, w którym się go dodaje.
+    await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
+    await page.getByRole("button", { name: /Usuń bieżący widok/i }).click();
+    await expect(gwiazdkaUlubionych(page, GWIAZDKA)).toHaveAttribute("aria-pressed", "false", { timeout: 10_000 });
   });
 
   test("[fav-AC9] ponowny zapis tego samego adresu nie tworzy duplikatu", async ({ page }) => {
@@ -120,7 +120,7 @@ test.describe("042 — ulubione widoki", () => {
 
     // Ze strony NIEBĘDĄCEJ pulpitem otwieramy pełną listę i filtrujemy ją.
     await page.goto("/portfel");
-    await page.getByRole("button", { name: /Wszystkie ulubione/ }).first().click();
+    await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
 
     const dialog = page.getByRole("dialog", { name: "Ulubione widoki" });
     await expect(dialog).toBeVisible();
@@ -149,8 +149,10 @@ test.describe("042 — ulubione widoki", () => {
   test("[fav-AC6] pusty stan nie zajmuje miejsca pustą ramką", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText(/Zapisz miejsce gwiazdką w pasku/)).toBeVisible();
-    // Bez ulubionych sekcja w pasku bocznym w ogóle się nie renderuje.
-    await expect(page.getByRole("button", { name: /Wszystkie ulubione/ })).toHaveCount(0);
+    // 087: sekcja ulubionych w nawigacji NIE ISTNIEJE — pusty stan mieszka w dialogu gwiazdki.
+    await expect(page.locator("aside nav").getByText("Ulubione", { exact: true })).toHaveCount(0);
+    await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
+    await expect(page.getByText(/Nie masz jeszcze ulubionych widoków/)).toBeVisible({ timeout: 10_000 });
   });
 
   test("[fav-AC7] zarządzanie: zmiana nazwy i usunięcie", async ({ page }) => {
@@ -243,72 +245,45 @@ test.describe("042 — poprawki UX", () => {
 });
 
 /**
- * 043 — odkrywalność ulubionych na desktopie (AC-1, AC-2, AC-3).
+ * 043/087 — ULUBIONE WIDOCZNE OD PIERWSZEGO WEJŚCIA.
  *
- * W 042 sekcja ulubionych zwracała `null` przy zerze wpisów, więc na komputerze funkcja
- * praktycznie nie istniała. Te testy pilnują, że pusty stan JEST widoczny.
+ * 043 wymagało, żeby sekcja ulubionych renderowała się w nawigacji ZAWSZE — także przy zerze wpisów —
+ * bo inaczej „nie było skąd się dowiedzieć, że ulubione w ogóle istnieją". 087 spełnia ten sam
+ * wymóg innym środkiem i **znosi sekcję**: gwiazdka stoi w rzędzie chromu, widać ją od pierwszego
+ * wejścia na każdej trasie, a pod nią jest jeden dialog z listą, pustym stanem, dodaniem bieżącego
+ * widoku i wejściem do zarządzania. Powód zmiany był zgłoszeniem właściciela: dwa wejścia do jednej
+ * rzeczy („nie powinno być pozycji ulubione w menu, to klik w ikonę gwiazdki powinien otworzyć
+ * dialog…"). Testy sprawdzają więc tę samą regułę na nowym nośniku.
  */
-test.describe("043 — ulubione widoczne od pierwszego wejścia", () => {
+test.describe("043/087 — ulubione widoczne od pierwszego wejścia", () => {
   test.beforeEach(async ({ page }) => {
     await clearFavorites(page);
   });
 
-  test("[fav043-AC1-AC2 + 080-AC16] sekcja jest widoczna, ale zwinięta; po rozwinięciu ma zachętę i punkt zapisu", async ({ page }) => {
-    /**
-     * 080 (Z8) ZAWĘŻA regułę z 043, nie znosi jej.
-     *
-     * 043 wymagało, żeby sekcja ulubionych renderowała się ZAWSZE — także przy zerze wpisów —
-     * bo inaczej „nie było skąd się dowiedzieć, że ulubione w ogóle istnieją". To zostaje: nagłówek
-     * z gwiazdką i słowem „Ulubione" jest na miejscu. Zmieniło się tylko to, że reszta sekcji
-     * startuje ZWINIĘTA, bo rozwinięta spychała pozycje modułów poniżej pierwszego ekranu.
-     *
-     * Test JAWNIE ustawia stan początkowy zamiast liczyć na kolejność: rozwinięcie zapisuje się
-     * na koncie, a wszystkie testy w tym pliku dzielą jedno konto administratora, więc bez tego
-     * ten test przechodziłby albo nie w zależności od tego, co robił poprzedni.
-     */
+  test("[fav043-AC1-AC2 → 087] gwiazdka jest widoczna od razu, a jej dialog niesie pusty stan i punkt zapisu", async ({ page }) => {
     await page.goto("/tasks/all");
     await page.waitForLoadState("load").catch(() => {});
 
-    // Stan początkowy: zwinięta. Jeśli poprzedni test ją rozwinął — zwijamy z powrotem.
-    const zwin = page.getByRole("button", { name: /^zwiń ulubione/i }).first();
-    if (await zwin.count() > 0 && await zwin.isVisible().catch(() => false)) {
-      await zwin.click();
-      await page.waitForTimeout(400);
-    }
+    // Sekcji w nawigacji NIE MA — to jest zmiana zamierzona, nie regresja.
+    await expect(page.locator("aside nav").getByText("Ulubione", { exact: true })).toHaveCount(0);
 
-    // 043/AC-1 ZOSTAJE: sam nagłówek sekcji jest w nawigacji mimo pustej listy.
-    await expect(page.getByText("Ulubione", { exact: true })).toBeVisible({ timeout: 15_000 });
-    // 080/AC-16: w stanie zwiniętym sekcja to JEDEN wiersz — bez zachęty i bez punktu zapisu.
-    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toHaveCount(0);
+    // Wejście jest jedno i widoczne bez przewijania.
+    const gwiazdka = gwiazdkaUlubionych(page, GWIAZDKA);
+    await expect(gwiazdka).toBeVisible({ timeout: 15_000 });
+    await gwiazdka.click();
 
-    // Po rozwinięciu wraca zachęta z 043.
-    await page.getByRole("button", { name: /^rozwiń ulubione/i }).first().click();
-    await expect(page.getByText(/Nie masz jeszcze zapisanych widoków/i)).toBeVisible({ timeout: 10_000 });
-
-    /**
-     * 083/AC-2 ZNOSI drugą połowę reguły z 043/AC-2 — i to jest decyzja, nie regresja.
-     *
-     * 043 wymagało punktu zapisu Z ETYKIETĄ w sekcji ulubionych, bo wtedy jedynym wejściem była
-     * ikona schowana na dole nawigacji. Od tamtej pory ta sama akcja stała w TRZECH miejscach naraz
-     * (sekcja paska bocznego, mobilny pasek powłoki, pasek widoku) — właściciel zobaczył cztery
-     * gwiazdki na jednym ekranie i zgłosił to jako „dwie ikony gwiazdki, po co?". Przy jednej akcji
-     * trzy wejścia nie dają wyboru, tylko pytanie „które z nich jest właściwe".
-     *
-     * Zostaje JEDNO wejście: gwiazdka w pasku widoku — bo to on opisuje widok, który się zapisuje.
-     * Sekcja pozostaje tym, czym jest: LISTĄ zapisanych. Zmierzone po zmianie: jedna ikona gwiazdki
-     * na ekranie (`/wiadomosci`, desktop 1280 px).
-     */
-    await expect(page.getByText("Zapisz ten widok", { exact: true })).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: /zapisz to miejsce w ulubionych/i }).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    const dialog = page.getByRole("dialog", { name: "Ulubione widoki" });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await expect(dialog.getByText(/Nie masz jeszcze ulubionych widoków/)).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /Dodaj bieżący widok/i })).toBeVisible();
   });
 
-  test("[fav043-AC3] zarządzanie ulubionymi dostępne wprost z nawigacji", async ({ page }) => {
+  test("[fav043-AC3 → 087] zarządzanie ulubionymi dostępne z dialogu", async ({ page }) => {
     await page.goto("/tasks/all");
     await page.waitForLoadState("load").catch(() => {});
+    await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
 
-    await page.getByRole("link", { name: /Zarządzaj ulubionymi/i }).click();
+    await page.getByRole("button", { name: /Zarządzaj ulubionymi/i }).click();
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe("/settings");
 
     // Edytor z 042 (nazwa / ikona / kolor / kolejność) jest na miejscu, pod kotwicą.

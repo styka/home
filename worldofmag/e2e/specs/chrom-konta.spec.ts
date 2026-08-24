@@ -85,13 +85,6 @@ test.describe("085 — chrom konta", () => {
       expect(desktop[k], `${k} musi być widoczny na komputerze`).not.toBeNull();
     }
   });
-    console.log(`WERYFIKACJA desktop: ${JSON.stringify(desktop)}`);
-    expect(desktop.dzwonek).not.toBeNull();
-    for (const k of ["gwiazdka", "skroty", "tryb"] as const) {
-      expect(desktop[k], `${k} musi istnieć`).not.toBeNull();
-      expect(Math.abs(desktop[k]! - desktop.dzwonek!), `${k} w jednym rzędzie z dzwonkiem`).toBeLessThan(8);
-    }
-  });
 
   test("[085-AC6] w pasku widoku nie ma wskaźnika świeżości ani menu chromu", async ({ page }) => {
     await otworz(page, "/pogoda");
@@ -116,7 +109,7 @@ test.describe("085 — chrom konta", () => {
      * pułapką dla następnego testu.
      */
     await otworz(page, "/wiadomosci");
-    const ustawienia = page.getByRole("tab", { name: "Ustawienia", exact: true });
+    const ustawienia = page.getByRole("button", { name: /Ustawienia modułu/i });
     await expect(ustawienia).toBeVisible({ timeout: 20_000 });
     await ustawienia.click();
     const przelacznik = page.getByRole("checkbox", { name: /Pokazuj tematy bez nowych wiadomości/i });
@@ -185,18 +178,18 @@ test("[086-AC19] rząd chromu stoi NAD nawigacją, pod nazwą aplikacji", async 
     const gwiazdka = Array.from(document.querySelectorAll("button")).find(
       (b) => /Ulubione/i.test(b.getAttribute("aria-label") ?? "") && widoczny(b),
     );
-    // Po TEKŚCIE, nie po adresie: `href="/"` ma także odnośnik z nazwą aplikacji na samej górze
-    // panelu, więc selektor po adresie mierzyłby odległość do niego (0 px) i test byłby bez sensu.
-    const stronaGlowna = Array.from(document.querySelectorAll("aside a")).find(
-      (a) => (a.textContent ?? "").trim() === "Strona główna" && widoczny(a),
-    );
+    /**
+     * 087: punktem odniesienia jest PIERWSZA POZYCJA NAWIGACJI, a nie „Strona główna" — ta przestała
+     * być pozycją menu i ma teraz własną ikonę w rzędzie chromu. Sedno zgłoszenia z 086 zostaje bez
+     * zmian: rząd ikon stoi NAD nawigacją modułów.
+     */
+    const pierwszaPozycja = Array.from(document.querySelectorAll("aside nav a")).find((a) => widoczny(a));
     const y = (el?: Element | null) => (el ? Math.round(el.getBoundingClientRect().top) : null);
-    return { gwiazdka: y(gwiazdka), stronaGlowna: y(stronaGlowna) };
+    return { gwiazdka: y(gwiazdka), pierwszaPozycja: y(pierwszaPozycja) };
   });
   expect(wynik.gwiazdka, "gwiazdka w rzędzie chromu").not.toBeNull();
-  expect(wynik.stronaGlowna, "pozycja Strona główna").not.toBeNull();
-  // Sedno zgłoszenia: rząd ikon ma stać PRZED pozycją „Strona główna", a nie w stopce panelu.
-  expect(wynik.gwiazdka!).toBeLessThan(wynik.stronaGlowna!);
+  expect(wynik.pierwszaPozycja, "pierwsza pozycja nawigacji").not.toBeNull();
+  expect(wynik.gwiazdka!).toBeLessThan(wynik.pierwszaPozycja!);
 });
 
 test.describe("085 — tryb administratora", () => {

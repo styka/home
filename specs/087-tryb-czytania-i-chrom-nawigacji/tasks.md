@@ -1,7 +1,7 @@
 # Zadania: Tryb czytania w Wiadomościach, jednolite ustawienia modułu i chrom nawigacji
 
 - **Plan:** ./plan.md (087-tryb-czytania-i-chrom-nawigacji)
-- **Status:** todo
+- **Status:** zaimplementowane (wszystkie zadania odhaczone)
 - **Data:** 2026-08-24
 
 > Kolejność: najpierw pomiar punktu odniesienia (bez niego AC-2, AC-15 i AC-16 są opinią), potem
@@ -142,10 +142,15 @@
   wejście do ulubionych i nowy układ chromu, tryb czytania jako element stanu widoku.
   *Gotowe, gdy:* żaden dokument nie opisuje stanu sprzed zmiany.
 
-- [ ] **T-22** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
+- [x] **T-22** — **Pełny przebieg bramek** na lokalnym Postgresie (C-13): wszystkie `check:*`,
   `tsc` ×2, `next lint`, `next build`, budżet wydajnościowy, testy jednostkowe.
 
-- [ ] **T-23** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
+- [x] **T-23** — **Pełna suita klikacza** + powtórzenie pomiarów z T-1.
+  *Wynik:* **194 zielone, 0 czerwonych**. Po drodze trzeba było dostosować testy, które opisywały
+  stan sprzed 087: zapis widoku szedł przez własne okienko gwiazdki (dziś: dialog), a nawigacja do
+  ulubionego — przez sekcję w panelu bocznym (dziś: ten sam dialog). Przepływ wylądował w jednym
+  miejscu (`e2e/pages/chromWidoku.ts`), a testy zapisujące jeden wpis sprzątają **po sobie**, a nie
+  po całym koncie — kasowanie całej listy ścigało się z sąsiednim workerem na wspólnym koncie.
 
 - [x] **T-24** — **`doświadczenia.md`** (C-51) za każdy nieoczywisty problem — w szczególności za to,
   co pokaże pomiar z T-1 wobec hipotez z planu.
