@@ -1225,6 +1225,11 @@
     "reason": "admin",
     "access": "admin"
   },
+  "news:setShowEmptyTopics": {
+    "status": "excluded",
+    "reason": "ustawienie widoku",
+    "access": "self"
+  },
   "news:startNewsRefresh": {
     "status": "ai",
     "action": "refresh_news",

@@ -15,12 +15,7 @@ import {
   type HourPoint,
 } from "../lib/openMeteo";
 import { presetByKey, DAY_PARTS, type Horizon, type DayPart } from "../lib/presets";
-import {
-  czytajUklad,
-  czytajFiltr,
-  zapiszFiltr,
-  type WatchersLayout,
-} from "../lib/uklad";
+import { czytajUklad, type WatchersLayout } from "../lib/uklad";
 import {
   fingerprintOf,
   parseIdeaCategory,
@@ -259,7 +254,6 @@ export async function getWatchers(): Promise<WatcherDTO[]> {
  */
 export interface WeatherPrefDTO {
   watchersLayout: WatchersLayout;
-  watchersFilter: WatcherStatus[];
 }
 
 export async function getWeatherPref(): Promise<WeatherPrefDTO> {
@@ -271,22 +265,21 @@ export async function getWeatherPref(): Promise<WeatherPrefDTO> {
   });
   return {
     watchersLayout: czytajUklad(row.watchersLayout),
-    watchersFilter: czytajFiltr(row.watchersFilter),
   };
 }
 
 /**
- * Jedna akcja na obie preferencje, bo w interfejsie stoją w jednym pasku i zmieniają się razem
- * (włączenie filtra po kliknięciu w licznik często idzie w parze ze zmianą układu).
+ * 085 (AC-22): została JEDNA preferencja — układ listy. Filtr statusów zniknął z interfejsu razem
+ * ze swoimi chipsami (właściciel: „nie chcemy takiego filtra"), a jego kolumnę usuwa migracja 0257.
+ * Kształt `patch` zostaje obiektem, bo tak wołają go istniejące miejsca i bo preferencji widoku
+ * może kiedyś przybyć.
  */
 export async function setWatchersView(patch: {
   layout?: WatchersLayout;
-  filter?: WatcherStatus[];
 }): Promise<void> {
   const user = await requireAuth();
-  const data: { watchersLayout?: string; watchersFilter?: string } = {};
+  const data: { watchersLayout?: string } = {};
   if (patch.layout !== undefined) data.watchersLayout = czytajUklad(patch.layout);
-  if (patch.filter !== undefined) data.watchersFilter = zapiszFiltr(patch.filter);
   await prisma.weatherPref.upsert({
     where: { ...(await filtrMoichRekordow(user.id)) },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), ...data },
