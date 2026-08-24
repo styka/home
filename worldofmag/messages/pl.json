@@ -846,11 +846,8 @@
     },
     "ui": {
       "KosztToasts": {
-        "kosztNieznany": "koszt nieznany"
-      },
-      "PrzelacznikKosztow": {
-        "pokazKoszty": "Pokaż koszty AI przy treściach",
-        "ukryjKoszty": "Ukryj koszty AI przy treściach"
+        "kosztNieznany": "koszt nieznany",
+        "zamknij": "Zamknij powiadomienie o koszcie"
       },
       "GroupNavigator": {
         "listaGrup": "Lista grup",
@@ -860,6 +857,10 @@
       },
       "ViewChromeMenu": {
         "wiecej": "Więcej: ulubione, świeżość danych, skróty"
+      },
+      "PrzelacznikTrybuAdmina": {
+        "wlaczTrybAdmina": "Włącz tryb administratora (koszty AI i narzędzia)",
+        "wylaczTrybAdmina": "Wyłącz tryb administratora — widok jak u użytkownika"
       }
     }
   },

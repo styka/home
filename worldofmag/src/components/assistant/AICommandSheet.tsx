@@ -34,7 +34,7 @@ import { useOverlayState } from "@/hooks/useOverlayState";
 import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/assistant/AssistantLevelSettings";
-import { PrzelacznikKosztow } from "@/components/ui/PrzelacznikKosztow";
+import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 
 interface RouteContext {
   context: string[];
@@ -1658,7 +1658,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
                 {/* 083: asystent ma WŁASNY górny pasek, więc przełącznik kosztów musi być i tutaj —
                     inaczej administrator, który wszedł w rozmowę, nie miałby jak go dosięgnąć. */}
-                <PrzelacznikKosztow />
+                <PrzelacznikTrybuAdmina />
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
               </div>
             </div>

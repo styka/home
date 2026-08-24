@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { Bug, X } from "lucide-react";
+import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { openAssistant } from "@/platform/ai/assistantBus";
 import { FEEDBACK_START_EVENT } from "@/platform/ai/feedbackBus";
 import { useOverlayState } from "@/hooks/useOverlayState";
@@ -65,6 +66,8 @@ function domPath(el: HTMLElement): string {
 }
 
 export function FeedbackInspector() {
+  // 085 (AC-8): narzędzie administratora — widoczne tylko przy włączonym trybie administratora.
+  const { wlaczony: trybAdmina } = useTrybAdmina();
   const t = useTranslations("components.shell.FeedbackInspector");
   const pathname = usePathname();
   const [active, setActive] = useState(false);
@@ -84,9 +87,17 @@ export function FeedbackInspector() {
     openAssistant({ feedbackContext: context });
   }, [pathname]);
 
-  // Dodatkowe wejścia (poza pływającym przyciskiem): skrót Ctrl/Cmd+Shift+B oraz
-  // wpis w panelu admina (przez `feedbackBus`).
+  /**
+   * Dodatkowe wejścia (poza pływającym przyciskiem): skrót Ctrl/Cmd+Shift+B oraz wpis w panelu
+   * admina (przez `feedbackBus`).
+   *
+   * 085 (AC-8): przy wyłączonym trybie administratora nie nasłuchujemy w ogóle. Ukrycie samego
+   * przycisku nie wystarczy — narzędzie, które zniknęło z ekranu, a nadal daje się odpalić
+   * klawiszami, wygląda dla oglądającego stronę „oczami użytkownika" jak usterka, a nie jak
+   * funkcja administratora.
+   */
   useEffect(() => {
+    if (!trybAdmina) return;
     function onKey(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
@@ -100,7 +111,7 @@ export function FeedbackInspector() {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener(FEEDBACK_START_EVENT, onStart);
     };
-  }, []);
+  }, [trybAdmina]);
 
   // Nasłuch na czas trwania trybu: podświetlenie najechanego elementu + przechwycenie kliknięcia.
   useEffect(() => {
@@ -135,6 +146,10 @@ export function FeedbackInspector() {
       document.removeEventListener("keydown", onKey, true);
     };
   }, [active, capture]);
+
+  // Przy wyłączonym trybie nie ma ani przycisku, ani podświetleń — strona wygląda dokładnie tak,
+  // jak widzi ją zwykły użytkownik. Hooki wyżej zostają wywołane bezwarunkowo (reguły Reacta).
+  if (!trybAdmina) return null;
 
   return (
     <>

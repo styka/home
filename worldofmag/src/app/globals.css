@@ -317,3 +317,15 @@ html[data-chrome-frame="corners"] .omnia-chrome-frame { display: block; }
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* 085 (AC-13): powiadomienie o koszcie WJEŻDŻA od prawej krawędzi — to jest ta różnica między
+   powiadomieniem a dymkiem podpowiedzi, który po prostu się pojawia. Czas i krzywa z tokenów
+   skórki, więc skórka bez ruchu wyłącza go tak samo jak wszędzie indziej (C-30). Definicja tutaj,
+   a nie w <style> wewnątrz komponentu — z tego samego powodu co szkielet wyżej. */
+.omnia-koszt-toast {
+  animation: omnia-toast-wjazd var(--motion-duration, 160ms) var(--motion-easing, ease-out);
+}
+@keyframes omnia-toast-wjazd {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

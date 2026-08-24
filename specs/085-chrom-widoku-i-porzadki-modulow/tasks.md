@@ -80,22 +80,22 @@
 
 ## Faza 4 — Tryb administratora *(AC-8..AC-13)*
 
-- [ ] **T-15** — **`kosztWidocznosc` → `platform/admin/trybAdmina`**: `TrybAdminaProvider` /
+- [x] **T-15** — **`kosztWidocznosc` → `platform/admin/trybAdmina`**: `TrybAdminaProvider` /
   `useTrybAdmina` (`dostepne`/`wlaczony`/`przelacz`), klucz `omnia.trybAdmina`, odczyt i zapis dalej
   w `try/catch`. `AiCostBadge` przepięty.
   *Gotowe, gdy:* koszty zachowują się jak dotąd, `npm run check:boundaries` zielone.
 
-- [ ] **T-16** — **`PrzelacznikKosztow` → `PrzelacznikTrybuAdmina`**: nazwa, etykiety, ikona.
+- [x] **T-16** — **`PrzelacznikKosztow` → `PrzelacznikTrybuAdmina`**: nazwa, etykiety, ikona.
   Dostępność = `isAdmin` (`src/app/layout.tsx`), niezależnie od systemowego wyłącznika kosztów —
   uzasadnienie w planie §4.
   *Gotowe, gdy:* administrator z wyłączonym `ai_cost_badge_enabled` nadal może przełączać tryb.
 
-- [ ] **T-17** — **Pod przełącznik wchodzą trzy pozostałe elementy** (AC-8): `KosztToasts`,
+- [x] **T-17** — **Pod przełącznik wchodzą trzy pozostałe elementy** (AC-8): `KosztToasts`,
   `FeedbackInspector` (**przycisk i skrót `Ctrl+Shift+B`** — ukryte narzędzie, które daje się odpalić,
   wygląda na usterkę) oraz `TaskListClipboardButton`.
   *Gotowe, gdy:* z wyłączonym trybem żaden z nich nie istnieje w drzewie, a przełącznik i „Admin" są.
 
-- [ ] **T-18** `[P]` — **Powiadomienia o koszcie** (AC-12, AC-13): `env(safe-area-inset-top)`,
+- [x] **T-18** `[P]` — **Powiadomienia o koszcie** (AC-12, AC-13): `env(safe-area-inset-top)`,
   wjazd/wygaszanie tokenami skórki, kliknięcie zamyka wpis (`pointer-events` zdjęte z kafelków,
   zostają na kontenerze).
   *Gotowe, gdy:* pomiar pokazuje górną krawędź poniżej wcięcia, a kafelek daje się zamknąć.

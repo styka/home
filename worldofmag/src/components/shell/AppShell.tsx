@@ -27,9 +27,9 @@ import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
-import { PokazKosztyProvider } from "@/platform/ai/kosztWidocznosc";
+import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
-import { PrzelacznikKosztow } from "@/components/ui/PrzelacznikKosztow";
+import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
@@ -45,7 +45,8 @@ interface AppShellProps {
   usdPlnRate?: number;
   favoriteViews?: FavoriteViewDTO[];
   /** 083: czy administrator może włączyć pokazywanie kosztów AI (uprawnienie + wyłącznik systemowy). */
-  kosztyDostepne?: boolean;
+  /** 085: czy przełącznik trybu administratora ma się pojawić (konto administratora). */
+  trybAdminaDostepny?: boolean;
 }
 
 // Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
@@ -56,7 +57,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
   { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], kosztyDostepne = false }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], trybAdminaDostepny = false }: AppShellProps) {
   const t = useTranslations("components.shell.AppShell");
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -107,9 +108,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   const tabBar = resolveTabBar(userPermissions, menuPrefs);
 
   return (
-    /* 083: dostawca przełącznika kosztów obejmuje CAŁĄ powłokę — wskaźniki przy treściach siedzą
-       w modułach, a ulotne powiadomienia w rogu ekranu; obie strony czytają ten sam stan. */
-    <PokazKosztyProvider dostepne={kosztyDostepne}>
+    /* 085: dostawca trybu administratora obejmuje CAŁĄ powłokę — wskaźniki kosztu siedzą
+       w modułach, powiadomienia w rogu ekranu, narzędzia w warstwie pływającej; wszystkie czytają
+       ten sam stan, więc jeden przełącznik chowa je razem. */
+    <TrybAdminaProvider dostepne={trybAdminaDostepny}>
     <ToastProvider>
     <ConfirmProvider>
     <ConflictProvider>
@@ -118,7 +120,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         pierwszeństwo przed globalnymi). */}
     <ShortcutsProvider>
     <DataFreshness />
-    {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent). */}
+    {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent).
+        085 (AC-8): same decydują, czy się rysować — czytają tryb administratora z kontekstu. */}
     <KosztToasts rate={usdPlnRate} />
     {/* 080 (Z4): informacja o zejściu lektora na głos systemowy — dotyczy każdego lektora w aplikacji. */}
     <SpeechFallbackNotice />
@@ -187,7 +190,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               <ArrowLeftRight size={16} />
             </button>
             {/* 083: przełącznik kosztów AI stoi obok dzwonka — w chromie konta, nie w treści. */}
-            <PrzelacznikKosztow />
+            <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
           </div>
         </div>
@@ -327,13 +330,16 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       <ShortcutsCheatSheet />
       <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
+      {/* 085 (AC-8): pływający przycisk zgłaszania i tryb wskazywania to NARZĘDZIE administratora —
+          przy wyłączonym trybie znika razem z resztą dodatków. Sam komponent pilnuje też skrótu
+          klawiszowego: ukryte narzędzie, które nadal daje się odpalić, wygląda na usterkę. */}
       {isAdmin && <FeedbackInspector />}
     </div>
     </ShortcutsProvider>
     </ConflictProvider>
     </ConfirmProvider>
     </ToastProvider>
-    </PokazKosztyProvider>
+    </TrybAdminaProvider>
   );
 }
 

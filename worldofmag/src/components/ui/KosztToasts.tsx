@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 import { onKoszt } from "@/platform/ai/kosztBus";
+import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 
 const CZAS_ZYCIA_MS = 6000;
@@ -49,6 +50,7 @@ let licznik = 0;
 
 export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) {
   const t = useTranslations("components.ui.KosztToasts");
+  const { wlaczony: trybAdmina } = useTrybAdmina();
   const [wpisy, setWpisy] = useState<Wpis[]>([]);
 
   useEffect(() => {
@@ -96,23 +98,46 @@ export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) 
     return () => clearTimeout(timer);
   }, [najstarszy?.id, najstarszy?.wygasaO]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (wpisy.length === 0) return null;
+  // 085 (AC-8): przy wyłączonym trybie administratora powiadomienia o koszcie nie pojawiają się
+  // wcale — administrator ogląda wtedy aplikację dokładnie tak, jak widzi ją użytkownik.
+  if (!trybAdmina || wpisy.length === 0) return null;
 
   return (
+    /**
+     * 085 (AC-12): OBSZAR BEZPIECZNY EKRANU.
+     *
+     * Było `top-4`, czyli 16 px od górnej krawędzi OKNA — a na iPhonie górne kilkadziesiąt pikseli
+     * zajmuje wcięcie aparatu. Zgłoszenie właściciela: „kamerka iPhona częściowo zasłania te
+     * komunikaty". `env(safe-area-inset-top)` to jedyna wartość, która zna wysokość wcięcia
+     * konkretnego urządzenia; stała liczba byłaby zgadywaniem, które psuje się przy każdym nowym
+     * modelu (ten sam wzorzec stosuje już `FeedbackInspector`).
+     */
     <div
       aria-live="polite"
-      className="pointer-events-none fixed right-4 top-4 flex flex-col gap-2"
-      style={{ zIndex: 10050 }}
+      className="pointer-events-none fixed right-4 flex flex-col gap-2"
+      style={{ zIndex: 10050, top: "calc(12px + env(safe-area-inset-top))" }}
     >
       {wpisy.map((w) => (
-        <div
+        /**
+         * 085 (AC-13): to ma być POWIADOMIENIE, nie dymek podpowiedzi.
+         *
+         * Trzy rzeczy robią tę różnicę: wjazd od krawędzi (dymek pojawia się bez ruchu), możliwość
+         * odsunięcia kliknięciem (dymka się nie zamyka — znika sam, gdy odsuniesz wskaźnik) oraz
+         * kursor, który to zapowiada. Czas trwania i krzywa idą z tokenów skórki, więc skórka
+         * „bez animacji" wyłącza ruch tak samo jak wszędzie indziej (C-30).
+         */
+        <button
           key={w.id}
-          className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs shadow-lg"
+          type="button"
+          onClick={() => setWpisy((poprzednie) => poprzednie.filter((x) => x.id !== w.id))}
+          aria-label={t("zamknij")}
+          className="omnia-koszt-toast pointer-events-auto flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs shadow-lg"
           style={{
             borderColor: "var(--border)",
             background: "var(--bg-elevated)",
             color: "var(--text-primary)",
             maxWidth: 320,
+            cursor: "pointer",
           }}
         >
           <Sparkles size={13} style={{ color: "var(--accent-purple)", flexShrink: 0 }} aria-hidden />
@@ -127,7 +152,7 @@ export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) 
                 tylko niewyceniony (reguła z 034). */}
             {w.znany ? withPln(`~$${w.usd.toFixed(4)}`, w.usd, rate) : t("kosztNieznany")}
           </span>
-        </div>
+        </button>
       ))}
     </div>
   );
