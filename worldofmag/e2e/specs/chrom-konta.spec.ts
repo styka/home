@@ -27,6 +27,66 @@ test.describe("085 — chrom konta", () => {
     await expect(gwiazdkaUlubionych(page, /(Zapisz|Usuń) to miejsce/i)).toBeVisible({ timeout: 15_000 });
   });
 
+  test("[085-AC1] gwiazdka stoi obok dzwonka — na telefonie i na komputerze", async ({ page }) => {
+    // MOBILE: pasek górny (md:hidden) + brak panelu bocznego.
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto("/pogoda");
+    await page.waitForLoadState("load").catch(() => {});
+    const mobil = await page.evaluate(() => {
+      const widoczne = (el: Element | null) => !!el && el.getClientRects().length > 0;
+      const gwiazdka = Array.from(document.querySelectorAll("button")).find((b) =>
+        /(Zapisz|Usuń) to miejsce/i.test(b.getAttribute("aria-label") ?? ""),
+      );
+      const dzwonek = Array.from(document.querySelectorAll("button")).find((b) =>
+        /Powiadomienia/i.test(b.getAttribute("aria-label") ?? ""),
+      );
+      const skroty = Array.from(document.querySelectorAll("button")).find((b) =>
+        /skrót/i.test(b.getAttribute("aria-label") ?? ""),
+      );
+      return {
+        gwiazdkaWidoczna: widoczne(gwiazdka ?? null),
+        dzwonekWidoczny: widoczne(dzwonek ?? null),
+        // Odległość gwiazdki od dzwonka w poziomie — „obok" znaczy w tym samym rzędzie.
+        wTymSamymRzedzie:
+          gwiazdka && dzwonek
+            ? Math.abs(gwiazdka.getBoundingClientRect().top - dzwonek.getBoundingClientRect().top) < 8
+            : false,
+        skrotyWidoczne: widoczne(skroty ?? null),
+      };
+    });
+    console.log(`WERYFIKACJA mobile: ${JSON.stringify(mobil)}`);
+    expect(mobil.gwiazdkaWidoczna).toBe(true);
+    expect(mobil.wTymSamymRzedzie).toBe(true);
+    expect(mobil.skrotyWidoczne, "ściągawka skrótów NIE ma się pokazywać na telefonie").toBe(false);
+
+    // DESKTOP: rząd chromu w stopce panelu bocznego, wszystkie cztery ikony w jednej linii.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/pogoda");
+    await page.waitForLoadState("load").catch(() => {});
+    const desktop = await page.evaluate(() => {
+      // WIDOCZNE, nie „obecne w drzewie": mobilny pasek górny nadal istnieje w DOM (`md:hidden`
+      // = display:none), więc bez tego filtra mierzylibyśmy jego elementy, które mają geometrię 0.
+      const znajdz = (re: RegExp) =>
+        Array.from(document.querySelectorAll("button")).find(
+          (b) => re.test(b.getAttribute("aria-label") ?? "") && b.getClientRects().length > 0,
+        );
+      const el = {
+        dzwonek: znajdz(/Powiadomienia/i),
+        gwiazdka: znajdz(/(Zapisz|Usuń) to miejsce/i),
+        skroty: znajdz(/skrót/i),
+        tryb: znajdz(/tryb administratora/i),
+      };
+      const y = (b?: HTMLElement) => (b ? Math.round(b.getBoundingClientRect().top) : null);
+      return { dzwonek: y(el.dzwonek), gwiazdka: y(el.gwiazdka), skroty: y(el.skroty), tryb: y(el.tryb) };
+    });
+    console.log(`WERYFIKACJA desktop: ${JSON.stringify(desktop)}`);
+    expect(desktop.dzwonek).not.toBeNull();
+    for (const k of ["gwiazdka", "skroty", "tryb"] as const) {
+      expect(desktop[k], `${k} musi istnieć`).not.toBeNull();
+      expect(Math.abs(desktop[k]! - desktop.dzwonek!), `${k} w jednym rzędzie z dzwonkiem`).toBeLessThan(8);
+    }
+  });
+
   test("[085-AC6] w pasku widoku nie ma wskaźnika świeżości ani menu chromu", async ({ page }) => {
     await otworz(page, "/pogoda");
     // Wskaźnik świeżości mierzył moment przeładowania strony przez powłokę, nie świeżość danych
@@ -134,5 +194,22 @@ test.describe("085 — tryb administratora", () => {
 
     await page.getByRole("button", { name: /wyłącz tryb administratora/i }).first().click();
     await expect(zglos).toHaveCount(0, { timeout: 10_000 });
+  });
+});
+
+/**
+ * 085 (AC-11) — konto BEZ uprawnień administratora niczego z tej warstwy nie widzi.
+ *
+ * Osobny blok, bo wymaga innej tożsamości. To jest kontrola, że rozszerzenie przełącznika nie
+ * przeciekło poza administratora: nie-administrator nie ma nawet skąd wiedzieć, że taki tryb istnieje.
+ */
+test.describe("085 — tryb administratora dla konta bez uprawnień", () => {
+  test.use({ storageState: "e2e/.auth/limited.json" });
+
+  test("[085-AC11] nie-administrator nie widzi przełącznika ani narzędzi", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("load").catch(() => {});
+    await expect(page.getByRole("button", { name: /tryb administratora/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Tryb zgłaszania/i })).toHaveCount(0);
   });
 });
