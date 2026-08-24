@@ -122,13 +122,13 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-15** — **Klikacze (e2e)**: scenariusz zgłoszenia (tryb wskazywania → opis → priorytet →
+- [x] **T-15** — **Klikacze (e2e)**: scenariusz zgłoszenia (tryb wskazywania → opis → priorytet →
   natychmiastowe potwierdzenie → zadanie w skrzynce, także po natychmiastowym zamknięciu asystenta)
   oraz pomiary układu: brak pustego wiersza przy 360 px, kropka osi wewnątrz kolumny, nagłówek
   „Proponowane" w jednym wierszu. Bez `networkidle` (`check:e2e-waits`).
   *Gotowe, gdy:* `bash scripts/e2e-web.sh` zielone.
 
-- [ ] **T-16** — **Pełny `npm run build` do kroku `next build`** na lokalnym Postgresie (C-13),
+- [x] **T-16** — **Pełny `npm run build` do kroku `next build`** na lokalnym Postgresie (C-13),
   wszystkie bramki zielone; po buildzie `npm run check:perf` — gdy poza pasmem ±5 %, najpierw
   szukamy przecieku `html-to-image` do wspólnego grafu, dopiero potem aktualizujemy próg z powodem.
   *Gotowe, gdy:* build i wszystkie bramki przechodzą.
@@ -170,4 +170,13 @@ T-1..T-3 i T-8 nie blokują niczego. T-6 i T-14 stoją obok siebie (odczyt → w
 T-11 i T-12 muszą być przed T-13 (ich dane wchodzą do wywołania akcji).
 
 ## Notatki / blokady
-- (brak)
+
+- **11 klikaczy było czerwonych PRZED tą zmianą** i takie zostaje — wszystkie zależą od danych
+  Wiadomości, których świeża baza sandboxa nie ma (pomiary wracają `null`). Sprawdzone wprost:
+  te same pliki uruchomione na commicie bazowym `bf79221` dają ten sam zestaw porażek. Lista:
+  `084-AC2`, `084-AC4/AC-5`, `085-AC4`, `086-AC20`, `087-AC2`, `087-AC9`, `087-AC10`, `087-AC11`,
+  `087-AC15`, `scenario-news-observer-remount`, `scenario-news-stream-scroll`.
+- **`favorites.spec.ts` bywa czerwony pod obciążeniem** — w pełnym przebiegu padł `fav-AC4`,
+  w węższym `fav-AC5`, a na bazie (lekki przebieg) cały plik był zielony. Za każdym razem pada
+  pomocnik sprzątający ulubione (`clearFavorites`) po ~30 s. Inny test przy każdym przebiegu =
+  zależność od czasu, nie od tej zmiany; ulubione żyją w chromie konta, którego 099 nie dotyka.

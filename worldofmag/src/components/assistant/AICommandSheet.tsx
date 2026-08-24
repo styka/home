@@ -809,7 +809,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           "📍 **Tryb zgłoszenia błędu / sugestii**\n\n" +
           "Do kontekstu rozmowy trafiło wskazane miejsce:\n\n" +
           detail.feedbackContext +
-          (detail.feedbackShot ? "\n\nDołączyłem też **zrzut wskazanego elementu**." : "") +
+          (detail.feedbackShot ? "\n\nDołączyłem też zrzut wskazanego elementu." : "") +
           "\n\nOpisz teraz **błąd lub sugestię** — zapiszę je od razu jako zadanie w projekcie **Omnia** (tytuł dopracuję w tle, nie musisz czekać).";
         setTurns([{ id: newId(), role: "assistant", kind: "answer", content: info }]);
       }

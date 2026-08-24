@@ -90,15 +90,19 @@ test.describe("099 — układ", () => {
       const pomiar = await page.evaluate(() => {
         const ol = document.querySelector("ol");
         const kropka = ol?.querySelector("li > span[aria-hidden]");
-        if (!ol || !kropka) return null;
+        // Punktem odniesienia jest PRZYKLEJONY PASEK, a nie sama oś: usterka polegała na tym, że
+        // kropka przesuwała się widocznie OBOK paska, bo wychodziła poza jego tło. Mierzenie
+        // względem `ol` niczego nie dowodzi — `ol` przesuwa się razem z kropką.
+        const pasek = document.querySelector("div.sticky");
+        if (!ol || !kropka || !pasek) return null;
         const o = ol.getBoundingClientRect();
         const k = kropka.getBoundingClientRect();
-        const linia = o.left; // lewa krawędź `ol` = miejsce, w którym narysowany jest border-left
+        const p = pasek.getBoundingClientRect();
         return {
-          // Ile kropka wystaje w lewo POZA kolumnę treści (kolumna zaczyna się na `ol.left - ml`).
-          wystajePoza: Math.round(o.left - k.left),
+          // Ile kropka wystaje w lewo poza tło przyklejonego paska (≤ 0 = pasek ją zasłoni).
+          wystajePoza: Math.round(p.left - k.left),
           // Odchyłka środka kropki od linii osi — poprawka nie może zsunąć kropki z linii.
-          odchylkaOdLinii: Math.round(Math.abs((k.left + k.width / 2) - linia)),
+          odchylkaOdLinii: Math.round(Math.abs((k.left + k.width / 2) - o.left)),
         };
       });
 
@@ -140,7 +144,8 @@ test.describe("099 — zgłoszenie z trybu wskazywania", () => {
     await wysoki.click();
 
     await page.locator("textarea").last().fill(opis);
-    await page.keyboard.press("Enter");
+    // Kompozytor wysyła Ctrl+Enter (samo Enter robi nową linię) — tak jak mówi podpowiedź pod polem.
+    await page.keyboard.press("Control+Enter");
 
     // AC-1: potwierdzenie pojawia się bez czekania na model.
     await expect(page.getByText("Utworzono zgłoszenie", { exact: false })).toBeVisible({ timeout: 10000 });
