@@ -547,7 +547,9 @@ export function NewsPage({
        * treści) oraz lektor, czyli dokładnie to, o co prosił właściciel: „jak najwięcej miejsca dla
        * samych wiadomości, ale nadal z lektorem i nawigacją".
        */
-      chromeless={trybCzytania}
+      // Tylko w widoku wiadomości: pasek modułu (a w nim JEDYNE wyjście z trybu) renderuje się
+      // wyłącznie tam, więc `chromeless` na innej zakładce zostawiłby ramę bez klamki.
+      chromeless={trybCzytania && view === "feed"}
       filters={trybCzytania ? undefined : <ViewTabs view={view} onChange={setView} />}
       /**
        * 087 (AC-7): ustawienia modułu w slocie ramy, nie jako czwarta zakładka. Ten sam przycisk

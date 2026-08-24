@@ -53,6 +53,20 @@ export function FavoriteViewForm({
     setFullPath(normalizeFavoritePath(window.location.pathname + window.location.search));
   }, [pathname]);
 
+  /**
+   * Adres do ZAPISU liczymy synchronicznie, w momencie kliknięcia — nigdy ze stanu z efektu.
+   *
+   * Lekcja z 042, którą łatwo zgubić przy przenoszeniu formularza: efekt wyżej jest kluczowany
+   * `pathname`, a stan widoku (filtry, zakładki) siedzi w QUERY i zmienia się przez `router.replace`
+   * BEZ zmiany ścieżki. Gdyby zapis brał `fullPath` ze stanu, użytkownik po zmianie filtra zapisałby
+   * adres sprzed zmiany — i ulubiony wracałby w innym stanie niż ten, który widział, klikając.
+   * Stan z efektu służy WYŁĄCZNIE do rozpoznania „czy ten widok jest już zapisany" (wygląd).
+   */
+  function biezacaSciezka(): string | null {
+    if (typeof window === "undefined") return null;
+    return normalizeFavoritePath(window.location.pathname + window.location.search);
+  }
+
   const zapisany = fullPath ? favorites.find((f) => f.path === fullPath) ?? null : null;
 
   useEffect(() => {
@@ -60,9 +74,10 @@ export function FavoriteViewForm({
   }, [rozwiniete]);
 
   function rozwin() {
-    if (!fullPath) return;
+    const sciezka = biezacaSciezka();
+    if (!sciezka) return;
     const modul = MODULES.find((m) => (m.exact ? pathname === m.href : pathname.startsWith(m.href)));
-    setLabel(suggestFavoriteLabel(fullPath, modul?.label));
+    setLabel(suggestFavoriteLabel(sciezka, modul?.label));
     setIcon(DEFAULT_FAVORITE_ICON);
     setColor(
       modul?.color && (FAVORITE_COLORS as readonly string[]).includes(modul.color) ? modul.color : FAVORITE_COLORS[0],
@@ -72,10 +87,11 @@ export function FavoriteViewForm({
   }
 
   function zapisz() {
-    if (!fullPath) return;
+    const sciezka = biezacaSciezka();
+    if (!sciezka) return;
     startTransition(async () => {
       try {
-        await addFavoriteView({ label, path: fullPath, icon, color });
+        await addFavoriteView({ label, path: sciezka, icon, color });
         setRozwiniete(false);
         router.refresh();
         onDone();
@@ -86,9 +102,10 @@ export function FavoriteViewForm({
   }
 
   function usun() {
-    if (!fullPath) return;
+    const sciezka = biezacaSciezka();
+    if (!sciezka) return;
     startTransition(async () => {
-      await removeFavoriteViewByPath(fullPath);
+      await removeFavoriteViewByPath(sciezka);
       router.refresh();
       onDone();
     });
@@ -119,7 +136,7 @@ export function FavoriteViewForm({
 
   if (!rozwiniete) {
     return (
-      <button type="button" onClick={rozwin} disabled={!fullPath} style={wiersz}>
+      <button type="button" onClick={rozwin} style={wiersz}>
         <span style={{ fontSize: 15, width: 20, textAlign: "center" }}>＋</span>
         <span className="flex-1 truncate">{t("dodajBiezacyWidok")}</span>
       </button>

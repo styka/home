@@ -4,6 +4,20 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Przenosząc kod, przenieś też jego niezmienniki
+**Problem:** Formularz „zapisz ten widok" wyjąłem z gwiazdki do osobnego komponentu, żeby zmieścił
+się w jednym dialogu ulubionych. Przy przepisywaniu zniknął niezmiennik opisany w 042: adres do
+zapisu liczymy **synchronicznie w momencie kliknięcia**, a nie ze stanu ustawionego przez efekt.
+Efekt jest kluczowany `pathname`, a stan widoku (filtry, zakładki) siedzi w QUERY i zmienia się przez
+`router.replace` bez zmiany ścieżki — więc po zmianie filtra formularz zapisałby adres sprzed zmiany.
+Dokładnie ten sam błąd, który 042 już raz naprawiło. Wrócił też drugi: `disabled={!fullPath}` blokuje
+przycisk, dopóki efekt się nie wykona.
+**Rozwiązanie:** `biezacaSciezka()` czytana z `window.location` przy każdym kliknięciu; stan z efektu
+został wyłącznie do WYGLĄDU (czy widok jest już zapisany). Przycisk bez `disabled`.
+**Lekcja:** Komentarz „dlaczego tak" jest częścią kodu, który przenosisz. Zanim przepiszesz komponent
+w nowe miejsce, wypisz jego niezmienniki — zwykle są w komentarzach z numerem przebiegu, w którym coś
+poszło źle. Przepisanie „na czysto" gubi je bezgłośnie, bo nowy kod wygląda poprawnie.
+
 ## 2026-08-24 — Liczba przeliczana w efekcie zawsze kiedyś nie nadąży
 **Problem:** Przyklejone nagłówki tematów w Wiadomościach rozjeżdżały się z paskiem nawigacji —
 właściciel widział między nimi przewijaną treść. 086 liczyło zasłonę jako `--view-bar-h + wysokość
