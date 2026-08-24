@@ -163,6 +163,15 @@ test.describe("099 — zgłoszenie z trybu wskazywania", () => {
     // AC-5: opis zgłaszającego jest w zadaniu słowo w słowo.
     expect(zadanie!.description ?? "").toContain(opis);
 
+    // AC-6: zrzut wskazanego elementu dojechał aż do zadania — cała droga naraz: rasteryzacja
+    // w przeglądarce → magistrala asystenta → akcja → tabela załączników.
+    const zalaczniki = await prisma.taskAttachment.findMany({ where: { taskId: zadanie!.id } });
+    expect(zalaczniki.length, "zrzut nie dojechał do zadania").toBe(1);
+    expect(zalaczniki[0].kind).toBe("screenshot");
+    expect(zalaczniki[0].url.startsWith("data:image/"), "załącznik nie jest obrazem").toBe(true);
+
     await prisma.task.delete({ where: { id: zadanie!.id } });
+    // AC-7: kaskada — zrzut ginie razem z zadaniem, bez osobnego sprzątania.
+    expect(await prisma.taskAttachment.count({ where: { taskId: zadanie!.id } })).toBe(0);
   });
 });

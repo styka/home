@@ -122,7 +122,7 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [x] **T-15** — **Klikacze (e2e)**: scenariusz zgłoszenia (tryb wskazywania → opis → priorytet →
+- [x] **T-15** — **Klikacze (e2e)** *(wzmocnione na etapie `/verify` o asercję na tabeli załączników — AC-6 był wcześniej potwierdzony tylko fragmentami)*: scenariusz zgłoszenia (tryb wskazywania → opis → priorytet →
   natychmiastowe potwierdzenie → zadanie w skrzynce, także po natychmiastowym zamknięciu asystenta)
   oraz pomiary układu: brak pustego wiersza przy 360 px, kropka osi wewnątrz kolumny, nagłówek
   „Proponowane" w jednym wierszu. Bez `networkidle` (`check:e2e-waits`).
