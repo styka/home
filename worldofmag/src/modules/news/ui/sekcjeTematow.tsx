@@ -49,8 +49,14 @@ export function useSekcjeTematow({
   onCzytana,
 }: {
   ramaRef: RefObject<HTMLDivElement>;
-  /** Ile pikseli u góry zasłania przyklejony pasek nawigacji. */
-  zaslonaGory: number;
+  /**
+   * Ile pikseli u góry zasłaniają przyklejone paski — jako FUNKCJA, nie liczba (087).
+   *
+   * Zasłona zależy od wysokości paska widoku, którą rama zmienia bez wiedzy tego modułu. Liczba
+   * przekazana w propsie byłaby prawdziwa w chwili renderu i fałszywa zaraz potem; funkcja czyta
+   * stan w momencie użycia. To ta sama pomyłka, którą 086 naprawiło o jedno piętro wyżej.
+   */
+  zaslonaGory: () => number;
   onCzytana: (topicId: string) => void;
 }) {
   const sekcje = useRef(new Map<string, HTMLElement>());
@@ -89,7 +95,7 @@ export function useSekcjeTematow({
       // Strażnik MUSI stanąć PRZED przewinięciem — w trakcie animacji obserwator dostaje przecięcia
       // wszystkich mijanych sekcji.
       programoweDo.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
-      przewinDoSekcji(ramaRef.current, sekcje.current.get(id) ?? null, zaslonaGory, plynnie);
+      przewinDoSekcji(ramaRef.current, sekcje.current.get(id) ?? null, zaslonaGory(), plynnie);
     },
     [ramaRef, zaslonaGory],
   );
@@ -111,7 +117,7 @@ export function useSekcjeTematow({
       },
       // Górna krawędź przycięta pod OBA przyklejone paski — nawigację modułu (`zaslonaGory`)
       // i nagłówek sekcji (64 px).
-      { rootMargin: `-${zaslonaGory + 64}px 0px -55% 0px`, threshold: 0 },
+      { rootMargin: `-${zaslonaGory() + 64}px 0px -55% 0px`, threshold: 0 },
     );
     obserwatorRef.current = obserwator;
     // Sekcje zarejestrowane, ZANIM obserwator powstał (pierwszy render), trzeba dopiąć ręcznie.

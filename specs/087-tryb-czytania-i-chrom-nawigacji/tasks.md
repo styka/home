@@ -72,21 +72,21 @@
 
 ## Faza 4 — Wiadomości: tryb czytania i szczelność pasków *(AC-1..AC-5, AC-15)*
 
-- [ ] **T-9** — **Ustawienia modułu z zakładek do slotu** (AC-7, pierwszy konsument T-4): czwarta
+- [x] **T-9** — **Ustawienia modułu z zakładek do slotu** (AC-7, pierwszy konsument T-4): czwarta
   zakładka znika z `VIEW_TABS`, gear przełącza widok ustawień i z powrotem.
   *Gotowe, gdy:* wejście i wyjście z ustawień działa jednym przyciskiem, a zakładek są trzy.
 
-- [ ] **T-10** — **Tryb czytania: stan w adresie** (AC-4): klucz `czytanie` w stanie widoku, czytany
+- [x] **T-10** — **Tryb czytania: stan w adresie** (AC-4): klucz `czytanie` w stanie widoku, czytany
   i zapisywany tak jak `tresc`/`zrodla`.
   *Gotowe, gdy:* adres z `czytanie` otwiera widok w trybie czytania, a przełączenie zmienia adres.
 
-- [ ] **T-11** — **Tryb czytania: co znika, co zostaje** (AC-1, AC-2, AC-3): przy włączonym trybie
+- [x] **T-11** — **Tryb czytania: co znika, co zostaje** (AC-1, AC-2, AC-3): przy włączonym trybie
   moduł nie renderuje paska stanu i nie przekazuje `filters`/`headerAction`; przełącznik trybu stoi
   w pasku modułu (jedyne wyjście), lektor i nawigacja działają.
   *Gotowe, gdy:* wysokość chromu nad pierwszą wiadomością spada co najmniej o połowę wobec T-1,
   a wszystkie wymienione elementy nadal działają.
 
-- [ ] **T-12** — **Szczelność przyklejonych pasków** (AC-15): zasłona jako `calc(var(--view-bar-h) +
+- [x] **T-12** — **Szczelność przyklejonych pasków** (AC-15): zasłona jako `calc(var(--view-bar-h) +
   <własna wysokość>)` zamiast liczby przeliczanej w efekcie (dowód w T-1: liczba nie nadąża za paskiem
   widoku); tło pasków rozciągnięte na szerokość kontenera przewijania.
   *Gotowe, gdy:* przy przewinięciu w prostokącie między paskami i w pasach po ich bokach nie ma

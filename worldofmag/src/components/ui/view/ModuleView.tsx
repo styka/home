@@ -59,6 +59,20 @@ export interface ModuleViewProps {
    * temu samemu przyciskowi być wyjściem (bez zakładki nie byłoby dokąd wracać).
    */
   settings?: { onClick?: () => void; href?: string; active?: boolean; label?: string };
+
+  /**
+   * 087 (AC-1): RAMA BEZ CHROMU — widok bierze na siebie całą nawigację.
+   *
+   * Dołożone dla trybu czytania w Wiadomościach. Samo `filters={undefined}` nie wystarcza: w
+   * wariancie gęstym pasek renderuje się ZAWSZE, bo to on niesie tytuł. Przełączanie gęstości też
+   * nie jest wyjściem — w trybie czytania wróciłby duży nagłówek i chromu byłoby WIĘCEJ, nie mniej
+   * (68 px bloku nagłówka zamiast 48 px paska).
+   *
+   * Domyślnie wyłączone, więc żaden istniejący widok nie jest dotknięty. Widok, który o to prosi,
+   * musi mieć własne, zawsze widoczne wyjście z tego stanu — inaczej użytkownik zostaje w ramie
+   * bez klamki.
+   */
+  chromeless?: boolean;
   // ── stany brzegowe ──
   /**
    * `ready` renderuje `children`. Pozostałe wartości renderują wspólny stan brzegowy
@@ -143,6 +157,7 @@ export function ModuleView({
   filters,
   actions,
   settings,
+  chromeless = false,
   state = "ready",
   empty,
   error,
@@ -165,7 +180,7 @@ export function ModuleView({
    * m.in. Usługi i Warsztaty). Zostawał po nim pusty pasek wysokości `12px + var(--view-padding)`
    * pod nagłówkiem: nie błąd wyglądający na błąd, tylko dziura, którą łatwo wziąć za odstęp.
    */
-  const pasekMaTresc = compact || !!filters || !!actions || !!settings;
+  const pasekMaTresc = !chromeless && (compact || !!filters || !!actions || !!settings);
 
   /**
    * Wysokość przyklejonego paska jako zmienna CSS na ramie.
@@ -254,7 +269,7 @@ export function ModuleView({
        * Tytuł i podtytuł świadomie ZOSTAJĄ przewijalne: przyklejenie ich zabrałoby na telefonie
        * kilkadziesiąt pikseli listy na stałe, a to nie one były przedmiotem zgłoszenia.
        */}
-      {(breadcrumb || !compact) && (
+      {!chromeless && (breadcrumb || !compact) && (
         <div
           style={{
             position: "relative",

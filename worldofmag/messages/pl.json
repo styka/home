@@ -1328,7 +1328,10 @@
         "przejdzDoTematu": "Przejdź do tematu",
         "wiecejDzialan": "Więcej działań",
         "wiecejDzialanTematu": "Więcej działań dla tematu: {temat}",
-        "edytujTemat": "Edytuj temat"
+        "edytujTemat": "Edytuj temat",
+        "ustawieniaModulu": "Ustawienia modułu",
+        "trybCzytania": "Tryb czytania — schowaj wszystko poza wiadomościami",
+        "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",

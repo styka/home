@@ -101,9 +101,15 @@ problem powrotu — bez zakładki nie byłoby zaznaczonego widoku, do którego m
   `setViewState` (jak `tresc` i `zrodla` od 084) — dzięki temu widok w trybie czytania **da się
   zapisać w ulubionych** i wróci z adresu. Przy `czytanie=1` moduł:
   - nie renderuje `RefreshStatus`,
-  - przekazuje do ramy `filters={undefined}` i `headerAction={undefined}` (zakładki i akcje główne
-    znikają; pasek widoku sam przestaje się renderować, a `--view-bar-h` schodzi do zera — mechanizm
-    z 086 już to obsługuje),
+  - prosi ramę o **widok bez chromu** (`chromeless`) — jedna, opcjonalna właściwość kontraktu
+    dołożona tutaj, bo samo `filters={undefined}` nie wystarcza: w wariancie gęstym (`density=
+    "compact"`) pasek renderuje się **zawsze**, skoro to on niesie tytuł. Wariant gęsty jest w
+    Wiadomościach właściwy poza trybem czytania, więc alternatywą byłoby przełączanie gęstości —
+    a wtedy w trybie czytania wracałby duży nagłówek i chromu byłoby **więcej**, nie mniej
+    (policzone: 68 px bloku nagłówka zamiast 48 px paska). `chromeless` chowa blok nagłówka
+    i pasek, a `--view-bar-h` schodzi do zera — mechanizm z 086 już to obsługuje. Domyślnie
+    wyłączona, więc żaden z 21 modułów nie jest dotknięty (C-33: poszerzamy ramę zamiast robić
+    wyjątek w module),
   - zostawia **własny** przyklejony pasek: nawigator tematów, filtr źródeł, przełącznik treści oraz
     **przełącznik trybu** (ikona), który jest wtedy jedynym wyjściem i dlatego musi w nim stać.
   - Lektor (`NewsReader`) to osobny, przyklejony pasek na dole — nietknięty.
@@ -201,7 +207,7 @@ przejść bez zmian w manifestach.
 
 | Plik | Akcja | Po co |
 |------|-------|-------|
-| `src/components/ui/view/ModuleView.tsx` | edycja | odstęp pod nagłówkiem bez paska (AC-16); przekazanie slotu `settings` |
+| `src/components/ui/view/ModuleView.tsx` | edycja | odstęp pod nagłówkiem bez paska (AC-16); slot `settings`; `chromeless` dla trybu czytania (AC-1) |
 | `src/components/ui/view/ViewBar.tsx` | edycja | akcje na pełną szerokość poniżej `md` (AC-6); rysowanie slotu ustawień (AC-7, AC-8) |
 | `src/components/ui/Modal.tsx` | edycja | stopka nad obszarem gestów systemowych (AC-14) |
 | `src/modules/news/ui/sekcjeTematow.tsx` | edycja | chip przy tytule, bez zawijania (AC-9, AC-10) |
