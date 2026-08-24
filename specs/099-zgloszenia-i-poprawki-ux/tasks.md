@@ -133,12 +133,35 @@
   szukamy przecieku `html-to-image` do wspólnego grafu, dopiero potem aktualizujemy próg z powodem.
   *Gotowe, gdy:* build i wszystkie bramki przechodzą.
 
-- [ ] **T-17** — **Mapowanie AC → dowód** (wejście dla `/verify`): dla każdego z AC-1..AC-18 wpisz,
+- [x] **T-17** — **Mapowanie AC → dowód** (wejście dla `/verify`): dla każdego z AC-1..AC-18 wpisz,
   czym został potwierdzony (test, klikacz, pomiar, przegląd kodu).
 
-- [ ] **T-18** — **Wpis do `doświadczenia.md`** (C-51), po polsku: zamknięcie asystenta przerywa
+- [x] **T-18** — **Wpis do `doświadczenia.md`** (C-51), po polsku: zamknięcie asystenta przerywa
   trwające żądanie (`abort()` w `handleClose`), więc „zapisz najpierw, model potem" jest wymogiem
   poprawności, a nie oszczędnością; plus lekcja o `minHeight` na wierszu, który na telefonie bywa pusty.
+
+## T-17 — czym potwierdzone (wejście dla `/verify`)
+
+| AC | Dowód |
+|----|-------|
+| AC-1 | Klikacz `[099-AC1…]` — potwierdzenie „Utworzono zgłoszenie" widoczne w 3,3 s całego scenariusza, bez stanu „myślę"; przegląd kodu: `handleSend` nie woła `callAgent` w trybie zgłoszenia |
+| AC-2 | Ten sam klikacz: `Escape` zaraz po wysyłce, a zadanie odczytane potem wprost z bazy |
+| AC-3 | Przegląd handlera: brak modelu → `skipped: "model-niedostepny"`, tytuł roboczy zostaje; kolejkowanie w `try/catch` |
+| AC-4 | Przegląd kodu: jedno `chatComplete` (`op: "dispatch"`) w całej ścieżce, zero wywołań `/api/llm/home/execute` |
+| AC-5 | Klikacz sprawdza `description` utworzonego zadania — zawiera opis zgłaszającego słowo w słowo |
+| AC-6 | Klikacz: zrzut przechodzi przez magistralę i akcję (potwierdzenie mówi o dołączonym zrzucie); zrzut ekranu z nieudanego przebiegu pokazuje kartę trybu z tą informacją |
+| AC-7 | Przegląd `TaskDetail` + FK `ON DELETE CASCADE` w migracji 0259 |
+| AC-8 | Test jednostkowy `poprawnyZrzut` (zły format, brak, poza limitem) + `try/catch` wokół zapisu załącznika |
+| AC-9 | Test jednostkowy limitu + degradacja PNG → JPEG → brak zrzutu w `FeedbackInspector` |
+| AC-10 | Klikacz: chipy priorytetu widoczne od razu po wejściu w tryb (bez dodatkowego kliknięcia) |
+| AC-11 | Klikacz: wybrany „Wysoki" → `task.priority === "HIGH"` odczytane z bazy |
+| AC-12 | Klikacz `[099-AC12]`: `pasek.left - kropka.left ≤ 0` (pomiar względem przyklejonego paska) |
+| AC-13 | Ten sam klikacz: odchyłka środka kropki od linii osi ≤ 1 px |
+| AC-14 | Klikacz `[099-AC14]`: zero pustych wierszy paska o wysokości > 0 przy 360 px |
+| AC-15 | Klikacz `[099-AC15]` (tytuł w pasku na 1280 px) + `rama-widoku-przeglad`/`pasek-widoku-mobile` zielone |
+| AC-16 | Klikacz `[099-AC17]` znajduje nagłówek „Proponowane" |
+| AC-17 | Ten sam klikacz: wysokość paska sekcji ≤ 56 px przy 360 px, przełączniki w menu ⋮ |
+| AC-18 | Przegląd `MenuProponowanych`: pozycja z zerowym licznikiem nie jest renderowana, a przy dwóch zerach nie ma przycisku |
 
 ## Mapowanie kryteriów akceptacji
 
