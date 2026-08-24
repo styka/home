@@ -4,6 +4,21 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Sufit na sąsiedzie zamiast podłogi dla siebie
+**Problem:** Długa nazwa lokalizacji w Pogodzie („Kocoń, województwo śląskie") przycinała TYTUŁ
+modułu do jednej litery — akcja nagłówka miała `flex-shrink: 0`, więc rosła kosztem sąsiada.
+Naprawiłem to sufitem na akcji (`max-width: 55%`) i zepsułem Kalendarz: jego nawigator miesiąca ma
+182 px treści i nie potrafi się zwęzić, więc w pudełku 180 px wychodził 2 px poza nie. Złapał to
+dopiero ogólny przegląd ramy (`rama-widoku-przeglad`), a nie test naprawianego zgłoszenia.
+**Rozwiązanie:** Odwrócenie kierunku ograniczenia: **podłoga dla tytułu** (`min-width: 40%`) zamiast
+sufitu dla akcji. Nadmiar pochłania wtedy ta strona, która potrafi się przyciąć (przycisk lokalizacji
+ma `min-w-0` + `truncate`), a akcja nieprzycinalna po prostu mieści się w pozostałych 60 %.
+**Lekcja:** Sufit (`max-width`) narzucony wspólnemu komponentowi obowiązuje też te dzieci, które nie
+umieją się zwęzić — i wtedy nie ogranicza, tylko wypycha treść poza pudełko. Gdy chcesz ochronić
+element A przed elementem B, ogranicz A **podłogą**, nie B sufitem. I sprawdź naprawę **kontrolą
+negatywną**: po cofnięciu zmiany test AC-18 pokazał tytuł widoczny na 10 px przy 81 px treści —
+dopiero to dowodzi, że mierzy naprawę, a nie sam fakt, że strona się otwiera.
+
 ## 2026-08-24 — Miara POZYCYJNA udaje wysokościową dopóki nic nad nią nie stoi
 **Problem:** W 085 policzyłem „zasłonę" dla przyklejonych nagłówków jako odległość dolnej krawędzi
 paska modułu od górnej krawędzi ramy i uznałem, że to jedna miara odporna na to, co stanie wyżej.
