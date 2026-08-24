@@ -1309,7 +1309,9 @@
         "monitorowane": "Monitorowane",
         "odrzucone": "Odrzucone",
         "tematyKtoreMonitorujesz": "Tematy, które monitorujesz. Ich propozycje nie pojawią się już na liście gorących tematów.",
-        "przestanMonitorowac": "Przestań monitorować"
+        "przestanMonitorowac": "Przestań monitorować",
+        "proponowane": "Proponowane",
+        "wiecejDzialan": "Więcej działań"
       },
       "NewsItemCard": {
         "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła.",

@@ -2,8 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import type { HotTopic } from "../lib/goraceTematy";
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { Plus, Loader2, EyeOff, Undo2, Check, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { Plus, Loader2, EyeOff, Undo2, Check, Trash2, MoreVertical, Eye } from "lucide-react";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -160,30 +161,23 @@ export function HotTopics({
           zakładce Źródeł. Właściciel prosił o spójność trzech zakładek wprost — a spójność, która
           bierze się ze wspólnego komponentu, nie rozjeżdża się przy pierwszej zmianie stylu; taka,
           która bierze się z podobnie wyglądającego, skopiowanego JSX-a, rozjeżdża się zawsze. */}
+      {/* 088 (AC-16, AC-17): nagłówek czyta „Proponowane", a nie „Gorące tematy" — że są gorące,
+          mówi już zakładka, więc powtórzenie zjadało jedyny wiersz, w którym trzeba było zmieścić
+          jeszcze dwa przełączniki. Same przełączniki schodzą do menu ⋮ — tego samego wzorca, którym
+          087 schowało edycję i usuwanie tematu; przy 360 px trzy rzeczy w tym wierszu się nie
+          mieściły. */}
       <NaglowekSekcji
-        tytul={t("goraceTematy")}
+        tytul={t("proponowane")}
         licznik={topics.length}
         akcje={
-          <div className="flex shrink-0 items-center gap-1">
-            {monitorowane.length > 0 && (
-              <button
-                onClick={() => setShowMonitorowane((v) => !v)}
-                aria-expanded={showMonitorowane}
-                className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              >
-                {t("monitorowane")} ({monitorowane.length})
-              </button>
-            )}
-            {(hidden?.length ?? 0) > 0 && (
-              <button
-                onClick={() => setShowHidden((v) => !v)}
-                aria-expanded={showHidden}
-                className="shrink-0 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              >
-                {t("odrzucone")} ({hidden!.length})
-              </button>
-            )}
-          </div>
+          <MenuProponowanych
+            liczbaMonitorowanych={monitorowane.length}
+            liczbaOdrzuconych={hidden?.length ?? 0}
+            monitorowaneOtwarte={showMonitorowane}
+            odrzuconeOtwarte={showHidden}
+            onMonitorowane={() => setShowMonitorowane((v) => !v)}
+            onOdrzucone={() => setShowHidden((v) => !v)}
+          />
         }
       />
       <p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</p>
@@ -309,6 +303,92 @@ export function HotTopics({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * 088 (AC-17, AC-18): menu ⋮ sekcji „Proponowane".
+ *
+ * Stoi na tym samym prymitywie (`AnchoredLayer`) i ma ten sam kształt, co menu tematu z 087 —
+ * dwa różnie wyglądające menu w jednym module rozjeżdżają się przy pierwszej zmianie stylu.
+ *
+ * Pozycja z zerowym licznikiem NIE jest renderowana (pusta lista monitorowanych to nie jest wybór,
+ * tylko ślepy zaułek), a gdy obie są puste — nie ma po co pokazywać samego przycisku.
+ */
+function MenuProponowanych({
+  liczbaMonitorowanych,
+  liczbaOdrzuconych,
+  monitorowaneOtwarte,
+  odrzuconeOtwarte,
+  onMonitorowane,
+  onOdrzucone,
+}: {
+  liczbaMonitorowanych: number;
+  liczbaOdrzuconych: number;
+  monitorowaneOtwarte: boolean;
+  odrzuconeOtwarte: boolean;
+  onMonitorowane: () => void;
+  onOdrzucone: () => void;
+}) {
+  const t = useTranslations("modules.news.HotTopics");
+  const [otwarte, setOtwarte] = useState(false);
+  const kotwicaRef = useRef<HTMLDivElement>(null);
+
+  if (liczbaMonitorowanych === 0 && liczbaOdrzuconych === 0) return null;
+
+  const pozycja =
+    "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]";
+
+  return (
+    <div ref={kotwicaRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOtwarte((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={otwarte}
+        title={t("wiecejDzialan")}
+        aria-label={t("wiecejDzialan")}
+        className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      <AnchoredLayer
+        anchorRef={kotwicaRef}
+        open={otwarte}
+        onClose={() => setOtwarte(false)}
+        side="dol"
+        align="koniec"
+        width={240}
+        role="menu"
+        ariaLabel={t("wiecejDzialan")}
+      >
+        {liczbaMonitorowanych > 0 && (
+          <button
+            type="button"
+            role="menuitem"
+            aria-pressed={monitorowaneOtwarte}
+            className={pozycja}
+            onClick={() => { setOtwarte(false); onMonitorowane(); }}
+          >
+            <Eye size={15} className="shrink-0 text-[var(--text-muted)]" />
+            {t("monitorowane")} ({liczbaMonitorowanych})
+          </button>
+        )}
+        {liczbaOdrzuconych > 0 && (
+          <button
+            type="button"
+            role="menuitem"
+            aria-pressed={odrzuconeOtwarte}
+            className={pozycja}
+            onClick={() => { setOtwarte(false); onOdrzucone(); }}
+          >
+            <EyeOff size={15} className="shrink-0 text-[var(--text-muted)]" />
+            {t("odrzucone")} ({liczbaOdrzuconych})
+          </button>
+        )}
+      </AnchoredLayer>
     </div>
   );
 }

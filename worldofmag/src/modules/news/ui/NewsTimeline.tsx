@@ -23,8 +23,17 @@ export function NewsTimeline({ entries }: { entries: TimelineEntryDTO[] }) {
     );
   }
 
+  /**
+   * 088 (AC-12): oś ma WŁASNY margines z lewej, równy połowie kropki.
+   *
+   * Kropka stoi `-left-[21px]` względem pozycji, a `ol` miało tylko `border-l` + `pl-4` — jej
+   * skrajny piksel wypadał więc 4 px POZA lewą krawędź kolumny treści. Przyklejone paski (pasek
+   * modułu i nagłówek tematu) mają tło szerokości TEJ kolumny, więc przewijana kropka nie chowała
+   * się pod nimi, tylko przesuwała się widocznie obok nich. Margines wsuwa ją z powrotem do
+   * kolumny i **nie rusza** jej położenia względem linii (AC-13) — przesuwa oba naraz.
+   */
   return (
-    <ol className="relative space-y-3 border-l border-[var(--border)] pl-4">
+    <ol className="relative ml-1 space-y-3 border-l border-[var(--border)] pl-4">
       {entries.map((e) => (
         <li key={e.id} className="relative">
           {/* Kropka na osi — pozycjonowana na linii, nie obok niej. */}
