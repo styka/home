@@ -1325,7 +1325,10 @@
         "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych",
         "wiadomosciKrotko": "Wiadomości",
         "liniaCzasuKrotko": "Linia czasu",
-        "przejdzDoTematu": "Przejdź do tematu"
+        "przejdzDoTematu": "Przejdź do tematu",
+        "wiecejDzialan": "Więcej działań",
+        "wiecejDzialanTematu": "Więcej działań dla tematu: {temat}",
+        "edytujTemat": "Edytuj temat"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
@@ -1358,7 +1361,9 @@
         "wlaczPodazanie": "Podążaj za czytanym tekstem",
         "wylaczPodazanie": "Nie podążaj za czytanym tekstem",
         "wszystkieTematyPuste": "Nic nowego w Twoich tematach",
-        "wszystkieTematyPusteOpis": "Puste tematy są ukryte. Odśwież moduł albo pokaż je w ustawieniach."
+        "wszystkieTematyPusteOpis": "Puste tematy są ukryte. Odśwież moduł albo pokaż je w ustawieniach.",
+        "oznaczycWszystkieTytul": "Oznaczyć wszystkie nowe wiadomości jako przeczytane?",
+        "oznaczycWszystkieOpis": "Zniknie z listy {liczba} nowych pozycji. Nic nie zostaje usunięte — wiadomości zostają w linii czasu swoich tematów i w źródłach."
       },
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",

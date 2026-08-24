@@ -148,20 +148,31 @@ export function NaglowekSekcji({
   return (
     <div
       className={cn(
-        "sticky z-20 flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] py-2",
+        "sticky z-20 flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] py-2",
         wyrozniony && "border-[var(--accent-blue)]",
       )}
       // Nagłówek sekcji zatrzymuje się POD paskiem nawigacji, a nie na krawędzi ramy — inaczej
       // oba przyklejone paski rysowałyby się jeden na drugim.
       style={{ top: "var(--news-pasek-h, 0px)" }}
     >
-      <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-primary)]">{tytul}</h3>
-      {licznik !== undefined && (
-        <span className="shrink-0 rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]">
-          {licznik}
-        </span>
-      )}
-      {akcje}
+      {/**
+       * 087 (AC-9, AC-10): TYTUŁ I LICZNIK TO JEDNA GRUPA.
+       *
+       * Do 087 `h3` miało `flex-1`, więc zjadało całą wolną szerokość i wypychało chip na
+       * przeciwny kraniec wiersza — zgłoszenie właściciela: „chip z ilością jest jakoś za daleko
+       * z prawej od napisu". Do tego kontener miał `flex-wrap`, więc na wąskim ekranie całość
+       * łamała się na drugą linię i napis bywał przycięty. Rozpychanie do prawej przejmują teraz
+       * akcje (`ml-auto`), a zawijanie znika — było objawem, nie rozwiązaniem.
+       */}
+      <div className="flex min-w-0 items-center gap-2">
+        <h3 className="min-w-0 truncate text-sm font-semibold text-[var(--text-primary)]">{tytul}</h3>
+        {licznik !== undefined && (
+          <span className="shrink-0 rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]">
+            {licznik}
+          </span>
+        )}
+      </div>
+      {akcje && <div className="ml-auto flex shrink-0 items-center gap-1">{akcje}</div>}
     </div>
   );
 }

@@ -13,7 +13,8 @@ import {
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Settings2, Library, Plus, Loader2, Trash2, Pencil, CalendarClock } from "lucide-react";
+import { Newspaper, RefreshCw, Flame, Settings2, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -32,6 +33,7 @@ import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import { NewsModuleSettings } from "./NewsModuleSettings";
 import { SourceFilter } from "./SourceFilter";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useSekcjeTematow, przewinDoSekcji, PROGRAMOWE_PRZEWIJANIE_MS } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
@@ -499,28 +501,9 @@ export function NewsPage({
     (topicId: string) => {
       const topic = topics.find((x) => x.id === topicId);
       if (!topic) return null;
-      return (
-        <>
-          <button
-            onClick={() => setEditing(topic)}
-            className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-            title="Edytuj temat"
-            aria-label={`Edytuj temat: ${topic.title}`}
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            onClick={() => usunTemat(topic)}
-            className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-            title={t("usunTemat")}
-            aria-label={`Usuń temat: ${topic.title}`}
-          >
-            <Trash2 size={16} />
-          </button>
-        </>
-      );
+      return <MenuTematu topic={topic} onEdytuj={() => setEditing(topic)} onUsun={() => usunTemat(topic)} />;
     },
-    [topics, usunTemat, t]
+    [topics, usunTemat]
   );
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
@@ -922,5 +905,74 @@ function TopicModal({
         />
       </div>
     </Modal>
+  );
+}
+
+/**
+ * 087 (AC-11, AC-12): RZADKIE AKCJE TEMATU POD TRZEMA KROPKAMI.
+ *
+ * Edycja i usunięcie tematu stały odsłonięte w nagłówku KAŻDEJ sekcji — dwie ikony razy kilkanaście
+ * tematów, w pasku, który i tak jest ciasny na telefonie. Zgłoszenie właściciela: „te ikony niech
+ * będą dostępne w dropdown poprzez ikonę z trzema kropkami".
+ *
+ * Stoi na `AnchoredLayer` — tym samym prymitywie, co filtr portali w tym module (C-53): zamykanie
+ * klikiem obok, pozycjonowanie i portal do `body` dostajemy gotowe. Usunięcie zostaje jawnie
+ * destrukcyjne (C-34) — okno potwierdzenia rysuje `usunTemat`.
+ */
+function MenuTematu({
+  topic,
+  onEdytuj,
+  onUsun,
+}: {
+  topic: TopicDTO;
+  onEdytuj: () => void;
+  onUsun: () => void;
+}) {
+  const t = useTranslations("modules.news.NewsPage");
+  const [otwarte, setOtwarte] = useState(false);
+  const kotwicaRef = useRef<HTMLDivElement>(null);
+
+  const pozycja =
+    "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]";
+
+  return (
+    <div ref={kotwicaRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOtwarte((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={otwarte}
+        title={t("wiecejDzialan")}
+        aria-label={t("wiecejDzialanTematu", { temat: topic.title })}
+        className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      <AnchoredLayer
+        anchorRef={kotwicaRef}
+        open={otwarte}
+        onClose={() => setOtwarte(false)}
+        side="dol"
+        align="koniec"
+        width={220}
+        role="menu"
+        ariaLabel={t("wiecejDzialan")}
+      >
+        <button type="button" role="menuitem" className={pozycja} onClick={() => { setOtwarte(false); onEdytuj(); }}>
+          <Pencil size={15} className="shrink-0 text-[var(--text-muted)]" />
+          {t("edytujTemat")}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className={`${pozycja} hover:text-[var(--accent-red)]`}
+          onClick={() => { setOtwarte(false); onUsun(); }}
+        >
+          <Trash2 size={15} className="shrink-0 text-[var(--text-muted)]" />
+          {t("usunTemat")}
+        </button>
+      </AnchoredLayer>
+    </div>
   );
 }

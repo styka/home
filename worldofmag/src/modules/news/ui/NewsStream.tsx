@@ -206,8 +206,19 @@ export function NewsStream({
   }
 
   async function markAll() {
-    // Potwierdzenie, bo akcja jest masowa i z poziomu ekranu nieodwracalna (AC-B16).
-    if (!(await confirmDialog(`Oznaczyć wszystkie nowe wiadomości (${totalItems}) jako przeczytane?`))) return;
+    /**
+     * Potwierdzenie, bo akcja jest masowa i z poziomu ekranu nieodwracalna (AC-B16).
+     *
+     * 087 (AC-13): okno ma też TREŚĆ. Do 087 miało wyłącznie tytuł, więc pytało „czy na pewno" bez
+     * powiedzenia, co się właściwie stanie — a właściciel zgłosił dokładnie to („dialog ma tytuł ale
+     * nie ma contentu"). Opis mówi, ile pozycji zniknie z listy i że nic nie ginie; okno zostaje
+     * NEUTRALNE (C-34), bo oznaczenie jako przeczytane niczego nie usuwa.
+     */
+    const potwierdzone = await confirmDialog({
+      title: t("oznaczycWszystkieTytul"),
+      description: t("oznaczycWszystkieOpis", { liczba: totalItems }),
+    });
+    if (!potwierdzone) return;
     setBusyAll(true);
     try {
       const { count } = await acknowledgeAllItems();

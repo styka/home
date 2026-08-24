@@ -50,22 +50,22 @@
 
 ## Faza 2 — Okno modalne *(AC-13, AC-14)*
 
-- [ ] **T-5** `[P]` — **Stopka okna nad obszarem gestów** (AC-14): dolne wypełnienie stopki `Modal`
+- [x] **T-5** `[P]` — **Stopka okna nad obszarem gestów** (AC-14): dolne wypełnienie stopki `Modal`
   powiększone o `env(safe-area-inset-bottom)`.
   *Gotowe, gdy:* przy wymuszonym wcięciu przyciski są powyżej obszaru gestów; na komputerze bez zmian.
 
-- [ ] **T-6** `[P]` — **Treść potwierdzenia „Oznacz wszystkie"** (AC-13): `description` z liczbą
+- [x] **T-6** `[P]` — **Treść potwierdzenia „Oznacz wszystkie"** (AC-13): `description` z liczbą
   wiadomości i informacją, że nic nie ginie.
   *Gotowe, gdy:* okno ma niepusty opis zawierający liczbę.
 
 ## Faza 3 — Wiadomości: nagłówek sekcji i akcje tematu *(AC-9..AC-12)*
 
-- [ ] **T-7** `[P]` — **Chip licznika przy tytule** (AC-9, AC-10): tytuł i licznik jako jedna grupa,
+- [x] **T-7** `[P]` — **Chip licznika przy tytule** (AC-9, AC-10): tytuł i licznik jako jedna grupa,
   akcje przejmują rozpychanie do prawej, `flex-wrap` znika.
   *Gotowe, gdy:* odstęp chipu od tytułu ≤ 8 px, a przy 360 px nagłówek mieści się w jednym wierszu
   bez przycięcia licznika.
 
-- [ ] **T-8** — **Menu trzech kropek dla akcji tematu** (AC-11, AC-12): edycja i usunięcie do
+- [x] **T-8** — **Menu trzech kropek dla akcji tematu** (AC-11, AC-12): edycja i usunięcie do
   `AnchoredLayer` otwieranego ikoną `MoreVertical`; usunięcie zostaje jawnie destrukcyjne.
   *Gotowe, gdy:* w nagłówku sekcji nie ma odsłoniętych ikon edycji/usuwania, a obie akcje działają
   z menu.
