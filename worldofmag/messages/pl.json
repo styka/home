@@ -650,7 +650,8 @@
         "zatwierdz": "Zatwierdź",
         "odrzucAkcje": "Odrzuć akcje",
         "odrzuc": "Odrzuć",
-        "otworzRaport": "Otwórz raport"
+        "otworzRaport": "Otwórz raport",
+        "priorytet": "Priorytet:"
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",
@@ -1900,7 +1901,8 @@
         "odCzegoLiczycKolejny": "Od czego liczyć kolejny termin po wykonaniu",
         "usunPowtarzanie": "Usuń powtarzanie",
         "zrobioneNastepneLicz": "Zrobione — następne licz",
-        "nastepneWTejDacie": "Następne w tej dacie"
+        "nastepneWTejDacie": "Następne w tej dacie",
+        "zalaczniki": "Załączniki"
       },
       "TaskList": {
         "sprobujZmienicFiltrStatusu": "Spróbuj zmienić filtr statusu"

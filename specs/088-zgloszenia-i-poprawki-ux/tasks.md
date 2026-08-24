@@ -88,20 +88,20 @@
 
 ## Faza 3 — UI zgłoszenia
 
-- [ ] **T-11** — **Zrzut wskazanego elementu** (plan §5.1): zależność `html-to-image` (leniwy
+- [x] **T-11** — **Zrzut wskazanego elementu** (plan §5.1): zależność `html-to-image` (leniwy
   `import()` **wyłącznie** w `FeedbackInspector`), zdjęcie robione **po** zdjęciu podświetlenia,
   tło z `--bg-base`, `pixelRatio` ograniczony, limit czasu ~4 s, degradacja PNG → JPEG → brak zrzutu,
   całość w `try/catch`. `AssistantOpenDetail` dostaje `feedbackShot?: string`.
   *Gotowe, gdy:* wskazanie elementu daje obraz **tego** elementu, a wymuszony błąd rasteryzacji nie
   blokuje otwarcia asystenta (AC-6, AC-8, AC-9).
 
-- [ ] **T-12** — **Wybór priorytetu w trybie zgłoszenia** (plan §5.2): rząd chipów
+- [x] **T-12** — **Wybór priorytetu w trybie zgłoszenia** (plan §5.2): rząd chipów
   Niski/Normalny/Wysoki/Pilny nad polem wiadomości, domyślnie **Normalny**, widoczny wyłącznie
   w trybie zgłoszenia i zerowany razem z nim. Kolory ze zmiennych CSS, cel dotyku `py-3`, teksty przez `t()`.
   *Gotowe, gdy:* chipy widać bez dodatkowego kliknięcia, a wybór trafia do utworzonego zadania
   (AC-10, AC-11).
 
-- [ ] **T-13** — **Zgłoszenie bez pętli agenta** (plan §5.2, najtrudniejsze):
+- [x] **T-13** — **Zgłoszenie bez pętli agenta** (plan §5.2, najtrudniejsze):
   `handleSend` w trybie zgłoszenia woła `submitFeedbackTask` **wprost** (tytuł roboczy, opis
   *verbatim* + blok kontekstu UI — dokładnie jak dziś, priorytet, zrzut) i dokłada turę
   `answer` z potwierdzeniem „✅ Utworzono zgłoszenie: <tytuł>" (+ odnośnik, gdy `canRead`).
@@ -110,7 +110,7 @@
   *Gotowe, gdy:* potwierdzenie pojawia się natychmiast, zamknięcie asystenta zaraz po wysyłce **nie
   kasuje** zgłoszenia, a opis w zadaniu jest słowo w słowo (AC-1, AC-2, AC-4, AC-5).
 
-- [ ] **T-14** `[P]` — **Załącznik widoczny w zadaniu** (plan §5.3): sekcja „Załączniki"
+- [x] **T-14** `[P]` — **Załącznik widoczny w zadaniu** (plan §5.3): sekcja „Załączniki"
   w `src/modules/tasks/ui/TaskDetail.tsx` wzorowana na `NoteAttachments` — miniatura + podgląd
   w istniejącym `Modal`; brak załączników = brak sekcji.
   *Gotowe, gdy:* zadanie ze zrzutem pokazuje miniaturę i powiększenie, a usunięcie zadania usuwa

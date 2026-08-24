@@ -22,6 +22,7 @@ import { createUserReport } from "@/modules/reports/contract";
 import { getRecentAiCalls, type AiCallLogRow } from "@/actions/llmConfig";
 import { aiCallsToText } from "@/platform/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";
+import { TASK_PRIORITY_LABELS, type TaskPriority } from "@/types";
 import { getAssistantPrefs, getSpeechOptions, updateAssistantPrefs } from "@/actions/assistantPrefs";
 import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
 import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
@@ -463,7 +464,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const feedbackRef = useRef<string | null>(null);
   // 029: gdy ustawiony (tryb głównego robaczka), tytuły akcji create_task w powstałym planie
   // dostają deterministycznie prefiks 🐛 przy wykonaniu (nawet gdy model pominie emoji).
+  // 088: dotyczy już WYŁĄCZNIE zgłoszeń wychodzących ze zwykłej rozmowy (agent nadal potrafi
+  // `submit_feedback`) — tryb wskazywania nie tworzy planu, więc tytuł nadaje serwer.
   const feedbackPrefixRef = useRef<string | null>(null);
+  // 088: zrzut wskazanego elementu przyniesiony razem z kontekstem (ref — jak kontekst).
+  const feedbackShotRef = useRef<string | null>(null);
+  // 088: stan (a nie ref), bo od niego zależy WIDOK — chipy priorytetu pokazują się wyłącznie
+  // w trybie zgłoszenia, a ref nie budzi renderowania.
+  const [feedbackTryb, setFeedbackTryb] = useState(false);
+  const [feedbackPriority, setFeedbackPriority] = useState<TaskPriority>("MEDIUM");
+  const feedbackPriorityRef = useRef<TaskPriority>("MEDIUM");
+  feedbackPriorityRef.current = feedbackPriority;
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -791,11 +802,15 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         setError(null);
         setInputText("");
         feedbackRef.current = detail.feedbackContext;
+        feedbackShotRef.current = detail.feedbackShot ?? null;
+        setFeedbackTryb(true);
+        setFeedbackPriority("MEDIUM");
         const info =
           "📍 **Tryb zgłoszenia błędu / sugestii**\n\n" +
           "Do kontekstu rozmowy trafiło wskazane miejsce:\n\n" +
           detail.feedbackContext +
-          "\n\nOpisz teraz **błąd lub sugestię** — utworzę na tej podstawie zadanie w projekcie **Omnia** (tytuł wygeneruję automatycznie z opisu).";
+          (detail.feedbackShot ? "\n\nDołączyłem też **zrzut wskazanego elementu**." : "") +
+          "\n\nOpisz teraz **błąd lub sugestię** — zapiszę je od razu jako zadanie w projekcie **Omnia** (tytuł dopracuję w tle, nie musisz czekać).";
         setTurns([{ id: newId(), role: "assistant", kind: "answer", content: info }]);
       }
       // 042: pytanie zadane z zewnątrz (dokowana kolumna na stronie głównej) wysyłamy tak,
@@ -987,6 +1002,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     saveDraftNow();
     collapseSections();
     setIsOpen(false);
+    // 088: tryb zgłoszenia jest jednorazowy i związany z JEDNYM wskazanym miejscem — po zamknięciu
+    // nie może przenieść tamtego kontekstu (ani zrzutu) do następnej, niezwiązanej rozmowy.
+    feedbackRef.current = null;
+    feedbackShotRef.current = null;
+    setFeedbackTryb(false);
     if (turnsRef.current.length > 0) {
       // 032: PRZERWIJ trwające generowanie, zanim wyczyścimy wątek. Komponent siedzi w `AppShell` i
       // nigdy się nie odmontowuje, więc bez tego żądanie leci dalej i dopisuje odpowiedź do już
@@ -1310,11 +1330,26 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     // 032: wysłana treść przestaje być brudnopisem — po powrocie do rozmowy pole ma być puste.
     saveDraftNow("");
 
-    // Tryb zgłoszenia: opis admina → zadanie w projekcie „Omnia" (tytuł z AI).
+    /**
+     * 088: TRYB ZGŁOSZENIA ZAPISUJE OD RAZU — bez pętli agenta i bez planu do zatwierdzenia.
+     *
+     * Do 087 opis jechał do agenta (model rozumujący + narzędzia), ten zwracał PLAN z jedną akcją
+     * `submit_feedback`, a plan szedł drugim żądaniem do `/execute`. Trzy koszty tego układu,
+     * wszystkie zgłoszone przez właściciela: trzeba było czekać (i to z otwartym oknem — bo
+     * `handleClose` przerywa trwające żądanie, więc zamknięcie asystenta ANULOWAŁO zgłoszenie),
+     * nie było natychmiastowego potwierdzenia, a rozumowanie płaciło za decyzję, której tu nie ma.
+     *
+     * Teraz: jedno wywołanie Server Action, potwierdzenie od ręki, a jedyną rzeczą, do której
+     * model jest naprawdę potrzebny — tytuł — zajmuje się zadanie w tle (`tasks.feedbackTitle`).
+     * Opis zgłaszającego trafia do zadania SŁOWO W SŁOWO, tak samo jak wcześniej.
+     */
     const feedbackContext = feedbackRef.current;
     if (feedbackContext) {
       feedbackRef.current = null; // jednorazowo — kolejne wiadomości są zwykłe
-      feedbackPrefixRef.current = "🐛 "; // 029: tytuł zadania z głównego robaczka dostaje prefiks 🐛 (domknięcie na kliencie)
+      const shot = feedbackShotRef.current ?? undefined;
+      const priority = feedbackPriorityRef.current;
+      feedbackShotRef.current = null;
+      setFeedbackTryb(false);
       if (!convoIdRef.current) {
         try {
           const convo = await createAiConversation(`Zgłoszenie: ${text.slice(0, 48)}`);
@@ -1324,20 +1359,29 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       }
       setTurns((t) => [...t, { id: newId(), role: "user", kind: "text", content: text }]);
       void persist("user", text, "text");
-      const prompt =
-        "[ZGŁOSZENIE — TRYB WSKAZYWANIA]\n" +
-        // 031: zgłoszenie idzie akcją `submit_feedback` (skrzynka administratora), NIE `create_task` —
-        // zwykły użytkownik nie ma dostępu do projektu-skrzynki.
-        "Zaproponuj dokładnie JEDNO zgłoszenie (module: tasks, type: submit_feedback).\n" +
-        '- params.title: wygeneruj zwięzły, konkretny tytuł po polsku podsumowujący zgłoszenie (max ~80 znaków), ZACZYNAJĄCY SIĘ od "🐛 " (emoji robaka + spacja).\n' +
-        "- params.description: NAJPIERW oryginalny opis zgłaszającego wstawiony DOKŁADNIE, słowo w słowo (VERBATIM) — NIE przeredagowuj go, NIE poprawiaj gramatyki/interpunkcji, NIE streszczaj; zachowaj oryginalne słowa i ton. NASTĘPNIE dołącz poniższy kontekst wskazanego miejsca (UI).\n" +
-        "Nie dopytuj i nie odpowiadaj tekstem — od razu zaproponuj plan z tym jednym zgłoszeniem.\n\n" +
-        `Opis zgłoszony przez użytkownika:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
-      await callAgent({
-        text: prompt, context: ctx("tasks"),
-        routeHint: "Zgłoszenie błędu/sugestii przez tryb wskazywania UI",
-        today: new Date().toISOString(), history: [],
-      });
+
+      const description = `Opis zgłoszony przez użytkownika:\n${text}\n\nKontekst wskazanego miejsca (UI):\n${feedbackContext}`;
+      try {
+        // 031: zgłoszenie idzie do SKRZYNKI ADMINISTRATORA (jeden wąski wyjątek dostępowy
+        // w `submitFeedbackTask`), a nie do projektu zgłaszającego.
+        const res = await submitFeedbackTask({ description, priority, screenshotDataUrl: shot });
+        const potwierdzenie =
+          `✅ **Utworzono zgłoszenie:** ${res.title}` +
+          (res.hasScreenshot ? "\n\nDołączyłem zrzut wskazanego elementu." : "") +
+          (res.canRead ? `\n\n[Otwórz w zadaniach](/tasks/${res.projectId})` : "") +
+          "\n\nMożesz spokojnie zamknąć to okno — zadanie jest już zapisane, tytuł dopracuję w tle.";
+        setTurns((t) => [...t, { id: newId(), role: "assistant", kind: "answer", content: potwierdzenie }]);
+        void persist("assistant", potwierdzenie, "answer");
+        router.refresh();
+      } catch {
+        // Nieudanego zapisu NIE zamiatamy: zgłaszający musi wiedzieć, że jego opis nigdzie nie trafił.
+        setError("Nie udało się utworzyć zgłoszenia.");
+        // Tryb wraca, żeby dało się spróbować ponownie tym samym opisem.
+        feedbackRef.current = feedbackContext;
+        feedbackShotRef.current = shot ?? null;
+        setFeedbackTryb(true);
+        setInputText(text);
+      }
       return;
     }
 
@@ -2025,6 +2069,36 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     wiersz akcji. Pole NIE jest przy dolnej krawędzi karty (pod nim wiersz akcji), a
                     margines na kreskę iPhone siedzi na ZEWNĘTRZNEJ stopce warunkowo od fokusu (patrz
                     div wyżej) — dzięki temu karetka na iOS nie „ucieka" nad pole. */}
+                {/* 088 (AC-10): priorytet wybiera się TU, w chwili opisywania — nie później, w widoku
+                    zadań. Rząd stoi nad kompozytorem, więc widać go bez dodatkowego kliknięcia i bez
+                    wchodzenia w ustawienia. Pokazuje się wyłącznie w trybie zgłoszenia. */}
+                {feedbackTryb && (
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("priorytet")}</span>
+                    {(["LOW", "MEDIUM", "HIGH", "URGENT"] as const).map((p) => {
+                      const wybrany = feedbackPriority === p;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          aria-pressed={wybrany}
+                          onPointerDown={(e) => { e.preventDefault(); setFeedbackPriority(p); }}
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: "var(--radius-md)",
+                            border: `1px solid ${wybrany ? "var(--accent-blue)" : "var(--border)"}`,
+                            background: wybrany ? "var(--bg-hover)" : "transparent",
+                            color: wybrany ? "var(--text-primary)" : "var(--text-secondary)",
+                            fontSize: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {TASK_PRIORITY_LABELS[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 10px", border: "1px solid var(--border)", background: "var(--bg-elevated)", borderRadius: "var(--radius-lg)" }}>
                   {/* Wiersz 1 — pole tekstowe (pełna szerokość, auto-rozrost przez useEffect na scrollHeight) */}
                   <textarea

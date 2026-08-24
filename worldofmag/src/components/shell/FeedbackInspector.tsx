@@ -65,6 +65,46 @@ function domPath(el: HTMLElement): string {
   return parts.join(" > ");
 }
 
+// 088: ZRZUT WSKAZANEGO ELEMENTU.
+//
+// Opis miejsca (route + sekcja + selektor + tekst w pobliżu) mówi, GDZIE coś jest; nie mówi, jak to
+// wygląda. Administrator odtwarzał usterkę z opisu — zrzut oszczędza mu tę pracę.
+//
+// Trzy reguły, każda wynika z tego, że zrzut jest DODATKIEM, a nie warunkiem zgłoszenia:
+//   • biblioteka ładowana LENIWIE i tylko tutaj — to narzędzie administratora, nie może dokładać
+//     bajtów do żadnej trasy zwykłego użytkownika (budżet `check:perf`);
+//   • limit czasu — rasteryzacja potrafi utknąć na obrazie z innej domeny; zawieszony tryb
+//     wskazywania byłby gorszy od braku zrzutu;
+//   • degradacja PNG → JPEG → brak zrzutu — zamiast odrzucać za duży obraz, najpierw próbujemy
+//     go zmniejszyć; dopiero potem rezygnujemy, po cichu.
+const MAX_ZRZUT_ZNAKOW = 1_500_000;
+const LIMIT_CZASU_MS = 4000;
+
+async function zrzutElementu(el: HTMLElement): Promise<string | undefined> {
+  try {
+    const praca = (async () => {
+      const { toPng, toJpeg } = await import("html-to-image");
+      // Element bywa przezroczysty (sam w sobie nie ma tła) — bez podkładu zrzut wygląda jak
+      // uszkodzony plik. Bierzemy tło ze zmiennej motywu, więc zrzut pasuje do aktywnej skórki.
+      const backgroundColor =
+        getComputedStyle(document.documentElement).getPropertyValue("--bg-base").trim() || undefined;
+      const opcje = { backgroundColor, cacheBust: true, pixelRatio: Math.min(window.devicePixelRatio || 1, 2) };
+
+      const png = await toPng(el, opcje);
+      if (png.length <= MAX_ZRZUT_ZNAKOW) return png;
+
+      const jpeg = await toJpeg(el, { ...opcje, pixelRatio: 1, quality: 0.8 });
+      return jpeg.length <= MAX_ZRZUT_ZNAKOW ? jpeg : undefined;
+    })();
+
+    const limit = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), LIMIT_CZASU_MS));
+    return await Promise.race([praca, limit]);
+  } catch {
+    // Świadomie cicho: zgłoszenie ma powstać także wtedy, gdy elementu nie da się narysować.
+    return undefined;
+  }
+}
+
 export function FeedbackInspector() {
   // 085 (AC-8): narzędzie administratora — widoczne tylko przy włączonym trybie administratora.
   const { wlaczony: trybAdmina } = useTrybAdmina();
@@ -80,11 +120,15 @@ export function FeedbackInspector() {
   const capture = useCallback(async (el: HTMLElement) => {
     const context = describeElement(el, pathname);
     setActive(false);
+    // 088: podświetlenie znika PRZED zrzutem — inaczej na obrazie zostałaby nasza własna ramka
+    // wskaźnika i zgłoszenie pokazywałoby narzędzie zamiast usterki. `setRect(null)` jest tu
+    // pierwszym krokiem, a nie porządkiem po wszystkim.
     setRect(null);
+    const shot = await zrzutElementu(el);
     // 031: nie tworzymy tu żadnego projektu — skrzynkę zgłoszeń wyznacza serwer
     // (`submitFeedbackTask`), więc zgłoszenie trafia do administratora niezależnie od
     // uprawnień zgłaszającego.
-    openAssistant({ feedbackContext: context });
+    openAssistant({ feedbackContext: context, feedbackShot: shot });
   }, [pathname]);
 
   /**
