@@ -143,6 +143,15 @@ export function ModuleView({
 }: ModuleViewProps) {
   const fill = layout === "fill";
   const compact = density === "compact";
+  /**
+   * Czy pasek widoku ma cokolwiek do pokazania — DOKŁADNIE ten sam warunek, co w `ViewBar`.
+   *
+   * Recenzja 085: po rozdzieleniu bloków opakowanie paska renderowało się zawsze, także wtedy, gdy
+   * `ViewBar` zwracał `null` (widok bez filtrów i bez akcji — dziś co najmniej dziesięć widoków,
+   * m.in. Usługi i Warsztaty). Zostawał po nim pusty pasek wysokości `12px + var(--view-padding)`
+   * pod nagłówkiem: nie błąd wyglądający na błąd, tylko dziura, którą łatwo wziąć za odstęp.
+   */
+  const pasekMaTresc = compact || !!filters || !!actions;
 
   /**
    * Wysokość przyklejonego paska jako zmienna CSS na ramie.
@@ -156,15 +165,20 @@ export function ModuleView({
   const pasekRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const rama = ramaRef.current;
+    if (!rama) return;
     const pasek = pasekRef.current;
-    if (!rama || !pasek) return;
+    if (!pasek) {
+      // Widok bez paska (brak filtrów i akcji): zasłona ma wysokość zero, a nie „poprzednią".
+      rama.style.setProperty("--view-bar-h", "0px");
+      return;
+    }
     const ustaw = () => rama.style.setProperty("--view-bar-h", fill ? "0px" : `${pasek.offsetHeight}px`);
     ustaw();
     if (typeof ResizeObserver === "undefined") return;
     const obs = new ResizeObserver(ustaw);
     obs.observe(pasek);
     return () => obs.disconnect();
-  }, [fill]);
+  }, [fill, pasekMaTresc]);
 
   return (
     /**
@@ -257,6 +271,7 @@ export function ModuleView({
         </div>
       )}
 
+      {pasekMaTresc && (
       <div
         ref={pasekRef}
         style={{
@@ -308,6 +323,7 @@ export function ModuleView({
           />
         </div>
       </div>
+      )}
 
       {/* Treść. W `fill` dostaje resztę wysokości i własne przewijanie; w `column`
           płynie w ramie razem z nagłówkiem. */}

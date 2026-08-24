@@ -335,7 +335,9 @@ export function WatchersPanel({
            * propsów, co w bloku, który zniknął ze stopki.
            */}
           <div className="flex flex-wrap items-center gap-1.5 pb-1">
-              <div className="flex items-center gap-0.5">
+              {/* Wybór układu ma sens dopiero przy więcej niż jednym obserwatorze — przy jednym
+                  trzy przyciski sortowania niczego nie zmieniają (warunek zachowany z 082). */}
+              <div className={cn("flex items-center gap-0.5", watchers.length < 2 && "hidden")}>
                 {(
                   [
                     { key: "status" as const, Icon: ArrowDownUp, label: t("ukladWgStanu") },
