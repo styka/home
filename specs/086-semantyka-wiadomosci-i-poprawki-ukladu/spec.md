@@ -64,65 +64,65 @@ w zakładce „Tematy".
 
 ### A. Semantyka akcji w Wiadomościach
 
-- [ ] **AC-1** — Given karta wiadomości, when patrzę na jej akcje, then jest **jedna** akcja
+- [x] **AC-1** — Given karta wiadomości, when patrzę na jej akcje, then jest **jedna** akcja
   zamykająca wiadomość (nie dwie o tym samym skutku), a jej nazwa mówi, co się stanie.
-- [ ] **AC-2** — Given wiadomość zamknięta tą akcją, when wracam na listę, then wiadomości nie ma
+- [x] **AC-2** — Given wiadomość zamknięta tą akcją, when wracam na listę, then wiadomości nie ma
   wśród nowych, a jej treść **nie zostaje usunięta** ze źródła ani z linii czasu tematu.
-- [ ] **AC-3** — Given karta wiadomości, when najeżdżam na akcję zamykającą, then podpowiedź mówi
+- [x] **AC-3** — Given karta wiadomości, when najeżdżam na akcję zamykającą, then podpowiedź mówi
   wprost, że dotyczy **mojej listy**, a nie kasowania czegokolwiek.
-- [ ] **AC-4** — Given moduł Wiadomości, when szukam akcji „Odrzuć", then jej nie ma — ani na karcie,
+- [x] **AC-4** — Given moduł Wiadomości, when szukam akcji „Odrzuć", then jej nie ma — ani na karcie,
   ani nigdzie indziej w module.
 
 ### B. Potwierdzenia w całej aplikacji
 
-- [ ] **AC-5** — Given operacja, która **niczego nie usuwa** (np. oznaczenie wszystkich wiadomości
+- [x] **AC-5** — Given operacja, która **niczego nie usuwa** (np. oznaczenie wszystkich wiadomości
   jako przeczytanych), when pojawia się okno potwierdzenia, then przycisk potwierdzający jest
   neutralny i nie brzmi „Usuń".
-- [ ] **AC-6** — Given operacja, która **usuwa dane** (np. usunięcie tematu, listy, obserwatora),
+- [x] **AC-6** — Given operacja, która **usuwa dane** (np. usunięcie tematu, listy, obserwatora),
   when pojawia się okno potwierdzenia, then przycisk nadal jest czerwony i brzmi „Usuń".
-- [ ] **AC-7** — Given przegląd wszystkich miejsc wywołujących potwierdzenie, when sprawdzam ich
+- [x] **AC-7** — Given przegląd wszystkich miejsc wywołujących potwierdzenie, when sprawdzam ich
   etykiety, then każde ma świadomie dobraną wersję — żadne nie polega na przypadkowym domyślnym.
 
 ### C. Świeże gorące tematy
 
-- [ ] **AC-8** — Given zakończone pobieranie nowych materiałów, when otwieram zakładkę „Gorące
+- [x] **AC-8** — Given zakończone pobieranie nowych materiałów, when otwieram zakładkę „Gorące
   tematy", then lista jest przeliczona z materiałów z tego pobrania, bez klikania czegokolwiek.
-- [ ] **AC-9** — Given przebieg pobierania, when kończy się bez nowych materiałów, then gorące tematy
+- [x] **AC-9** — Given przebieg pobierania, when kończy się bez nowych materiałów, then gorące tematy
   **nie są** przeliczane — nie płacimy za analizę tej samej puli drugi raz.
-- [ ] **AC-10** — Given przeliczenie w tle, when patrzę na zakładkę, then widzę, kiedy lista powstała,
+- [x] **AC-10** — Given przeliczenie w tle, when patrzę na zakładkę, then widzę, kiedy lista powstała,
   a ręczne przeliczenie nadal jest dostępne.
-- [ ] **AC-11** — Given nieudane przeliczenie gorących tematów, when przebieg pobierania się kończy,
+- [x] **AC-11** — Given nieudane przeliczenie gorących tematów, when przebieg pobierania się kończy,
   then **pobrane wiadomości i tak są zapisane** — awaria dodatkowego etapu nie może zabrać
   użytkownikowi tego, co już się udało.
 
 ### D. Tryb administratora — dwie korekty
 
-- [ ] **AC-12** — Given konto administratora z **wyłączonym** trybem administratora, when kończy się
+- [x] **AC-12** — Given konto administratora z **wyłączonym** trybem administratora, when kończy się
   operacja AI, then powiadomienie o jej koszcie **pojawia się**.
-- [ ] **AC-13** — Given konto **bez** uprawnień administratora, when kończy się operacja AI, then
+- [x] **AC-13** — Given konto **bez** uprawnień administratora, when kończy się operacja AI, then
   żadne powiadomienie o koszcie się nie pojawia (bez zmian wobec stanu obecnego).
-- [ ] **AC-14** — Given konto administratora z wyłączonym trybem administratora, when otwieram
+- [x] **AC-14** — Given konto administratora z wyłączonym trybem administratora, when otwieram
   odpowiedź asystenta, then **nie ma** wejścia do technicznego logu rozumowania; log opisany po
   ludzku (dla wszystkich) zostaje.
-- [ ] **AC-15** — Given telefon z wcięciem na aparat, when pojawia się powiadomienie o koszcie, then
+- [x] **AC-15** — Given telefon z wcięciem na aparat, when pojawia się powiadomienie o koszcie, then
   jest wyraźnie poniżej wcięcia — z zapasem większym niż dotychczasowy.
 
 ### E. Układ i nazewnictwo
 
-- [ ] **AC-16** — Given widok Pomysłów, when patrzę na chipsy filtrujące, then są wyraźnie oddzielone
+- [x] **AC-16** — Given widok Pomysłów, when patrzę na chipsy filtrujące, then są wyraźnie oddzielone
   od opisu modułu nad nimi.
-- [ ] **AC-17** — Given sekcja obserwatorów, when patrzę na pasek sterowania, then informacja
+- [x] **AC-17** — Given sekcja obserwatorów, when patrzę na pasek sterowania, then informacja
   o odświeżaniu jest **nad** ikonami wyboru układu, a nie obok nich.
-- [ ] **AC-18** — Given telefon 360 px i lokalizacja o długiej nazwie, when otwieram Pogodę, then
+- [x] **AC-18** — Given telefon 360 px i lokalizacja o długiej nazwie, when otwieram Pogodę, then
   tytuł modułu jest w całości czytelny, a nazwa lokalizacji nie rozpycha ani nie przycina nagłówka.
-- [ ] **AC-19** — Given panel boczny na komputerze, when patrzę pod nazwę aplikacji, then rząd ikon
+- [x] **AC-19** — Given panel boczny na komputerze, when patrzę pod nazwę aplikacji, then rząd ikon
   konta stoi tam, **przed** pozycją „Strona główna", i wszystkie ikony działają jak dotąd.
-- [ ] **AC-20** — Given lista wiadomości, when nad paskiem nawigacji modułu pojawia się dodatkowy
+- [x] **AC-20** — Given lista wiadomości, when nad paskiem nawigacji modułu pojawia się dodatkowy
   element (np. pasek stanu odświeżania), then przyklejone nagłówki tematów **nie zsuwają się niżej** —
   zasłona zostaje na wysokości obu pasków. *(Kryterium doprecyzowane po pomiarze: pierwotne brzmienie
   „styka się bez przerwy" jest prawdziwe także przy błędnej mierze, więc nie dało się nim niczego
   rozstrzygnąć.)*
-- [ ] **AC-21** — Given zakładka „Tematy", when patrzę na kontrolkę wyboru tematu, then jej nazwa
+- [x] **AC-21** — Given zakładka „Tematy", when patrzę na kontrolkę wyboru tematu, then jej nazwa
   mówi, że służy do **przejścia** do tematu, a nie powtarza nazwy zakładki.
 
 ## 5. Zakres
