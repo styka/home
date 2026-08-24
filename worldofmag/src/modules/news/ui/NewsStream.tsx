@@ -43,6 +43,19 @@ function czytaSieTuLektor(reader: ReaderScope, topicId: string): boolean {
   return reader.kind === "stream" || (reader.kind === "topic" && reader.topicId === topicId);
 }
 
+/**
+ * Tożsamość zakresu jako klucz Reacta — przełączenie odsłuchu na inny temat PRZEMONTOWUJE lektora.
+ *
+ * To jest właśnie ten „nowy zestaw, więc czytaj od początku", który do recenzji robił autostart
+ * przy każdej zmianie listy — w tym po oznaczeniu wiadomości jako przeczytanej. Klucz odróżnia
+ * jedno od drugiego: inny zakres = nowy lektor, ta sama lista mniej jedna pozycja = ten sam.
+ */
+function kluczZakresu(r: ReaderScope): string {
+  if (r.kind === "topic") return `topic:${r.topicId}`;
+  if (r.kind === "item") return `item:${r.itemId}`;
+  return r.kind;
+}
+
 /** Czy to ten sam zakres odsłuchu — powtórne dotknięcie tego samego przycisku ma go WYŁĄCZYĆ. */
 function tenSamZakres(a: ReaderScope, b: ReaderScope): boolean {
   if (a.kind !== b.kind) return false;
@@ -61,6 +74,7 @@ export function NewsStream({
   onPrzewinDoPozycji,
   podazanie,
   onPodazanie,
+  onGra,
   akcjeTematu,
 }: {
   /** Tematy JUŻ przefiltrowane przez pasek nawigacji — widok nie zna reguł filtrowania. */
@@ -77,6 +91,8 @@ export function NewsStream({
   /** 084 (AC-6): czy widok ma podążać za czytanym tekstem. Jeden stan na cały widok. */
   podazanie: boolean;
   onPodazanie: (wlaczone: boolean) => void;
+  /** Czy lektor faktycznie czyta — rama widoku gasi podążanie tylko wtedy, gdy jest co gasić. */
+  onGra?: (gra: boolean) => void;
   /** Akcje tematu (edycja, usunięcie) wstawiane do przyklejonego nagłówka sekcji. */
   akcjeTematu?: (topicId: string) => ReactNode;
 }) {
@@ -367,6 +383,7 @@ export function NewsStream({
       {reader.kind !== "none" && readerBlocks.length > 0 && (
         <div data-no-swipe>
           <NewsReader
+            key={kluczZakresu(reader)}
             blocks={readerBlocks}
             onBlockChange={handleBlockChange}
             onCzytaneZdanie={(zdanie, blockIndex) => {
@@ -376,6 +393,7 @@ export function NewsStream({
             onZamknij={() => toggleReader({ kind: "none" })}
             podazanie={podazanie}
             onPodazanie={onPodazanie}
+            onGra={onGra}
             autoStart
           />
         </div>

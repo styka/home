@@ -853,8 +853,6 @@
         "ukryjKoszty": "Ukryj koszty AI przy treściach"
       },
       "GroupNavigator": {
-        "poprzednia": "Poprzednia grupa",
-        "nastepna": "Następna grupa",
         "listaGrup": "Lista grup",
         "szukaj": "Szukaj…",
         "nicNiePasuje": "Nic nie pasuje do wyszukiwania.",
@@ -1326,7 +1324,6 @@
         "tytulTematu": "Tytuł tematu",
         "filtrSemantycznyOpiszDokladnie": "Filtr semantyczny (opisz dokładnie, co Cię interesuje)",
         "npPerypetieZbigniewaZiobry": "np. perypetie Zbigniewa Ziobry w sprawie zarzutów prokuratorskich i postępowań sądowych",
-        "wszystkieTematy": "Wszystkie tematy",
         "wiadomosciKrotko": "Wiadomości",
         "liniaCzasuKrotko": "Linia czasu",
         "tematy": "Tematy"

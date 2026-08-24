@@ -8,11 +8,11 @@
  * do użycia w innym kontekście — a wzorzec „zbiór grup, w każdej lista elementów, czytane jednym
  * przewijaniem" powtarza się w Omnii (notatki w grupach, zadania w projektach, przepisy w książkach).
  *
- * Trzy drogi do tej samej zmiany, świadomie równoważne (lekcja z 080 i 082):
- *   • strzałki wstecz/dalej — dla czytania po kolei,
- *   • lista z wyszukiwarką — gdy wiadomo, czego się szuka,
- *   • pozycja zbiorcza („Wszystkie") — gdy nie chce się wybierać wcale.
- * Wszystkie wołają to samo `onWybor`, więc nie mogą się rozjechać.
+ * Jedna droga do zmiany: lista z wyszukiwarką. 084 skasowało dwie pozostałe — strzałki
+ * „poprzednia/następna" i pozycję zbiorczą („Wszystkie") — bo po zmianie znaczenia listy (SKOK,
+ * nie filtr) żadna nie miała konsumenta, a martwe API w komponencie współdzielonym jest gorsze niż
+ * jego brak: następny moduł bierze je za rekomendowaną drogę. Sąsiada liczy `sasiadujacaGrupa`,
+ * której konsument używa tam, gdzie sam chce (w Wiadomościach: gest w bok na telefonie).
  *
  * Czego tu NIE MA i dlaczego: **nazwy grupy aktualnie czytanej**. Wyzwalacz pokazuje WYBRANY FILTR,
  * a nie to, co akurat mijasz przewijając. To rozróżnienie jest sednem zgłoszenia właściciela po 082
@@ -22,7 +22,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface GrupaNawigatora {
@@ -32,23 +32,6 @@ export interface GrupaNawigatora {
   licznik?: number;
   /** Dodatkowy tekst do wyszukiwania (opis, filtr) — użytkownik częściej pamięta treść niż nazwę. */
   szukajTakze?: string;
-}
-
-/** Identyfikator pozycji zbiorczej. Poza komponentem porównuje się z tą stałą, nie z napisem. */
-export const WSZYSTKIE = "all";
-
-/**
- * Lista pozycji nawigatora: pozycja zbiorcza ZAWSZE pierwsza.
- *
- * Wyciągnięte z ciała komponentu, bo to jedyna reguła kolejności, jaką ma nawigator, i konsument
- * (moduł) potrzebuje dokładnie tej samej listy do liczenia sąsiada. Dwie kopie tej reguły rozjechałyby
- * się w chwili, w której któraś urosłaby o drugą pozycję zbiorczą.
- */
-export function pozycjeNawigatora(
-  grupy: GrupaNawigatora[],
-  etykietaWszystkich?: string,
-): GrupaNawigatora[] {
-  return etykietaWszystkich ? [{ id: WSZYSTKIE, etykieta: etykietaWszystkich }, ...grupy] : grupy;
 }
 
 /**
@@ -72,24 +55,13 @@ export function GroupNavigator({
   grupy,
   aktywnaId,
   onWybor,
-  etykietaWszystkich,
-  onSasiad,
   etykietaStala,
-  moznaWstecz,
-  moznaDalej,
   akcje,
 }: {
   grupy: GrupaNawigatora[];
-  /** `WSZYSTKIE` albo identyfikator grupy. */
+  /** Identyfikator grupy, którą wyzwalacz ma pokazywać jako aktywną. */
   aktywnaId: string;
   onWybor: (id: string) => void;
-  /** Etykieta pozycji zbiorczej; pominięta = bez pozycji zbiorczej. */
-  etykietaWszystkich?: string;
-  /**
-   * Skok do sąsiedniej grupy. Osobno od `onWybor`, bo przy pozycji zbiorczej „dalej" nie zmienia
-   * filtru, tylko przewija do następnej grupy w treści — a tego komponent nie umie i nie powinien.
-   */
-  onSasiad?: (kierunek: -1 | 1) => void;
   /**
    * Stała etykieta wyzwalacza zamiast nazwy aktywnej grupy.
    *
@@ -98,16 +70,6 @@ export function GroupNavigator({
    * Pominięta — wyzwalacz pokazuje nazwę aktywnej grupy, jak dotąd.
    */
   etykietaStala?: string;
-  /**
-   * Czy jest dokąd iść w każdą stronę. Liczy to KONSUMENT, bo tylko on wie, czym jest „sąsiad"
-   * w jego widoku — przy pozycji zbiorczej strzałka zwykle przewija treść, a nie zmienia wyboru.
-   *
-   * Pominięte = strzałka zawsze czynna (zachowanie sprzed recenzji 083). Podane — przycisk na
-   * krańcu listy jest **wyłączony**, zamiast wyglądać na czynny i nie robić nic: milczące nic to
-   * najgorsza odpowiedź na dotknięcie, bo użytkownik nie wie, czy chybił, czy lista się skończyła.
-   */
-  moznaWstecz?: boolean;
-  moznaDalej?: boolean;
   /** Kontrolki po prawej (filtry, akcje zbiorcze). */
   akcje?: React.ReactNode;
 }) {
@@ -117,19 +79,15 @@ export function GroupNavigator({
   const korzenRef = useRef<HTMLDivElement>(null);
   const szukajRef = useRef<HTMLInputElement>(null);
 
-  const zWszystkimi = useMemo(
-    () => pozycjeNawigatora(grupy, etykietaWszystkich),
-    [etykietaWszystkich, grupy],
-  );
-  const aktywna = zWszystkimi.find((g) => g.id === aktywnaId) ?? zWszystkimi[0] ?? null;
+  const aktywna = grupy.find((g) => g.id === aktywnaId) ?? grupy[0] ?? null;
 
   const widoczne = useMemo(() => {
     const q = fraza.trim().toLowerCase();
-    if (!q) return zWszystkimi;
-    return zWszystkimi.filter(
+    if (!q) return grupy;
+    return grupy.filter(
       (g) => g.etykieta.toLowerCase().includes(q) || (g.szukajTakze ?? "").toLowerCase().includes(q),
     );
-  }, [zWszystkimi, fraza]);
+  }, [grupy, fraza]);
 
   // Kursor ląduje w wyszukiwarce: przy kilkunastu grupach szukanie jest częstsze niż przewijanie,
   // a na telefonie to jedno dotknięcie mniej.
@@ -154,27 +112,11 @@ export function GroupNavigator({
     };
   }, [otwarta]);
 
-  const strzalka =
-    "flex shrink-0 items-center justify-center rounded-md border border-[var(--border)] px-1.5 py-3 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:hover:bg-transparent";
-
   return (
     // 084 (AC-18): `flex-1 min-w-0` — wyzwalacz ma BRAĆ dostępną szerokość, a nie zajmować tyle,
     // ile mierzy jego treść. Bez tego przy wąskim ekranie kurczył się do skrawka („nie widać
     // wybranej wartości"), a jednocześnie rozpychał pasek, gdy nazwa była długa.
     <div ref={korzenRef} className="relative flex min-w-0 flex-1 items-center gap-1">
-      {onSasiad && grupy.length > 1 && (
-        <button
-          type="button"
-          onClick={() => onSasiad(-1)}
-          disabled={moznaWstecz === false}
-          aria-label={t("poprzednia")}
-          title={t("poprzednia")}
-          className={strzalka}
-        >
-          <ChevronLeft size={16} />
-        </button>
-      )}
-
       <button
         type="button"
         onClick={() => setOtwarta((v) => !v)}
@@ -202,19 +144,6 @@ export function GroupNavigator({
           className={cn("shrink-0 text-[var(--text-muted)] transition-transform", otwarta && "rotate-180")}
         />
       </button>
-
-      {onSasiad && grupy.length > 1 && (
-        <button
-          type="button"
-          onClick={() => onSasiad(1)}
-          disabled={moznaDalej === false}
-          aria-label={t("nastepna")}
-          title={t("nastepna")}
-          className={strzalka}
-        >
-          <ChevronRight size={16} />
-        </button>
-      )}
 
       {akcje}
 

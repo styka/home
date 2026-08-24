@@ -79,6 +79,7 @@ export function NewsReader({
   onZamknij,
   podazanie = true,
   onPodazanie,
+  onGra,
   autoStart = false,
 }: {
   blocks: ReaderBlock[];
@@ -97,6 +98,14 @@ export function NewsReader({
   /** 084 (AC-6): podążanie za czytanym tekstem — stan WIDOKU, nie lektora. */
   podazanie?: boolean;
   onPodazanie?: (wlaczone: boolean) => void;
+  /**
+   * 084 (recenzja): czy lektor FAKTYCZNIE czyta (gra i nie jest wstrzymany).
+   *
+   * Rama widoku gasi podążanie po ręcznym przewinięciu — i musi wiedzieć, czy jest co gasić.
+   * Bez tego zwykłe przewinięcie listy przez kogoś, kto nigdy nie włączył odsłuchu, wyłączało mu
+   * ustawienie, o którym nie wiedział.
+   */
+  onGra?: (gra: boolean) => void;
   /**
    * 084 (AC-10): odsłuch rusza OD RAZU po otwarciu lektora.
    *
@@ -175,6 +184,15 @@ export function NewsReader({
    * Gdy dostawca jest nieskonfigurowany, zostajemy przy głosie przeglądarki od razu, więc pierwsze
    * zdanie rusza SYNCHRONICZNIE w geście dotknięcia — i po prostu gra.
    */
+  /**
+   * 084 (recenzja): czy USTAWIENIA GŁOSU są już rozstrzygnięte.
+   *
+   * Autostart czekał wcześniej tylko na montaż, a konfiguracja jest asynchroniczna — więc pierwsze
+   * zdanie ruszało głosem przeglądarki, a wybrany głos serwerowy wchodził dopiero od drugiego.
+   * Słychać to jako zmianę lektora w połowie pierwszej wiadomości.
+   */
+  const [glosGotowy, setGlosGotowy] = useState(false);
+
   useEffect(() => {
     let anulowane = false;
     (async () => {
@@ -195,6 +213,8 @@ export function NewsReader({
       } catch {
         /* brak ustawień nie może zepsuć lektora — zostajemy przy domyślnych i głosie przeglądarki */
         if (!anulowane) setServerVoiceId(null);
+      } finally {
+        if (!anulowane) setGlosGotowy(true);
       }
     })();
     return () => {
@@ -239,11 +259,32 @@ export function NewsReader({
   // komponentu, każdy render dawałby nową tablicę i lektor milkłby sam z siebie po pierwszym
   // zdaniu. Podpis zmienia się dopiero wtedy, gdy naprawdę zmienia się zestaw wiadomości.
   const blocksKey = useMemo(() => blocks.map((b) => b.title).join(" "), [blocks]);
+  /** Treść zdania czytanego ostatnio — po zmianie zestawu szukamy go w nowej liście. */
+  const ostatnieZdanie = useRef<string | null>(null);
+  const pierwszyZestaw = useRef(true);
   useEffect(() => {
+    // Pierwszy przebieg to montaż — nie ma czego uciszać, a start należy do autostartu.
+    if (pierwszyZestaw.current) {
+      pierwszyZestaw.current = false;
+      return;
+    }
+    /**
+     * 084 (recenzja): zmiana zestawu NIE przewija odsłuchu na początek.
+     *
+     * Zestaw zmienia się także wtedy, gdy słuchacz oznaczy wiadomość jako przeczytaną — a wcześniej
+     * autostart odpalał wtedy odsłuch od zera i cała porcja leciała od nowa. Szukamy tego samego
+     * ZDANIA w nowej liście: jeśli jest, czytamy dalej od niego; jeśli zniknęło (odrzucono właśnie
+     * czytaną wiadomość), po prostu milkniemy — zgadywanie następnika byłoby gorsze niż cisza.
+     */
+    const graloPrzed = activeRef.current;
+    const tekst = ostatnieZdanie.current;
     silence();
     releaseSpeech(silence);
     lastReportedBlock.current = null;
-  }, [blocksKey, silence]);
+    if (!graloPrzed || !tekst) return;
+    const i = sentences.findIndex((x) => x.text === tekst);
+    if (i >= 0) playFromRef.current?.(i);
+  }, [blocksKey, sentences, silence]);
 
   const playFrom = useCallback(
     (index: number) => {
@@ -255,6 +296,7 @@ export function NewsReader({
       }
       indexRef.current = index;
       activeRef.current = true;
+      ostatnieZdanie.current = sentences[index].text;
       // Zgłaszamy się jako jedyny grający lektor — każdy inny zostaje uciszony (patrz `claimSpeech`).
       claimSpeech(silence);
       setCurrent(index);
@@ -297,15 +339,42 @@ export function NewsReader({
     },
     [sentences, silence, t]
   );
+  /**
+   * Efekt zmiany zestawu jest zadeklarowany WYŻEJ, więc sięga po tę funkcję przez ref. Wpięcie jej
+   * wprost w zależności tamtego efektu kazałoby mu przeliczać się przy każdej zmianie listy zdań,
+   * czyli dokładnie wtedy, gdy ma zdecydować, czy czytać dalej.
+   */
+  const playFromRef = useRef<((index: number) => void) | null>(null);
+  playFromRef.current = playFrom;
 
-  // 084: start przy otwarciu. Zależność `blocksKey`, a nie `[]`: zmiana zestawu wiadomości
-  // (np. przełączenie odsłuchu tematu na inny) ma zacząć czytać nowy zestaw, a nie milczeć.
+  /**
+   * 084 (AC-10): start przy otwarciu — DOKŁADNIE RAZ.
+   *
+   * Dwie poprawki po recenzji. Start czeka na `glosGotowy`, żeby pierwsze zdanie poszło już wybranym
+   * głosem, a nie zapasowym głosem przeglądarki (słychać to jako zmianę lektora w połowie zdania).
+   * I odpala się raz na otwarcie, a nie przy każdej zmianie zestawu — przełączenie odsłuchu na inny
+   * temat konsument wymusza przez `key` (przemontowanie), a zmiana listy w trakcie słuchania jest
+   * obsłużona wyżej: czytamy dalej od tego samego zdania.
+   */
+  /**
+   * Czy lektor faktycznie czyta. Liczone PRZED wczesnymi wyjściami, bo zgłaszamy to na zewnątrz
+   * hookiem, a hook po `return` byłby złamaniem reguł Reacta.
+   */
+  const playing = current != null && !paused;
+  useEffect(() => {
+    onGra?.(playing);
+  }, [playing, onGra]);
+  // Odmontowanie lektora = koniec czytania, choćby stan mówił co innego.
+  useEffect(() => () => onGra?.(false), [onGra]);
+
   const autoStartRef = useRef(autoStart);
   autoStartRef.current = autoStart;
+  const wystartowano = useRef(false);
   useEffect(() => {
-    if (!autoStartRef.current) return;
+    if (!autoStartRef.current || wystartowano.current || !glosGotowy) return;
+    wystartowano.current = true;
     playFrom(0);
-  }, [blocksKey, playFrom]);
+  }, [glosGotowy, playFrom]);
 
   /**
    * 084 (AC-5): przewijania WEWNĄTRZ lektora już nie ma, bo nie ma czego przewijać — lista zdań
@@ -386,7 +455,6 @@ export function NewsReader({
     );
   }
 
-  const playing = current != null && !paused;
   // Numeracja zdania liczona W OBRĘBIE wiadomości — „zdanie 3/5 tej wiadomości" niesie sens,
   // „zdanie 212/540 całego strumienia" nie niesie żadnego.
   const blockSentences = currentBlock == null ? [] : sentences.filter((s) => s.block === currentBlock);
@@ -421,9 +489,16 @@ export function NewsReader({
        * Lewy odstęp bierzemy ze zmiennej `--sidebar-width`, a nie z wpisanej liczby: pasek boczny
        * jest `hidden md:flex`, więc na telefonie odstęp musi być zerowy, a jego szerokość i tak
        * zmienia się razem ze skórką.
+       *
+       * **Dolny odstęp na telefonie jest równie konieczny (recenzja 084).** Powłoka ma tam własny,
+       * przyklejony pasek zakładek (`AppShell`, `z-40`, wysokość `56px + safe-area`). Pasek lektora
+       * z `bottom-0` i `z-30` renderował się DOKŁADNIE pod nim: niewidoczny i nieklikalny, więc
+       * Pauzy ani Stopu nie dało się dosięgnąć — czyli AC-4 na docelowym urządzeniu nie działało.
+       * Odsuwamy się o jego wysokość zamiast przykrywać go wyższą warstwą: nawigacja aplikacji jest
+       * ważniejsza od sterowania odsłuchem i nie wolno jej zasłaniać.
        */
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[var(--bg-surface)] shadow-lg md:left-[var(--sidebar-width)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 border-t border-[var(--border)] bg-[var(--bg-surface)] shadow-lg md:bottom-0 md:left-[var(--sidebar-width)]"
+      style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}
     >
       {/* 084 (AC-2): stan ciszy zamiast udawania. Gdy urządzenie nie wydało dźwięku, pasek MÓWI
           o tym i daje wyjście — kliknięcie „Odtwórz ponownie" JEST gestem użytkownika, a ścieżka

@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-23T23:37:44.523Z",
+  "wygenerowano": "2026-08-24T00:13:56.186Z",
   "zdolnosciPlatformy": [
     "ai",
     "audit",

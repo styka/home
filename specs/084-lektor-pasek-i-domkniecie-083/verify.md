@@ -17,8 +17,8 @@
 | `next lint --dir src` | ✅ |
 | `next build` | ✅ |
 | `check:perf` | ✅ 1175 kB najcięższa trasa, suma 65821 kB — w paśmie ±5% |
-| testy jednostkowe | ✅ **1164** (1153 sprzed przebiegu + 11 nowych) |
-| klikacz — pełna suita | ⚠️ 144 zielone / 2 czerwone — patrz §4 |
+| testy jednostkowe | ✅ **1163** (1153 sprzed przebiegu + 13 nowych − 3 skasowane wraz z martwym API) |
+| klikacz — pełna suita | ✅ **155 zielonych / 0 czerwonych** po naprawach z recenzji — patrz §4 |
 
 ## 2. Kryteria akceptacji
 
@@ -42,7 +42,7 @@ liczniku; pusty `catch` przy niesprawnej syntezie nie zgłaszał nic.
 | **AC-4** — pasek przyklejony do dołu | ✅ | Klikacz: `[data-news-lektor]` ma `position: fixed` i stoi przy dolnej krawędzi. Świadomie `fixed`, nie `sticky` — zmierzone: `sticky bottom-0` na końcu treści był 4000 px poniżej ekranu, czyli przyklejał się dopiero wtedy, gdy nie był już potrzebny. |
 | **AC-5** — brak osobnej sekcji z treścią | ✅ | Klikacz: `[data-sentence]` ma **zero** wystąpień. Czytane zdanie podświetla się w karcie (`<mark>`, kolory zmiennymi CSS), dopasowane po TREŚCI — obie strony dzielą `lib/speech/sentences`. |
 | **AC-6** — przełącznik przy wiadomościach | ✅ | Ikona celownika w przyklejonym nagłówku sekcji, widoczna gdy lektor czyta z tego tematu. **Jeden stan**, dwa wejścia: po dodaniu drugiego wejścia stan musiał wyjść z lektora do widoku, inaczej przełącznik pokazywałby co innego, niż robi widok. |
-| **AC-7** — samoczynne wyłączenie | ✅ | Nasłuch `scroll` na ramie widoku, z tym samym strażnikiem czasu co obserwator sekcji — bez niego przewinięcia lektora gasiłyby podążanie natychmiast po włączeniu. |
+| **AC-7** — samoczynne wyłączenie | ✅ | Nasłuch `scroll` na ramie widoku, z tym samym strażnikiem czasu co obserwator sekcji (JEDNYM — po recenzji, patrz `review.md` §4) — bez niego przewinięcia lektora gasiłyby podążanie natychmiast po włączeniu. Nasłuch działa **tylko gdy lektor gra** i gasi wyłącznie stan bieżący; do ustawień konta trafia jedynie jawne przełączenie (recenzja §3). |
 | **AC-8** — przerwa między pozycjami | ✅ | 400 ms na granicy bloków, stała (suwak do regulowania ciszy to kontrolka, której nikt nie dotknie drugi raz — C-53). |
 | **AC-9** — zapowiedź źródła bez powtórzeń | ✅ | Zapowiedź tylko przy ZMIANIE portalu, tym samym mechanizmem (`lead`) co zapowiedź tematu — nie drugim obok niego. |
 | **AC-10** — rozróżnialne wejścia | ✅ | „Słuchaj" ma obramowanie akcentem i wagę główną, „Oznacz wszystkie" zostaje przyciskiem tekstowym, między nimi separator. |
@@ -52,7 +52,7 @@ liczniku; pusty `catch` przy niesprawnej syntezie nie zgłaszał nic.
 | AC | Werdykt | Dowód |
 |---|---|---|
 | **AC-11** — wybór przewija | ✅ | `skoczDoTematu` woła wyłącznie `przewinDo`; przewijamy tylko ramę widoku (lekcja z 082 zachowana). |
-| **AC-12** — brak strzałek | ✅ | `onSasiad` nie jest podawany. Prop **zostaje** w komponencie wspólnym dla innych konsumentów (C-53). |
+| **AC-12** — brak strzałek | ✅ | Po recenzji (§9) strzałki **usunięte z komponentu**, nie tylko niepodane: martwe API w komponencie współdzielonym czyta się jako drogę rekomendowaną. Krok został jako czysta `sasiadujacaGrupa` — używa jej gest w bok na telefonie. |
 | **AC-13** — zawsze wszystkie tematy | ✅ | Filtrowanie po temacie usunięte z `widoczneWiadomosci`/`widocznaOs`; klucz `temat` znikł z adresu i z propsów trasy. Nie istnieje stan, w którym część tematów jest niewidoczna. |
 
 ### D. Pasek widoku
@@ -76,9 +76,9 @@ liczniku; pusty `catch` przy niesprawnej syntezie nie zgłaszał nic.
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-21** — awaria partii nie ubija etapu | ✅ | 6 testów jednostkowych `partieStreszczen`, w tym wprost: trzy partie, środkowa rzuca, pozostałe i tak zostają streszczone. Pętla wyszła do czystej funkcji, żeby dało się to sprawdzić bez Prismy i dostawcy modelu. |
+| **AC-21** — awaria partii nie ubija etapu | ✅ | 7 testów jednostkowych `partieStreszczen`, w tym wprost: trzy partie, środkowa rzuca, pozostałe i tak zostają streszczone. Pętla wyszła do czystej funkcji, żeby dało się to sprawdzić bez Prismy i dostawcy modelu. |
 | **AC-22** — tytuły po polsku | ✅ | Pole `title` w tym samym wywołaniu co streszczenie; pominięty tytuł zostawia oryginał. |
-| **AC-23** — widoczny brak streszczenia | ✅ | Kolumna `summaryFailed` (migracja 0256) + znacznik na karcie. Kolumna, nie wyliczenie: skrót z kanału bywa poprawnym zdaniem, więc z treści nie da się orzec, czy to streszczenie. |
+| **AC-23** — widoczny brak streszczenia | ✅ | Kolumna `summaryFailed` (migracja 0256) + znacznik na karcie. Kolumna, nie wyliczenie: skrót z kanału bywa poprawnym zdaniem, więc z treści nie da się orzec, czy to streszczenie. Po recenzji (§8) sukces partii zgłaszany jest **natychmiast po zapisie**, więc pozycja ze streszczeniem nie może dostać tego znacznika przez wyjątek rzucony dalej w tej samej partii — pilnuje tego osobny test. |
 
 ### G. Gorące tematy
 
@@ -98,19 +98,25 @@ wyłącznie lokalnie. **C-12** ✅ `summaryFailed` to `Boolean` (fakt dwustanowy
 **C-20/C-21** ✅ bez nowych mutacji; istniejące zachowują guardy. **C-30** ✅ podświetlenie i znacznik
 wyłącznie zmiennymi CSS. **C-31** ✅ zero poziomego przewijania (zmierzone), `env(safe-area-inset-bottom)`
 na pasku lektora, cele dotyku. **C-32** ✅. **C-33** ✅ menu chromu i dwa wiersze poszerzają RAMĘ, nie
-robią wyjątku w module. **C-34** ✅. **C-51** ✅ cztery wpisy. **C-53** ✅ nie usuwam `onSasiad` z
-komponentu wspólnego, nie dokładam stanu „przeniesione", nie daję ustawienia długości przerwy, nie
-przebudowuję infrastruktury testów. **C-54** ✅ trzy korekty artefaktów zapisane na miejscu (AC-18,
-AC-21 na etapie planu; AC-14 na etapie implementacji).
+robią wyjątku w module. **C-34** ✅. **C-51** ✅ cztery wpisy. **C-53** ✅ nie dokładam stanu „przeniesione", nie daję
+ustawienia długości przerwy, nie przebudowuję infrastruktury testów — a po recenzji **usuwam** martwe
+API `GroupNavigator` zamiast trzymać je „na wszelki wypadek" (to jest ta sama reguła, nie jej
+wyjątek). **C-54** ✅ cztery korekty artefaktów zapisane na miejscu (AC-18, AC-21 na etapie planu;
+AC-14 na etapie implementacji; AC-12 po recenzji).
 
 ## 4. Regresje i znane ograniczenia
 
-Pełna suita klikacza: **144 zielone / 2 czerwone**.
+Pełna suita klikacza po naprawach z recenzji: **155 zielonych, 0 czerwonych, 0 nieuruchomionych**
+(208 pominiętych to projekty spoza `desktop`). Poprzedni przebieg dał 144 zielone / 2 czerwone
+/ 9 nieuruchomionych — te 11 to dokładnie testy, których nie uruchomiono po dwóch upadkach, a nie
+nowa funkcjonalność.
 
-Obie czerwone (`favorites/fav-AC4`, `shortcuts/sc-AC9`) to **wyścig o wspólny stan**, nie regresja
-funkcji — i mam na to dowód pomiarowy: **każdy z tych plików uruchomiony osobno jest zielony**
+**Zielony przebieg NIE znosi znanego ograniczenia.** Dwa testy, które padły poprzednio
+(`favorites/fav-AC4`, `shortcuts/sc-AC9`), padały z powodu **wyścigu o wspólny stan**, nie regresji
+funkcji — mam na to dowód pomiarowy: **każdy z tych plików uruchomiony osobno jest zielony**
 (favorites 14/14, shortcuts 7/7, view-state 11/11). Trzy specyfikacje czyszczą ulubione „do zera"
-i zapisują własne wpisy na tym samym koncie administratora, w równoległych workerach.
+i zapisują własne wpisy na tym samym koncie administratora, w równoległych workerach. Wyścig, który
+raz przechodzi, a raz nie, jest nadal wyścigiem — i tak go raportuję.
 
 Przy okazji naprawiłem **dwa zastane błędy** w ich pętlach czyszczących, oba maskowane przypadkiem aż
 do teraz: brak wykluczenia gwiazdki bieżącego widoku (klikanie jej przełącza `/settings` w kółko —
@@ -130,14 +136,25 @@ dużego przebiegu (C-53).
   docelowym urządzeniu nie zobaczę.
 - **Żywotność kanałów RSS** — proxy odrzuca `CONNECT`; ograniczenie zastane.
 
+## 4a. Recenzja (etap 6)
+
+Recenzent zgłosił **dziewięć ustaleń, w tym dwa blokujące** — pasek lektora chowający się pod
+mobilnym paskiem zakładek i czujka ciszy fałszywie alarmująca na ścieżce serwerowej. Wszystkie
+dziewięć naprawiono w tym samym przebiegu; szczegóły i uzasadnienia: `review.md`. Werdykt po
+naprawach: **APPROVE**.
+
 ## 5. Werdykt końcowy
 
 **GOTOWE Z UWAGAMI.**
 
-27/27 kryteriów spełnionych, komplet bramek zielony, 1164 testy jednostkowe, dwa nowe testy klikacza
-sprawdzone **w obie stronę**. Dwie uwagi, obie zaraportowane wprost, nie zamiecione:
+27/27 kryteriów spełnionych, komplet bramek zielony, 1163 testy jednostkowe, pełna suita klikacza
+155/155, dwa nowe testy klikacza sprawdzone **w obie strony**. Trzy uwagi, wszystkie zaraportowane
+wprost, nie zamiecione:
 
 1. **AC-14 zostało skorygowane w trakcie implementacji** — gwiazdka nie weszła do menu, bo warstwa
    w warstwie okazała się krucha. Chrom kurczy się z trzech elementów do dwóch, a nie do jednego.
-2. **Dwa testy klikacza pozostają czerwone w pełnym przebiegu**, zielone w izolacji — zastany wyścig
-   o wspólne konto, z dowodem pomiarowym i wskazaną trwałą naprawą.
+2. **AC-12 zostało skorygowane po recenzji** — strzałki nie tylko nie są podawane, ale zniknęły
+   z komponentu wspólnego wraz z pozycją zbiorczą. Uzasadnienie w `review.md` §9.
+3. **Wyścig o ulubione wspólnego konta pozostaje** — ten przebieg klikacza go nie trafił, poprzedni
+   trafił. Trwała naprawa to osobne konto na plik albo przebieg szeregowy, czyli zmiana
+   infrastruktury testów.

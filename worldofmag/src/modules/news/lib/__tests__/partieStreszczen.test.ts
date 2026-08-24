@@ -17,10 +17,10 @@ test("partia, która rzuciła, NIE przerywa pozostałych", async () => {
     pozycje: poz(6),
     rozmiarPartii: 2,
     maksPodejsc: 1,
-    wykonaj: async (partia) => {
+    wykonaj: async (partia, _podejscie, zglos) => {
       widziane.push(partia.map((p) => p.id));
       if (partia[0].id === "i2") throw new Error("dostawca odmówił");
-      return partia.map((p) => p.id);
+      partia.forEach((p) => zglos(p.id));
     },
   });
 
@@ -36,12 +36,12 @@ test("pozycje z partii, która padła, wracają w kolejnym podejściu", async ()
     pozycje: poz(4),
     rozmiarPartii: 2,
     maksPodejsc: 3,
-    wykonaj: async (partia) => {
+    wykonaj: async (partia, _podejscie, zglos) => {
       if (pierwsze && partia[0].id === "i2") {
         pierwsze = false;
         throw new Error("chwilowa awaria");
       }
-      return partia.map((p) => p.id);
+      partia.forEach((p) => zglos(p.id));
     },
   });
   assert.deepEqual(wynik.udane.sort(), ["i0", "i1", "i2", "i3"]);
@@ -71,7 +71,7 @@ test("podejście bez ANI JEDNEGO sukcesu kończy pętlę — kolejne kosztowało
     maksPodejsc: 5,
     wykonaj: async () => {
       wywolan++;
-      return []; // model nic nie odesłał
+      // model nic nie odesłał — ani jednego zgłoszenia sukcesu
     },
   });
   assert.equal(wynik.podejsc, 1);
@@ -85,10 +85,11 @@ test("pozycja pominięta przez model wraca — reguła z 080 zachowana", async (
     pozycje: poz(2),
     rozmiarPartii: 2,
     maksPodejsc: 3,
-    wykonaj: async (partia) => {
+    wykonaj: async (partia, _podejscie, zglos) => {
       podejscie++;
       // Pierwsze podejście: model odsyła tylko jedną pozycję z dwóch.
-      return podejscie === 1 ? [partia[0].id] : partia.map((p) => p.id);
+      if (podejscie === 1) zglos(partia[0].id);
+      else partia.forEach((p) => zglos(p.id));
     },
   });
   assert.deepEqual(wynik.udane.sort(), ["i0", "i1"]);
@@ -103,10 +104,26 @@ test("pusta lista nie wykonuje ani jednego podejścia", async () => {
     maksPodejsc: 3,
     wykonaj: async () => {
       wywolan++;
-      return [];
     },
   });
   assert.equal(wywolan, 0);
   assert.equal(wynik.podejsc, 0);
   assert.deepEqual(wynik.udane, []);
+});
+
+test("sukcesy zapisane PRZED wyjątkiem zostają policzone — nie trafią do „bez streszczenia\u201d", async () => {
+  // Recenzja 084: wykonawca zapisał pierwszą pozycję do bazy i dopiero potem padł. Gdy sukces
+  // wracał listą ZWRACANĄ na końcu, przepadał razem z wyjątkiem — a pozycja z gotowym
+  // streszczeniem dostawała znacznik „bez streszczenia".
+  const wynik = await przetworzPartiami({
+    pozycje: poz(2),
+    rozmiarPartii: 2,
+    maksPodejsc: 1,
+    wykonaj: async (partia, _podejscie, zglos) => {
+      zglos(partia[0].id);
+      throw new Error("druga pozycja wysadziła zapis");
+    },
+  });
+  assert.deepEqual(wynik.udane, ["i0"]);
+  assert.deepEqual(wynik.nieudane, ["i1"]);
 });

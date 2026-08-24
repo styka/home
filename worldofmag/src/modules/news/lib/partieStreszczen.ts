@@ -11,8 +11,20 @@
  * Ten plik świadomie NIE zna Prismy ani dostawcy modelu — to jest cała jego wartość.
  */
 
-/** Wykonawca jednej partii: zwraca identyfikatory pozycji, które FAKTYCZNIE dostały streszczenie. */
-export type WykonawcaPartii<T> = (partia: T[], podejscie: number) => Promise<string[]>;
+/**
+ * Wykonawca jednej partii. Sukces zgłasza **od razu, pozycja po pozycji**, przez `zglosSukces`.
+ *
+ * 084 (recenzja): wcześniej zwracał listę na końcu — a jeśli rzucił PO zapisaniu części pozycji
+ * (drugie `update` odmówiło, dostawca urwał połączenie w środku pętli), lista przepadała razem
+ * z wyjątkiem. Te pozycje miały już streszczenie w bazie i mimo to dostawały znacznik „bez
+ * streszczenia". Zgłoszenie natychmiastowe znosi tę klasę błędu z definicji: co zapisane, to
+ * policzone, niezależnie od tego, co stanie się w tej partii dalej.
+ */
+export type WykonawcaPartii<T> = (
+  partia: T[],
+  podejscie: number,
+  zglosSukces: (id: string) => void
+) => Promise<void>;
 
 export interface WynikPodejsc {
   /** Identyfikatory pozycji, którym udało się nadać streszczenie. */
@@ -59,10 +71,10 @@ export async function przetworzPartiami<T extends { id: string }>({
     for (let i = 0; i < partii; i++) {
       const partia = oczekujace.slice(i * rozmiarPartii, (i + 1) * rozmiarPartii);
       try {
-        for (const id of await wykonaj(partia, podejscie)) {
+        await wykonaj(partia, podejscie, (id) => {
           udane.add(id);
           wTymPodejsciu.add(id);
-        }
+        });
       } catch (e) {
         onBlad?.(e, podejscie, i + 1);
         // Świadomie `continue`, nie `throw`: kolejne partie mają swoją szansę.

@@ -125,7 +125,10 @@ export function HotTopics({
       try {
         await deleteTopic(temat.id);
         onTopicsChanged();
-        load(true);
+        // 084 (recenzja): BEZ `force`. Zdjęcie tematu z monitorowanych zmienia tylko to, co odsiewamy
+        // z zapamiętanej listy — nie jest prośbą o nową analizę, a `force` kosztowałby wywołanie modelu
+        // przy każdym takim kliknięciu (C-53 i reguła „regeneracja tylko na jawne żądanie", 038).
+        load();
       } catch (e: any) {
         showToast(e.message ?? "Nie udało się usunąć tematu", "error");
       }

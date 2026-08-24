@@ -348,12 +348,7 @@ export function speechAvailable(): boolean {
   return ttsSupported() || !!serverVoiceId;
 }
 
-async function speakViaServer(
-  text: string,
-  generation: number,
-  opts?: SpeakOptions,
-  potwierdzStart?: () => void
-): Promise<boolean> {
+async function speakViaServer(text: string, generation: number, opts?: SpeakOptions): Promise<boolean> {
   if (!serverVoiceId || serverVoiceFailed) return false;
   try {
     const res = await fetch("/api/tts", {
@@ -386,7 +381,6 @@ async function speakViaServer(
     audio.playbackRate = speechRate;
     await audio.play();
     audioUnlocked = true; // udane odtworzenie też odblokowuje element na przyszłość
-    potwierdzStart?.(); // dźwięk faktycznie ruszył — czujka nie ma czego pilnować
     return true;
   } catch {
     // Awaria sieci albo odrzucone `play()` — tak samo nie ma sensu ponawiać przy każdym zdaniu.
@@ -454,29 +448,36 @@ export function speak(text: string, lang?: string | null, opts?: SpeakOptions): 
   // Głos serwerowy ma pierwszeństwo; przy jakimkolwiek problemie wracamy do przeglądarki.
   // Po zatrzaśnięciu (080/Z4) omijamy go BEZ żądania — dzięki temu synteza przeglądarki startuje
   // synchronicznie, wciąż w geście użytkownika. To jest cała różnica między „inny głos" a ciszą.
-  // 084 (AC-2): czujka uzbraja się RAZ, dla całej wypowiedzi — także wtedy, gdy po drodze zmienimy
-  // ścieżkę z serwerowej na przeglądarkową. Inaczej fallback gubiłby jedyne zabezpieczenie
-  // dokładnie w tym momencie, w którym jest najbardziej potrzebne.
-  const { opts: strzezone, potwierdzStart } = uzbrojCzujke(opts);
-
+  /**
+   * 084 (recenzja): czujka pilnuje PRÓBY ODTWORZENIA, a nie całej drogi z siecią.
+   *
+   * Pierwsza wersja uzbrajała ją tutaj, przed `fetch("/api/tts")` — więc 1,5 s musiało wystarczyć
+   * na limiter, żądanie, syntezę u dostawcy, pobranie dźwięku i start odtwarzania. Przy
+   * skonfigurowanym głosie serwerowym (a 084 właśnie go włącza dla lektora) typowa odpowiedź
+   * przychodzi po ~2 s: czujka odpalała fałszywy alarm, lektor zatrzymywał łańcuch i pokazywał
+   * „nie odtworzyło dźwięku" — a chwilę później dźwięk ruszał. Użytkownik słyszał JEDNO zdanie
+   * i komunikat o awarii, której nie było. To byłoby gorsze niż stan sprzed przebiegu.
+   *
+   * Ścieżka serwerowa ma własną, jawną drogę zgłaszania awarii (`zatrzasnijGlosSerwerowy` +
+   * przejście na przeglądarkę), więc nie potrzebuje czujki. Potrzebuje jej wyłącznie synteza
+   * przeglądarki, bo to ona potrafi odmówić BEZ ŻADNEGO zdarzenia.
+   */
   if (serverVoiceId && !serverVoiceFailed) {
     stopSpeaking(); // zwiększa `speechGeneration`
     const generation = speechGeneration;
-    void speakViaServer(text, generation, strzezone, potwierdzStart).then((ok) => {
+    void speakViaServer(text, generation, opts).then((ok) => {
       if (generation !== speechGeneration) return; // w międzyczasie zatrzymano / zaczęto nową
-      if (!ok) speakViaBrowser(text, lang, strzezone, potwierdzStart);
+      if (!ok) speakViaBrowser(text, lang, opts);
     });
     return;
   }
-  speakViaBrowser(text, lang, strzezone, potwierdzStart);
+  speakViaBrowser(text, lang, opts);
 }
 
-function speakViaBrowser(
-  text: string,
-  lang?: string | null,
-  opts?: SpeakOptions,
-  potwierdzStart?: () => void
-): void {
+function speakViaBrowser(text: string, lang?: string | null, wejscie?: SpeakOptions): void {
+  // Czujka uzbraja się DOKŁADNIE tutaj: od tego momentu do `onstart` powinny minąć dziesiątki
+  // milisekund, a nie sekundy. Poza tą ścieżką nie ma czego pilnować (patrz komentarz w `speak`).
+  const { opts, potwierdzStart } = uzbrojCzujke(wejscie);
   if (!ttsSupported() || !text.trim()) {
     /**
      * 084: brak syntezy to CISZA, a nie „przeczytane".

@@ -158,3 +158,49 @@ test("niesprawna synteza (wyjątek) też jest ciszą — i to od razu, bez czeka
     assert.equal(koniec, 0);
   });
 });
+
+test("WOLNY głos serwerowy nie jest zgłaszany jako cisza (recenzja 084)", async () => {
+  /**
+   * Regresja znaleziona w recenzji: czujka uzbrajała się PRZED żądaniem do `/api/tts`, więc 1,5 s
+   * musiało wystarczyć na limiter, sieć, syntezę u dostawcy i start odtwarzania. Typowa odpowiedź
+   * przychodzi po ~2 s — lektor zatrzymywał wtedy łańcuch i pokazywał „nie odtworzyło dźwięku",
+   * a chwilę później dźwięk ruszał. Użytkownik słyszał JEDNO zdanie i komunikat o awarii, której
+   * nie było.
+   */
+  const oryginalnyFetch = globalThis.fetch;
+  // Odpowiedź wolniejsza niż okno czujki, ale POPRAWNA.
+  globalThis.fetch = (async () => {
+    await new Promise((r) => setTimeout(r, 1800));
+    return {
+      ok: true,
+      status: 200,
+      blob: async () => ({ type: "audio/mpeg" }),
+    } as unknown as Response;
+  }) as unknown as typeof fetch;
+
+  setServerVoiceId("wolny-glos");
+  try {
+    /**
+     * W Node nie ma elementu `Audio`, więc ścieżka serwerowa i tak spadnie na przeglądarkę —
+     * sprawdzamy więc własność, która JEST sednem naprawy i daje się tu zmierzyć: czujka nie może
+     * orzec ciszy, ZANIM żądanie do dostawcy się rozstrzygnie. Przed poprawką alarm szedł po
+     * 1,5 s, czyli w trakcie oczekiwania na odpowiedź; po poprawce najwcześniej po niej.
+     */
+    const start = Date.now();
+    let kiedyCisza: number | null = null;
+    speak("Zdanie czytane wolnym głosem serwerowym.", "pl", {
+      onSilent: () => {
+        kiedyCisza ??= Date.now() - start;
+      },
+    });
+    await new Promise((r) => setTimeout(r, 2600));
+    assert.ok(
+      kiedyCisza === null || kiedyCisza >= 1800,
+      `czujka orzekła ciszę po ${kiedyCisza} ms — czyli w trakcie oczekiwania na dostawcę, ` +
+        "a to ucina odsłuch po pierwszym zdaniu przy w pełni sprawnym głosie",
+    );
+  } finally {
+    globalThis.fetch = oryginalnyFetch;
+    setServerVoiceId(null);
+  }
+});

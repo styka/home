@@ -4,6 +4,58 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Czujka na ciszę mierzyła czas nie tej ścieżki, co trzeba
+**Problem:** Lektor dostał zabezpieczenie: jeśli w 1,5 s od wywołania nie przyjdzie ani `onstart`,
+ani `onend`, uznajemy, że urządzenie **nie wydało dźwięku**, i mówimy o tym wprost. Uzbroiłem tę
+czujkę w `speak()` — czyli w miejscu, przez które przechodzą OBIE ścieżki. Na ścieżce serwerowej te
+1,5 s musiało pokryć `fetch` do `/api/tts`, syntezę po stronie dostawcy i start odtwarzania: typowo
+około 2 s. Działający lektor byłby więc regularnie zgłaszany jako niemy — dokładna odwrotność
+usterki, którą naprawiałem.
+**Rozwiązanie:** Czujka uzbraja się WYŁĄCZNIE w `speakViaBrowser`, gdzie okno startu jest
+natychmiastowe. Doszedł test, który mierzy nie „czy zgłoszono ciszę", tylko **kiedy** — orzeczenie
+musi paść nie wcześniej niż po 1800 ms.
+**Lekcja:** Limit czasu to zawsze twierdzenie o KONKRETNEJ ścieżce. Wspólne miejsce w kodzie, przez
+które przechodzą dwie ścieżki o różnych czasach, jest najgorszym miejscem na taki limit — nawet gdy
+wygląda na „to jedno miejsce, gdzie wszystko widać". I limit czasu testuje się pomiarem momentu,
+a nie samego faktu, że coś się zdarzyło; test na sam fakt przechodzi także wtedy, gdy próg
+zsunął się o rząd wielkości.
+
+## 2026-08-24 — Automatyczne wyłączenie zapisane jako decyzja użytkownika
+**Problem:** „Podążanie za lektorem" gaśnie po ręcznym przewinięciu — to celowe. Gaszenie szło
+jednak przez tę samą funkcję co przełącznik, więc **zapisywało się do ustawień konta**, a nasłuch
+wisiał niezależnie od tego, czy lektor w ogóle gra. Ktoś, kto nigdy nie włączył odsłuchu, jednym
+przewinięciem listy trwale wyłączał sobie funkcję, o której nie wiedział, że ją ma — i nie miał jak
+skojarzyć przyczyny ze skutkiem.
+**Rozwiązanie:** Nasłuch działa tylko przy grającym lektorze (lektor zgłasza to wywołaniem `onGra`),
+a automatyczne wyłączenie rusza wyłącznie stan bieżący. Do ustawień trafia tylko jawne przełączenie.
+**Lekcja:** Rozróżniaj „stan na teraz" od „preferencji konta". Utrwalanie decyzji, której użytkownik
+nie podjął, jest gorsze od nieutrwalania żadnej: cofnąć się nie da, bo nie widać, co się zmieniło.
+
+## 2026-08-24 — Sukces zwracany na końcu przepada razem z wyjątkiem
+**Problem:** Wykonawca partii streszczeń zapisywał pozycje do bazy w pętli, zbierał ich
+identyfikatory do tablicy i **zwracał ją na końcu**. Gdy rzucił w środku (odmowa dostawcy przy
+kolejnym zapisie), tablica przepadała razem z wyjątkiem — a pozycje, które streszczenie już miały,
+dostawały znacznik „bez streszczenia". Znacznik kłamał tym mocniej, im bliżej końca partii padło.
+**Rozwiązanie:** Sukces zgłaszany NATYCHMIAST po zapisie, przez wywołanie zwrotne (`zglosSukces`),
+a nie wartością zwracaną. Co zapisane, to policzone, niezależnie od tego, co stanie się dalej.
+**Lekcja:** Gdy pętla robi skutki uboczne, jej raport nie może czekać do `return` — wartość zwracana
+istnieje tylko na ścieżce bez wyjątku, a skutki uboczne istnieją na obu. To ta sama reguła co
+w księgowości: zapisuj w chwili zdarzenia, nie na koniec dnia.
+
+## 2026-08-24 — Martwe API w komponencie WSPÓŁDZIELONYM jest gorsze niż jego brak
+**Problem:** `GroupNavigator` niósł trzy drogi nawigacji: listę, strzałki i pozycję zbiorczą
+„Wszystkie". Po zmianie znaczenia listy (skok, nie filtr) jedyny konsument przestał podawać dwie
+z nich. Zostawiłem je „dla innych konsumentów", powołując się na minimalizm — i zapisałem to nawet
+w weryfikacji jako świadomą decyzję.
+**Rozwiązanie:** Usunięte razem z komunikatami i testami. Sam krok przetrwał jako czysta funkcja
+`sasiadujacaGrupa`, bo ma realnego konsumenta (gest w bok na telefonie).
+**Lekcja:** „Zostawiam, bo ktoś może użyć" to nie minimalizm, tylko jego przeciwieństwo — a
+w komponencie współdzielonym kosztuje podwójnie: następny moduł czyta niekonsumowane API jako drogę
+REKOMENDOWANĄ i buduje na czymś, czego nikt nigdy nie sprawdził w działaniu. Kasuj; przywrócenie
+z historii kosztuje minutę.
+
+---
+
 ## 2026-08-23 — Trzy specyfikacje klikacza walczą o ulubione jednego konta
 **Problem:** Po przeniesieniu chromu paska widoku zaczęły migotać testy `favorites`, `shortcuts`
 i `view-state` — raz jeden, raz drugi. Pierwsze podejrzenie (moja zmiana zepsuła ulubione) okazało

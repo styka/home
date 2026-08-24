@@ -118,10 +118,20 @@ export function NewsPage({
    * w której przełącznik pokazuje co innego niż robi widok.
    */
   const [podazanie, setPodazanie] = useState(true);
+  /**
+   * Jawne przełączenie przez użytkownika — i TYLKO ono trafia do ustawień konta.
+   *
+   * Recenzja 084: automatyczne wyłączenie (po ręcznym przewinięciu) zapisywało się tak samo, więc
+   * jedno muśnięcie ekranu trwale gasiło funkcję, o której użytkownik nawet nie wiedział, że ją ma.
+   * Wyłączenie „na teraz" nie jest decyzją o ustawieniach.
+   */
   const zmienPodazanie = useCallback((wlaczone: boolean) => {
     setPodazanie(wlaczone);
     void updateAssistantPrefs({ readerFollow: wlaczone }).catch(() => {});
   }, []);
+
+  /** Czy lektor faktycznie czyta — decyduje, czy w ogóle pilnujemy ręcznego przewijania. */
+  const [lektorGra, setLektorGra] = useState(false);
 
   useEffect(() => {
     getAssistantPrefs()
@@ -281,30 +291,35 @@ export function NewsPage({
       if (!podazanie) return;
       const el = document.querySelector<HTMLElement>(`[data-news-item="${itemId}"]`);
       programoweDo.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
-      programoweDoRef.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
       przewinDoSekcji(ramaRef.current, el, pasekH + 80);
     },
     [pasekH, programoweDo, podazanie]
   );
 
   /**
-   * 084 (AC-7): ręczne przewinięcie GASI podążanie.
+   * 084 (AC-7): ręczne przewinięcie GASI podążanie — ale tylko wtedy, gdy jest co gasić.
    *
-   * Rozróżnienie „kto przewinął" opiera się na tym samym strażniku czasu, co obserwator sekcji:
-   * przewinięcia wykonane przez lektora są w jego oknie, wszystko inne to ruch użytkownika. Bez
-   * tego rozróżnienia każde przewinięcie lektora gasiłoby podążanie natychmiast po włączeniu.
+   * Dwie poprawki po recenzji. **Po pierwsze**, nasłuch działa wyłącznie, gdy lektor CZYTA: wcześniej
+   * wisiał zawsze, więc zwykłe przewinięcie listy przez kogoś, kto nigdy nie włączył odsłuchu,
+   * trwale wyłączało mu ustawienie. **Po drugie**, gaśnie tylko stan bieżący (`setPodazanie`), a nie
+   * preferencja konta — automatyczne wyłączenie nie jest decyzją użytkownika o ustawieniach.
+   *
+   * Rozróżnienie „kto przewinął" opiera się na strażniku czasu Z HOOKA sekcji — tym samym, którego
+   * używa przewijanie do sekcji i do pozycji. Drugi, własny ref (pierwsza wersja) nie był aktualizowany
+   * przez `przewinDo`, więc skok do tematu — czyli sedno AC-11 — gasił podążanie użytkownikowi,
+   * który zrobił dokładnie to, o co go poproszono.
    */
-  const programoweDoRef = useRef(0);
   useEffect(() => {
     const rama = ramaRef.current;
-    if (!rama || !podazanie) return;
+    if (!rama || !podazanie || !lektorGra) return;
     const naPrzewiniecie = () => {
-      if (Date.now() < programoweDoRef.current) return;
-      zmienPodazanie(false);
+      if (Date.now() < programoweDo.current) return;
+      setPodazanie(false);
     };
     rama.addEventListener("scroll", naPrzewiniecie, { passive: true });
     return () => rama.removeEventListener("scroll", naPrzewiniecie);
-  }, [podazanie, zmienPodazanie]);
+  }, [podazanie, lektorGra, programoweDo]);
+
 
   useEffect(() => {
     const el = pasekRef.current;
@@ -552,6 +567,7 @@ export function NewsPage({
                   onPrzewinDoPozycji={przewinDoPozycji}
                   podazanie={podazanie}
                   onPodazanie={zmienPodazanie}
+                  onGra={setLektorGra}
                   akcjeTematu={akcjeTematu}
                 />
               ) : (

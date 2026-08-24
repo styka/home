@@ -385,9 +385,13 @@ Organized by module: `shopping/`, `tasks/`, `notes/`, `kitchen/`, `pets/`,
 `magazynowanie/`, `warsztaty/`, `services/`, `calendar/`, `contacts/`, `trash/`,
 `qa/`, `truck/`, `reports/`, `home/`, `settings/`, `teams/`, `skins/`, `admin/`,
 `shell/`, `command-palette/`, `brand/`, `ui/` (incl. `ui/view/ViewChromeMenu.tsx` — 084, the shell chrome (favourites star, data freshness, shortcuts) collapsed into ONE „⋯" control; only the filters zone shrinks in `ViewBar`, so uncollapsed chrome took its width from the module tabs — measured 43 px of 360 on a phone. `ui/nav/GroupNavigator.tsx` — 083, the shared
-"set of groups, each with a list of items, read by scrolling" navigator: arrows + searchable list +
-an aggregate entry; it knows nothing about any module and deliberately never shows the name of the
-group currently being READ — that belongs to the group's own sticky header) (+ a top-level
+"set of groups, each with a list of items, read by scrolling" navigator: a searchable list, and
+nothing else. 084 deleted its two other navigation modes — prev/next arrows and the aggregate
+„Wszystkie" entry — the moment the only consumer stopped passing them: dead API in a SHARED
+component is worse than no API, because the next module reads it as the recommended path. The step
+itself survives as the pure `sasiadujacaGrupa`, which a consumer wires where it wants (in News: the
+sideways swipe on a phone). It knows nothing about any module and deliberately never shows the name
+of the group currently being READ — that belongs to the group's own sticky header) (+ a top-level
 `ServiceWorkerRegistration.tsx`). `admin/` now also holds `AuditLogPage.tsx`,
 `SystemHealthPage.tsx` and `FeedbackTriggerButton.tsx`; `shell/` holds
 `FeedbackInspector.tsx` (admin element-picker). The authoritative module registry

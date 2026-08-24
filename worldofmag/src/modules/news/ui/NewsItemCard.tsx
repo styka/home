@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
@@ -42,9 +42,6 @@ export function NewsItemCard({
   const [imgError, setImgError] = useState(false);
 
   const color = sourceColor(item.sourceDescriptor);
-  // 044: lektor przyjmuje listę bloków. Pojedyncza karta to jeden blok — zachowanie identyczne jak
-  // przed zmianą. `useMemo` jest tu potrzebne, żeby nie budować nowej tablicy przy każdym renderze.
-
 
   function changeLength(next: SummaryLength) {
     if (next === length || resummarizing) return;

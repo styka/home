@@ -187,6 +187,12 @@
   z 083 (filtr → skok) jako lekcja o tym, że „jedna kontrolka = jedno znaczenie" bywa rozstrzygane
   dopiero w rękach użytkownika.
 
+- [x] **T-33** — **Naprawa ustaleń recenzji** (etap 6, `review.md`): dziewięć ustaleń, w tym dwa
+  blokujące — pasek lektora pod mobilnym paskiem zakładek i czujka ciszy fałszywie alarmująca na
+  ścieżce serwerowej. Doszły dwa testy jednostkowe (moment orzeczenia ciszy; sukces partii zapisany
+  przed wyjątkiem) i cztery wpisy do `doświadczenia.md`.
+  *Gotowe, gdy:* wszystkie dziewięć naprawione, bramki i pełna suita klikacza przebiegnięte ponownie.
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania

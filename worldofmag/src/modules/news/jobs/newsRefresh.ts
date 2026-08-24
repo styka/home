@@ -418,7 +418,7 @@ async function summarizeItems(
         batch: numerPartii,
         error: e instanceof Error ? e.message : String(e),
       }),
-    wykonaj: async (batch, attempt) => {
+    wykonaj: async (batch, attempt, zglosSukces) => {
       const postep = `Streszczam (${batch.length} poz.)`;
       // Numer podejścia trafia do postępu, żeby ktoś patrzący na kolejkę widział ponowienie,
       // a nie „licznik, który zaczął od nowa".
@@ -440,7 +440,6 @@ async function summarizeItems(
         "streszczenia"
       );
 
-      const zrobione: string[] = [];
       for (const s of out.summaries ?? []) {
         const item = batch[s.index];
         const text = s.summary?.trim();
@@ -457,10 +456,11 @@ async function summarizeItems(
             ...(tytul ? { title: tytul } : {}),
           },
         });
-        zrobione.push(item.id);
+        // Zgłaszamy sukces NATYCHMIAST po zapisie: gdyby kolejny `update` w tej partii rzucił,
+        // ta pozycja ma już streszczenie w bazie i nie może trafić do „bez streszczenia".
+        zglosSukces(item.id);
         done++;
       }
-      return zrobione;
     },
   });
 
