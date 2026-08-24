@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
+  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Brain, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -240,65 +240,82 @@ function buildChatProblemReport(opts: {
 //  • „Pokaż techniczny log rozumowania (admin)" — dawny surowy zrzut z nazwami narzędzi i JSON-ami;
 //    widoczny WYŁĄCZNIE dla administratora (zwykły użytkownik nie ma po co widzieć wnętrza).
 // Stare rozmowy bez logu renderują się bez żadnego przełącznika (wsteczna zgodność).
-function ReasoningLog({ log, isAdmin = false }: { log?: LogEntry[]; isAdmin?: boolean }) {
-  /**
-   * 086 (AC-14): techniczny log to DODATEK DLA ADMINISTRATORA, więc chowa się razem z resztą.
-   *
-   * Zgłoszenie właściciela: „w trybie niepokazywania dodatków admina admin nie powinien widzieć
-   * logów technicznych rozumowania w asystencie". Uprawnienie (`isAdmin`) decyduje, czy log w ogóle
-   * może być pokazany; przełącznik decyduje, czy JEST pokazywany — i to jest ta sama zasada, co przy
-   * wskaźniku kosztu przy treści. Log opisany po ludzku zostaje dla wszystkich bez zmian.
-   */
-  const { wlaczony: trybAdmina } = useTrybAdmina();
+/**
+ * 087 (AC-5): WEJŚCIE do logu rozumowania jest IKONĄ W STOPCE TURY, a treść — panelem pod nią.
+ *
+ * Do 087 oba przełączniki („Pokaż log rozumowania", „Pokaż techniczny log rozumowania") stały jako
+ * nagi tekst NAD stopką, a ikona lektora — w stopce niżej. Zgłoszenie właściciela: „powinien być
+ * widoczny w linii z ikoną do czytania i też powinien mieć jakąś ikonę". Rozdzielamy więc komponent
+ * na przyciski i panel: przyciski wchodzą do stopki obok lektora, kopiowania i ponowienia (te same
+ * wymiary, ten sam `title`/`aria-label`), panel renderuje się pod stopką dopiero po rozwinięciu.
+ *
+ * Warunek dla logu technicznego zostaje bez zmian (086): `isAdmin && trybAdmina`.
+ */
+function useReasoningLog(log: LogEntry[] | undefined, isAdmin = false) {
   const [expanded, setExpanded] = useState(false);
   const [techExpanded, setTechExpanded] = useState(false);
-  if (!log?.length) return null;
-  const thoughts = log.filter((l) => l.thought);
-  const toggleStyle: React.CSSProperties = {
-    display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--text-muted)",
-    background: "none", border: "none", cursor: "pointer", padding: 0,
-  };
-  return (
-    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-      {thoughts.length > 0 && (
-        <>
-          <button onClick={() => setExpanded((v) => !v)} style={toggleStyle} aria-expanded={expanded}>
-            {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-            {expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
+  const { wlaczony: trybAdmina } = useTrybAdmina();
+
+  const thoughts = (log ?? []).filter((l) => l.thought);
+  const maOpisowy = thoughts.length > 0;
+  const maTechniczny = !!log?.length && isAdmin && trybAdmina;
+
+  const przyciski =
+    maOpisowy || maTechniczny ? (
+      <>
+        {maOpisowy && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            title={expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
+            aria-label={expanded ? "Ukryj log rozumowania" : "Pokaż log rozumowania"}
+            style={{ ...footerIconBtn, color: expanded ? "var(--accent-blue)" : "var(--text-muted)" }}
+          >
+            <Brain size={13} />
           </button>
-          {expanded && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {thoughts.map((l, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                  <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-      {isAdmin && trybAdmina && (
-        <>
-          <button onClick={() => setTechExpanded((v) => !v)} style={toggleStyle} aria-expanded={techExpanded}>
-            {techExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-            {techExpanded ? "Ukryj techniczny log rozumowania (admin)" : "Pokaż techniczny log rozumowania (admin)"}
+        )}
+        {maTechniczny && (
+          <button
+            onClick={() => setTechExpanded((v) => !v)}
+            aria-expanded={techExpanded}
+            title={techExpanded ? "Ukryj techniczny log rozumowania (admin)" : "Pokaż techniczny log rozumowania (admin)"}
+            aria-label={techExpanded ? "Ukryj techniczny log rozumowania (admin)" : "Pokaż techniczny log rozumowania (admin)"}
+            style={{ ...footerIconBtn, color: techExpanded ? "var(--accent-blue)" : "var(--text-muted)" }}
+          >
+            <Bug size={13} />
           </button>
-          {techExpanded && (
-            <pre style={{ padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
-              {log.map((l) => {
-                const head = `#${l.iter} [${l.step}] ${l.thought}`;
-                if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
-                if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
-                if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
-                return head;
-              }).join("\n\n")}
-            </pre>
-          )}
-        </>
-      )}
-    </div>
-  );
+        )}
+      </>
+    ) : null;
+
+  const panel =
+    (expanded && maOpisowy) || (techExpanded && maTechniczny) ? (
+      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+        {expanded && maOpisowy && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {thoughts.map((l, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <Sparkles size={11} style={{ color: "var(--text-muted)", flexShrink: 0, marginTop: 3 }} />
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{l.thought}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {techExpanded && maTechniczny && (
+          <pre style={{ padding: "8px 10px", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10.5, lineHeight: 1.5, color: "var(--text-secondary)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 240, overflowY: "auto" }}>
+            {(log ?? []).map((l) => {
+              const head = `#${l.iter} [${l.step}] ${l.thought}`;
+              if (l.step === "query") return `${head}\n  narzędzia: ${JSON.stringify(l.tools)}\n  wyniki: ${JSON.stringify(l.results)}`;
+              if (l.step === "clarify") return `${head}\n  pytanie: ${l.question}`;
+              if (l.step === "plan") return `${head}\n  akcje: ${l.actionsCount}`;
+              return head;
+            }).join("\n\n")}
+          </pre>
+        )}
+      </div>
+    ) : null;
+
+  return { przyciski, panel };
 }
 
 let TURN_SEQ = 0;
@@ -2353,6 +2370,8 @@ function TurnView({
   onToggleSpeak?: (id: string, text: string) => void;
 }) {
   const t = useTranslations("components.assistant.AICommandSheet");
+  // 087 (AC-5): przyciski logu rozumowania trafiają do STOPKI tury, panel — pod nią.
+  const { przyciski: logPrzyciski, panel: logPanel } = useReasoningLog("log" in turn ? turn.log : undefined, isAdmin);
   const [clarifyInput, setClarifyInput] = useState("");
   const speaking = speakingId === turn.id;
 
@@ -2371,7 +2390,6 @@ function TurnView({
     return (
       <div style={bubble}>
         <div onClick={onBubbleClick} dangerouslySetInnerHTML={{ __html: markdownToHtml(turn.content) }} />
-        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         {isLast && turn.followups && turn.followups.length > 0 && onFollowup && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
             {turn.followups.map((f) => (
@@ -2385,8 +2403,10 @@ function TurnView({
           {onToggleSpeak && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
           <CopyButton text={turn.content} />
           {isLast && onRegenerate && <RegenerateButton onClick={onRegenerate} />}
+          {logPrzyciski}
           <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
+        {logPanel}
       </div>
     );
   }
@@ -2426,11 +2446,12 @@ function TurnView({
             </div>
           </>
         )}
-        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          {logPrzyciski}
           <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
+        {logPanel}
       </div>
     );
   }
@@ -2442,11 +2463,12 @@ function TurnView({
         <button onClick={() => onNavigate(turn.url)} style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 10, border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           <ArrowRight size={15} /> {turn.label}
         </button>
-        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          {logPrzyciski}
           <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
+        {logPanel}
       </div>
     );
   }
@@ -2508,11 +2530,12 @@ function TurnView({
             )}
           </div>
         )}
-        <ReasoningLog log={turn.log} isAdmin={isAdmin} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           {onToggleSpeak && turn.content && <SpeakButton speaking={speaking} onToggle={() => onToggleSpeak(turn.id, turn.content)} />}
+          {logPrzyciski}
           <AiCostBadge usage={turn.meta} akcja="Rozmowa z asystentem" rate={usdPlnRate} />
         </div>
+        {logPanel}
       </div>
     );
   }

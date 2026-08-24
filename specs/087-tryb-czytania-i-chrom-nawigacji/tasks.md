@@ -94,7 +94,7 @@
 
 ## Faza 5 — Asystent *(AC-5)*
 
-- [ ] **T-13** — **Log rozumowania do stopki tury**: `ReasoningLog` rozdzielony na przyciski ikonowe
+- [x] **T-13** — **Log rozumowania do stopki tury**: `ReasoningLog` rozdzielony na przyciski ikonowe
   (log opisowy, log techniczny) i panel; przyciski wchodzą do stopki obok lektora, panel renderuje
   się pod nią. Warunek `isAdmin && trybAdmina` dla logu technicznego bez zmian.
   *Gotowe, gdy:* przycisk logu jest w tym samym wierszu co lektor, ma ikonę i `aria-label`, a wszystkie
