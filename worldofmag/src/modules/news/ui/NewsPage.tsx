@@ -356,19 +356,30 @@ export function NewsPage({
 
 
   /**
-   * 085: mierzymy CAŁĄ ZASŁONĘ u góry ramy, a nie samą wysokość paska modułu.
+   * 086 (AC-20): zasłona liczona z WYSOKOŚCI, nie z POZYCJI. To jest poprawka błędu z 085.
    *
-   * Od 085 nad paskiem nawigacji stoi jeszcze przyklejony pasek widoku. Suma dwóch osobnych miar
-   * („wysokość tamtego" + „wysokość tego") rozjeżdżałaby się przy każdej zmianie któregokolwiek
-   * z nich; odległość DOLNEJ krawędzi paska modułu od GÓRNEJ krawędzi ramy jest jedną liczbą
-   * i jest poprawna niezależnie od tego, co jeszcze stanie wyżej.
+   * 085 mierzyło „odległość dolnej krawędzi paska modułu od górnej krawędzi ramy" i nazywało to
+   * jedną miarą odporną na to, co stanie wyżej. Miara jest jednak POZYCYJNA i rośnie o wszystko, co
+   * stanie MIĘDZY górą ramy a paskiem modułu — u właściciela o pasek stanu odświeżania.
+   *
+   * Uwaga na pułapkę pomiarową: dopóki pasek modułu PRZYLEGA do paska widoku, obie formuły dają tę
+   * samą liczbę (zmierzone 107 px = 48 px paska widoku + 59 px paska modułu — wartość poprawna).
+   * Dlatego pierwsza diagnoza („58 px za nisko") była nadinterpretacją, a test, który tylko czytał
+   * tę liczbę, przechodził w obu wersjach kodu. Różnicę widać dopiero, gdy nad paskiem modułu coś
+   * stanie: ze starą miarą zasłona rośnie 107 → 147 px, z nową zostaje na 107.
+   *
+   * Suma dwóch WYSOKOŚCI — paska widoku (rama publikuje ją jako `--view-bar-h`) i własnej wysokości
+   * paska modułu — nie zależy od tego, co stoi wyżej ani od przewinięcia, bo obie składowe są
+   * wysokościami.
    */
   useEffect(() => {
     const el = pasekRef.current;
     const rama = ramaRef.current;
     if (!el || !rama || typeof ResizeObserver === "undefined") return;
-    const zmierz = () =>
-      setPasekH(Math.max(0, Math.round(el.getBoundingClientRect().bottom - rama.getBoundingClientRect().top)));
+    const zmierz = () => {
+      const pasekWidoku = parseFloat(getComputedStyle(rama).getPropertyValue("--view-bar-h")) || 0;
+      setPasekH(Math.max(0, Math.round(pasekWidoku + el.offsetHeight)));
+    };
     zmierz();
     const ro = new ResizeObserver(zmierz);
     ro.observe(el);
@@ -463,7 +474,7 @@ export function NewsPage({
 
   const usunTemat = useCallback(
     async (topic: TopicDTO) => {
-      if (!(await confirmDialog(`Usunąć temat „${topic.title}" wraz z linią czasu?`))) return;
+      if (!(await confirmDialog({ title: `Usunąć temat „${topic.title}" wraz z linią czasu?`, destructive: true }))) return;
       startTopicAction(async () => {
         try {
           await deleteTopic(topic.id);
@@ -608,7 +619,11 @@ export function NewsPage({
                    którym jesteś, stoi w przyklejonym nagłówku jego sekcji — pokazywanie jej także
                    tutaj było zgłoszeniem właściciela po 083 („podwójnie mamy bieżący temat").
                    Przy okazji: stała etykieta ma stałą szerokość, więc pasek przestaje skakać. */
-                etykietaStala={t("tematy")}
+                /* 086 (AC-21): etykieta mówi, CO robi kontrolka, a nie powtarza nazwy zakładki.
+                   Zgłoszenie właściciela: „zakładka nazywa się tematy i ten input nazywa się tematy,
+                   co wprawia usera w dezorientację. Skoro to już jest tylko element do nawigacji do
+                   konkretnego tematu, a nie filtr". */
+                etykietaStala={t("przejdzDoTematu")}
                 akcje={
                   <div className="ml-auto flex shrink-0 items-center gap-1">
                     <SourceFilter

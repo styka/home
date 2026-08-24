@@ -161,7 +161,7 @@ function EpicRow({ epic }: { epic: AdminEpic }) {
   const [isPending, startTransition] = useTransition();
 
   async function handleDelete() {
-    if (!(await confirmDialog(`Usunąć epic „${epic.title}"? Wszystkie user stories i scenariusze zostaną usunięte.`))) return;
+    if (!(await confirmDialog({ title: `Usunąć epic „${epic.title}"? Wszystkie user stories i scenariusze zostaną usunięte.`, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteEpic(epic.slug);
@@ -240,7 +240,7 @@ function StoryRow({ story }: { story: AdminStory }) {
   const [isPending, startTransition] = useTransition();
 
   async function handleDelete() {
-    if (!(await confirmDialog(`Usunąć user story „${story.title}"? Wszystkie scenariusze zostaną usunięte.`))) return;
+    if (!(await confirmDialog({ title: `Usunąć user story „${story.title}"? Wszystkie scenariusze zostaną usunięte.`, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteStory(story.slug);
@@ -311,7 +311,7 @@ function ScenarioRow({ scenario }: { scenario: AdminScenario }) {
   const priorityColor = getPriorityColor(scenario.priority);
 
   async function handleDelete() {
-    if (!(await confirmDialog(`Usunąć scenariusz „${scenario.title}"?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć scenariusz „${scenario.title}"?`, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteScenario(scenario.slug);

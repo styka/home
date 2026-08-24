@@ -30,7 +30,8 @@ function accentFor(module: string): string {
  * Element chrome (nie pływający FAB) — osadzany w nawigacji:
  *  - `placement="sidebar"` → wiersz z etykietą w stopce sidebara; panel rozwija się W GÓRĘ,
  *  - `placement="topbar"` → kompaktowa ikona w górnym pasku (mobile); panel rozwija się W DÓŁ,
- *  - `placement="chrome"` → kompaktowa ikona w RZĘDZIE CHROMU stopki sidebara; panel W GÓRĘ.
+ *  - `placement="chrome"` → kompaktowa ikona w RZĘDZIE CHROMU sidebara; panel W DÓŁ (086: rząd
+ *    przeniósł się ze stopki pod nazwę aplikacji, więc otwieranie w górę wyszłoby poza ekran).
  *
  * 085: trzeci wariant powstał, bo dwie decyzje były tu dotąd SKLEJONE w jedną: kształt
  * (wiersz z etykietą kontra sama ikona) i kierunek panelu (w górę kontra w dół). Rząd chromu na
@@ -102,8 +103,8 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
 
   /** Kształt: wiersz z etykietą (tylko `sidebar`) kontra sama ikona. */
   const zWierszem = placement === "sidebar";
-  /** Kierunek panelu: w stopce paska bocznego w górę, w górnym pasku w dół. */
-  const wGore = placement === "sidebar" || placement === "chrome";
+  /** Kierunek panelu: tylko wiersz w STOPCE otwiera się w górę; reszta w dół. */
+  const wGore = placement === "sidebar";
 
   return (
     <div ref={panelRef} className="relative" style={zWierszem ? undefined : { display: "flex" }}>

@@ -407,16 +407,19 @@ renders `ModuleView` (`src/components/ui/view/`) instead of hand-rolling a heade
 there would produce double headers in ~20 modules (the exact reason the 043 request could not be met).
 **085 — the bar no longer carries shell chrome, and it STICKS.** `ViewChromeProvider` is gone: the
 favourites star and the shortcuts cheat-sheet moved to the **account chrome** (phone: top bar next to
-the bell; desktop: a row in the sidebar footer — the owner asked for the star "next to the icons where
-the notification icon is"), and the freshness indicator was deleted outright because it reported the
+the bell; desktop: a row of icons **above the navigation**, under the app name — the owner asked for
+the star "next to the icons where the notification icon is", and 086 moved that row up from the
+sidebar footer: "that's the place for such things"), and the freshness indicator was deleted outright because it reported the
 shell's own 45-second page refresh, not the module's data freshness. What survives of that file is the
 `ViewResource` type. The bar is now `position: sticky` at the top of the scroll area — and that is a
 STRUCTURAL change, not a style: a sticky element only sticks within its own parent, so the bar had to
 become a **direct child of the scroll container**, with the breadcrumb + `PageHeader` split off into a
 block above it (they still scroll away — freezing the title would cost a phone list dozens of pixels
 permanently). The bar publishes its height as `--view-bar-h`; a module with its own sticky bar (News)
-offsets by it and measures its scroll cover as ONE distance (module bar's bottom vs. frame's top)
-instead of summing two heights.
+offsets by it and measures its scroll cover as the **sum of two HEIGHTS** (view bar + its own bar).
+086 corrected this: 085 measured one *distance* (module bar's bottom vs. frame's top), which is
+identical to the sum whenever the module bar abuts the view bar — and grows by whatever appears
+between them (the refresh-status strip), pushing every sticky section header that much too low.
 Variants: `layout="fill"` (multi-pane modules whose side panel and list scroll separately),
 `density="compact"` (Tasks/Shopping/Notes, whose deliberately dense 48 px toolbar must not gain a
 second row of chrome), `breadcrumb` (back link above the title), `width="narrow"`, `scrollRef`
@@ -428,6 +431,10 @@ a view rendering `ModuleView` without `state`, fails the build. Manifest: `src/l
 
 **Confirmations: never `window.confirm()`.** `ConfirmProvider` (mounted in `AppShell`) exposes a
 promise-based `useConfirm()`, used as `if (!(await confirmDialog("Usunąć listę?"))) return;`.
+**086 — the default button is NEUTRAL** („Potwierdź"); deleting is declared explicitly
+(`{ title, destructive: true }`). Before that the default was „Usuń" and not one of the 54 call sites
+passed options, so every confirmation in the app — including "mark all as read?" — closed with a red
+"Delete". A red button that stands everywhere stops warning.
 The native dialog does not know the skin, labels its buttons in the SYSTEM language and blocks the
 thread, so it cannot show *what* is about to be deleted. Outside the provider it degrades to
 `window.confirm` rather than throwing, so a component used in isolation still works.

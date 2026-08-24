@@ -174,10 +174,12 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
             position: "absolute",
             zIndex: 60,
             width: 268,
-            // `chrome` siedzi w STOPCE panelu bocznego → okienko otwiera się w GÓRĘ i do prawej,
-            // inaczej wyszłoby pod dolną krawędź ekranu. `topbar` jest u góry → w dół.
+            // 086: oba warianty siedzą teraz U GÓRY (rząd chromu przeniósł się ze stopki panelu
+            // pod nazwę aplikacji), więc okienko otwiera się w DÓŁ. Kotwiczenie różni się stroną:
+            // w panelu bocznym do lewej, w górnym pasku telefonu do prawej — inaczej wyjeżdża
+            // poza ekran.
             ...(placement === "chrome"
-              ? { bottom: "100%", left: 0, marginBottom: 6 }
+              ? { top: "100%", left: 0, marginTop: 6 }
               : { top: "100%", right: 0, marginTop: 6 }),
             background: "var(--bg-elevated)",
             border: "1px solid var(--border)",

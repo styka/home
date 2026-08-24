@@ -53,7 +53,7 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
       onDelete: async () => {
         if (editing) return;
         const s = suppliers.find((x) => x.id === selectedId);
-        if (!s || !(await confirmDialog("Usunąć dostawcę?"))) return;
+        if (!s || !(await confirmDialog({ title: "Usunąć dostawcę?", destructive: true }))) return;
         const idx = suppliers.findIndex((x) => x.id === s.id);
         const next = suppliers[idx + 1] ?? suppliers[idx - 1];
         setSelectedId(next?.id ?? null);
@@ -163,7 +163,7 @@ function SupplierEditor({
   }
 
   async function remove() {
-    if (!supplier || !(await confirmDialog("Usunąć dostawcę?"))) return;
+    if (!supplier || !(await confirmDialog({ title: "Usunąć dostawcę?", destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteSupplier(supplier.id);

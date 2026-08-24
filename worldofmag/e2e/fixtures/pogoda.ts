@@ -18,10 +18,19 @@ export async function ensurePogodaFixtures(): Promise<void> {
   const przestrzen = await prisma.workspace.findFirst({ where: { personalUserId: user.id } });
   if (!przestrzen) throw new Error("Brak przestrzeni osobistej użytkownika E2E");
 
+  // 086 (AC-18): nazwa DŁUGA celowo — zgłoszenie właściciela dotyczyło „Kocoń, województwo
+  // śląskie", a przy krótkim „Kraków" nagłówkowi nigdy nie zabrakłoby miejsca i test nie mógłby
+  // odróżnić naprawy od jej braku. Etykietę USTAWIAMY też na istniejącym wpisie: baza klikacza
+  // jest długowieczna, więc samo „utwórz, jeśli nie ma" zostawiłoby starą, krótką nazwę.
+  const ETYKIETA = "Kocoń, województwo śląskie, Polska";
   const istnieje = await prisma.weatherLocation.findFirst({ where: { workspaceId: przestrzen.id } });
-  if (!istnieje) {
+  if (istnieje) {
+    if (istnieje.label !== ETYKIETA) {
+      await prisma.weatherLocation.update({ where: { id: istnieje.id }, data: { label: ETYKIETA } });
+    }
+  } else {
     await prisma.weatherLocation.create({
-      data: { workspaceId: przestrzen.id, label: "Kraków", lat: 50.06, lon: 19.94, isDefault: true },
+      data: { workspaceId: przestrzen.id, label: ETYKIETA, lat: 49.72, lon: 19.28, isDefault: true },
     });
   }
 

@@ -31,7 +31,12 @@ export function PageHeader({ icon, iconColor, title, subtitle, action, href }: P
         gap: 12,
       }}
     >
-      <div style={{ minWidth: 0, flex: 1 }}>
+      {/* 086 (AC-18): tytuł ma PODŁOGĘ, zamiast akcji z sufitem. Sufit na akcji (`max-width`)
+          przycinał ją także wtedy, gdy nie potrafiła się zwęzić — nawigator miesiąca w Kalendarzu
+          ma 182 px treści i wychodził 2 px poza swoje pudełko. Podłoga rezerwuje tytułowi 40 %
+          szerokości: nadmiar pochłania akcja, która potrafi się przyciąć (Pogoda), a akcja
+          nieprzycinalna po prostu mieści się w pozostałych 60 %. */}
+      <div style={{ minWidth: "40%", flex: 1 }}>
         <h1
           style={{
             fontSize: 22,
@@ -65,7 +70,9 @@ export function PageHeader({ icon, iconColor, title, subtitle, action, href }: P
           </p>
         )}
       </div>
-      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+      {/* Akcja MOŻE się zwęzić — do 086 miała `flex-shrink: 0` bez ograniczenia, więc długa
+          treść (nazwa lokalizacji w Pogodzie) rosła kosztem tytułu i przycinała go do kilku liter. */}
+      {action && <div style={{ flexShrink: 1, minWidth: 0 }}>{action}</div>}
     </div>
   );
 }

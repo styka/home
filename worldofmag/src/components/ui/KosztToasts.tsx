@@ -23,7 +23,6 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 import { onKoszt } from "@/platform/ai/kosztBus";
-import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 
 const CZAS_ZYCIA_MS = 6000;
@@ -50,7 +49,6 @@ let licznik = 0;
 
 export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) {
   const t = useTranslations("components.ui.KosztToasts");
-  const { wlaczony: trybAdmina } = useTrybAdmina();
   const [wpisy, setWpisy] = useState<Wpis[]>([]);
 
   useEffect(() => {
@@ -98,24 +96,39 @@ export function KosztToasts({ rate = DEFAULT_USD_PLN_RATE }: { rate?: number }) 
     return () => clearTimeout(timer);
   }, [najstarszy?.id, najstarszy?.wygasaO]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 085 (AC-8): przy wyłączonym trybie administratora powiadomienia o koszcie nie pojawiają się
-  // wcale — administrator ogląda wtedy aplikację dokładnie tak, jak widzi ją użytkownik.
-  if (!trybAdmina || wpisy.length === 0) return null;
+  /**
+   * 086 (AC-12): powiadomienie o koszcie NIE zależy od przełącznika trybu administratora.
+   *
+   * 085 schowało je razem z resztą dodatków i to była pomyłka co do rodzaju tej informacji.
+   * Właściciel: „ta informacja o kosztach wykonanej akcji AI powinna być dla admina bez względu na
+   * to, czy ma włączoną prezentację widoku jako admin". Kontrola nad wydatkami to nie ozdoba trybu
+   * podglądu — a powiadomienie jest ulotne i niczego nie zabiera z ekranu na stałe. Wskaźnik PRZY
+   * TREŚCI (`AiCostBadge`) zostaje pod przełącznikiem, bo on miejsce zajmuje.
+   *
+   * Widoczność rozstrzyga się więc tam, gdzie zawsze: dane o zużyciu przychodzą z serwera tylko dla
+   * administratora (`visibleUsage`), więc bez nich nie ma czego zgłaszać ani rysować.
+   */
+  if (wpisy.length === 0) return null;
 
   return (
     /**
-     * 085 (AC-12): OBSZAR BEZPIECZNY EKRANU.
+     * 085/086 (AC-15): OBSZAR BEZPIECZNY EKRANU **z zapasem**.
      *
      * Było `top-4`, czyli 16 px od górnej krawędzi OKNA — a na iPhonie górne kilkadziesiąt pikseli
      * zajmuje wcięcie aparatu. Zgłoszenie właściciela: „kamerka iPhona częściowo zasłania te
      * komunikaty". `env(safe-area-inset-top)` to jedyna wartość, która zna wysokość wcięcia
      * konkretnego urządzenia; stała liczba byłaby zgadywaniem, które psuje się przy każdym nowym
      * modelu (ten sam wzorzec stosuje już `FeedbackInspector`).
+     *
+     * 086: sama zmienna nie wystarczyła — właściciel zgłosił, że po 085 powiadomienie NADAL jest za
+     * blisko kamerki. W przeglądarce na iPhonie obszar bezpieczny bywa liczony względem widoku, do
+     * którego pasek adresu już nie należy, więc `env()` potrafi być zerowe mimo widocznego wcięcia.
+     * Stały zapas rośnie z 12 do 28 px, żeby wynik nie zależał wyłącznie od tej zmiennej.
      */
     <div
       aria-live="polite"
       className="pointer-events-none fixed right-4 flex flex-col gap-2"
-      style={{ zIndex: 10050, top: "calc(12px + env(safe-area-inset-top))" }}
+      style={{ zIndex: 10050, top: "calc(28px + env(safe-area-inset-top))" }}
     >
       {wpisy.map((w) => (
         /**

@@ -96,3 +96,45 @@ test("[085-AC21] pasek sterowania mieści się w jednym wierszu przy 360 px", as
   // te dwa światy z zapasem i nie przywiązuje testu do dokładnych odstępów.
   expect(wysokosc!).toBeLessThan(56);
 });
+
+/**
+ * 086 (AC-18) — DŁUGA NAZWA LOKALIZACJI NIE ZJADA TYTUŁU.
+ *
+ * Zgłoszenie właściciela: przy „Kocoń, województwo śląskie" tytuł modułu zostawał przycięty do
+ * kilku liter. Przyczyna była w `PageHeader`: akcja miała `flex-shrink: 0`, więc rosła kosztem
+ * sąsiada. Pierwsza naprawa dała akcji sufit `max-width: 55%` — i zepsuła Kalendarz, którego
+ * nawigator miesiąca nie potrafi się zwęzić i wychodził 2 px poza swoje pudełko. Dlatego mierzymy
+ * OBIE strony: tytuł ma być czytelny, a akcja ma się mieścić w swoim pudełku.
+ */
+test("[086-AC18] dluga nazwa lokalizacji nie przycina tytulu modulu", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto("/pogoda");
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(800);
+
+  const pomiar = await page.evaluate(() => {
+    const h1 = document.querySelector("main h1");
+    if (!h1) return null;
+    const naglowek = h1.closest("div")?.parentElement as HTMLElement | null;
+    const tytul = h1.querySelector("span:last-of-type") as HTMLElement | null;
+    const akcja = naglowek?.lastElementChild as HTMLElement | null;
+    return {
+      tytulTekst: (tytul?.textContent ?? "").trim(),
+      tytulWidoczny: tytul ? tytul.clientWidth : -1,
+      tytulTresc: tytul ? tytul.scrollWidth : -1,
+      akcjaWidoczna: akcja ? akcja.clientWidth : -1,
+      akcjaTresc: akcja ? akcja.scrollWidth : -1,
+    };
+  });
+
+  expect(pomiar, "nagłówek modułu nie znaleziony").not.toBeNull();
+  const p = pomiar!;
+  console.log(`[086-AC18] ${JSON.stringify(p)}`);
+
+  // Tytuł „Pogoda" jest krótki — po naprawie musi się mieścić w całości, bez wielokropka.
+  expect(p.tytulTresc, `tytuł „${p.tytulTekst}" przycięty (${p.tytulTresc}>${p.tytulWidoczny})`)
+    .toBeLessThanOrEqual(p.tytulWidoczny + 1);
+  // A pudełko akcji nie może być węższe od swojej treści — to była regresja pierwszej naprawy.
+  expect(p.akcjaTresc, `akcja wychodzi poza pudełko (${p.akcjaTresc}>${p.akcjaWidoczna})`)
+    .toBeLessThanOrEqual(p.akcjaWidoczna + 1);
+});

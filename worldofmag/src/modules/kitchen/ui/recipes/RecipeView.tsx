@@ -63,7 +63,7 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
   }, [recipe.ingredients]);
 
   async function handleDelete() {
-    if (!(await confirmDialog("Usunąć przepis? Tej operacji nie da się cofnąć."))) return;
+    if (!(await confirmDialog({ title: "Usunąć przepis? Tej operacji nie da się cofnąć.", destructive: true }))) return;
     startDelete(async () => {
       try {
         await deleteRecipe(recipe.id);

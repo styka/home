@@ -82,7 +82,7 @@ export function CookbookEditDialog({ open, onClose, cookbook }: CookbookEditDial
 
   async function handleDelete() {
     if (!cookbook) return;
-    if (!(await confirmDialog(`Usunąć książkę „${cookbook.name}"? Przepisy w niej zostaną, ale stracą przypisanie.`))) return;
+    if (!(await confirmDialog({ title: `Usunąć książkę „${cookbook.name}"? Przepisy w niej zostaną, ale stracą przypisanie.`, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteCookbook(cookbook.id);

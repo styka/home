@@ -40,7 +40,7 @@ export function SkinPicker({
   }
 
   async function remove(id: string) {
-    if (!(await confirmDialog("Usunąć tę skórkę? Użytkownicy z nią ustawioną wrócą do domyślnej."))) return;
+    if (!(await confirmDialog({ title: "Usunąć tę skórkę? Użytkownicy z nią ustawioną wrócą do domyślnej.", destructive: true }))) return;
     start(async () => {
       await deleteSkin(id);
       if (active === id) setActive(null);

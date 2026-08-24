@@ -166,7 +166,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
       onToggleStatus: () => {},
       onDelete: async () => {
         if (!focusedNoteId) return;
-        if (!(await confirmDialog("Usunąć notatkę? Tej operacji nie można cofnąć."))) return;
+        if (!(await confirmDialog({ title: "Usunąć notatkę? Tej operacji nie można cofnąć.", destructive: true }))) return;
         const idx = filteredNotes.findIndex((n) => n.id === focusedNoteId);
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);

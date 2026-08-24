@@ -57,7 +57,7 @@ export function VehicleDetailPage({ vehicle }: { vehicle: VehicleWithStats }) {
   }
 
   async function removeVehicle() {
-    if (!(await confirmDialog(`Usunąć pojazd „${vehicle.name}" wraz z historią?`))) return;
+    if (!(await confirmDialog({ title: `Usunąć pojazd „${vehicle.name}" wraz z historią?`, destructive: true }))) return;
     startTransition(async () => { await deleteVehicle(vehicle.id); router.push("/flota"); });
   }
 
@@ -223,7 +223,7 @@ function AttachmentsSection({ vehicle }: { vehicle: VehicleWithStats }) {
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-primary)", padding: "6px 8px", borderRadius: 6, background: "var(--bg-base)" }}>
               <span style={{ color: "var(--text-muted)", width: 78 }}>{new Date(a.createdAt).toLocaleDateString("pl-PL")}</span>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ flex: 1, color: "var(--accent-blue)", textDecoration: "none", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (await confirmDialog("Usunąć załącznik?")) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={13} /></button>
+              <button onClick={async () => { if (await confirmDialog({ title: "Usunąć załącznik?", destructive: true })) { await deleteVehicleAttachment(a.id); router.refresh(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={13} /></button>
             </div>
           ))}
         </div>

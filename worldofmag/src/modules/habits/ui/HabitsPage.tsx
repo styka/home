@@ -138,7 +138,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirmDialog("Usunąć ten nawyk wraz z całą historią?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć ten nawyk wraz z całą historią?", destructive: true }))) return;
     setHabits((prev) => prev.filter((h) => h.id !== id));
     await deleteHabit(id);
     router.refresh();

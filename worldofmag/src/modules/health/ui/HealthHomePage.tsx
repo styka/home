@@ -255,7 +255,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     router.refresh();
   }
   async function removeEvent(ev: HealthEvent) {
-    if (!(await confirmDialog("Usunąć wpis?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć wpis?", destructive: true }))) return;
     await deleteHealthEvent(ev.id);
     router.refresh();
   }
@@ -446,7 +446,7 @@ function HealthAttachments({ eventId }: { eventId: string }) {
           {(items ?? []).map((a) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
               <a href={a.url} target="_blank" rel="noopener noreferrer" download={a.name} style={{ color: "var(--accent-blue)", textDecoration: "none", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-              <button onClick={async () => { if (await confirmDialog("Usunąć?")) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={12} /></button>
+              <button onClick={async () => { if (await confirmDialog({ title: "Usunąć?", destructive: true })) { await deleteHealthAttachment(a.id); await load(); } }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }} title={t("usun")}><Trash2 size={12} /></button>
             </div>
           ))}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--accent-blue)", cursor: busy ? "wait" : "pointer" }}>

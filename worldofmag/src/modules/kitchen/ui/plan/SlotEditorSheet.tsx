@@ -109,7 +109,7 @@ export function SlotEditorSheet({
 
   async function handleDelete() {
     if (!entry) return;
-    if (!(await confirmDialog("Usunąć ten wpis z planu?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć ten wpis z planu?", destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteMealPlanEntry(entry.id);

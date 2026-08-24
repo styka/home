@@ -4,6 +4,65 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — Bramka zielona dzięki martwym importom
+**Problem:** Po przeniesieniu rdzenia gorących tematów z akcji do `lib/goraceTematy.ts` w
+`actions/news.ts` zostały importy, których nikt już nie wołał (`rememberedContent`, `hashInputs`,
+`resolveSectionMode`). Lint ich nie zgłasza. Bramka `check:content-memory` klasyfikuje plik po tym,
+czy **importuje** `rememberedContent` — więc przez cały etap implementacji i weryfikacji świeciła na
+zielono, opisując plik jako „treść zapamiętywana", choć plik nie pamięta już niczego. Dopiero
+sprzątnięcie martwych importów w recenzji zaczerwieniło bramkę i pokazało, że wpis w manifeście
+opisuje stan sprzed przeniesienia.
+**Rozwiązanie:** Usunięte trzy martwe importy, wpis w `content-memory-coverage.json` przeklasyfikowany
+na `on-demand` (zostało jedno wywołanie: `resummarizeItem`), a uzasadnienie przy `newsRefresh.ts`
+wskazuje teraz nowy plik rdzenia.
+**Lekcja:** Bramka, która rozpoznaje wzorzec po IMPORCIE, dziedziczy wszystkie martwe importy jako
+fałszywe potwierdzenia. Po każdym przeniesieniu logiki między plikami sprzątnij importy **zanim**
+uznasz bramki za dowód — inaczej dowodzą stanu sprzed przeniesienia. Prosty test: policz wystąpienia
+nazwy w pliku; jedno znaczy „tylko import".
+
+## 2026-08-24 — Sufit na sąsiedzie zamiast podłogi dla siebie
+**Problem:** Długa nazwa lokalizacji w Pogodzie („Kocoń, województwo śląskie") przycinała TYTUŁ
+modułu do jednej litery — akcja nagłówka miała `flex-shrink: 0`, więc rosła kosztem sąsiada.
+Naprawiłem to sufitem na akcji (`max-width: 55%`) i zepsułem Kalendarz: jego nawigator miesiąca ma
+182 px treści i nie potrafi się zwęzić, więc w pudełku 180 px wychodził 2 px poza nie. Złapał to
+dopiero ogólny przegląd ramy (`rama-widoku-przeglad`), a nie test naprawianego zgłoszenia.
+**Rozwiązanie:** Odwrócenie kierunku ograniczenia: **podłoga dla tytułu** (`min-width: 40%`) zamiast
+sufitu dla akcji. Nadmiar pochłania wtedy ta strona, która potrafi się przyciąć (przycisk lokalizacji
+ma `min-w-0` + `truncate`), a akcja nieprzycinalna po prostu mieści się w pozostałych 60 %.
+**Lekcja:** Sufit (`max-width`) narzucony wspólnemu komponentowi obowiązuje też te dzieci, które nie
+umieją się zwęzić — i wtedy nie ogranicza, tylko wypycha treść poza pudełko. Gdy chcesz ochronić
+element A przed elementem B, ogranicz A **podłogą**, nie B sufitem. I sprawdź naprawę **kontrolą
+negatywną**: po cofnięciu zmiany test AC-18 pokazał tytuł widoczny na 10 px przy 81 px treści —
+dopiero to dowodzi, że mierzy naprawę, a nie sam fakt, że strona się otwiera.
+
+## 2026-08-24 — Miara POZYCYJNA udaje wysokościową dopóki nic nad nią nie stoi
+**Problem:** W 085 policzyłem „zasłonę" dla przyklejonych nagłówków jako odległość dolnej krawędzi
+paska modułu od górnej krawędzi ramy i uznałem, że to jedna miara odporna na to, co stanie wyżej.
+Właściciel zgłosił, że nagłówki przyklejają się za nisko. Zmierzyłem 107 px i ogłosiłem „58 px za
+nisko" — **nadinterpretacja**: 107 px to dokładnie 48 (pasek widoku) + 59 (pasek modułu), czyli
+wartość poprawna. Miara pozycyjna i wysokościowa dają ten sam wynik zawsze wtedy, gdy pasek modułu
+przylega do paska widoku, a w środowisku testowym przylega. Różnica ujawnia się dopiero, gdy między
+nie coś wejdzie — u właściciela pasek stanu odświeżania.
+**Rozwiązanie:** Zasłona = suma dwóch WYSOKOŚCI. Test wstawia 40 px nad paskiem modułu i wymusza
+przeliczenie: ze starą miarą zasłona rośnie 107 → 147 px, z nową zostaje na 107. Plan i spec
+poprawione, bo pierwotna diagnoza i kryterium akceptacji opisywały coś, czego pomiar nie dowodził.
+**Lekcja:** Zanim ogłosisz przyczynę, sprawdź, czy zmierzona liczba **odróżnia** hipotezę od jej
+zaprzeczenia. „107 zamiast 49" brzmiało jak dowód, a było odczytaniem tej samej liczby przez złą
+formułę. I druga strona tego samego: gdy dwie implementacje dają identyczny wynik w warunkach
+testu, test nie mierzy różnicy między nimi — trzeba zbudować warunek, w którym się rozjeżdżają.
+
+## 2026-08-24 — Test, który nie może zauważyć, bo nikt go nie obudził
+**Problem:** Test miał dowieść, że zasłona nie rośnie po wstawieniu elementu nad paskiem. Wstawiał
+element, czekał i porównywał — i przechodził w OBU wersjach kodu. Przyczyna: wartość przelicza
+`ResizeObserver` pilnujący paska i ramy, a wstawienie czegoś NAD nimi nie zmienia ich rozmiaru.
+Nic się nie przeliczało, więc test porównywał dwie identyczne, stare wartości.
+**Rozwiązanie:** Test szturcha szerokość okna, żeby obserwator zadziałał — czyli odtwarza tę samą
+okoliczność, w której wartość przelicza się u użytkownika. Dopiero wtedy widać 107 → 147.
+**Lekcja:** Przy testowaniu czegoś, co liczy się reaktywnie, sprawdź osobno, czy przeliczenie
+w ogóle nastąpiło. Inaczej mierzysz stan sprzed zmiany i dostajesz zieleń za brak działania.
+
+---
+
 ## 2026-08-24 — `position: sticky` przykleja się tylko w granicach RODZICA
 **Problem:** Pasek widoku miał zostać widoczny przy przewijaniu (zgłoszenie właściciela: „czy to
 dobrze, że scrolując stronę w dół te akcje nie przyklejają się?"). Naturalny odruch — dopisać

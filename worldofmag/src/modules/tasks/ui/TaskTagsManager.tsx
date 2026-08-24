@@ -57,7 +57,7 @@ export function TaskTagsManager({ initialTags }: TaskTagsManagerProps) {
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirmDialog("Usunąć tag? Zostanie usunięty ze wszystkich zadań."))) return;
+    if (!(await confirmDialog({ title: "Usunąć tag? Zostanie usunięty ze wszystkich zadań.", destructive: true }))) return;
     startTransition(async () => {
       await deleteTaskTag(id);
       setTags((prev) => prev.filter((t) => t.id !== id));

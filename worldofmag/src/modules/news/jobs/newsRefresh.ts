@@ -24,6 +24,7 @@ import { JobError, type JobContext } from "@/platform/jobs/types";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { przetworzPartiami } from "../lib/partieStreszczen";
 import { logEvent } from "@/platform/observability/log";
+import { przeliczGoraceTematy, etapGoracychTematow } from "../lib/goraceTematy";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -50,6 +51,8 @@ export interface NewsRefreshResult {
   summarized: number;
   /** Nowe fakty w liniach czasu. */
   timelineAdded: number;
+  /** 086 (AC-8): czy przebieg przeliczył też gorące tematy. */
+  hotTopics?: boolean;
   /** Model niedostępny/nieskonfigurowany — UI ma o tym powiedzieć wprost, a nie pokazać pustkę. */
   llmUnconfigured?: boolean;
   usage?: AiUsageInfo;
@@ -731,6 +734,30 @@ async function runNewsRefresh(
     await prisma.newsTopic.updateMany({
       where: { id: { in: topics.map((t) => t.id) } },
       data: { lastRefreshedAt: new Date() },
+    });
+
+    /**
+     * ── Etap 5: gorące tematy ────────────────────────────────────────────
+     *
+     * 086 (AC-8): „pobiera się z RSS nowe wiadomości i dopasowuje do tematów i pokazuje nowe gorące
+     * tematy" — do 086 lista powstawała wyłącznie na jawne kliknięcie w zakładce, więc pokazywała
+     * stan sprzed ostatniego pobrania.
+     *
+     * AC-9: TYLKO gdy coś przyszło. Bez nowych materiałów analiza dałaby tę samą listę z tej samej
+     * puli, więc byłaby wyłącznie kosztem.
+     *
+     * AC-11: WŁASNY `try/catch`. To jest etap DODATKOWY — pobrane i streszczone wiadomości są już
+     * zapisane, więc jego awaria nie może wywrócić przebiegu i zabrać użytkownikowi tego, co się
+     * udało. Ta sama lekcja, co z partiami streszczeń w 084.
+     */
+    if (pool.fetched > 0) ctx.progress?.("Przeliczam gorące tematy…");
+    base.hotTopics = await etapGoracychTematow({
+      pobrano: pool.fetched,
+      przelicz: () => przeliczGoraceTematy(ownerId, { force: true }),
+      onBlad: (e) =>
+        logEvent("warn", "news.hotTopics.failed", {
+          error: e instanceof Error ? e.message : String(e),
+        }),
     });
   } catch (e) {
     // Model nieskonfigurowany to nie awaria przebiegu: pula jest pobrana, pozycje mogły powstać,

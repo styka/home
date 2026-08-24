@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { ExternalLink, Check, X, Sparkles, Loader2, Headphones } from "lucide-react";
+import { ExternalLink, Check, Sparkles, Loader2, Headphones } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
@@ -10,7 +10,6 @@ import { useToast } from "@/components/ui/Toast";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import {
   acknowledgeItem,
-  dismissItem,
   resummarizeItem,
   type NewsItemDTO,
   type SummaryLength,
@@ -61,17 +60,6 @@ export function NewsItemCard({
       try {
         await acknowledgeItem(item.id);
         showToast("Oznaczono jako przeczytane", "success");
-        onChanged();
-      } catch (e: any) {
-        showToast(e.message ?? "Błąd", "error");
-      }
-    });
-  }
-
-  function dismiss() {
-    startTransition(async () => {
-      try {
-        await dismissItem(item.id);
         onChanged();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
@@ -187,19 +175,22 @@ export function NewsItemCard({
           >
             <Headphones size={13} /> {czytana ? "Zamknij lektora" : "Słuchaj"}
           </button>
-          <button
-            onClick={dismiss}
-            disabled={pending}
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          >
-            <X size={13} /> {t("odrzuc")}
-          </button>
+          {/**
+           * 086 (AC-1..AC-3): JEDNA akcja zamykająca zamiast dwóch.
+           *
+           * Do 086 stały tu obok siebie „Odrzuć" i „Przeczytane". Zapisywały różne wartości statusu,
+           * ale **żaden odczyt ich nie rozróżniał** — obie po prostu zdejmowały wiadomość z listy.
+           * Właściciel zapytał wprost, czym się różnią; uczciwa odpowiedź brzmiała „niczym", więc
+           * została jedna. Podpowiedź mówi, czego akcja dotyczy, bo drugie pytanie brzmiało, czy to
+           * przypadkiem nie jest usuwanie.
+           */}
           <button
             onClick={acknowledge}
             disabled={pending}
-            className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-green)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90"
+            title={t("przeczytaneOpis")}
+            className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-green)] px-2.5 py-1 text-xs font-medium text-[var(--on-accent)] hover:opacity-90"
           >
-            <Check size={13} /> Przeczytane
+            <Check size={13} /> {t("przeczytane")}
           </button>
         </div>
       </div>

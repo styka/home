@@ -91,7 +91,7 @@ export function RecipeImagesEditor({ recipeId, images, hasAI }: RecipeImagesEdit
   }
 
   async function handleDelete(id: string) {
-    if (!(await confirmDialog("Usunąć to zdjęcie?"))) return;
+    if (!(await confirmDialog({ title: "Usunąć to zdjęcie?", destructive: true }))) return;
     try {
       await deleteRecipeImage(id);
       setItems((prev) => prev.filter((i) => i.id !== id));

@@ -41,7 +41,7 @@ export default function MemberList({
   }
 
   async function handleRemove(userId: string) {
-    if (!(await confirmDialog("Usunąć tego użytkownika z teamu?"))) return
+    if (!(await confirmDialog({ title: "Usunąć tego użytkownika z teamu?", destructive: true }))) return
     setBusy(userId)
     try {
       await removeMember(teamId, userId)

@@ -51,7 +51,7 @@ export function ProjectActionsMenu({ project }: { project: TaskProject }) {
       count > 0
         ? `Usunąć projekt „${project.name}"?\n\n${count} zadań NIE zostanie usuniętych — stracą przypisanie do projektu, ale pozostaną widoczne w „Wszystkie".`
         : `Usunąć projekt „${project.name}"?`;
-    if (!(await confirmDialog(msg))) return;
+    if (!(await confirmDialog({ title: msg, destructive: true }))) return;
     startTransition(async () => {
       try {
         await deleteTaskProject(project.id);

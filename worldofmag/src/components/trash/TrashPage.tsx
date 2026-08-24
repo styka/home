@@ -24,12 +24,12 @@ export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; ret
     startTransition(async () => { await restoreTrashItem(id); setBusyId(null); });
   }
   async function purge(id: string) {
-    if (!(await confirmDialog("Usunąć trwale? Tej operacji nie można cofnąć."))) return;
+    if (!(await confirmDialog({ title: "Usunąć trwale? Tej operacji nie można cofnąć.", destructive: true }))) return;
     setBusyId(id);
     startTransition(async () => { await purgeTrashItem(id); setBusyId(null); });
   }
   async function empty() {
-    if (!(await confirmDialog("Opróżnić cały kosz? Wszystkie pozycje zostaną usunięte trwale."))) return;
+    if (!(await confirmDialog({ title: "Opróżnić cały kosz? Wszystkie pozycje zostaną usunięte trwale.", destructive: true }))) return;
     startTransition(() => { emptyTrash(); });
   }
 
