@@ -28,10 +28,16 @@ function accentFor(module: string): string {
  * jako przeczytaną i nawiguje do źródła.
  *
  * Element chrome (nie pływający FAB) — osadzany w nawigacji:
- *  - `placement="sidebar"` → wiersz w stopce sidebara (desktop); panel rozwija się W GÓRĘ,
- *  - `placement="topbar"` → kompaktowa ikona w górnym pasku (mobile); panel rozwija się W DÓŁ.
+ *  - `placement="sidebar"` → wiersz z etykietą w stopce sidebara; panel rozwija się W GÓRĘ,
+ *  - `placement="topbar"` → kompaktowa ikona w górnym pasku (mobile); panel rozwija się W DÓŁ,
+ *  - `placement="chrome"` → kompaktowa ikona w RZĘDZIE CHROMU stopki sidebara; panel W GÓRĘ.
+ *
+ * 085: trzeci wariant powstał, bo dwie decyzje były tu dotąd SKLEJONE w jedną: kształt
+ * (wiersz z etykietą kontra sama ikona) i kierunek panelu (w górę kontra w dół). Rząd chromu na
+ * komputerze potrzebuje kombinacji, której nie dało się wyrazić — ikony z panelem w górę. Zamiast
+ * dokładać czwarty prop rozdzielamy je wewnątrz: `zWierszem` i `wGore` liczone z `placement`.
  */
-export function NotificationBell({ placement = "topbar" }: { placement?: "topbar" | "sidebar" }) {
+export function NotificationBell({ placement = "topbar" }: { placement?: "topbar" | "sidebar" | "chrome" }) {
   const t = useTranslations("components.shell.NotificationBell");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -94,11 +100,14 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
     setCount(0);
   }, []);
 
-  const isSidebar = placement === "sidebar";
+  /** Kształt: wiersz z etykietą (tylko `sidebar`) kontra sama ikona. */
+  const zWierszem = placement === "sidebar";
+  /** Kierunek panelu: w stopce paska bocznego w górę, w górnym pasku w dół. */
+  const wGore = placement === "sidebar" || placement === "chrome";
 
   return (
-    <div ref={panelRef} className="relative" style={isSidebar ? undefined : { display: "flex" }}>
-      {isSidebar ? (
+    <div ref={panelRef} className="relative" style={zWierszem ? undefined : { display: "flex" }}>
+      {zWierszem ? (
         <button
           onClick={toggle}
           aria-label={`Powiadomienia${count ? ` (${count} nieprzeczytane)` : ""}`}
@@ -146,8 +155,8 @@ export function NotificationBell({ placement = "topbar" }: { placement?: "topbar
         // Kierunek zostaje ten sam co dotąd — w stopce paska bocznego w górę, w górnym pasku w dół
         // — ale teraz jest to PREFERENCJA: przy braku miejsca warstwa odbija się na drugą stronę,
         // zamiast wyjść poza ekran (080/Z7).
-        side={isSidebar ? "gora" : "dol"}
-        align={isSidebar ? "start" : "koniec"}
+        side={wGore ? "gora" : "dol"}
+        align={zWierszem ? "start" : "koniec"}
         width={360}
         style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-lg, 10px)", boxShadow: "0 12px 32px rgba(0,0,0,0.45)" }}
       >

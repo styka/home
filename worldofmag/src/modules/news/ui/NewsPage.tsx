@@ -355,13 +355,24 @@ export function NewsPage({
   }, [podazanie, lektorGra, programoweDo]);
 
 
+  /**
+   * 085: mierzymy CAŁĄ ZASŁONĘ u góry ramy, a nie samą wysokość paska modułu.
+   *
+   * Od 085 nad paskiem nawigacji stoi jeszcze przyklejony pasek widoku. Suma dwóch osobnych miar
+   * („wysokość tamtego" + „wysokość tego") rozjeżdżałaby się przy każdej zmianie któregokolwiek
+   * z nich; odległość DOLNEJ krawędzi paska modułu od GÓRNEJ krawędzi ramy jest jedną liczbą
+   * i jest poprawna niezależnie od tego, co jeszcze stanie wyżej.
+   */
   useEffect(() => {
     const el = pasekRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const zmierz = () => setPasekH(el.offsetHeight);
+    const rama = ramaRef.current;
+    if (!el || !rama || typeof ResizeObserver === "undefined") return;
+    const zmierz = () =>
+      setPasekH(Math.max(0, Math.round(el.getBoundingClientRect().bottom - rama.getBoundingClientRect().top)));
     zmierz();
     const ro = new ResizeObserver(zmierz);
     ro.observe(el);
+    ro.observe(rama);
     return () => ro.disconnect();
     // Pasek istnieje tylko w widoku wiadomości — przy zmianie zakładki mierzymy od nowa.
   }, [view, topics.length]);
@@ -577,7 +588,12 @@ export function NewsPage({
                  ma domyślnie `min-width: auto`, więc NIE POTRAFI zwęzić się poniżej swojej treści —
                  i to on, a nie jego zawartość, rozpychał stronę: zmierzone 377 px przy ekranie
                  360 px, czyli poziome przewijanie CAŁEJ strony (C-31, błąd twardy). */
-              className="sticky top-0 z-30 flex min-w-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] pb-2 pt-1"
+              /* 085 (AC-4): pasek widoku jest teraz PRZYKLEJONY u góry ramy, więc pasek nawigacji
+                 modułu przykleja się POD nim — inaczej wjechałby na niego. Wysokość tamtego podaje
+                 rama zmienną `--view-bar-h`; przy jej braku (widok osadzony poza ramą) zostaje 0,
+                 czyli zachowanie sprzed zmiany. */
+              style={{ top: "var(--view-bar-h, 0px)" }}
+              className="sticky z-30 flex min-w-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] pb-2 pt-1"
             >
               {/* 084 (AC-11, AC-12, AC-18): lista tematów jest SKOKIEM, nie filtrem.
                   `aktywnaId` wskazuje temat CZYTANY, więc lista pokazuje, gdzie jesteś, a wybór

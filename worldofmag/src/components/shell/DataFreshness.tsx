@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { notifyDataRefreshed } from "@/lib/dataFreshnessBus";
 
 // Globalny nasłuchiwacz świeżości danych.
 //
@@ -49,8 +48,11 @@ export function DataFreshness() {
       const now = Date.now();
       if (now - lastRefresh.current < MIN_GAP_MS) return;
       lastRefresh.current = now;
+      // 085: nie rozgłaszamy już „dane odświeżono". Jedynym odbiorcą był wskaźnik świeżości
+      // w pasku widoku, który tę chwilę przedstawiał jako świeżość DANYCH MODUŁU — a to jest
+      // moment przeładowania CAŁEJ strony przez powłokę. Wskaźnik i magistrala zniknęły razem;
+      // samo odświeżanie zostaje nietknięte.
       router.refresh();
-      notifyDataRefreshed();
     }
 
     function onVisibilityChange() {

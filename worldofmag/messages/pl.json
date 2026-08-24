@@ -855,9 +855,6 @@
         "nicNiePasuje": "Nic nie pasuje do wyszukiwania.",
         "brakGrup": "Brak grup"
       },
-      "ViewChromeMenu": {
-        "wiecej": "Więcej: ulubione, świeżość danych, skróty"
-      },
       "PrzelacznikTrybuAdmina": {
         "wlaczTrybAdmina": "Włącz tryb administratora (koszty AI i narzędzia)",
         "wylaczTrybAdmina": "Wyłącz tryb administratora — widok jak u użytkownika"

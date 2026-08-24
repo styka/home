@@ -15,6 +15,9 @@ import { isPathLocked } from "@/lib/pathPermissions";
 import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoritesSidebarSection } from "@/components/favorites/FavoritesSidebarSection";
+import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
+import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
+import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface ModuleSidebarProps {
@@ -315,11 +318,26 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       </nav>
 
-      {/* Bottom: Powiadomienia + Invitations + Settings + Admin */}
+      {/* Bottom: rząd chromu konta + Zaproszenia + Ustawienia + Admin */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        {/* 043: gwiazdka „zapisz ten widok" przeniesiona STĄD na górę paska, do sekcji ulubionych
-            (AC-2). Na dole, wśród Zaproszeń i Ustawień, była nie do znalezienia. */}
-        <NotificationBell placement="sidebar" />
+        {/**
+         * 085 (AC-1, AC-7): RZĄD CHROMU KONTA.
+         *
+         * Zgłoszenie właściciela: „gwiazdka powinna być przy ikonach tam na górze danej strony obok
+         * ikon tych gdzie jest też ikona powiadomień". Na komputerze górnego paska nie ma — jego
+         * odpowiednikiem jest stopka panelu bocznego, i to tutaj mieszka dzwonek. Cztery ikony
+         * w jednym rzędzie zamiast czterech osobnych miejsc: dzwonek, zapis widoku, ściągawka
+         * skrótów, tryb administratora.
+         *
+         * Ściągawka skrótów jest TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania,
+         * więc wejście do nich zabierałoby miejsce bez pożytku).
+         */}
+        <div className="mx-2 mb-1 flex items-center gap-1 px-2">
+          <NotificationBell placement="chrome" />
+          <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
+          <ShortcutsButton />
+          <PrzelacznikTrybuAdmina />
+        </div>
 
         <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>
           {invitationCount > 0 && !isLocked("/invitations") && (

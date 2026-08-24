@@ -20,9 +20,6 @@ import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { ConflictProvider } from "@/components/ui/ConflictProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
-import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
-import { ViewChromeProvider } from "@/components/ui/view";
-import { FreshnessIndicator } from "./FreshnessIndicator";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
@@ -189,7 +186,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             >
               <ArrowLeftRight size={16} />
             </button>
-            {/* 083: przełącznik kosztów AI stoi obok dzwonka — w chromie konta, nie w treści. */}
+            {/* 085 (AC-1): gwiazdka „zapisz to miejsce" WRACA do górnego paska — tym razem jako
+                JEDYNE jej wejście na telefonie (w 083 wyszła stąd do paska widoku, a właściciel
+                poprosił, żeby stała przy ikonach obok dzwonka). Działa też na trasach bez ramy
+                modułu, np. w panelu administracyjnym (AC-3). */}
+            <FavoriteStarButton favorites={favoriteViews} placement="topbar" />
+            {/* 085: przełącznik TRYBU ADMINISTRATORA stoi obok dzwonka — w chromie konta. */}
             <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
           </div>
@@ -283,19 +285,21 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
 
-      {/* 045 — KONTRAKT WIDOKU. Powłoka nie rysuje paska widoku (nie zna tytułu modułu,
-          więc dostałaby podwójne nagłówki w ~20 modułach), tylko UDOSTĘPNIA jego zawartość.
-          Rysuje go `ModuleView` osadzony w stronie modułu, a moduł nadal nie wie, co w nim
-          siedzi. To jest spłata długu z 043: gwiazdka „zapisz widok" trafia wreszcie tam,
-          gdzie właściciel o nią prosił. */}
+      {/**
+       * 085: powłoka NIE wstrzykuje już nic do paska widoku.
+       *
+       * Od 045 wkładała tam trzy rzeczy: gwiazdkę ulubionych, wskaźnik świeżości i wejście do
+       * ściągawki skrótów. Wszystkie trzy stąd wyszły — gwiazdka i ściągawka do rzędu chromu konta
+       * (obok dzwonka), a wskaźnik świeżości zniknął, bo mierzył moment automatycznego
+       * przeładowania strony przez powłokę, a nie świeżość danych modułu; jego treść wprowadzała
+       * w błąd. Mechanizm bez zawartości byłby martwym API w miejscu wspólnym, więc znika razem
+       * z nimi (C-35 czytane w drugą stronę).
+       *
+       * Pasek widoku ZOSTAJE: nadal rysuje go `ModuleView` osadzony w stronie modułu, bo powłoka
+       * nie zna tytułu modułu i dostałaby podwójne nagłówki w ~20 modułach.
+       */}
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
-        <ViewChromeProvider
-          value={{
-            favorite: <FavoriteStarButton favorites={favoriteViews} placement="viewbar-inline" />, freshness: <FreshnessIndicator />, shortcuts: <ShortcutsButton />,
-          }}
-        >
-          {children}
-        </ViewChromeProvider>
+        {children}
       </main>
 
       {/* Mobile bottom tab bar */}

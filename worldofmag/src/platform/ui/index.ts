@@ -27,8 +27,6 @@ export {
   fieldControlStyle,
   ModuleView,
   ViewBar,
-  ViewChromeProvider,
-  useViewChrome,
   ViewEmpty,
   ViewLoading,
   ViewError,
@@ -46,7 +44,6 @@ export type {
   FieldChildProps,
   ModuleViewProps,
   ViewBarProps,
-  ViewChrome,
   ViewResource,
   ViewStateKind,
 } from "@/components/ui";

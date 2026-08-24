@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, RefObject } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { PageHeader } from "@/components/ui/home/PageHeader";
 import { ViewBar } from "./ViewBar";
 import { ChromeFrame } from "./ChromeFrame";
@@ -46,9 +46,6 @@ export interface ModuleViewProps {
   // ── pasek widoku ──
   filters?: ReactNode;
   actions?: ReactNode;
-  /** Ukryj chrom powłoki (widok osadzony, playground). */
-  hideChrome?: boolean;
-
   // ── stany brzegowe ──
   /**
    * `ready` renderuje `children`. Pozostałe wartości renderują wspólny stan brzegowy
@@ -132,7 +129,6 @@ export function ModuleView({
   breadcrumb,
   filters,
   actions,
-  hideChrome,
   state = "ready",
   empty,
   error,
@@ -147,6 +143,28 @@ export function ModuleView({
 }: ModuleViewProps) {
   const fill = layout === "fill";
   const compact = density === "compact";
+
+  /**
+   * Wysokość przyklejonego paska jako zmienna CSS na ramie.
+   *
+   * Czytają ją moduły, które mają WŁASNY przyklejony pasek wewnątrz treści (dziś: Wiadomości) —
+   * bez tego ich pasek przykleiłby się na wysokości 0 i wjechał pod ten. Publikujemy ją tylko
+   * w układzie `column`: w `fill` pasek nie należy do obszaru przewijania, więc dla elementów
+   * w środku jego wysokość wynosi zero.
+   */
+  const ramaRef = useRef<HTMLDivElement>(null);
+  const pasekRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const rama = ramaRef.current;
+    const pasek = pasekRef.current;
+    if (!rama || !pasek) return;
+    const ustaw = () => rama.style.setProperty("--view-bar-h", fill ? "0px" : `${pasek.offsetHeight}px`);
+    ustaw();
+    if (typeof ResizeObserver === "undefined") return;
+    const obs = new ResizeObserver(ustaw);
+    obs.observe(pasek);
+    return () => obs.disconnect();
+  }, [fill]);
 
   return (
     /**
@@ -163,6 +181,7 @@ export function ModuleView({
      * (potrzebny listom wirtualizowanym) zostają na wewnętrznym.
      */
     <div
+      ref={ramaRef}
       style={{
         position: "relative",
         flex: 1,
@@ -191,47 +210,103 @@ export function ModuleView({
         overflowY: fill ? "hidden" : "auto",
       }}
     >
+      {/**
+       * 085 (AC-4): NAGŁÓWEK PRZEWIJA SIĘ, PASEK WIDOKU ZOSTAJE.
+       *
+       * Zgłoszenie właściciela: „czy to dobrze, że scrolując stronę w dół te akcje nie przyklejają
+       * się do górnego paska?". Zmierzone przed zmianą: na /wiadomosci treść ma 11563 px przy oknie
+       * 800 px, więc po jednym przewinięciu zakładki i „Nowy temat" były poza zasięgiem.
+       *
+       * DLACZEGO PRZEBUDOWA, A NIE SAMO `position: sticky`: element przyklejony trzyma się tylko
+       * w granicach SWOJEGO RODZICA. Pasek stał dotąd w jednym opakowaniu z okruszkiem i nagłówkiem
+       * strony, więc `sticky` odkleiłby go po przewinięciu o wysokość tego opakowania — czyli
+       * dokładnie wtedy, kiedy zaczyna być potrzebny. Musi być BEZPOŚREDNIM dzieckiem kontenera
+       * przewijania i dlatego rozdzielamy blok nagłówka od paska.
+       *
+       * Tytuł i podtytuł świadomie ZOSTAJĄ przewijalne: przyklejenie ich zabrałoby na telefonie
+       * kilkadziesiąt pikseli listy na stałe, a to nie one były przedmiotem zgłoszenia.
+       */}
+      {(breadcrumb || !compact) && (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            maxWidth: width === "narrow" ? 640 : undefined,
+            margin: width === "narrow" ? "0 auto" : undefined,
+            // Bez dolnego odstępu — jego rolę przejmuje górny odstęp paska niżej, żeby suma
+            // pozostała dokładnie taka, jak przed rozdzieleniem.
+            padding: compact ? "0 12px" : fill ? "8px var(--view-padding) 0" : "var(--view-padding) var(--view-padding) 0",
+            display: "flex",
+            flexDirection: "column",
+            gap: fill ? 8 : 12,
+            flexShrink: 0,
+          }}
+        >
+          {breadcrumb && <div style={{ marginBottom: -4 }}>{breadcrumb}</div>}
+
+          {!compact && (
+            <PageHeader
+              icon={icon}
+              iconColor={iconColor}
+              title={title}
+              subtitle={subtitle}
+              href={href}
+              action={headerAction}
+            />
+          )}
+        </div>
+      )}
+
       <div
+        ref={pasekRef}
         style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: width === "narrow" ? 640 : undefined,
-          margin: width === "narrow" ? "0 auto" : undefined,
-          padding: compact ? "0 12px" : fill ? "8px var(--view-padding) 0" : "var(--view-padding)",
-          display: "flex",
-          flexDirection: "column",
-          gap: fill ? 8 : 12,
+          // W układzie `fill` pasek i tak nie przewija się (przewija się wyłącznie treść), więc
+          // przyklejanie byłoby tam bez skutku — i bez potrzeby.
+          position: fill ? "relative" : "sticky",
+          top: 0,
+          // Nad treścią modułu, w tym nad jego własnymi przyklejonymi paskami (Wiadomości: 30).
+          zIndex: 40,
           flexShrink: 0,
+          width: "100%",
+          // Nieprzezroczyste tło jest częścią mechanizmu, nie ozdobą: bez niego treść przewijałaby
+          // się widocznie POD paskiem.
+          background: "var(--bg-base)",
+          /**
+           * Odstępy przepisane 1:1 z opakowania sprzed rozdzielenia, żeby zmiana nie przesunęła
+           * ani jednego piksela: górny odstęp zastępuje dawny `gap` między nagłówkiem a paskiem,
+           * dolny — dawne dolne wypełnienie opakowania. Dolne wypełnienie należy teraz do PASKA,
+           * więc treść przewija się pod całą jego wysokością razem z odstępem, a nie wjeżdża
+           * w szczelinę pod obramowaniem.
+           */
+          padding: compact
+            ? "0 12px"
+            : fill
+              ? "8px var(--view-padding) 0"
+              : "12px var(--view-padding) var(--view-padding)",
         }}
       >
-        {breadcrumb && <div style={{ marginBottom: -4 }}>{breadcrumb}</div>}
-
-        {!compact && (
-          <PageHeader
-            icon={icon}
+        <div
+          style={{
+            width: "100%",
+            maxWidth: width === "narrow" ? 640 : undefined,
+            margin: width === "narrow" ? "0 auto" : undefined,
+          }}
+        >
+          <ViewBar
+            compact={compact}
+            title={compact ? title : undefined}
+            titleHref={compact ? href : undefined}
+            icon={compact ? icon : undefined}
             iconColor={iconColor}
-            title={title}
-            subtitle={subtitle}
-            href={href}
-            action={headerAction}
+            filters={filters}
+            actions={compact && headerAction ? (
+              <>
+                {actions}
+                {headerAction}
+              </>
+            ) : actions}
           />
-        )}
-
-        <ViewBar
-          compact={compact}
-          title={compact ? title : undefined}
-          titleHref={compact ? href : undefined}
-          icon={compact ? icon : undefined}
-          iconColor={iconColor}
-          filters={filters}
-          actions={compact && headerAction ? (
-            <>
-              {actions}
-              {headerAction}
-            </>
-          ) : actions}
-          hideChrome={hideChrome}
-        />
+        </div>
       </div>
 
       {/* Treść. W `fill` dostaje resztę wysokości i własne przewijanie; w `column`

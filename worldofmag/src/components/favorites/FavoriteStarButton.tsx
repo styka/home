@@ -20,12 +20,15 @@ const ICON_CHOICES = ["⭐", "📌", "🔥", "✅", "📝", "🛒", "💡", "�
 interface FavoriteStarButtonProps {
   favorites: FavoriteViewDTO[];
   /**
-   * `sidebar` — wiersz na liście nawigacji · `topbar` — sama ikona w pasku mobilnym ·
-   * `viewbar` — 043: wyeksponowany wiersz na SAMEJ GÓRZE sekcji ulubionych (desktop) ·
-   * `viewbar-inline` — 045: sama ikona w PASKU BIEŻĄCEGO WIDOKU, czyli tam, gdzie
-   * właściciel prosił o nią w 043; wtedy nie było wspólnego paska, więc się nie dało.
+   * `topbar` — sama ikona w górnym pasku (telefon) · `chrome` — sama ikona w rzędzie chromu
+   * w stopce panelu bocznego (komputer).
+   *
+   * 085: warianty `sidebar`, `viewbar` i `viewbar-inline` **usunięte**. Pierwsze dwa były martwe
+   * od 083, trzeci umarł tutaj, gdy gwiazdka wyszła z paska widoku do chromu konta. Martwe warianty
+   * w komponencie, który stoi w powłoce, są gorsze niż ich brak: następna osoba czyta je jako
+   * dostępną drogę i buduje na czymś, czego nikt nie sprawdza (lekcja z 084).
    */
-  placement: "sidebar" | "topbar" | "viewbar" | "viewbar-inline";
+  placement: "topbar" | "chrome";
 }
 
 /**
@@ -134,16 +137,7 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
   }
 
   const title = isSaved ? "Usuń to miejsce z ulubionych" : "Zapisz to miejsce w ulubionych";
-  // 043/AC-2: w wariancie `viewbar` etykieta mówi wprost, co przycisk zrobi z BIEŻĄCYM widokiem —
-  // „Dodaj do ulubionych" nie niosło informacji, że chodzi o miejsce, w którym właśnie jesteś.
-  const viewbarLabel = isSaved ? "Zapisano — kliknij, by usunąć" : "Zapisz ten widok";
-
-  const triggerClassName =
-    placement === "sidebar"
-      ? "flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
-      : placement === "viewbar"
-        ? "flex items-center gap-2 px-4 py-2 mx-2 rounded text-xs w-[calc(100%-1rem)] focus:outline-none"
-        : "flex items-center justify-center rounded focus:outline-none";
+  const triggerClassName = "flex items-center justify-center rounded focus:outline-none";
 
   const trigger = (
     <button
@@ -155,17 +149,15 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
       className={triggerClassName}
       style={{
         color: isSaved ? "var(--accent-amber)" : "var(--text-secondary)",
-        background: placement === "viewbar" ? "var(--bg-elevated)" : "transparent",
-        border: placement === "viewbar" ? "1px solid var(--border)" : "none",
+        background: "transparent",
+        border: "none",
         cursor: "pointer",
-        fontWeight: placement === "viewbar" ? 600 : undefined,
-        // Cel dotyku ≥32 px (C-31).
-        ...(placement === "topbar" || placement === "viewbar-inline" ? { width: 32, height: 32 } : null),
+        // Cel dotyku ≥32 px (C-31) — w obu wariantach ta sama ikona tej samej wielkości.
+        width: 32,
+        height: 32,
       }}
     >
-      <Star size={placement === "viewbar" ? 14 : 18} fill={isSaved ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
-      {placement === "sidebar" && <span>{isSaved ? "W ulubionych" : "Dodaj do ulubionych"}</span>}
-      {placement === "viewbar" && <span className="truncate">{viewbarLabel}</span>}
+      <Star size={18} fill={isSaved ? "var(--accent-amber)" : "none"} style={{ flexShrink: 0 }} />
     </button>
   );
 
@@ -182,15 +174,11 @@ export function FavoriteStarButton({ favorites, placement }: FavoriteStarButtonP
             position: "absolute",
             zIndex: 60,
             width: 268,
-            // `sidebar` siedzi na dole paska → popover otwiera się w GÓRĘ; `viewbar` jest na
-            // samej górze nawigacji, więc musi otwierać się w DÓŁ, inaczej wyjechałby poza ekran.
-            // `viewbar-inline` siedzi po prawej stronie paska widoku, więc popover
-            // musi być kotwiczony do prawej krawędzi — inaczej wyjeżdża poza ekran.
-            ...(placement === "sidebar"
-              ? { bottom: "100%", left: 8, marginBottom: 6 }
-              : placement === "viewbar"
-                ? { top: "100%", left: 8, marginTop: 6 }
-                : { top: "100%", right: 0, marginTop: 6 }),
+            // `chrome` siedzi w STOPCE panelu bocznego → okienko otwiera się w GÓRĘ i do prawej,
+            // inaczej wyszłoby pod dolną krawędź ekranu. `topbar` jest u góry → w dół.
+            ...(placement === "chrome"
+              ? { bottom: "100%", left: 0, marginBottom: 6 }
+              : { top: "100%", right: 0, marginTop: 6 }),
             background: "var(--bg-elevated)",
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg, 10px)",

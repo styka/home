@@ -102,20 +102,20 @@
 
 ## Faza 5 — Chrom konta i rama widoku *(AC-1..AC-7)*
 
-- [ ] **T-19** — **`NotificationBell`: wariant `chrome`.** Rozdzielenie dwóch dziś sklejonych decyzji
+- [x] **T-19** — **`NotificationBell`: wariant `chrome`.** Rozdzielenie dwóch dziś sklejonych decyzji
   (kształt wiersz/ikona · kierunek panelu góra/dół).
   *Gotowe, gdy:* `sidebar` i `topbar` wyglądają i działają dokładnie jak przed zmianą, a `chrome` to
   ikona z panelem otwieranym w górę.
 
-- [ ] **T-20** — **Rząd chromu w stopce panelu bocznego** (AC-1, desktop): dzwonek, gwiazdka,
+- [x] **T-20** — **Rząd chromu w stopce panelu bocznego** (AC-1, desktop): dzwonek, gwiazdka,
   ściągawka skrótów, tryb administratora. `PrzelacznikTrybuAdmina` wyprowadzony z nagłówka sekcji
   „Ulubione".
   *Gotowe, gdy:* na komputerze wszystkie cztery stoją w jednym rzędzie i działają.
 
-- [ ] **T-21** — **Gwiazdka w górnym pasku telefonu** (AC-1, mobile) obok dzwonka i przełącznika.
+- [x] **T-21** — **Gwiazdka w górnym pasku telefonu** (AC-1, mobile) obok dzwonka i przełącznika.
   *Gotowe, gdy:* zapis i odznaczenie widoku działa z telefonu, także na `/admin` (AC-3).
 
-- [ ] **T-22** — **Koniec wstrzykiwania chromu do paska widoku** (AC-2, AC-6, AC-7):
+- [x] **T-22** — **Koniec wstrzykiwania chromu do paska widoku** (AC-2, AC-6, AC-7):
   `ViewChromeProvider`/`useViewChrome` i `ViewChromeMenu` usunięte (`ViewResource` **zostaje**),
   `ViewBar` bez `hideChrome`, `FreshnessIndicator` + `dataFreshnessBus` + wywołanie
   `notifyDataRefreshed` skasowane (samo odświeżanie w tle **zostaje**), `FavoriteStarButton` bez
@@ -123,14 +123,14 @@
   *Gotowe, gdy:* w obszarze treści nie ma ani jednego wejścia do zapisu widoku, `tsc` i
   `check:ui-contract` zielone.
 
-- [ ] **T-23** — **Przyklejony pasek widoku** (AC-4, AC-5) — najtrudniejsze zadanie przebiegu.
+- [x] **T-23** — **Przyklejony pasek widoku** (AC-4, AC-5) — najtrudniejsze zadanie przebiegu.
   Przebudowa `ModuleView`: blok nagłówka i `ViewBar` stają się osobnymi, **bezpośrednimi** dziećmi
   kontenera przewijania; pasek dostaje `sticky`, tło ramy i dolną krawędź; wysokość publikowana jako
   `--view-bar-h`. Układ `fill` bez zmian.
   *Gotowe, gdy:* po przewinięciu o 800 px pasek widoczny na `/pogoda` (comfortable) i `/wiadomosci`
   (compact), odstępy niezmienione, `scrollRef` nadal wskazuje element, który się przewija.
 
-- [ ] **T-24** — **Wiadomości: własny przyklejony pasek pod paskiem widoku.** `top` paska nawigacji
+- [x] **T-24** — **Wiadomości: własny przyklejony pasek pod paskiem widoku.** `top` paska nawigacji
   i nagłówków sekcji liczone z `--view-bar-h`; zasłona do przewijania mierzona **jedną** miarą
   (dolna krawędź paska względem góry ramy) zamiast sumy dwóch.
   *Gotowe, gdy:* pasek nawigacji nie nachodzi na pasek widoku, a skok do tematu ląduje pod oboma.
