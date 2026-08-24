@@ -1346,7 +1346,6 @@
         "usunZrodlo": "Usuń źródło",
         "nazwaZrodlaNpTvn24": "Nazwa źródła (np. TVN24)",
         "dodajZrodlo": "Dodaj źródło",
-        "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",
         "opisZrodla": "Opis źródła",
         "dodajZBiblioteki": "Dodaj z biblioteki",
         "dodajRecznie": "Dodaj ręcznie",
@@ -1358,7 +1357,9 @@
         "oznaczCalyTematJako": "Oznacz cały temat jako przeczytany",
         "brakNowychWiadomosciW": "Brak nowych wiadomości w tym temacie.",
         "wlaczPodazanie": "Podążaj za czytanym tekstem",
-        "wylaczPodazanie": "Nie podążaj za czytanym tekstem"
+        "wylaczPodazanie": "Nie podążaj za czytanym tekstem",
+        "wszystkieTematyPuste": "Nic nowego w Twoich tematach",
+        "wszystkieTematyPusteOpis": "Puste tematy są ukryte. Odśwież moduł albo pokaż je w ustawieniach."
       },
       "NewsTimeline": {
         "liniaCzasuJestJeszcze": "Linia czasu jest jeszcze pusta. Powstanie przy najbliższym odświeżeniu — z materiałów, które trafią do tego tematu.",
@@ -1378,7 +1379,9 @@
       "NewsTimelineStream": {
         "dodajPierwszyTemat": "Dodaj pierwszy temat, żeby zobaczyć linię czasu.",
         "brakFaktowDlaFiltra": "Żaden fakt nie pasuje do wybranego filtra.",
-        "brakFaktowWcale": "Linia czasu jest jeszcze pusta — pojawi się po pierwszym odświeżeniu."
+        "brakFaktowWcale": "Linia czasu jest jeszcze pusta — pojawi się po pierwszym odświeżeniu.",
+        "wszystkieTematyPuste": "Nic nowego na linii czasu",
+        "wszystkieTematyPusteOpis": "Tematy bez wpisów są ukryte. Odśwież moduł albo pokaż je w ustawieniach."
       },
       "SourceFilter": {
         "wszystkie": "Wszystkie",
@@ -1387,6 +1390,13 @@
         "wszystkiePortale": "Wszystkie portale",
         "nicNiePasuje": "Nic nie pasuje",
         "wyczyscWybor": "Wyczyść wybór"
+      },
+      "NewsModuleSettings": {
+        "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",
+        "dlugoscOpis": "Dotyczy nowych streszczeń. Długość pojedynczej wiadomości zmienisz na jej karcie.",
+        "listaTematow": "Lista tematów",
+        "pokazujPusteTematy": "Pokazuj tematy bez nowych wiadomości",
+        "pokazujPusteOpis": "Domyślnie temat, w którym nic nie przyszło, jest ukryty — nie zabiera miejsca na liście."
       }
     },
     "notes": {
@@ -2187,10 +2197,12 @@
         "nieUdaloSiePrzygotowac": "Nie udało się przygotować propozycji.",
         "sprobujPonownie": "Spróbuj ponownie",
         "modelNieZaproponowalNic": "Model nie zaproponował nic na tę porę. Spróbuj innego dnia lub pory albo poproś o nowe propozycje.",
-        "zapisanePomysly": "Zapisane pomysły →",
+        "zapisanePomysly": "Zapisane pomysły",
         "propozycjaZwiazanaZKonkretnym": "Propozycja związana z konkretnym miejscem w okolicy",
         "ogladalesJuzSzczegolyTej": "Oglądałeś już szczegóły tej propozycji",
-        "juzRozwazana": "już rozważana"
+        "juzRozwazana": "już rozważana",
+        "propozycje": "Propozycje",
+        "nowePropozycje": "Nowe propozycje"
       },
       "LocationMapPicker": {
         "wczytujeMape": "Wczytuję mapę…",
@@ -2204,14 +2216,13 @@
         "obserwatoryCzekaja": "Obserwatory czekają na ocenę.",
         "obserwatoryCzekajaOpis": "Sprawdzenie prognozy pod kątem Twoich warunków kosztuje wywołanie modelu, więc nie dzieje się samo przy wejściu na stronę.",
         "ocenObserwatory": "Oceń obserwatory",
-        "ocenPonownie": "Oceń ponownie",
         "prognozaAlboObserwatoryZmienily": "Prognoza albo lista obserwatorów zmieniła się od czasu tej oceny",
         "najpierwOcen": "Najpierw oceń obserwatory — bez oceny nie ma czego układać po stanie",
         "ukladWgStanu": "Lista ułożona wg stanu",
         "ukladSekcje": "Sekcje wg stanu",
         "ukladKolejnosc": "Kolejność dodania",
-        "filtrNicNieZostawil": "Żaden obserwator nie jest w wybranym stanie.",
-        "bezOceny": "Bez oceny"
+        "bezOceny": "Bez oceny",
+        "przeanalizujNaNowo": "Przeanalizuj pogodę na nowo"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",

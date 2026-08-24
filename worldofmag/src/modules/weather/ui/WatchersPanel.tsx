@@ -12,13 +12,7 @@ import { type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import type { AiSectionMode } from "@/platform/ai/sectionMode";
 import { WEATHER_PRESETS, HORIZON_META, type Horizon } from "../lib/presets";
-import {
-  STATUS_ORDER,
-  poStanie,
-  wSekcje,
-  liczniki,
-  type WatchersLayout,
-} from "../lib/uklad";
+import { poStanie, wSekcje, type WatchersLayout } from "../lib/uklad";
 import {
   evaluateWatchers,
   addPresetWatcher,
@@ -95,7 +89,6 @@ export function WatchersPanel({
   // 082: układ i filtr listy. Stan lokalny + zapis w tle, żeby klik był natychmiastowy —
   // preferencja układu nie jest danymi, na które warto czekać.
   const [layout, setLayout] = useState<WatchersLayout>(pref.watchersLayout);
-  const [filtr, setFiltr] = useState<WatcherStatus[]>(pref.watchersFilter);
 
   /**
    * 080 (Z11): `force` znaczy „użytkownik właśnie o to poprosił".
@@ -195,11 +188,8 @@ export function WatchersPanel({
   const statusOf = (w: WatcherDTO): WatcherStatus | null =>
     (w.enabled ? verdictById.get(w.id)?.status : null) ?? null;
 
-  const licznikiStanow = liczniki(watchers, statusOf);
-
-  function zapisz(patch: { layout?: WatchersLayout; filter?: WatcherStatus[] }) {
+  function zapisz(patch: { layout?: WatchersLayout }) {
     if (patch.layout !== undefined) setLayout(patch.layout);
-    if (patch.filter !== undefined) setFiltr(patch.filter);
     startTransition(async () => {
       try {
         await setWatchersView(patch);
@@ -210,18 +200,15 @@ export function WatchersPanel({
     });
   }
 
-  function przelaczStan(s: WatcherStatus) {
-    zapisz({ filter: filtr.includes(s) ? filtr.filter((x) => x !== s) : [...filtr, s] });
-  }
-
-  // Filtr działa tylko po ocenie: przed nią odsiewałby wszystko, bo żaden obserwator nie ma stanu.
-  const widoczne =
-    oceniono && filtr.length > 0
-      ? watchers.filter((w) => {
-          const s = statusOf(w);
-          return s !== null && filtr.includes(s);
-        })
-      : watchers;
+  /**
+   * 085 (AC-22): FILTRA STANÓW JUŻ NIE MA.
+   *
+   * Chipsy „Spełnione 0 / Częściowo 3 / …" istniały wyłącznie po to, żeby nimi filtrować, a
+   * właściciel powiedział wprost: „nie chcemy takiego filtra". Przy okazji znika powód, dla którego
+   * pasek łamał się na drugą linię przy 360 px. Liczby stanów nie giną — pokazuje je układ
+   * „sekcje", gdzie stoją przy nagłówku swojej grupy, czyli obok rzeczy, których dotyczą.
+   */
+  const widoczne = watchers;
 
   const uporzadkowane = oceniono && layout !== "manual" ? poStanie(widoczne, statusOf) : widoczne;
   const sekcje = oceniono && layout === "grouped" ? wSekcje(widoczne, statusOf) : null;
@@ -307,16 +294,8 @@ export function WatchersPanel({
           <Bell size={18} className="text-[var(--accent-amber)]" /> Obserwatory pogody
         </h2>
         <div className="flex gap-2">
-          {watchers.length > 0 && (
-            <button
-              onClick={() => evaluate(true)}
-              disabled={loading}
-              className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              title="Przelicz oceny"
-            >
-              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-            </button>
-          )}
+          {/* 085 (AC-18): „Przelicz oceny" wyszło stąd do paska nad listą — ta sama czynność stała
+              w dwóch miejscach naraz, a po scaleniu paska drugie byłoby już tylko dubletem. */}
           <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
             <Plus size={14} /> Dodaj
           </Button>
@@ -346,44 +325,17 @@ export function WatchersPanel({
         </div>
       ) : (
         <div className="space-y-2">
-          {/* 082: pasek stanu — liczniki (klik = filtr) i wybór układu. Stoi POD nagłówkiem sekcji,
-              a nie w nim, bo w nagłówku mieszkają akcje sekcji („Dodaj", „Przelicz"), a to jest
-              sterowanie treścią listy. Znika, gdy obserwator jest jeden: przy jednym liczniki
-              powtarzałyby to, co widać na jego własnym znaczniku. */}
-          {watchers.length > 1 && (
-            <div className="flex flex-wrap items-center gap-1.5 pb-1">
-              {STATUS_ORDER.map((sKey) => {
-                const style = STATUS_STYLE[sKey];
-                const aktywny = filtr.includes(sKey);
-                const ile = licznikiStanow[sKey];
-                return (
-                  <button
-                    key={sKey}
-                    type="button"
-                    onClick={() => przelaczStan(sKey)}
-                    disabled={!oceniono}
-                    aria-pressed={aktywny}
-                    title={oceniono ? style.hint : t("najpierwOcen")}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors",
-                      "disabled:cursor-not-allowed disabled:opacity-40",
-                      aktywny
-                        ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]",
-                    )}
-                    style={{ borderColor: aktywny ? style.color : "var(--border)" }}
-                  >
-                    <span
-                      className="inline-block h-2 w-2 shrink-0 rounded-full"
-                      style={{ background: style.color }}
-                    />
-                    {style.label}
-                    <span className="font-semibold text-[var(--text-primary)]">{ile}</span>
-                  </button>
-                );
-              })}
-
-              <div className="ml-auto flex items-center gap-0.5">
+          {/**
+           * 085 (AC-18, AC-19): JEDEN pasek sterowania NAD listą.
+           *
+           * Zgłoszenie właściciela: informacja o aktualności oceny i wejście do jej ponowienia stały
+           * na samym DOLE, pod całą ścianą obserwatorów, drobnym drukiem — więc o tym, że patrzy się
+           * na nieaktualne dane, dowiadywał się na końcu. Teraz układ listy (po lewej) i stan treści
+           * AI (po prawej) stoją razem, u góry. Nic nie ubyło: `AiContentMeta` dostaje ten sam komplet
+           * propsów, co w bloku, który zniknął ze stopki.
+           */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-1">
+              <div className="flex items-center gap-0.5">
                 {(
                   [
                     { key: "status" as const, Icon: ArrowDownUp, label: t("ukladWgStanu") },
@@ -410,12 +362,24 @@ export function WatchersPanel({
                   </button>
                 ))}
               </div>
-            </div>
-          )}
 
-          {oceniono && filtr.length > 0 && uporzadkowane.length === 0 && (
-            <p className="py-3 text-sm text-[var(--text-muted)]">{t("filtrNicNieZostawil")}</p>
-          )}
+              {/* Stan treści AI po prawej — ten sam komponent, co w pozostałych sekcjach AI. */}
+              <div className="ml-auto min-w-0">
+                <AiContentMeta
+                  generatedAt={generatedAt}
+                  stale={stale}
+                  busy={loading}
+                  onRefresh={() => evaluate(true)}
+                  refreshLabel={t("przeanalizujNaNowo")}
+                  staleHint={t("prognozaAlboObserwatoryZmienily")}
+                  usage={usage}
+                  swiezy={!zPamieci}
+                  sectionKind="weather.watchers"
+                  mode={mode}
+                  onModeChange={setMode}
+                />
+              </div>
+          </div>
 
           {sekcje
             ? sekcje.map((g) => (
@@ -436,26 +400,6 @@ export function WatchersPanel({
                 </div>
               ))
             : uporzadkowane.map((w) => karta(w))}
-        </div>
-      )}
-
-      {/* 080 (Z11): pasek sekcji AI — kiedy ocena powstała, czy jest nieaktualna, ile kosztowała
-          i kiedy ma powstawać sama. Ten sam komponent, co w pozostałych sekcjach AI. */}
-      {!pending && watchers.length > 0 && (
-        <div className="mt-3 border-t border-[var(--border)] pt-2">
-          <AiContentMeta
-            generatedAt={generatedAt}
-            stale={stale}
-            busy={loading}
-            onRefresh={() => evaluate(true)}
-            refreshLabel={t("ocenPonownie")}
-            staleHint={t("prognozaAlboObserwatoryZmienily")}
-            usage={usage}
-            swiezy={!zPamieci}
-            sectionKind="weather.watchers"
-            mode={mode}
-            onModeChange={setMode}
-          />
         </div>
       )}
 

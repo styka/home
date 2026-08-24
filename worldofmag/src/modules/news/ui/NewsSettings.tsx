@@ -6,25 +6,20 @@ import { Plus, Trash2, Library } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
-import { SUMMARY_LENGTHS } from "@/lib/news/format";
 import { SourceCatalogPicker } from "./SourceCatalogPicker";
 import { NaglowekSekcji } from "./sekcjeTematow";
 import {
   createSource,
   updateSource,
   deleteSource,
-  setDefaultSummaryLength,
   type SourceDTO,
-  type SummaryLength,
 } from "../actions/news";
 
 export function NewsSettings({
   sources,
-  defaultLength,
   onChanged,
 }: {
   sources: SourceDTO[];
-  defaultLength: SummaryLength;
   onChanged: () => void;
 }) {
   const t = useTranslations("modules.news.NewsSettings");
@@ -68,13 +63,11 @@ export function NewsSettings({
   /**
    * 083 (AC-26..AC-28): zakładka Źródeł przestała być „krzywa".
    *
-   * Trzy rzeczy naraz, wszystkie z jednego zgłoszenia właściciela („prezentacja listy jest krzywa…
-   * ustawienie długości streszczeń na samym dole… natłok elementów"):
+   * 085 (AC-17): ustawienie długości streszczeń WYSZŁO stąd do zakładki ustawień modułu — nie jest
+   * cechą żadnego kanału, więc w liście źródeł było gościem. Punkt 1 poniżej opisuje więc stan
+   * historyczny; zostaje, bo tłumaczy, czemu w ogóle tu stało.
    *
-   *  1. **Ustawienie długości streszczeń stoi NAD listą.** Było pod nią — a lista rośnie z każdym
-   *     dodanym kanałem, więc ustawienie, które zmienia się raz, uciekało coraz niżej i przy
-   *     kilkunastu źródłach trzeba było przewinąć ekran, żeby je zobaczyć.
-   *  2. **Wiersz ma STAŁĄ strukturę.** Poprzednia wersja stawiała nazwę, opis, adres i kosz obok
+   *  1. **Wiersz ma STAŁĄ strukturę.** Poprzednia wersja stawiała nazwę, opis, adres i kosz obok
    *     siebie w zawijanym `flex`, więc szerokość każdej kolumny zależała od DŁUGOŚCI NAZWY danego
    *     kanału — pola opisu zaczynały się w innym miejscu w każdym wierszu i to właśnie wyglądało
    *     na krzywe. Siatka o zadanych kolumnach ustawia je w jednej osi niezależnie od treści.
@@ -84,26 +77,6 @@ export function NewsSettings({
    */
   return (
     <div className="space-y-6">
-      <section>
-        <NaglowekSekcji tytul={t("domyslnaDlugoscStreszczen")} />
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SUMMARY_LENGTHS.map((l) => (
-            <button
-              key={l.key}
-              onClick={() => run(() => setDefaultSummaryLength(l.key), "Zapisano")}
-              className={cn(
-                "rounded-md border px-3 py-2.5 text-sm transition-colors",
-                defaultLength === l.key
-                  ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-              )}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
       <section>
         <NaglowekSekcji
           tytul={t("zrodlaWiadomosci")}

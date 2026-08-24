@@ -28,6 +28,7 @@ export default async function WiadomosciRootPage({
       topics={topics}
       sources={sources}
       defaultLength={pref.defaultSummaryLength}
+      showEmptyTopics={pref.showEmptyTopics}
       viewParams={searchParams ?? {}}
     />
   );

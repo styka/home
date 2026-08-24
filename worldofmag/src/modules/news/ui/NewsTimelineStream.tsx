@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { type ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
+import { ViewEmpty } from "@/components/ui/view";
 import { NewsTimeline } from "./NewsTimeline";
 import { SekcjaTematu } from "./sekcjeTematow";
 import type { StreamTimelineTopicDTO } from "../actions/news";
@@ -24,6 +25,7 @@ export function NewsTimelineStream({
   filtrAktywny,
   czytanyTemat,
   zarejestruj,
+  wszystkieUkryte = false,
   akcjeTematu,
 }: {
   /** Tematy JUŻ przefiltrowane przez pasek nawigacji. */
@@ -32,6 +34,8 @@ export function NewsTimelineStream({
   filtrAktywny: boolean;
   czytanyTemat: string | null;
   zarejestruj: (id: string, el: HTMLElement | null) => void;
+  /** 085 (AC-16): lista jest pusta, bo ODSIALIŚMY puste tematy — a nie dlatego, że ich nie ma. */
+  wszystkieUkryte?: boolean;
   akcjeTematu?: (topicId: string) => ReactNode;
 }) {
   const t = useTranslations("modules.news.NewsTimelineStream");
@@ -44,11 +48,17 @@ export function NewsTimelineStream({
     );
   }
 
+  // 085 (AC-16): ta sama zasada, co w strumieniu wiadomości — „nie masz tematów" i „wszystkie są
+  // dziś puste" to dwa różne komunikaty.
   if (topics.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-        {t("dodajPierwszyTemat")}
-      </div>
+    return wszystkieUkryte ? (
+      <ViewEmpty
+        icon={<CalendarClock size={20} />}
+        title={t("wszystkieTematyPuste")}
+        description={t("wszystkieTematyPusteOpis")}
+      />
+    ) : (
+      <ViewEmpty title={t("dodajPierwszyTemat")} />
     );
   }
 

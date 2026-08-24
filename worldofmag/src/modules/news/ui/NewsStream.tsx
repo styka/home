@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { CheckCheck, Crosshair, Headphones, Loader2 } from "lucide-react";
+import { CheckCheck, Crosshair, Headphones, Loader2, Newspaper } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
@@ -10,6 +10,7 @@ import { NewsReader, type ReaderBlock } from "./NewsReader";
 import { primeSpeech } from "@/lib/tts";
 import { SekcjaTematu } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { ViewEmpty } from "@/components/ui/view";
 import {
   acknowledgeAllItems,
   acknowledgeTopicItems,
@@ -75,6 +76,7 @@ export function NewsStream({
   podazanie,
   onPodazanie,
   onGra,
+  wszystkieUkryte = false,
   akcjeTematu,
 }: {
   /** Tematy JUŻ przefiltrowane przez pasek nawigacji — widok nie zna reguł filtrowania. */
@@ -93,6 +95,8 @@ export function NewsStream({
   onPodazanie: (wlaczone: boolean) => void;
   /** Czy lektor faktycznie czyta — rama widoku gasi podążanie tylko wtedy, gdy jest co gasić. */
   onGra?: (gra: boolean) => void;
+  /** 085 (AC-16): lista jest pusta, bo ODSIALIŚMY puste tematy — a nie dlatego, że ich nie ma. */
+  wszystkieUkryte?: boolean;
   /** Akcje tematu (edycja, usunięcie) wstawiane do przyklejonego nagłówka sekcji. */
   akcjeTematu?: (topicId: string) => ReactNode;
 }) {
@@ -226,11 +230,25 @@ export function NewsStream({
     );
   }
 
+  /**
+   * 085 (AC-16): dwa różne powody pustej listy, dwa różne komunikaty.
+   *
+   * „Nie masz jeszcze tematów" i „wszystkie tematy są dziś puste, bo ukrywamy puste" to nie jest to
+   * samo zdanie. Do 085 istniał tylko pierwszy, więc po włączeniu ukrywania użytkownik z pełną listą
+   * tematów zobaczyłby zachętę do dodania pierwszego — czyli komunikat wprost nieprawdziwy.
+   * Używamy wspólnego `ViewEmpty`, a nie własnego pudełka: stan pusty ma wyglądać tak samo w całej
+   * aplikacji (C-33), a rama widoku nie może tu przyjąć `state="empty"`, bo schowałaby zakładki
+   * modułu — czyli jedyną drogę do ustawień, którymi te tematy się odsłania.
+   */
   if (topics.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-[var(--text-muted)]">
-        {t("dodajPierwszyTematDo")}
-      </div>
+    return wszystkieUkryte ? (
+      <ViewEmpty
+        icon={<Newspaper size={20} />}
+        title={t("wszystkieTematyPuste")}
+        description={t("wszystkieTematyPusteOpis")}
+      />
+    ) : (
+      <ViewEmpty title={t("dodajPierwszyTematDo")} />
     );
   }
 

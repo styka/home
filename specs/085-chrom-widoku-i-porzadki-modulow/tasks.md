@@ -45,33 +45,33 @@
 
 ## Faza 2 — Moduł Wiadomości *(AC-14..AC-17)*
 
-- [ ] **T-7** — **Odsiew pustych tematów w widoku.** `widoczneWiadomosci`/`widocznaOs` i lista `grupy`
+- [x] **T-7** — **Odsiew pustych tematów w widoku.** `widoczneWiadomosci`/`widocznaOs` i lista `grupy`
   dla nawigatora liczone z JEDNEGO odsianego zbioru — lista skoku i treść nie mogą się rozjechać.
   *Gotowe, gdy:* temat bez pozycji znika z obu miejsc naraz, a po włączeniu przełącznika wraca do obu.
 
-- [ ] **T-8** — **Pustka, gdy odsialiśmy wszystko** (AC-16): komunikat „nic nowego, odśwież" przez
+- [x] **T-8** — **Pustka, gdy odsialiśmy wszystko** (AC-16): komunikat „nic nowego, odśwież" przez
   `state`/`empty` ramy, nie ręcznie rysowany blok (C-33).
   *Gotowe, gdy:* przy wszystkich tematach pustych widok mówi, co się stało, i daje wyjście.
 
-- [ ] **T-9** — **Czwarta zakładka: „Ustawienia".** Klucz stanu widoku rozszerzony o `sources`;
+- [x] **T-9** — **Czwarta zakładka: „Ustawienia".** Klucz stanu widoku rozszerzony o `sources`;
   `NewsSettings` zostaje samą listą źródeł; nowy `NewsModuleSettings` niesie długość streszczeń
   (przeniesiona 1:1) + przełącznik pustych tematów.
   *Gotowe, gdy:* „Źródła" nie zawierają ustawień, „Ustawienia" zawierają oba, oba zapisują się do bazy.
 
 ## Faza 3 — Moduł Pogoda *(AC-18..AC-23)*
 
-- [ ] **T-10** — **Chipsy filtra statusów usunięte** (AC-22): stan filtra, przełączanie, komunikat
+- [x] **T-10** — **Chipsy filtra statusów usunięte** (AC-22): stan filtra, przełączanie, komunikat
   „filtr nic nie zostawił" i osierocone klucze tekstów. Liczby stanów zostają w układzie „sekcje".
   *Gotowe, gdy:* w sekcji obserwatorów nie ma ani jednego chipa, a liczniki nadal da się zobaczyć.
 
-- [ ] **T-11** — **Jeden pasek NAD listą obserwatorów** (AC-18, AC-19): układ listy po lewej,
+- [x] **T-11** — **Jeden pasek NAD listą obserwatorów** (AC-18, AC-19): układ listy po lewej,
   `AiContentMeta` po prawej, z **kompletem** dotychczasowych propsów; blok na dole znika.
   *Gotowe, gdy:* porównanie propsów `AiContentMeta` przed/po pokazuje zero ubytków.
 
-- [ ] **T-12** — **Nazwa ponownej analizy** (AC-20): `refreshLabel` przestaje brzmieć „Oceń ponownie".
+- [x] **T-12** — **Nazwa ponownej analizy** (AC-20): `refreshLabel` przestaje brzmieć „Oceń ponownie".
   *Gotowe, gdy:* etykieta mówi, co się stanie, i mieści się w pasku.
 
-- [ ] **T-13** — **Wybór „nowe propozycje / zapisane pomysły" u góry sekcji „Co robić?"** (AC-23),
+- [x] **T-13** — **Wybór „nowe propozycje / zapisane pomysły" u góry sekcji „Co robić?"** (AC-23),
   wzorem `ContentSwitch`; odnośnik ze stopki znika.
   *Gotowe, gdy:* oba wejścia widoczne bez przewijania.
 
