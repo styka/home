@@ -5,6 +5,11 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { assertProjectAccess } from "@/modules/tasks/contract";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { enqueue } from "@/platform/jobs/queue";
+import { ensureJobWorker } from "@/lib/jobs/registry";
+import { roboczyTytul } from "@/lib/ai/feedbackTitle";
+import { logEvent } from "@/platform/observability/log";
+import type { TaskPriority } from "@/types";
 
 // 031: „wyrzutnik" na zgłoszenia od użytkowników.
 //
@@ -24,6 +29,19 @@ const FEEDBACK_PROJECT_CONFIG_KEY = "feedback_project_id";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 60_000;
+
+/**
+ * 088: górny limit zrzutu wskazanego elementu (długość data URL-a).
+ *
+ * Obraz trzymamy jako data URL w kolumnie tekstowej — dokładnie tak, jak załączniki notatek i wizyt.
+ * Limit jest po to, żeby zrzut z ekranu 4K nie rozdął wiersza zadania; klient próbuje najpierw PNG,
+ * potem JPEG, a gdy i to nie wystarczy — nie przysyła nic. Tu jest ostatnia linia obrony.
+ */
+const MAX_SHOT_CHARS = 1_500_000;
+
+/** Priorytet domyślny zgłoszenia: „coś do zrobienia", ale nie awaria. */
+const DEFAULT_PRIORITY: TaskPriority = "MEDIUM";
+const PRIORITIES: readonly TaskPriority[] = ["NONE", "LOW", "MEDIUM", "HIGH", "URGENT"];
 
 /**
  * Wyznacza projekt-skrzynkę zgłoszeń:
@@ -87,6 +105,17 @@ export interface SubmitFeedbackResult {
   projectId: string;
   /** Czy użytkownik może otworzyć utworzone zadanie (decyduje o przycisku „Otwórz w zadaniach"). */
   canRead: boolean;
+  /** 088: tytuł, pod jakim zgłoszenie faktycznie powstało — UI potwierdza nim utworzenie od ręki. */
+  title: string;
+  /** 088: czy do zadania trafił zrzut wskazanego elementu (odrzucony zrzut nie jest błędem). */
+  hasScreenshot: boolean;
+}
+
+/** 088: czy zrzut nadaje się do zapisania. Zły zrzut MILCZY — zgłoszenie ma powstać zawsze. */
+function poprawnyZrzut(dataUrl: string | undefined): dataUrl is string {
+  if (!dataUrl) return false;
+  if (!dataUrl.startsWith("data:image/")) return false;
+  return dataUrl.length <= MAX_SHOT_CHARS;
 }
 
 /**
@@ -94,23 +123,72 @@ export interface SubmitFeedbackResult {
  * — to jedyne miejsce w aplikacji z takim odstępstwem (patrz komentarz na górze pliku).
  */
 export async function submitFeedbackTask(input: {
-  title: string;
+  /**
+   * 088: tytuł jest OPCJONALNY.
+   *
+   * Podaje go wyłącznie asystent, gdy zgłoszenie wychodzi ze zwykłej rozmowy (akcja
+   * `submit_feedback` — model już wtedy wymyślił tytuł). Tryb wskazywania go NIE podaje: zapis ma
+   * być natychmiastowy, więc tytuł roboczy nadajemy tutaj, a ładniejszy dorabia zadanie w tle.
+   */
+  title?: string;
   description?: string;
+  /** 088: priorytet wybrany przez zgłaszającego w chwili opisywania. */
+  priority?: TaskPriority;
+  /** 088: zrzut wskazanego elementu jako data URL (PNG/JPEG). */
+  screenshotDataUrl?: string;
 }): Promise<SubmitFeedbackResult> {
   const user = await requireAuth();
 
-  const title = input.title?.trim().slice(0, TITLE_MAX);
-  if (!title) throw new Error("Tytuł zgłoszenia nie może być pusty");
   const description = (input.description ?? "").slice(0, DESCRIPTION_MAX);
+  const podanyTytul = input.title?.trim().slice(0, TITLE_MAX);
+  // Bez tytułu i bez opisu nie ma zgłoszenia — ale sam brak tytułu nie jest już błędem.
+  if (!podanyTytul && !description.trim()) throw new Error("Zgłoszenie nie może być puste");
+  const title = podanyTytul || roboczyTytul(description);
+  const priority = PRIORITIES.includes(input.priority as TaskPriority)
+    ? (input.priority as TaskPriority)
+    : DEFAULT_PRIORITY;
 
   const projectId = await resolveFeedbackProjectId();
   if (!projectId) throw new Error("Skrzynka zgłoszeń nie jest skonfigurowana — skontaktuj się z administratorem.");
 
   // `createdById` zostawia ślad, KTO zgłosił (admin widzi autora zgłoszenia w zadaniu).
   const task = await prisma.task.create({
-    data: { title, description, projectId, createdById: user.id },
+    data: { title, description, projectId, createdById: user.id, priority },
     select: { id: true },
   });
+
+  // 088 (AC-6, AC-8): zrzut jest DODATKIEM. Zapisujemy go osobno i po zadaniu — gdyby poszedł
+  // wspólną transakcją, uszkodzony obraz kasowałby całe zgłoszenie, czyli to, po co tu przyszliśmy.
+  const hasScreenshot = poprawnyZrzut(input.screenshotDataUrl);
+  if (hasScreenshot) {
+    try {
+      await prisma.taskAttachment.create({
+        data: { taskId: task.id, name: "Zrzut wskazanego elementu", kind: "screenshot", url: input.screenshotDataUrl! },
+      });
+    } catch (e) {
+      logEvent("warn", "feedback.zrzut.nieudany", { taskId: task.id, blad: String(e) });
+    }
+  }
+
+  // 088 (AC-1, AC-3, AC-4): ładny tytuł dorabia KOLEJKA, nie ta akcja.
+  //
+  // Żądanie wystrzelone z przeglądarki ginie razem z zamknięciem asystenta — a to jest dokładnie
+  // ten scenariusz, dla którego cała zmiana powstała. Kolejka ma trwały stan i ponawianie, więc
+  // tytuł dojedzie niezależnie od tego, co zgłaszający zrobi ze swoją kartą. Awaria kolejkowania
+  // NIE może wywrócić zgłoszenia: zadanie ma już pełnoprawny tytuł roboczy.
+  if (!podanyTytul) {
+    try {
+      await enqueue(
+        "tasks.feedbackTitle",
+        { taskId: task.id, tytulRoboczy: title },
+        { ownerId: user.id, dedupeKey: `tasks.feedbackTitle:${task.id}`, maxAttempts: 2 }
+      );
+      // Worker startuje leniwie i tylko z tras `/api/jobs`; ta ścieżka ich nie dotyka.
+      ensureJobWorker();
+    } catch (e) {
+      logEvent("warn", "feedback.tytul.niezakolejkowany", { taskId: task.id, blad: String(e) });
+    }
+  }
 
   let canRead = false;
   try {
@@ -122,5 +200,5 @@ export async function submitFeedbackTask(input: {
 
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${projectId}`);
-  return { taskId: task.id, projectId, canRead };
+  return { taskId: task.id, projectId, canRead, title, hasScreenshot };
 }

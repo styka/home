@@ -52,13 +52,13 @@
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-6** — **`getTaskAttachments`** w `src/modules/tasks/actions/tasks.ts` (plan §3.2):
+- [x] **T-6** — **`getTaskAttachments`** w `src/modules/tasks/actions/tasks.ts` (plan §3.2):
   guard `assertTaskAccess`, jawne `take: SUFIT_LISTY`, DTO `{ id, name, kind, url, createdAt }`.
   Wpis w `src/lib/ai/action-coverage.json` (`kind: "read"`, `status: "excluded"`,
   `reason: "internal"`, `access: "shared"`).
   *Gotowe, gdy:* `npm run check:ai-coverage` i `npm run check:pagination` zielone.
 
-- [ ] **T-7** — **`submitFeedbackTask` przyjmuje priorytet i zrzut** (plan §3.1):
+- [x] **T-7** — **`submitFeedbackTask` przyjmuje priorytet i zrzut** (plan §3.1):
   opcjonalne `priority` (domyślnie `"MEDIUM"`) i `screenshotDataUrl`; walidacja zrzutu
   (`data:image/` + limit 1,5 MB) — **niepoprawny/za duży zrzut jest pomijany po cichu, zgłoszenie
   powstaje zawsze**; zapis `TaskAttachment` po utworzeniu zadania; `revalidatePath` bez zmian.
@@ -66,11 +66,11 @@
   *Gotowe, gdy:* zgłoszenie z zrzutem tworzy zadanie **i** załącznik, a zgłoszenie z uszkodzonym
   zrzutem tworzy samo zadanie bez błędu (AC-6, AC-8, AC-9, AC-11).
 
-- [ ] **T-8** — **Tytuł roboczy jako czysta funkcja**: `src/lib/ai/feedbackTitle.ts` `roboczyTytul(opis)`
+- [x] **T-8** — **Tytuł roboczy jako czysta funkcja**: `src/lib/ai/feedbackTitle.ts` `roboczyTytul(opis)`
   → `🐛 ` + pierwsze zdanie/≤80 znaków + test jednostkowy (pusty opis, bardzo długi, wielozdaniowy).
   *Gotowe, gdy:* test przechodzi w `npm run test:unit`, a funkcja nie dotyka bazy ani Reacta.
 
-- [ ] **T-9** — **Zadanie w tle `tasks.feedbackTitle`** (plan §3.3):
+- [x] **T-9** — **Zadanie w tle `tasks.feedbackTitle`** (plan §3.3):
   `src/modules/tasks/jobs/feedbackTitle.ts` + `src/modules/tasks/jobs/index.ts`, wpięcie **leniwym**
   polem `jobs` w `src/modules/tasks/module.server.ts`. Handler: pomija zadanie, którego tytuł nie jest
   roboczy (idempotencja); **jedno** `chatComplete` na typie `dispatch`; zapis przez `updateWithVersion`
@@ -80,7 +80,7 @@
   *Gotowe, gdy:* `check:content-memory`, `check:cost-badge`, `check:versioning`, `check:logs`
   i `check:module-registry` zielone, a zadanie w kolejce podmienia tytuł (AC-3, AC-4).
 
-- [ ] **T-10** — **Kolejkowanie tytułu z akcji zgłoszenia**: `submitFeedbackTask` po utworzeniu
+- [x] **T-10** — **Kolejkowanie tytułu z akcji zgłoszenia**: `submitFeedbackTask` po utworzeniu
   zadania woła `enqueueJob("tasks.feedbackTitle", { taskId }, { ownerId, dedupeKey })` **w try/catch** —
   awaria kolejki nie może wywrócić zgłoszenia.
   *Gotowe, gdy:* zgłoszenie wraca natychmiast, w kolejce jest jedno zadanie, a przy wyłączonej
