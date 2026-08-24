@@ -2,17 +2,20 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useViewChrome } from "./ViewChrome";
-import { ViewChromeMenu } from "./ViewChromeMenu";
 
 /**
  * 045 — pasek bieżącego widoku. Trzy strefy:
  *
  *   [ filtry modułu ] … [ akcje modułu ] [ chrom powłoki ]
  *
- * Moduł podaje wyłącznie `filters` i `actions`. Chrom (gwiazdka ulubionych, świeżość
- * danych, ściągawka skrótów) przychodzi z kontekstu wypełnianego przez `AppShell` —
- * moduł o nim nie wie i nie musi go przekazywać. To jest cała istota kontraktu widoku.
+ * Moduł podaje wyłącznie `filters` i `actions`.
+ *
+ * 085: chromu powłoki (gwiazdka ulubionych, świeżość danych, ściągawka skrótów) TU JUŻ NIE MA.
+ * Gwiazdka i ściągawka przeniosły się do rzędu chromu konta — na telefonie do górnego paska obok
+ * dzwonka, na komputerze do stopki panelu bocznego — a wskaźnik świeżości został skasowany, bo
+ * mierzył moment automatycznego przeładowania strony przez powłokę, a nie świeżość danych modułu.
+ * Pasek widoku odzyskał przez to całą swoją szerokość dla zakładek i akcji modułu: to jest
+ * zgłoszenie właściciela „ta gwiazdka i info o odświeżeniu zabiera przestrzeń na pasek zakładek".
  *
  * MOBILE (C-31): filtry przewijają się poziomo WE WŁASNYM kontenerze. Przewijanie
  * całej strony w poziomie jest zawsze błędem — a to najczęstszy sposób, w jaki
@@ -26,8 +29,6 @@ import { ViewChromeMenu } from "./ViewChromeMenu";
 export interface ViewBarProps {
   filters?: ReactNode;
   actions?: ReactNode;
-  /** Ukrycie chromu — dla widoków osadzonych, np. w playgroundzie. */
-  hideChrome?: boolean;
   /** Wariant gęsty: tytuł widoku wchodzi do paska zamiast osobnego nagłówka. */
   compact?: boolean;
   title?: string;
@@ -36,28 +37,10 @@ export interface ViewBarProps {
   iconColor?: string;
 }
 
-export function ViewBar({ filters, actions, hideChrome, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
-  const chrome = useViewChrome();
-  /**
-   * 084: chrom dzieli się na DWIE grupy, i to jest korekta wobec pierwotnego zamysłu.
-   *
-   * Plan mówił „wszystkie trzy pod jedną ikonę". Implementacja pokazała, dlaczego to nie działa:
-   * gwiazdka ulubionych otwiera WŁASNĄ warstwę (okienko z nazwą widoku), a warstwa w warstwie jest
-   * krucha — zamknięcie menu odmontowuje okienko w tej samej klatce, w której się pojawia, a gdy
-   * menu zostawić otwarte, pochłania ono pierwsze kliknięcie poza sobą. Zmierzone: trzy testy
-   * ulubionych stały się niestabilne.
-   *
-   * Zostaje więc podział wg CZĘSTOŚCI, nie wg rodzaju: gwiazdka (najczęstsza akcja, własna warstwa)
-   * zostaje w pasku, a świeżość danych i ściągawka skrótów — rzeczy, po które sięga się raz na
-   * jakiś czas i które niczego nie otwierają — chowają się pod „⋯". Chrom kurczy się z trzech
-   * elementów do dwóch, a nie do jednego; zapis widoku nadal kosztuje jedno kliknięcie.
-   */
-  const chromeItems = hideChrome ? [] : [chrome.freshness, chrome.shortcuts].filter(Boolean);
-  const gwiazdka = hideChrome ? null : chrome.favorite;
-
+export function ViewBar({ filters, actions, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
   // Pusty pasek nie zajmuje miejsca — moduł bez filtrów i akcji, renderowany poza
   // powłoką, nie powinien dostawać pustej listwy z obramowaniem.
-  if (!compact && !filters && !actions && chromeItems.length === 0 && !gwiazdka) return null;
+  if (!compact && !filters && !actions) return null;
 
   return (
     /**
@@ -116,24 +99,6 @@ export function ViewBar({ filters, actions, hideChrome, compact, title, titleHre
           </div>
         )}
 
-        {/* 084: chrom powłoki zwinięty do JEDNEJ kontrolki. Kolejność w środku zostaje ta sama,
-            żeby ręka trafiała bez patrzenia — zmienia się tylko to, ile miejsca odbiera filtrom. */}
-        {(chromeItems.length > 0 || gwiazdka) && (
-          <div
-            className="md:order-4"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              flexShrink: 0,
-              paddingLeft: 6,
-              marginLeft: 2,
-              borderLeft: "var(--border-width) var(--border-style) var(--border)",
-            }}
-          >
-            {gwiazdka}
-            <ViewChromeMenu pozycje={chromeItems} />
-          </div>
-        )}
       </div>
 
       {/* Filtry — na telefonie WŁASNY wiersz o pełnej szerokości, na komputerze środkowa strefa.

@@ -20,16 +20,13 @@ import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { ConflictProvider } from "@/components/ui/ConflictProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
-import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
-import { ViewChromeProvider } from "@/components/ui/view";
-import { FreshnessIndicator } from "./FreshnessIndicator";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
-import { PokazKosztyProvider } from "@/platform/ai/kosztWidocznosc";
+import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
-import { PrzelacznikKosztow } from "@/components/ui/PrzelacznikKosztow";
+import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
 import { openFavoritesSwitcher } from "@/platform/favorites/favoritesBus";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
@@ -45,7 +42,8 @@ interface AppShellProps {
   usdPlnRate?: number;
   favoriteViews?: FavoriteViewDTO[];
   /** 083: czy administrator może włączyć pokazywanie kosztów AI (uprawnienie + wyłącznik systemowy). */
-  kosztyDostepne?: boolean;
+  /** 085: czy przełącznik trybu administratora ma się pojawić (konto administratora). */
+  trybAdminaDostepny?: boolean;
 }
 
 // Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
@@ -56,7 +54,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
   { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], kosztyDostepne = false }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], trybAdminaDostepny = false }: AppShellProps) {
   const t = useTranslations("components.shell.AppShell");
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -107,9 +105,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   const tabBar = resolveTabBar(userPermissions, menuPrefs);
 
   return (
-    /* 083: dostawca przełącznika kosztów obejmuje CAŁĄ powłokę — wskaźniki przy treściach siedzą
-       w modułach, a ulotne powiadomienia w rogu ekranu; obie strony czytają ten sam stan. */
-    <PokazKosztyProvider dostepne={kosztyDostepne}>
+    /* 085: dostawca trybu administratora obejmuje CAŁĄ powłokę — wskaźniki kosztu siedzą
+       w modułach, powiadomienia w rogu ekranu, narzędzia w warstwie pływającej; wszystkie czytają
+       ten sam stan, więc jeden przełącznik chowa je razem. */
+    <TrybAdminaProvider dostepne={trybAdminaDostepny}>
     <ToastProvider>
     <ConfirmProvider>
     <ConflictProvider>
@@ -118,7 +117,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         pierwszeństwo przed globalnymi). */}
     <ShortcutsProvider>
     <DataFreshness />
-    {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent). */}
+    {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent).
+        085 (AC-8): same decydują, czy się rysować — czytają tryb administratora z kontekstu. */}
     <KosztToasts rate={usdPlnRate} />
     {/* 080 (Z4): informacja o zejściu lektora na głos systemowy — dotyczy każdego lektora w aplikacji. */}
     <SpeechFallbackNotice />
@@ -186,8 +186,13 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             >
               <ArrowLeftRight size={16} />
             </button>
-            {/* 083: przełącznik kosztów AI stoi obok dzwonka — w chromie konta, nie w treści. */}
-            <PrzelacznikKosztow />
+            {/* 085 (AC-1): gwiazdka „zapisz to miejsce" WRACA do górnego paska — tym razem jako
+                JEDYNE jej wejście na telefonie (w 083 wyszła stąd do paska widoku, a właściciel
+                poprosił, żeby stała przy ikonach obok dzwonka). Działa też na trasach bez ramy
+                modułu, np. w panelu administracyjnym (AC-3). */}
+            <FavoriteStarButton favorites={favoriteViews} placement="topbar" />
+            {/* 085: przełącznik TRYBU ADMINISTRATORA stoi obok dzwonka — w chromie konta. */}
+            <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
           </div>
         </div>
@@ -280,19 +285,21 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
 
-      {/* 045 — KONTRAKT WIDOKU. Powłoka nie rysuje paska widoku (nie zna tytułu modułu,
-          więc dostałaby podwójne nagłówki w ~20 modułach), tylko UDOSTĘPNIA jego zawartość.
-          Rysuje go `ModuleView` osadzony w stronie modułu, a moduł nadal nie wie, co w nim
-          siedzi. To jest spłata długu z 043: gwiazdka „zapisz widok" trafia wreszcie tam,
-          gdzie właściciel o nią prosił. */}
+      {/**
+       * 085: powłoka NIE wstrzykuje już nic do paska widoku.
+       *
+       * Od 045 wkładała tam trzy rzeczy: gwiazdkę ulubionych, wskaźnik świeżości i wejście do
+       * ściągawki skrótów. Wszystkie trzy stąd wyszły — gwiazdka i ściągawka do rzędu chromu konta
+       * (obok dzwonka), a wskaźnik świeżości zniknął, bo mierzył moment automatycznego
+       * przeładowania strony przez powłokę, a nie świeżość danych modułu; jego treść wprowadzała
+       * w błąd. Mechanizm bez zawartości byłby martwym API w miejscu wspólnym, więc znika razem
+       * z nimi (C-35 czytane w drugą stronę).
+       *
+       * Pasek widoku ZOSTAJE: nadal rysuje go `ModuleView` osadzony w stronie modułu, bo powłoka
+       * nie zna tytułu modułu i dostałaby podwójne nagłówki w ~20 modułach.
+       */}
       <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
-        <ViewChromeProvider
-          value={{
-            favorite: <FavoriteStarButton favorites={favoriteViews} placement="viewbar-inline" />, freshness: <FreshnessIndicator />, shortcuts: <ShortcutsButton />,
-          }}
-        >
-          {children}
-        </ViewChromeProvider>
+        {children}
       </main>
 
       {/* Mobile bottom tab bar */}
@@ -327,13 +334,16 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       <ShortcutsCheatSheet />
       <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
+      {/* 085 (AC-8): pływający przycisk zgłaszania i tryb wskazywania to NARZĘDZIE administratora —
+          przy wyłączonym trybie znika razem z resztą dodatków. Sam komponent pilnuje też skrótu
+          klawiszowego: ukryte narzędzie, które nadal daje się odpalić, wygląda na usterkę. */}
       {isAdmin && <FeedbackInspector />}
     </div>
     </ShortcutsProvider>
     </ConflictProvider>
     </ConfirmProvider>
     </ToastProvider>
-    </PokazKosztyProvider>
+    </TrybAdminaProvider>
   );
 }
 

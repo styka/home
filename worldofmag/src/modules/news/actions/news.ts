@@ -155,11 +155,16 @@ export async function getTopics(): Promise<TopicDTO[]> {
  */
 export async function getNewsPref(): Promise<{
   defaultSummaryLength: SummaryLength;
+  showEmptyTopics: boolean;
 }> {
   const user = await requireAuth();
   const p = await prisma.newsPref.findUnique({ where: { ...(await filtrMoichRekordow(user.id)) } });
   return {
     defaultSummaryLength: (p?.defaultSummaryLength as SummaryLength) ?? "medium",
+    // Brak wiersza = domyślne ukrycie pustych tematów, tak samo jak domyślnik kolumny. Dwa miejsca
+    // z tą samą wartością są tu nieuniknione (odczyt bez wiersza vs. wstawienie wiersza), więc
+    // trzymamy je obok siebie w jednym pliku, a nie w dwóch warstwach.
+    showEmptyTopics: p?.showEmptyTopics ?? false,
   };
 }
 
@@ -514,6 +519,24 @@ export async function setDefaultSummaryLength(length: SummaryLength): Promise<vo
     where: { ...(await filtrMoichRekordow(user.id)) },
     create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), defaultSummaryLength: length },
     update: { defaultSummaryLength: length },
+  });
+  revalidatePath("/wiadomosci");
+}
+
+/**
+ * 085 (AC-15): pokazywanie tematów bez nowych wiadomości.
+ *
+ * Osobna akcja, a nie parametr `setDefaultSummaryLength`: te dwie preferencje zmieniają się
+ * niezależnie i w interfejsie stoją jako dwie osobne kontrolki. Jedna akcja na obie kusiłaby do
+ * przekazywania „niezmienionej" wartości drugiej — czyli do nadpisywania jej tym, co akurat było
+ * w pamięci klienta.
+ */
+export async function setShowEmptyTopics(show: boolean): Promise<void> {
+  const user = await requireAuth();
+  await prisma.newsPref.upsert({
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), showEmptyTopics: show },
+    update: { showEmptyTopics: show },
   });
   revalidatePath("/wiadomosci");
 }

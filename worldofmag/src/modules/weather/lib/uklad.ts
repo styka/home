@@ -31,23 +31,6 @@ export function czytajUklad(raw: string | null | undefined): WatchersLayout {
 }
 
 /**
- * Filtr to lista stanów po przecinku. Pusty napis = bez filtra i to NIE jest to samo co „żaden
- * stan": lista bez ani jednego dozwolonego stanu byłaby zawsze pusta, więc taki zapis czytamy
- * jako brak filtra.
- */
-export function czytajFiltr(raw: string | null | undefined): WatcherStatus[] {
-  const czesci = (raw ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s): s is WatcherStatus => STATUS_ORDER.includes(s as WatcherStatus));
-  return Array.from(new Set(czesci));
-}
-
-export function zapiszFiltr(statusy: WatcherStatus[]): string {
-  return STATUS_ORDER.filter((s) => statusy.includes(s)).join(",");
-}
-
-/**
  * Porządkuje obserwatory wg stanu, zachowując pierwotną kolejność wewnątrz stanu (sortowanie
  * stabilne). Obserwator bez werdyktu — wyłączony albo jeszcze nieoceniony — ląduje na końcu:
  * udawanie, że znamy jego stan, byłoby gorsze niż pokazanie go osobno.
@@ -77,15 +60,3 @@ export function wSekcje<T>(
   return out;
 }
 
-/** Liczniki dla nagłówka sekcji — zawsze wszystkie stany, także te z zerem. */
-export function liczniki<T>(
-  pozycje: T[],
-  statusOf: (p: T) => WatcherStatus | null,
-): Record<WatcherStatus, number> {
-  const out = { met: 0, partial: 0, unmet: 0, unknown: 0 } as Record<WatcherStatus, number>;
-  for (const p of pozycje) {
-    const s = statusOf(p);
-    if (s) out[s] += 1;
-  }
-  return out;
-}

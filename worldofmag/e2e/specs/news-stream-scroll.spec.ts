@@ -69,14 +69,23 @@ test.describe("Wiadomości — strumień", () => {
       );
     const etykietaNaStarcie = await etykietaNawigatora();
 
+    /**
+     * 085: pasek nawigacji modułu przykleja się już nie do GÓRY RAMY, tylko POD przyklejonym
+     * paskiem widoku — ten jest teraz stały i stoi wyżej. Punkt odniesienia bierzemy więc ze
+     * zmiennej `--view-bar-h`, którą rama publikuje, zamiast wpisywać liczbę: wysokość paska widoku
+     * zależy od gęstości widoku i zmieniłaby się przy pierwszej korekcie odstępów.
+     */
     const stan = () =>
       page.evaluate(() => {
         const rama = (window as unknown as { __rama: HTMLElement }).__rama;
         const wrap = document.querySelector("[data-news-pasek]") as HTMLElement;
+        const zaslona = parseFloat(getComputedStyle(rama).getPropertyValue("--view-bar-h")) || 0;
         return {
           scrollTop: Math.round(rama.scrollTop),
-          // 0 = pasek dokładnie przy górnej krawędzi ramy, czyli przyklejony.
-          pasekOdGory: Math.round(wrap.getBoundingClientRect().top - rama.getBoundingClientRect().top),
+          // 0 = pasek dokładnie pod paskiem widoku, czyli przyklejony we właściwym miejscu.
+          pasekOdGory: Math.round(
+            wrap.getBoundingClientRect().top - rama.getBoundingClientRect().top - zaslona,
+          ),
         };
       });
 

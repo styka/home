@@ -13,7 +13,7 @@ import {
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Settings2, Plus, Loader2, Trash2, Pencil, CalendarClock } from "lucide-react";
+import { Newspaper, RefreshCw, Flame, Settings2, Library, Plus, Loader2, Trash2, Pencil, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -30,6 +30,7 @@ import { NewsStream } from "./NewsStream";
 import { NewsTimelineStream } from "./NewsTimelineStream";
 import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
+import { NewsModuleSettings } from "./NewsModuleSettings";
 import { SourceFilter } from "./SourceFilter";
 import { useSekcjeTematow, przewinDoSekcji, PROGRAMOWE_PRZEWIJANIE_MS } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -50,7 +51,7 @@ import {
   type NewsRefreshState,
 } from "../actions/news";
 
-type View = "feed" | "hot" | "settings";
+type View = "feed" | "hot" | "sources" | "settings";
 /** 040/083: co pokazujemy — nowe wiadomości (domyślnie) albo linię czasu. Union TS, nie enum (C-12). */
 type ContentKey = "items" | "timeline";
 
@@ -62,17 +63,30 @@ export function NewsPage({
   topics,
   sources,
   defaultLength,
+  showEmptyTopics: showEmptyTopicsProp,
   viewParams = {},
 }: {
   topics: TopicDTO[];
   sources: SourceDTO[];
   defaultLength: SummaryLength;
+  /** 085 (AC-14): czy pokazywać tematy, w których nie ma nowych wiadomości. */
+  showEmptyTopics: boolean;
   /** 043: parametry adresu z serwera — stan widoku czytamy stąd, nie z `window`. */
   viewParams?: RawParams;
 }) {
   const t = useTranslations("modules.news.NewsPage");
   const router = useRouter();
   const { showToast } = useToast();
+
+  /**
+   * 085 (AC-14/AC-15): stan lokalny zasilany propsem z serwera.
+   *
+   * Sam props nie wystarcza: przełącznik stoi w zakładce ustawień tego samego widoku, a `router
+   * .refresh()` przychodzi z opóźnieniem — bez stanu lista mrugałaby starą zawartością po każdym
+   * przełączeniu. Props pozostaje źródłem prawdy przy wejściu na stronę i po odświeżeniu.
+   */
+  const [showEmptyTopics, setShowEmptyTopics] = useState(showEmptyTopicsProp);
+  useEffect(() => setShowEmptyTopics(showEmptyTopicsProp), [showEmptyTopicsProp]);
 
   /**
    * 043/083: cały stan widoku w ADRESIE — zakładka, wybrany temat, rodzaj treści i wybrane portale.
@@ -83,7 +97,7 @@ export function NewsPage({
    */
   const viewSpec = useMemo(
     () => ({
-      widok: oneOf(["feed", "hot", "settings"] as const, "feed"),
+      widok: oneOf(["feed", "hot", "sources", "settings"] as const, "feed"),
       tresc: oneOf(["items", "timeline"] as const, "items"),
       zrodla: idList(),
     }),
@@ -259,18 +273,38 @@ export function NewsPage({
     (key: string | null) => wybraneZrodla.length === 0 || key === null || wybraneZrodla.includes(key),
     [wybraneZrodla]
   );
-  const widoczneWiadomosci = useMemo(
-    () =>
-      // 084 (AC-13): filtrujemy WYŁĄCZNIE po portalach. Tematy są zawsze wszystkie.
-      (stream ?? []).map((x) => ({ ...x, items: x.items.filter((i) => pasujeZrodlo(i.sourceKey)) })),
-    [stream, pasujeZrodlo]
-  );
+  /**
+   * 084 (AC-13): filtrujemy po portalach — filtr TEMATU nie istnieje.
+   * 085 (AC-14): temat, w którym po tym filtrowaniu nic nie zostaje, domyślnie znika z listy.
+   *
+   * Odsiew jest tutaj, a nie w zapytaniu serwerowym, bo TEN SAM zbiór zasila treść i listę skoku
+   * (`GroupNavigator`). Gdyby serwer odsiewał, a widok nie, lista skoku prowadziłaby do sekcji,
+   * których nie ma — i odwrotnie.
+   */
+  const widoczneWiadomosci = useMemo(() => {
+    const zPortalami = (stream ?? []).map((x) => ({
+      ...x,
+      items: x.items.filter((i) => pasujeZrodlo(i.sourceKey)),
+    }));
+    return showEmptyTopics ? zPortalami : zPortalami.filter((x) => x.items.length > 0);
+  }, [stream, pasujeZrodlo, showEmptyTopics]);
 
-  const widocznaOs = useMemo(
-    () =>
-      (timeline ?? []).map((x) => ({ ...x, entries: x.entries.filter((e) => pasujeZrodlo(e.sourceKey)) })),
-    [timeline, pasujeZrodlo]
-  );
+  const widocznaOs = useMemo(() => {
+    const zPortalami = (timeline ?? []).map((x) => ({
+      ...x,
+      entries: x.entries.filter((e) => pasujeZrodlo(e.sourceKey)),
+    }));
+    return showEmptyTopics ? zPortalami : zPortalami.filter((x) => x.entries.length > 0);
+  }, [timeline, pasujeZrodlo, showEmptyTopics]);
+
+  /**
+   * 085 (AC-16): lista jest pusta, BO ODSIALIŚMY — tematy istnieją, tylko nic dziś nie przyniosły.
+   * Rozróżnienie należy do widoku, bo tylko on wie, ile tematów przyszło z serwera.
+   */
+  const wszystkieUkryte =
+    !showEmptyTopics &&
+    topics.length > 0 &&
+    (tresc === "items" ? widoczneWiadomosci : widocznaOs).length === 0;
 
   const kolejnosc = useMemo(
     () => (tresc === "items" ? widoczneWiadomosci : widocznaOs).map((x) => x.id),
@@ -321,28 +355,47 @@ export function NewsPage({
   }, [podazanie, lektorGra, programoweDo]);
 
 
+  /**
+   * 085: mierzymy CAŁĄ ZASŁONĘ u góry ramy, a nie samą wysokość paska modułu.
+   *
+   * Od 085 nad paskiem nawigacji stoi jeszcze przyklejony pasek widoku. Suma dwóch osobnych miar
+   * („wysokość tamtego" + „wysokość tego") rozjeżdżałaby się przy każdej zmianie któregokolwiek
+   * z nich; odległość DOLNEJ krawędzi paska modułu od GÓRNEJ krawędzi ramy jest jedną liczbą
+   * i jest poprawna niezależnie od tego, co jeszcze stanie wyżej.
+   */
   useEffect(() => {
     const el = pasekRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const zmierz = () => setPasekH(el.offsetHeight);
+    const rama = ramaRef.current;
+    if (!el || !rama || typeof ResizeObserver === "undefined") return;
+    const zmierz = () =>
+      setPasekH(Math.max(0, Math.round(el.getBoundingClientRect().bottom - rama.getBoundingClientRect().top)));
     zmierz();
     const ro = new ResizeObserver(zmierz);
     ro.observe(el);
+    ro.observe(rama);
     return () => ro.disconnect();
     // Pasek istnieje tylko w widoku wiadomości — przy zmianie zakładki mierzymy od nowa.
   }, [view, topics.length]);
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
-  const grupy = useMemo<GrupaNawigatora[]>(
-    () =>
-      topics.map((x) => ({
+  /**
+   * 085 (AC-14): lista skoku pokazuje DOKŁADNIE te tematy, które są w treści.
+   *
+   * Dopóki dane się wczytują, pokazujemy wszystkie: nie wiemy jeszcze, który temat jest pusty,
+   * a pusta lista skoku na starcie wyglądałaby jak brak tematów.
+   */
+  const grupy = useMemo<GrupaNawigatora[]>(() => {
+    const zaladowane = tresc === "items" ? stream !== null : timeline !== null;
+    const widoczne = new Set((tresc === "items" ? widoczneWiadomosci : widocznaOs).map((x) => x.id));
+    return topics
+      .filter((x) => !zaladowane || widoczne.has(x.id))
+      .map((x) => ({
         id: x.id,
         etykieta: x.title,
         licznik: stream?.find((s) => s.id === x.id)?.items.length,
         szukajTakze: x.semanticFilter,
-      })),
-    [topics, stream]
-  );
+      }));
+  }, [topics, stream, timeline, tresc, widoczneWiadomosci, widocznaOs]);
 
   // ── Skok do tematu ────────────────────────────────────────────────────────
   /**
@@ -501,8 +554,17 @@ export function NewsPage({
 
         {view === "hot" && <HotTopics monitorowane={topics} onTopicsChanged={() => router.refresh()} />}
 
+        {view === "sources" && (
+          <NewsSettings sources={sources} onChanged={() => router.refresh()} />
+        )}
+
         {view === "settings" && (
-          <NewsSettings sources={sources} defaultLength={defaultLength} onChanged={() => router.refresh()} />
+          <NewsModuleSettings
+            defaultLength={defaultLength}
+            showEmptyTopics={showEmptyTopics}
+            onShowEmptyTopics={setShowEmptyTopics}
+            onChanged={() => router.refresh()}
+          />
         )}
 
         {view === "feed" && (
@@ -526,7 +588,12 @@ export function NewsPage({
                  ma domyślnie `min-width: auto`, więc NIE POTRAFI zwęzić się poniżej swojej treści —
                  i to on, a nie jego zawartość, rozpychał stronę: zmierzone 377 px przy ekranie
                  360 px, czyli poziome przewijanie CAŁEJ strony (C-31, błąd twardy). */
-              className="sticky top-0 z-30 flex min-w-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] pb-2 pt-1"
+              /* 085 (AC-4): pasek widoku jest teraz PRZYKLEJONY u góry ramy, więc pasek nawigacji
+                 modułu przykleja się POD nim — inaczej wjechałby na niego. Wysokość tamtego podaje
+                 rama zmienną `--view-bar-h`; przy jej braku (widok osadzony poza ramą) zostaje 0,
+                 czyli zachowanie sprzed zmiany. */
+              style={{ top: "var(--view-bar-h, 0px)" }}
+              className="sticky z-30 flex min-w-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-base)] pb-2 pt-1"
             >
               {/* 084 (AC-11, AC-12, AC-18): lista tematów jest SKOKIEM, nie filtrem.
                   `aktywnaId` wskazuje temat CZYTANY, więc lista pokazuje, gdzie jesteś, a wybór
@@ -568,6 +635,7 @@ export function NewsPage({
                   podazanie={podazanie}
                   onPodazanie={zmienPodazanie}
                   onGra={setLektorGra}
+                  wszystkieUkryte={wszystkieUkryte}
                   akcjeTematu={akcjeTematu}
                 />
               ) : (
@@ -577,6 +645,7 @@ export function NewsPage({
                   filtrAktywny={filtrAktywny}
                   czytanyTemat={czytanyTemat}
                   zarejestruj={zarejestruj}
+                  wszystkieUkryte={wszystkieUkryte}
                   akcjeTematu={akcjeTematu}
                 />
               )}
@@ -606,10 +675,19 @@ export function NewsPage({
   );
 }
 
-const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper }> = [
+/**
+ * 085 (AC-17): cztery zakładki, ale nie cztery etykiety.
+ *
+ * „Ustawienia" to zakładka, po którą sięga się raz na kilka tygodni, a czwarta pełna etykieta
+ * wypchnęłaby pasek poza ekran telefonu (mierzone w 084: przy 360 px na wszystko jest 360 px, a
+ * „Gorące tematy" samo bierze ~110). Dlatego ustawienia stoją jako sama ikona koła zębatego
+ * z etykietą dla czytnika ekranu — funkcja zostaje, miejsce nie.
+ */
+const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper; tylkoIkona?: boolean }> = [
   { key: "feed", label: "Tematy", icon: Newspaper },
   { key: "hot", label: "Gorące tematy", icon: Flame },
-  { key: "settings", label: "Źródła", icon: Settings2 },
+  { key: "sources", label: "Źródła", icon: Library },
+  { key: "settings", label: "Ustawienia", icon: Settings2, tylkoIkona: true },
 ];
 
 /**
@@ -633,6 +711,8 @@ function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void 
             role="tab"
             aria-selected={active}
             onClick={() => onChange(tab.key)}
+            title={tab.label}
+            aria-label={tab.label}
             className={cn(
               // `py-3` = cel dotyku na telefonie (C-31).
               "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-3 text-sm transition-colors",
@@ -642,7 +722,7 @@ function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void 
             )}
           >
             <Icon size={15} />
-            <span className="whitespace-nowrap">{tab.label}</span>
+            {!tab.tylkoIkona && <span className="whitespace-nowrap">{tab.label}</span>}
           </button>
         );
       })}

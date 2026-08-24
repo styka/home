@@ -19,17 +19,6 @@ test("wartość spoza unii wraca jako domyślna, nie jako wyjątek", async () =>
   assert.equal(czytajUklad(""), "status");
 });
 
-test("pusty filtr znaczy BRAK filtra, nie zero dozwolonych stanów", async () => {
-  const { czytajFiltr, zapiszFiltr } = await import("@/modules/weather/lib/uklad");
-  assert.deepEqual(czytajFiltr(""), []);
-  assert.deepEqual(czytajFiltr(null), []);
-  // Śmieci odsiewane po cichu, powtórki scalane.
-  assert.deepEqual(czytajFiltr("partial,met,met,cokolwiek"), ["partial", "met"]);
-  // Zapis jest kanoniczny — kolejność stanów nie zależy od kolejności klikania.
-  assert.equal(zapiszFiltr(["unknown", "met"]), "met,unknown");
-  assert.equal(zapiszFiltr([]), "");
-});
-
 test("sortowanie po stanie jest stabilne, a brak werdyktu ląduje na końcu", async () => {
   const { poStanie } = await import("@/modules/weather/lib/uklad");
   const dane: { id: string; s: S | null }[] = [
@@ -58,8 +47,3 @@ test("sekcje idą w stałej kolejności, a pusta sekcja nie jest rysowana", asyn
   assert.deepEqual(sekcje[2].pozycje.map((x) => x.id), ["c"]);
 });
 
-test("liczniki podają wszystkie stany, także te z zerem", async () => {
-  const { liczniki } = await import("@/modules/weather/lib/uklad");
-  const dane: { id: string; s: S | null }[] = [{ id: "a", s: "met" }, { id: "b", s: null }];
-  assert.deepEqual(liczniki(dane, st), { met: 1, partial: 0, unmet: 0, unknown: 0 });
-});

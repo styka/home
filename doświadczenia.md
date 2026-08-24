@@ -4,6 +4,41 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-24 — `position: sticky` przykleja się tylko w granicach RODZICA
+**Problem:** Pasek widoku miał zostać widoczny przy przewijaniu (zgłoszenie właściciela: „czy to
+dobrze, że scrolując stronę w dół te akcje nie przyklejają się?"). Naturalny odruch — dopisać
+`position: sticky; top: 0` do paska — daje efekt, który wygląda na działający przez pierwsze
+kilkadziesiąt pikseli, a potem pasek odkleja się i odjeżdża. Powód: pasek stał w JEDNYM opakowaniu
+razem z okruszkiem i nagłówkiem strony, a element przyklejony trzyma się wyłącznie w granicach
+prostokąta swojego rodzica. Opakowanie kończy się kilkadziesiąt pikseli niżej — czyli dokładnie tam,
+gdzie przyklejenie zaczyna być komukolwiek potrzebne.
+**Rozwiązanie:** Przebudowa struktury, nie stylu: blok nagłówka i pasek stały się osobnymi,
+BEZPOŚREDNIMI dziećmi kontenera przewijania. Wtedy prostokątem rodzica jest cały obszar przewijania
+i przyklejenie działa do końca treści. Odstępy przepisane 1:1, żeby rozdzielenie nie przesunęło ani
+jednego piksela.
+**Lekcja:** Zanim dopiszesz `sticky`, sprawdź, KTO jest rodzicem elementu — nie kto jest kontenerem
+przewijania. To dwie różne rzeczy i tylko pierwsza wyznacza zasięg przyklejenia. Objaw („działa
+chwilę, potem przestaje") jest przy tym łatwy do wzięcia za problem z `z-index` albo z wysokością,
+więc kosztuje godziny szukania nie tam, gdzie trzeba.
+
+## 2026-08-24 — Test, który przechodzi, bo nie ma czego sprawdzać
+**Problem:** Test „po przewinięciu pasek nadal widać" był zielony od pierwszego uruchomienia — także
+wtedy, gdy celowo wyłączyłem przyklejenie. Przyczyna: w środowisku testowym strona Wiadomości jest
+KRÓTSZA od okna (odświeżanie kanałów RSS nie działa bez sieci, a od tej samej zmiany puste tematy są
+domyślnie ukryte), więc nie było czego przewijać i asercja o widoczności przechodziła sama z siebie.
+Pomiar sprzed zmiany pokazywał 11563 px treści — ale tylko dlatego, że wtedy puste tematy jeszcze się
+renderowały.
+**Rozwiązanie:** Test najpierw JAWNIE doprowadza stronę do stanu, w którym jest co przewijać
+(włącza pokazywanie pustych tematów przez interfejs, a na koniec przywraca ustawienie, bo konto jest
+współdzielone), sprawdza, że rama faktycznie się przewinęła, i dopiero potem orzeka o pasku. Całość
+zweryfikowana w obie strony: ze wstrzykniętą regresją test pada.
+**Lekcja:** Asercja „element jest widoczny po przewinięciu" wymaga OSOBNEGO potwierdzenia, że
+przewinięcie w ogóle nastąpiło — inaczej mierzy się warunki testu, a nie zachowanie aplikacji.
+I uwaga na własne zmiany: pomiar punktu odniesienia zrobiony PRZED zmianą może opisywać stan, który
+ta zmiana właśnie zlikwidowała.
+
+---
+
 ## 2026-08-24 — Czujka na ciszę mierzyła czas nie tej ścieżki, co trzeba
 **Problem:** Lektor dostał zabezpieczenie: jeśli w 1,5 s od wywołania nie przyjdzie ani `onstart`,
 ani `onend`, uznajemy, że urządzenie **nie wydało dźwięku**, i mówimy o tym wprost. Uzbroiłem tę

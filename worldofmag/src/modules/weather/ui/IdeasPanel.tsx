@@ -9,7 +9,6 @@ import {
   Loader2,
   AlertTriangle,
   Ban,
-  Library,
   MapPin,
   Home,
   Mountain,
@@ -284,13 +283,43 @@ export function IdeasPanel({
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-primary)]">
           <Sparkles size={15} className="text-[var(--accent-purple)]" /> {t("coRobic")}
         </h3>
-        {/* 038: DOKŁADNIE JEDEN przycisk generujący. Wcześniej stały tu obok siebie „Pomysły"
-            (odnośnik do biblioteki) i „Wylosuj inne" (generowanie) — oba wyglądały jak przycisk,
-            więc trzeba było zgadywać, który tworzy nową treść. */}
-        <Button size="sm" variant="secondary" onClick={() => load({ force: true })} disabled={loading}>
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          Nowe propozycje
-        </Button>
+        {/**
+         * 085 (AC-23): WYBÓR WIDAĆ OD RAZU.
+         *
+         * Zgłoszenie właściciela: „użytkownik nie widzi tak od razu, że można wybrać pomiędzy tych
+         * dwóch możliwości", bo odnośnik do zapisanych był drobnym tekstem w stopce sekcji. Teraz
+         * obie drogi stoją obok siebie u góry jako równorzędna para, a nie przycisk kontra przypis.
+         *
+         * Generowanie zostaje osobno, jako ikona: to nie jest trzeci widok, tylko czynność — i
+         * dokładnie dlatego 038 rozdzieliło je od odnośnika (dwa przyciski tej samej wagi kazały
+         * zgadywać, który tworzy nową treść).
+         */}
+        <div className="flex items-center gap-1">
+          <div className="flex items-center rounded-md border border-[var(--border)] p-0.5">
+            <span
+              aria-current="page"
+              className="rounded px-2.5 py-1.5 text-xs bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+            >
+              {t("propozycje")}
+            </span>
+            <Link
+              href="/pogoda/pomysly"
+              className="rounded px-2.5 py-1.5 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            >
+              {t("zapisanePomysly")}
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={() => load({ force: true })}
+            disabled={loading}
+            title={t("nowePropozycje")}
+            aria-label={t("nowePropozycje")}
+            className="rounded-md border border-[var(--border)] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
+          >
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          </button>
+        </div>
       </div>
 
       <div className="mb-2 flex flex-wrap gap-1">
@@ -410,18 +439,6 @@ export function IdeasPanel({
           </Button>
         </div>
       )}
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-2">
-        <Link
-          href="/pogoda/pomysly"
-          className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
-        >
-          <Library size={13} /> {t("zapisanePomysly")}
-        </Link>
-        {/* 041: licznik kosztu przeniósł się do paska nad listą (`AiContentMeta`). Stał tu osobno,
-            w stopce, więc „kiedy powstało" i „ile kosztowało" czytało się w dwóch różnych miejscach
-            ekranu — a to jest jedna informacja o tej samej treści. */}
-      </div>
 
       {/* 039: hipoteza o użytkowniku pod listą propozycji — czyli dokładnie tam, gdzie widać, po co
           ona jest. Jedna karta, bez modala i bez blokowania czegokolwiek. */}

@@ -431,7 +431,6 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
     importPath: 'import { ViewBar } from "@/components/ui";',
     render: () => (
       <ViewBar
-        hideChrome
         filters={
           <>
             <Badge>Wszystkie</Badge>
@@ -464,8 +463,7 @@ export const PLAYGROUND_ENTRIES: PlaygroundEntryDef[] = [
           iconColor="var(--accent-blue)"
           title="Zadania"
           subtitle={String(v.subtitle)}
-          hideChrome
-          state={v.state as "ready"}
+            state={v.state as "ready"}
           empty={{ title: "Brak zadań", description: "Dodaj pierwsze zadanie.", action: { label: "Dodaj" } }}
           filters={<><Badge>Wszystkie</Badge><Badge>Dziś</Badge></>}
           actions={<Button size="sm">Dodaj</Button>}

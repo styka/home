@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { DEFAULT_USD_PLN_RATE, withPln } from "@/lib/usdPln";
 import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { zglosKoszt } from "@/platform/ai/kosztBus";
-import { usePokazKoszty } from "@/platform/ai/kosztWidocznosc";
+import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 
 /**
  * 034: WSPÓLNY wskaźnik kosztu operacji AI. Wyjęty z okna asystenta, żeby dało się go użyć wszędzie,
@@ -119,7 +119,7 @@ export function AiCostBadge({
   align?: "left" | "right";
 }) {
   const t = useTranslations("ui.cost");
-  const { pokazuj } = usePokazKoszty();
+  const { wlaczony: trybAdmina } = useTrybAdmina();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   // 035: przesunięcie panelu w poziomie WZGLĘDEM przycisku, policzone z realnych pomiarów.
@@ -157,8 +157,9 @@ export function AiCostBadge({
   }, [usage, akcja, swiezy]);
 
   if (!usage) return null;
-  // Przełącznik administratora: wskaźnik przy treści domyślnie NIE ZAJMUJE MIEJSCA (AC-7).
-  if (!pokazuj) return null;
+  // 085 (AC-8): przy wyłączonym trybie administratora wskaźnik nie istnieje — administrator ma
+  // wtedy widzieć stronę dokładnie tak, jak widzi ją użytkownik.
+  if (!trybAdmina) return null;
 
   const hasCost = !!(usage.costUsd && usage.costUsd > 0);
   const hasDetail = !!usage.calls?.length || !!usage.model || !!usage.tokens;

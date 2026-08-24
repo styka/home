@@ -12,6 +12,7 @@ import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
 import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
+import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { useTranslations } from "next-intl";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
@@ -51,6 +52,9 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+  // 085 (AC-8): administracyjny eksport listy do schowka jest DODATKIEM dla administratora, więc
+  // znika razem z resztą, gdy tryb administratora jest wyłączony.
+  const { wlaczony: trybAdmina } = useTrybAdmina();
   const t = useTranslations("modules.tasks.TasksPage");
   const confirmDialog = useConfirm();
   const [statusConfigOpen, setStatusConfigOpen] = useState(false);
@@ -708,7 +712,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           )}
 
           {/* Admin: skopiuj prompt dla Claude Code z zadaniami widocznymi w tej zakładce */}
-          {isAdmin && <TaskListClipboardButton tasks={visibleTasks} />}
+          {isAdmin && trybAdmina && <TaskListClipboardButton tasks={visibleTasks} />}
           </div>
           {/* Wskazówka przewijania: wyraźny chevron na krawędzi (mocny, zrozumiały sygnał „jest
               więcej →") na tle mocniejszego gradientu = tło nagłówka. Chevron jest KLIKALNY — dotknięcie

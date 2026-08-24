@@ -20,11 +20,9 @@ export type { FieldProps, FieldChildProps } from "./Field"
 export {
   ModuleView,
   ViewBar,
-  ViewChromeProvider,
-  useViewChrome,
   ViewEmpty,
   ViewLoading,
   ViewError,
   ViewNoAccess,
 } from "./view"
-export type { ModuleViewProps, ViewBarProps, ViewChrome, ViewResource, ViewStateKind } from "./view"
+export type { ModuleViewProps, ViewBarProps, ViewResource, ViewStateKind } from "./view"

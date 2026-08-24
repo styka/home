@@ -2698,6 +2698,9 @@ model NewsPref {
   id                   String    @id @default(cuid())
   // Domyślna długość streszczeń: "short" | "medium" | "long".
   defaultSummaryLength String    @default("medium")
+  // 085 (AC-14): czy pokazywać tematy, w których nie ma nowych wiadomości. Domyślnie NIE —
+  // puste ramki zabierały ekran. Boolean, bo to fakt dwustanowy, a nie status.
+  showEmptyTopics      Boolean   @default(false)
   // Ostatnio wybrane źródło w widoku (klucz NewsSource).
   activeSourceKey      String?
   // 039: moment ostatniego pobrania PULI — wspólny dla wszystkich tematów, bo pobranie przestało
@@ -2793,8 +2796,6 @@ model WeatherPref {
   // "status" (lista posortowana po stanie) | "grouped" (sekcje po stanie) | "manual" (kolejność
   // dodania) — String + union TS (C-12).
   watchersLayout String   @default("status")
-  // Stany do pokazania, po przecinku ("met,partial"); pusty = bez filtra.
-  watchersFilter String   @default("")
   updatedAt      DateTime @updatedAt
 
   // 082: świadomie BEZ `@default(dbgenerated())`, którym legitymują się pozostałe modele.
