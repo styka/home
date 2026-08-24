@@ -71,67 +71,67 @@ a niżej dom, gwiazdka i skróty.
 
 ### A. Tryb czytania i pasek stanu *(zgłoszenia 4, 5)*
 
-- [ ] **AC-1** — Given widok Wiadomości, when włączam tryb czytania, then znikają: pasek stanu
+- [x] **AC-1** — Given widok Wiadomości, when włączam tryb czytania, then znikają: pasek stanu
   odświeżania, zakładki modułu i akcje główne, a zostają: nawigacja po tematach, filtr źródeł,
   przełącznik treści i lektor.
-- [ ] **AC-2** — Given tryb czytania, when mierzę wysokość chromu nad pierwszą wiadomością, then
+- [x] **AC-2** — Given tryb czytania, when mierzę wysokość chromu nad pierwszą wiadomością, then
   spada ona **co najmniej o wysokość paska widoku**, a to, co zostaje, to wyłącznie: pasek nawigacji
   modułu, wejście do lektora i nagłówek czytanego tematu. *(Kryterium poprawione po pomiarze:
   pierwotne „co najmniej o połowę" było moją liczbą, nie wymaganiem właściciela, i okazało się
   nieosiągalne bez skasowania wejścia do lektora — a lektor jest tym, co właściciel kazał ZOSTAWIĆ.
   Zmierzone przy 360 px: 303 → 202 px, czyli −101 px = dokładnie wysokość paska widoku.)*
-- [ ] **AC-3** — Given tryb czytania, when chcę go wyłączyć, then przełącznik jest widoczny bez
+- [x] **AC-3** — Given tryb czytania, when chcę go wyłączyć, then przełącznik jest widoczny bez
   przewijania i wraca do stanu poprzedniego.
-- [ ] **AC-4** — Given widok Wiadomości z wybranym trybem czytania, when zapisuję ten widok
+- [x] **AC-4** — Given widok Wiadomości z wybranym trybem czytania, when zapisuję ten widok
   w ulubionych i wracam do niego później, then otwiera się od razu w trybie czytania.
-- [ ] **AC-5** — Given pasek stanu odświeżania, when patrzę na wejście do logu rozumowania, then stoi
+- [x] **AC-5** — Given pasek stanu odświeżania, when patrzę na wejście do logu rozumowania, then stoi
   ono **w tym samym wierszu** co wejście do lektora i ma własną ikonę.
 
 ### B. Układ akcji modułu i ustawienia *(zgłoszenie 6)*
 
-- [ ] **AC-6** — Given telefon 360 px, when patrzę na akcje główne modułu, then nie ma wiersza,
+- [x] **AC-6** — Given telefon 360 px, when patrzę na akcje główne modułu, then nie ma wiersza,
   w którym akcje są dosunięte do prawej krawędzi z pustą lewą połową, i żaden tekst nie jest przycięty.
-- [ ] **AC-7** — Given moduł mający własne ustawienia, when szukam do nich wejścia, then stoi ono
+- [x] **AC-7** — Given moduł mający własne ustawienia, when szukam do nich wejścia, then stoi ono
   przy akcjach widoku, a **nie** wśród zakładek/widoków modułu.
-- [ ] **AC-8** — Given inny moduł, który zadeklaruje ustawienia, when otwieram jego widok, then
+- [x] **AC-8** — Given inny moduł, który zadeklaruje ustawienia, when otwieram jego widok, then
   wejście do ustawień jest w tym samym miejscu i wygląda tak samo — bez własnego kodu w module.
 
 ### C. Nagłówki sekcji i akcje tematu *(zgłoszenia 1, 2)*
 
-- [ ] **AC-9** — Given nagłówek sekcji z licznikiem, when patrzę na chip z liczbą, then stoi
+- [x] **AC-9** — Given nagłówek sekcji z licznikiem, when patrzę na chip z liczbą, then stoi
   **bezpośrednio przy tytule**, a nie na przeciwnym krańcu wiersza.
-- [ ] **AC-10** — Given telefon 360 px i długa nazwa tematu, when patrzę na nagłówek sekcji, then
+- [x] **AC-10** — Given telefon 360 px i długa nazwa tematu, when patrzę na nagłówek sekcji, then
   całość mieści się bez przycinania licznika i bez zawijania na drugą linię.
-- [ ] **AC-11** — Given nagłówek sekcji tematu, when patrzę na jego akcje, then edycja i usunięcie
+- [x] **AC-11** — Given nagłówek sekcji tematu, when patrzę na jego akcje, then edycja i usunięcie
   tematu są schowane pod jedną ikoną z trzema kropkami, a nie stoją odsłonięte.
-- [ ] **AC-12** — Given menu pod trzema kropkami, when je otwieram, then obie akcje działają jak
+- [x] **AC-12** — Given menu pod trzema kropkami, when je otwieram, then obie akcje działają jak
   dotąd (usunięcie nadal pyta o potwierdzenie z czerwonym przyciskiem).
 
 ### D. Potwierdzenia i przyklejone paski *(zgłoszenia 3, 7)*
 
-- [ ] **AC-13** — Given potwierdzenie „Oznacz wszystkie", when się pojawia, then ma treść mówiącą,
+- [x] **AC-13** — Given potwierdzenie „Oznacz wszystkie", when się pojawia, then ma treść mówiącą,
   ilu wiadomości dotyczy i co się z nimi stanie.
-- [ ] **AC-14** — Given telefon z paskiem gestów systemowych, when pojawia się okno potwierdzenia,
+- [x] **AC-14** — Given telefon z paskiem gestów systemowych, when pojawia się okno potwierdzenia,
   then jego przyciski są **powyżej** obszaru gestów.
-- [ ] **AC-15** — Given przewijana lista wiadomości, when treść przechodzi za przyklejone paski, then
+- [x] **AC-15** — Given przewijana lista wiadomości, when treść przechodzi za przyklejone paski, then
   **nie widać jej** ani w przerwie między paskami, ani po ich bokach.
 
 ### E. Odstępy w Pogodzie *(zgłoszenie 8)*
 
-- [ ] **AC-16** — Given widok Pogody, when patrzę na pierwszy element treści, then jest wyraźnie
+- [x] **AC-16** — Given widok Pogody, when patrzę na pierwszy element treści, then jest wyraźnie
   oddzielony od paska z nazwą modułu, a nie styka się z nim.
 
 ### F. Chrom konta i nawigacja *(zgłoszenie 9)*
 
-- [ ] **AC-17** — Given menu nawigacji, when szukam pozycji „Ulubione" i „Strona główna", then nie ma
+- [x] **AC-17** — Given menu nawigacji, when szukam pozycji „Ulubione" i „Strona główna", then nie ma
   ich na liście — obie funkcje mają swoje ikony.
-- [ ] **AC-18** — Given ikona gwiazdki, when ją klikam, then otwiera się jeden dialog ulubionych,
+- [x] **AC-18** — Given ikona gwiazdki, when ją klikam, then otwiera się jeden dialog ulubionych,
   w którym widzę wszystkie zapisane widoki **oraz** mogę dodać albo usunąć widok, na którym jestem.
-- [ ] **AC-19** — Given panel boczny na komputerze, when patrzę na wiersz z nazwą aplikacji, then po
+- [x] **AC-19** — Given panel boczny na komputerze, when patrzę na wiersz z nazwą aplikacji, then po
   prawej stronie stoją: najpierw przełącznik trybu administratora, a bardziej z prawej dzwonek.
-- [ ] **AC-20** — Given rząd ikon pod nazwą aplikacji, when patrzę od lewej, then stoją: ikona strony
+- [x] **AC-20** — Given rząd ikon pod nazwą aplikacji, when patrzę od lewej, then stoją: ikona strony
   głównej, gwiazdka, skróty klawiszowe.
-- [ ] **AC-21** — Given telefon, when patrzę na chrom konta i menu, then „Ulubione" i „Strona główna"
+- [x] **AC-21** — Given telefon, when patrzę na chrom konta i menu, then „Ulubione" i „Strona główna"
   również nie są pozycjami menu, a ich ikony są dostępne w górnym pasku.
 
 ## 5. Zakres
