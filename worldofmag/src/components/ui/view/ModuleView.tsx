@@ -46,6 +46,33 @@ export interface ModuleViewProps {
   // ── pasek widoku ──
   filters?: ReactNode;
   actions?: ReactNode;
+
+  /**
+   * 087 (AC-7, AC-8): USTAWIENIA MODUŁU — jedno miejsce dla całej aplikacji.
+   *
+   * Do 087 Wiadomości trzymały wejście do ustawień jako czwartą ZAKŁADKĘ, czyli w miejscu na
+   * *widoki*, nie na konfigurację. Właściciel zauważył, że „każdy lub prawie każdy moduł będzie miał
+   * jakieś ustawienia", więc miejsce trzeba wybrać raz — inaczej każdy kolejny moduł wymyśli własne.
+   *
+   * Rama rysuje koło zębate jako OSTATNIĄ pozycję strefy akcji. Pole jest opcjonalne, więc moduł bez
+   * ustawień wygląda dokładnie jak dziś; `active` zaznacza stan „jestem w ustawieniach" i pozwala
+   * temu samemu przyciskowi być wyjściem (bez zakładki nie byłoby dokąd wracać).
+   */
+  settings?: { onClick?: () => void; href?: string; active?: boolean; label?: string };
+
+  /**
+   * 087 (AC-1): RAMA BEZ CHROMU — widok bierze na siebie całą nawigację.
+   *
+   * Dołożone dla trybu czytania w Wiadomościach. Samo `filters={undefined}` nie wystarcza: w
+   * wariancie gęstym pasek renderuje się ZAWSZE, bo to on niesie tytuł. Przełączanie gęstości też
+   * nie jest wyjściem — w trybie czytania wróciłby duży nagłówek i chromu byłoby WIĘCEJ, nie mniej
+   * (68 px bloku nagłówka zamiast 48 px paska).
+   *
+   * Domyślnie wyłączone, więc żaden istniejący widok nie jest dotknięty. Widok, który o to prosi,
+   * musi mieć własne, zawsze widoczne wyjście z tego stanu — inaczej użytkownik zostaje w ramie
+   * bez klamki.
+   */
+  chromeless?: boolean;
   // ── stany brzegowe ──
   /**
    * `ready` renderuje `children`. Pozostałe wartości renderują wspólny stan brzegowy
@@ -129,6 +156,8 @@ export function ModuleView({
   breadcrumb,
   filters,
   actions,
+  settings,
+  chromeless = false,
   state = "ready",
   empty,
   error,
@@ -151,7 +180,7 @@ export function ModuleView({
    * m.in. Usługi i Warsztaty). Zostawał po nim pusty pasek wysokości `12px + var(--view-padding)`
    * pod nagłówkiem: nie błąd wyglądający na błąd, tylko dziura, którą łatwo wziąć za odstęp.
    */
-  const pasekMaTresc = compact || !!filters || !!actions;
+  const pasekMaTresc = !chromeless && (compact || !!filters || !!actions || !!settings);
 
   /**
    * Wysokość przyklejonego paska jako zmienna CSS na ramie.
@@ -240,16 +269,28 @@ export function ModuleView({
        * Tytuł i podtytuł świadomie ZOSTAJĄ przewijalne: przyklejenie ich zabrałoby na telefonie
        * kilkadziesiąt pikseli listy na stałe, a to nie one były przedmiotem zgłoszenia.
        */}
-      {(breadcrumb || !compact) && (
+      {!chromeless && (breadcrumb || !compact) && (
         <div
           style={{
             position: "relative",
             width: "100%",
             maxWidth: width === "narrow" ? 640 : undefined,
             margin: width === "narrow" ? "0 auto" : undefined,
-            // Bez dolnego odstępu — jego rolę przejmuje górny odstęp paska niżej, żeby suma
-            // pozostała dokładnie taka, jak przed rozdzieleniem.
-            padding: compact ? "0 12px" : fill ? "8px var(--view-padding) 0" : "var(--view-padding) var(--view-padding) 0",
+            /**
+             * Bez dolnego odstępu — jego rolę przejmuje górny odstęp paska niżej, żeby suma
+             * pozostała dokładnie taka, jak przed rozdzieleniem (085).
+             *
+             * 087 (AC-16): …ale TYLKO gdy pasek w ogóle powstanie. Widok bez filtrów, akcji
+             * i ustawień nie renderuje paska, więc razem z nim znikał też ten odstęp i treść
+             * przyklejała się do tytułu — zmierzone 0 px w Pogodzie. Dotyczy to co najmniej
+             * dziesięciu widoków (Pogoda, Usługi, Warsztaty…). Dokładamy dolne wypełnienie
+             * dokładnie równe górnemu wypełnieniu paska, więc widoki Z paskiem nie drgają.
+             */
+            padding: compact
+              ? "0 12px"
+              : fill
+                ? `8px var(--view-padding) ${pasekMaTresc ? "0" : "8px"}`
+                : `var(--view-padding) var(--view-padding) ${pasekMaTresc ? "0" : "12px"}`,
             display: "flex",
             flexDirection: "column",
             gap: fill ? 8 : 12,
@@ -314,6 +355,7 @@ export function ModuleView({
             icon={compact ? icon : undefined}
             iconColor={iconColor}
             filters={filters}
+            settings={settings}
             actions={compact && headerAction ? (
               <>
                 {actions}

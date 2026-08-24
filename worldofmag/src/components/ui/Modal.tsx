@@ -79,9 +79,29 @@ export function Modal({ open = true, onClose, title, children, footer, wide, hid
               {children}
             </div>
             {footer && (
+              /**
+               * 087 (AC-14): STOPKA NAD OBSZAREM GESTÓW SYSTEMOWYCH.
+               *
+               * Na telefonie okno jest arkuszem dolnym (`items-end`), więc jego stopka leży na samej
+               * krawędzi ekranu — czyli dokładnie tam, gdzie iPhone rysuje kreskę do przełączania
+               * aplikacji. Zgłoszenie właściciela: „dialog jest za nisko i nachodzi na kreskę".
+               * `env(safe-area-inset-bottom)` zna wysokość tego obszaru na konkretnym urządzeniu;
+               * stała liczba byłaby zgadywaniem psującym się przy każdym nowym modelu (ten sam
+               * wzorzec, co dolny pasek zakładek i powiadomienia o koszcie).
+               *
+               * Poprawka jest w PRYMITYWIE, więc obejmuje wszystkie okna aplikacji naraz — na
+               * komputerze `env()` wynosi zero, więc tam nic się nie zmienia.
+               */
               <div
-                className="px-5 py-3 flex-shrink-0"
-                style={{ borderTop: "1px solid var(--border)", display: "flex", gap: 8, justifyContent: "flex-end" }}
+                className="px-5 flex-shrink-0"
+                style={{
+                  borderTop: "1px solid var(--border)",
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  paddingTop: 12,
+                  paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
+                }}
               >
                 {footer}
               </div>

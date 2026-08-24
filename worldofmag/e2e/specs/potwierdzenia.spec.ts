@@ -31,7 +31,7 @@ test("[086-AC6] operacja usuwająca NADAL proponuje Usuń", async ({ page }) => 
   await page.waitForLoadState("load").catch(() => {});
 
   // Usunięcie tematu stoi w nagłówku sekcji — trzeba mieć widoczny temat.
-  const ustawienia = page.getByRole("tab", { name: "Ustawienia", exact: true });
+  const ustawienia = page.getByRole("button", { name: /Ustawienia modułu/i });
   await ustawienia.click();
   const przelacznik = page.getByRole("checkbox", { name: /Pokazuj tematy bez nowych wiadomości/i });
   await expect(przelacznik).toBeVisible({ timeout: 15_000 });

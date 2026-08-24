@@ -101,7 +101,17 @@ export function resolveMenu(permissions: string[], prefs: MenuPrefs) {
     const bi = orderIndex.has(b.id) ? orderIndex.get(b.id)! : 1000 + (MODULE_INDEX.get(b.id) ?? 0);
     return ai - bi;
   });
-  const accessible = ordered.filter((m) => hasAccess(m, permissions));
+  /**
+   * 087 (AC-17): STRONA GŁÓWNA NIE JEST POZYCJĄ MENU — ma własną ikonę w chromie konta.
+   *
+   * Zgłoszenie właściciela: „po lewej daj ikonę strony domowej zamiast pozycji w menu »strona
+   * domowa«". Moduł zostaje w rejestrze: ma trasę, uprawnienie i wpis w bramce rejestru — znika
+   * wyłącznie z LISTY. Filtrujemy tutaj, a nie w powłoce, bo tę samą listę czyta panel boczny,
+   * menu telefonu i ekran zarządzania menu w ustawieniach; filtr w jednym z tych miejsc zostawiłby
+   * pozycję w dwóch pozostałych. Musi wypaść także z „Więcej…" — inaczej wracałaby tam jako „dział
+   * do włączenia".
+   */
+  const accessible = ordered.filter((m) => m.id !== "home" && hasAccess(m, permissions));
   const disabledSet = new Set(prefs.disabled);
   return {
     enabled: accessible.filter((m) => !disabledSet.has(m.id)),

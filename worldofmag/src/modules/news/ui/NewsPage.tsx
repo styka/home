@@ -13,7 +13,8 @@ import {
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Settings2, Library, Plus, Loader2, Trash2, Pencil, CalendarClock } from "lucide-react";
+import { Newspaper, RefreshCw, Flame, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical, BookOpen, Minimize2
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -32,6 +33,7 @@ import { HotTopics } from "./HotTopics";
 import { NewsSettings } from "./NewsSettings";
 import { NewsModuleSettings } from "./NewsModuleSettings";
 import { SourceFilter } from "./SourceFilter";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { useSekcjeTematow, przewinDoSekcji, PROGRAMOWE_PRZEWIJANIE_MS } from "./sekcjeTematow";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
@@ -100,6 +102,14 @@ export function NewsPage({
       widok: oneOf(["feed", "hot", "sources", "settings"] as const, "feed"),
       tresc: oneOf(["items", "timeline"] as const, "items"),
       zrodla: idList(),
+      /**
+       * 087 (AC-4): TRYB CZYTANIA W ADRESIE, nie w pamięci komponentu ani w bazie.
+       *
+       * Ta sama zasada, co przy `tresc` i `zrodla` od 084: gwiazdka „zapisz ten widok" bierze adres,
+       * więc tryb trzymany gdzie indziej dawałby ulubione, które po powrocie pokazuje co innego niż
+       * w chwili zapisu. Decyzja właściciela na etapie `/specify`.
+       */
+      czytanie: oneOf(["0", "1"] as const, "0"),
     }),
     []
   );
@@ -108,6 +118,7 @@ export function NewsPage({
   const setView = useCallback((value: View) => setViewState({ widok: value }), [setViewState]);
   const tresc = viewState.tresc;
   const wybraneZrodla = viewState.zrodla;
+  const trybCzytania = viewState.czytanie === "1";
 
   /**
    * 084: NIE MA JUŻ „TEMATU WYBRANEGO" — jest tylko temat CZYTANY.
@@ -311,10 +322,23 @@ export function NewsPage({
     [tresc, widoczneWiadomosci, widocznaOs]
   );
 
+  /**
+   * 087: ta sama zasłona, ale jako LICZBA — potrzebna przewijaniu i obserwatorowi sekcji.
+   *
+   * Czytamy ją ŚWIEŻO w momencie użycia (`--view-bar-h` jest zwykłą wartością w pikselach ustawianą
+   * przez ramę, więc `getComputedStyle` ją rozwiązuje), zamiast trzymać w stanie. Trzymana w stanie
+   * musiałaby mieć własnego obserwatora paska widoku — czyli dokładnie to, co w 086 się rozjechało.
+   */
+  const zaslonaTeraz = useCallback(() => {
+    const rama = ramaRef.current;
+    const pasekWidoku = rama ? parseFloat(getComputedStyle(rama).getPropertyValue("--view-bar-h")) || 0 : 0;
+    return pasekWidoku + pasekH;
+  }, [pasekH]);
+
   // ── Sekcje: rejestr, obserwator, przewijanie ──────────────────────────────
   const { zarejestruj, przewinDo, programoweDo } = useSekcjeTematow({
     ramaRef,
-    zaslonaGory: pasekH,
+    zaslonaGory: zaslonaTeraz,
     onCzytana: setCzytanyTemat,
   });
 
@@ -325,9 +349,9 @@ export function NewsPage({
       if (!podazanie) return;
       const el = document.querySelector<HTMLElement>(`[data-news-item="${itemId}"]`);
       programoweDo.current = Date.now() + PROGRAMOWE_PRZEWIJANIE_MS;
-      przewinDoSekcji(ramaRef.current, el, pasekH + 80);
+      przewinDoSekcji(ramaRef.current, el, zaslonaTeraz() + 80);
     },
-    [pasekH, programoweDo, podazanie]
+    [zaslonaTeraz, programoweDo, podazanie]
   );
 
   /**
@@ -356,34 +380,28 @@ export function NewsPage({
 
 
   /**
-   * 086 (AC-20): zasłona liczona z WYSOKOŚCI, nie z POZYCJI. To jest poprawka błędu z 085.
+   * 087 (AC-15): ZASŁONA JEST WYRAŻENIEM CSS, NIE PRZELICZANĄ LICZBĄ — poprawka błędu z 086.
    *
-   * 085 mierzyło „odległość dolnej krawędzi paska modułu od górnej krawędzi ramy" i nazywało to
-   * jedną miarą odporną na to, co stanie wyżej. Miara jest jednak POZYCYJNA i rośnie o wszystko, co
-   * stanie MIĘDZY górą ramy a paskiem modułu — u właściciela o pasek stanu odświeżania.
+   * 086 liczyło `--news-pasek-h` jako `--view-bar-h + wysokość paska modułu` w efekcie, którego
+   * `ResizeObserver` pilnuje paska modułu i ramy. Zmiana wysokości PASKA WIDOKU nie zmienia rozmiaru
+   * żadnego z nich, więc obserwator się nie budzi i liczba zostaje stara. Zmierzone przy 360 px po
+   * podniesieniu paska widoku o 40 px (u właściciela robi to przycisk „Odświeżam…", który zawija
+   * drugi wiersz): `--view-bar-h` 101 → 141, `--news-pasek-h` **bez zmian, 160 px**, a przyklejone
+   * nagłówki rozjeżdżają się o 40 px. W jedną stronę wjeżdżają pod pasek, w drugą przyklejają się
+   * za nisko — i wtedy w szczelinie widać przewijaną treść. Dokładnie to zgłosił właściciel.
    *
-   * Uwaga na pułapkę pomiarową: dopóki pasek modułu PRZYLEGA do paska widoku, obie formuły dają tę
-   * samą liczbę (zmierzone 107 px = 48 px paska widoku + 59 px paska modułu — wartość poprawna).
-   * Dlatego pierwsza diagnoza („58 px za nisko") była nadinterpretacją, a test, który tylko czytał
-   * tę liczbę, przechodził w obu wersjach kodu. Różnicę widać dopiero, gdy nad paskiem modułu coś
-   * stanie: ze starą miarą zasłona rośnie 107 → 147 px, z nową zostaje na 107.
-   *
-   * Suma dwóch WYSOKOŚCI — paska widoku (rama publikuje ją jako `--view-bar-h`) i własnej wysokości
-   * paska modułu — nie zależy od tego, co stoi wyżej ani od przewinięcia, bo obie składowe są
-   * wysokościami.
+   * Publikujemy więc WYŁĄCZNIE własną wysokość, a sumowanie zostawiamy przeglądarce: zasłona to
+   * `calc(var(--view-bar-h, 0px) + <ta wysokość>)`. `calc()` przelicza się przy każdej zmianie
+   * `--view-bar-h` sam z siebie, więc nie ma czego synchronizować i nie ma czym się rozjechać —
+   * znika cała klasa błędu „obserwator nie widzi zmiany, która stoi wyżej".
    */
   useEffect(() => {
     const el = pasekRef.current;
-    const rama = ramaRef.current;
-    if (!el || !rama || typeof ResizeObserver === "undefined") return;
-    const zmierz = () => {
-      const pasekWidoku = parseFloat(getComputedStyle(rama).getPropertyValue("--view-bar-h")) || 0;
-      setPasekH(Math.max(0, Math.round(pasekWidoku + el.offsetHeight)));
-    };
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const zmierz = () => setPasekH(Math.max(0, Math.round(el.offsetHeight)));
     zmierz();
     const ro = new ResizeObserver(zmierz);
     ro.observe(el);
-    ro.observe(rama);
     return () => ro.disconnect();
     // Pasek istnieje tylko w widoku wiadomości — przy zmianie zakładki mierzymy od nowa.
   }, [view, topics.length]);
@@ -499,28 +517,9 @@ export function NewsPage({
     (topicId: string) => {
       const topic = topics.find((x) => x.id === topicId);
       if (!topic) return null;
-      return (
-        <>
-          <button
-            onClick={() => setEditing(topic)}
-            className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-            title="Edytuj temat"
-            aria-label={`Edytuj temat: ${topic.title}`}
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            onClick={() => usunTemat(topic)}
-            className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--accent-red)]"
-            title={t("usunTemat")}
-            aria-label={`Usuń temat: ${topic.title}`}
-          >
-            <Trash2 size={16} />
-          </button>
-        </>
-      );
+      return <MenuTematu topic={topic} onEdytuj={() => setEditing(topic)} onUsun={() => usunTemat(topic)} />;
     },
-    [topics, usunTemat, t]
+    [topics, usunTemat]
   );
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
@@ -542,8 +541,31 @@ export function NewsPage({
        * wszystko nad treścią".
        */
       density="compact"
-      filters={<ViewTabs view={view} onChange={setView} />}
+      /**
+       * 087 (AC-1): TRYB CZYTANIA chowa chrom modułu — pasek stanu, zakładki, akcje główne
+       * i ustawienia. Zostaje własny pasek nawigacji (skok do tematu, filtr portali, przełącznik
+       * treści) oraz lektor, czyli dokładnie to, o co prosił właściciel: „jak najwięcej miejsca dla
+       * samych wiadomości, ale nadal z lektorem i nawigacją".
+       */
+      // Tylko w widoku wiadomości: pasek modułu (a w nim JEDYNE wyjście z trybu) renderuje się
+      // wyłącznie tam, więc `chromeless` na innej zakładce zostawiłby ramę bez klamki.
+      chromeless={trybCzytania && view === "feed"}
+      filters={trybCzytania ? undefined : <ViewTabs view={view} onChange={setView} />}
+      /**
+       * 087 (AC-7): ustawienia modułu w slocie ramy, nie jako czwarta zakładka. Ten sam przycisk
+       * wchodzi i wychodzi (`active`), bo bez zakładki nie byłoby dokąd wracać.
+       */
+      settings={
+        trybCzytania
+          ? undefined
+          : {
+              onClick: () => setView(view === "settings" ? "feed" : "settings"),
+              active: view === "settings",
+              label: t("ustawieniaModulu"),
+            }
+      }
       headerAction={
+        trybCzytania ? undefined : (
         <>
           {/* 083 (AC-21): „nowy temat" wychodzi z paska nawigacji do akcji widoku — dodanie tematu
               nie dotyczy tematu wybranego, więc nie ma czego stać obok jego nazwy. */}
@@ -558,10 +580,11 @@ export function NewsPage({
             {refreshRunning ? "Odświeżam…" : "Odśwież"}
           </Button>
         </>
+        )
       }
     >
       <div className="mx-auto w-full max-w-6xl">
-        <RefreshStatus state={refresh} running={refreshRunning} />
+        {!trybCzytania && <RefreshStatus state={refresh} running={refreshRunning} />}
 
         {view === "hot" && <HotTopics monitorowane={topics} onTopicsChanged={() => router.refresh()} />}
 
@@ -583,7 +606,7 @@ export function NewsPage({
             className="min-w-0"
             // Wysokość paska jako zmienna CSS: czytają ją sekcje tematów (przyklejony nagłówek
             // i margines celu przewijania), więc nie musi ich obchodzić, skąd się bierze.
-            style={{ "--news-pasek-h": `${pasekH}px` } as CSSProperties}
+            style={{ "--news-pasek-h": `calc(var(--view-bar-h, 0px) + ${pasekH}px)` } as CSSProperties}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -632,6 +655,26 @@ export function NewsPage({
                       onZmiana={(klucze) => setViewState({ zrodla: klucze })}
                     />
                     <ContentSwitch value={tresc} onChange={(v) => setViewState({ tresc: v })} />
+                    {/**
+                      * 087 (AC-3): przełącznik trybu czytania stoi W PASKU MODUŁU, a nie w akcjach
+                      * widoku — bo w trybie czytania akcji widoku nie ma, więc byłby jedynym
+                      * wyjściem, którego nie widać. Wejście i wyjście to ten sam przycisk.
+                      */}
+                    <button
+                      type="button"
+                      onClick={() => setViewState({ czytanie: trybCzytania ? "0" : "1" })}
+                      aria-pressed={trybCzytania}
+                      title={trybCzytania ? t("wyjdzZTrybuCzytania") : t("trybCzytania")}
+                      aria-label={trybCzytania ? t("wyjdzZTrybuCzytania") : t("trybCzytania")}
+                      className={cn(
+                        "shrink-0 rounded-md border px-2.5 py-3 transition-colors",
+                        trybCzytania
+                          ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                          : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                      )}
+                    >
+                      {trybCzytania ? <Minimize2 size={14} /> : <BookOpen size={14} />}
+                    </button>
                   </div>
                 }
               />
@@ -691,6 +734,9 @@ export function NewsPage({
 }
 
 /**
+ * 087 (AC-7): TRZY zakładki. Ustawienia wyszły stąd do slotu w pasku akcji, który rama rysuje
+ * jednakowo dla wszystkich modułów — zakładki są miejscem na WIDOKI, nie na konfigurację.
+ *
  * 085 (AC-17): cztery zakładki, ale nie cztery etykiety.
  *
  * „Ustawienia" to zakładka, po którą sięga się raz na kilka tygodni, a czwarta pełna etykieta
@@ -702,7 +748,6 @@ const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper; tylko
   { key: "feed", label: "Tematy", icon: Newspaper },
   { key: "hot", label: "Gorące tematy", icon: Flame },
   { key: "sources", label: "Źródła", icon: Library },
-  { key: "settings", label: "Ustawienia", icon: Settings2, tylkoIkona: true },
 ];
 
 /**
@@ -922,5 +967,74 @@ function TopicModal({
         />
       </div>
     </Modal>
+  );
+}
+
+/**
+ * 087 (AC-11, AC-12): RZADKIE AKCJE TEMATU POD TRZEMA KROPKAMI.
+ *
+ * Edycja i usunięcie tematu stały odsłonięte w nagłówku KAŻDEJ sekcji — dwie ikony razy kilkanaście
+ * tematów, w pasku, który i tak jest ciasny na telefonie. Zgłoszenie właściciela: „te ikony niech
+ * będą dostępne w dropdown poprzez ikonę z trzema kropkami".
+ *
+ * Stoi na `AnchoredLayer` — tym samym prymitywie, co filtr portali w tym module (C-53): zamykanie
+ * klikiem obok, pozycjonowanie i portal do `body` dostajemy gotowe. Usunięcie zostaje jawnie
+ * destrukcyjne (C-34) — okno potwierdzenia rysuje `usunTemat`.
+ */
+function MenuTematu({
+  topic,
+  onEdytuj,
+  onUsun,
+}: {
+  topic: TopicDTO;
+  onEdytuj: () => void;
+  onUsun: () => void;
+}) {
+  const t = useTranslations("modules.news.NewsPage");
+  const [otwarte, setOtwarte] = useState(false);
+  const kotwicaRef = useRef<HTMLDivElement>(null);
+
+  const pozycja =
+    "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]";
+
+  return (
+    <div ref={kotwicaRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOtwarte((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={otwarte}
+        title={t("wiecejDzialan")}
+        aria-label={t("wiecejDzialanTematu", { temat: topic.title })}
+        className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      <AnchoredLayer
+        anchorRef={kotwicaRef}
+        open={otwarte}
+        onClose={() => setOtwarte(false)}
+        side="dol"
+        align="koniec"
+        width={220}
+        role="menu"
+        ariaLabel={t("wiecejDzialan")}
+      >
+        <button type="button" role="menuitem" className={pozycja} onClick={() => { setOtwarte(false); onEdytuj(); }}>
+          <Pencil size={15} className="shrink-0 text-[var(--text-muted)]" />
+          {t("edytujTemat")}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          className={`${pozycja} hover:text-[var(--accent-red)]`}
+          onClick={() => { setOtwarte(false); onUsun(); }}
+        >
+          <Trash2 size={15} className="shrink-0 text-[var(--text-muted)]" />
+          {t("usunTemat")}
+        </button>
+      </AnchoredLayer>
+    </div>
   );
 }
