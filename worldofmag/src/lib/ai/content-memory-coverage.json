@@ -142,5 +142,9 @@
   "src/modules/news/lib/goraceTematy.ts": {
     "mode": "remembered",
     "reason": "Gorące tematy to treść DO CZYTANIA — lista powstaje raz i wraca z pamięci; 086 przeniosło rdzeń z akcji, żeby wołało go też zadanie odświeżania (force przy nowych materiałach)."
+  },
+  "src/modules/tasks/jobs/feedbackTitle.ts": {
+    "mode": "on-demand",
+    "reason": "Tytuł JEDNEGO, konkretnego zgłoszenia. Pamięć treści zwracałaby tytuł policzony dla innego opisu, a wynik i tak trwale zapisuje się w polu Task.title — to baza jest tu nośnikiem, nie AiContent."
   }
 }

@@ -628,6 +628,35 @@ export async function completeRecurringTask(
   return toTask(closed);
 }
 
+// ─── 099: załączniki zadania ────────────────────────────────────────────────
+//
+// Dziś jedyny konsument to zrzut wskazanego elementu dołączany do zgłoszenia z trybu wskazywania.
+// Sam ZAPIS robi `submitFeedbackTask` (skrzynka zgłoszeń ma własny, wąski wyjątek dostępu — patrz
+// `src/actions/feedback.ts`); tutaj jest wyłącznie ODCZYT, pilnowany zwykłym guardem zadania:
+// kto nie widzi zadania, nie widzi jego zrzutu. Kasowania nie ma — załącznik ginie kaskadą razem
+// z zadaniem.
+
+export type TaskAttachmentDTO = { id: string; name: string; kind: string; url: string; createdAt: string };
+
+export async function getTaskAttachments(taskId: string): Promise<TaskAttachmentDTO[]> {
+  const user = await requireAuth();
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!task) throw new Error("Task not found");
+  await assertTaskAccess(task, user.id);
+  const rows = await prisma.taskAttachment.findMany({
+    take: SUFIT_LISTY,
+    where: { taskId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((a) => ({
+    id: a.id,
+    name: a.name,
+    kind: a.kind,
+    url: a.url,
+    createdAt: a.createdAt.toISOString(),
+  }));
+}
+
 export async function addTaskComment(taskId: string, content: string): Promise<void> {
   const user = await requireAuth();
   const task = await prisma.task.findUnique({ where: { id: taskId } });

@@ -2524,6 +2524,12 @@
     "status": "ai",
     "access": "owner"
   },
+  "tasks:getTaskAttachments": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "internal",
+    "access": "shared"
+  },
   "tasks:getTasks": {
     "kind": "read",
     "status": "ai",

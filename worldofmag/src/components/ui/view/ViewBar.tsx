@@ -75,9 +75,19 @@ export function ViewBar({ filters, actions, settings, compact, title, titleHref,
       {/* `md:contents` rozpuszcza to opakowanie na komputerze, żeby jego dzieci stały się wprost
           elementami paska. Kolejność musi być wtedy podana JAWNIE (`md:order-*`) — bez tego filtry,
           które w drzewie stoją na końcu, wylądowałyby na komputerze za chromem zamiast pośrodku. */}
+      {/**
+       * 099 (AC-14): wiersz, który na telefonie nie ma CO pokazać, nie może zajmować miejsca.
+       *
+       * Poniżej `md` tytuł jest ukryty (`hidden md:flex`), więc jedyną treścią tego wiersza są
+       * akcje i ustawienia. Widok, który ich nie ma (Zadania: `density="compact"` i same filtry),
+       * dostawał pustą listwę 48 px pod nazwą modułu — właściciel zgłosił ją jako „pustą linię na
+       * mobile". `hidden md:contents` usuwa wiersz tam, gdzie jest pusty, a od `md` przywraca
+       * DOKŁADNIE dotychczasowy układ (AC-15): `display: contents` rozpuszcza opakowanie i jego
+       * dzieci wracają na swoje miejsca w pasku.
+       */}
       <div
-        className="flex min-w-0 items-center gap-2 md:contents"
-        style={{ minHeight: compact ? 48 : undefined }}
+        className={(actions || settings) ? "flex min-w-0 items-center gap-2 md:contents" : "hidden md:contents"}
+        style={{ minHeight: compact && (actions || settings) ? 48 : undefined }}
       >
       {/* Wariant gęsty: tytuł w pasku, nie nad nim. */}
       {compact && title && (

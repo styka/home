@@ -4774,3 +4774,61 @@ komponentów", zauważając, że w trybie edycji (jedna kolumna) wygląda lepiej
 na kafelkach. W kolumnach `gap` nie działa w pionie, więc odstęp daje `margin-bottom`.
 **Lekcja:** Siatka jest do układów, w których wiersze mają się wyrównywać. Do „ciasnego pakowania"
 kafelków o różnej wysokości służy układ wielokolumnowy — bez JavaScriptu i bez biblioteki masonry.
+
+## 2026-08-24 — Wolny numer przebiegu bierze się z kodu, nie z listy katalogów
+**Problem:** Nowy przebieg dostał numer 088, bo `specs/` kończyło się na `087`. Numer był zajęty:
+przebiegi 088–098 wykonano bez katalogu w `specs/` i żyją wyłącznie w komentarzach w kodzie
+(088 = „rola procesu", zadanie 33 Fazy 6 — `platform/runtime/rola.ts`, `platform/jobs/worker.ts`,
+`/api/health`). Kolizja wyszła dopiero przy pisaniu klikaczy, po pięciu commitach.
+**Rozwiązanie:** Przenumerowanie na 099 — katalog artefaktów, wszystkie komentarze w kodzie
+i komunikaty commitów (`git filter-branch --msg-filter` na własnych, jeszcze niewypchniętych commitach).
+**Lekcja:** Numer przebiegu jest w tym repozytorium **adresem**: po nim szuka się, dlaczego coś
+wygląda jak wygląda. Dwa przebiegi pod jednym numerem czynią ten adres bezużytecznym. Wolny numer
+sprawdzaj tam, gdzie numery naprawdę mieszkają — `grep -rn "\b09[0-9]\b" src | grep -v generated` —
+a nie po `ls specs/`. Katalog artefaktów pokazuje tylko te przebiegi, które przeszły pipeline'em.
+
+## 2026-08-24 — Zamknięcie okna przerywa żądanie, więc „zapisz najpierw, model potem" to poprawność
+**Problem:** Właściciel zgłosił, że po opisaniu błędu przez „robaczka" musi czekać z zamknięciem
+asystenta, bo inaczej nie ma pewności, że zadanie powstało — i dodał „może się mylę, sprawdź to".
+Nie mylił się. Zgłoszenie szło pętlą agenta (model rozumujący → PLAN → drugie żądanie do
+`/execute`), a `handleClose` woła `abortRef.current?.abort()`. Zamknięcie okna **anulowało
+zgłoszenie w locie** — bez śladu, bez błędu, bez zadania.
+**Rozwiązanie:** Tryb zgłoszenia woła Server Action wprost: zadanie powstaje natychmiast z tytułem
+roboczym z opisu, a ładny tytuł dorabia zadanie w kolejce (`tasks.feedbackTitle`, jedno wywołanie na
+typie `dispatch`). Potwierdzenie widać od razu. Klikacz przechodzi cały scenariusz w 3,3 s.
+**Lekcja:** Gdy praca użytkownika przechodzi przez model, kolejność „najpierw zapis, potem model"
+jest wymogiem poprawności, a nie oszczędnością — bo wszystko, co trwa, da się przerwać zamknięciem
+karty. A gdy wynik modelu ma dogonić zapisany rekord, nośnikiem jest **kolejka**, nie strzał
+z przeglądarki: strzał ginie dokładnie w tym samym momencie co pierwotne żądanie.
+
+## 2026-08-24 — Pomiar wobec elementu, który przesuwa się razem z mierzonym, niczego nie dowodzi
+**Problem:** Kropki osi czasu wystawały poza kolumnę treści, więc przy przewijaniu przesuwały się
+widocznie OBOK przyklejonych pasków. Poprawka (margines na `ol`) była dobra, ale klikacz ją odrzucił:
+mierzył `ol.left - kropka.left` i dalej dostawał 4 px. Oczywiste po fakcie — margines przesuwa `ol`
+i kropkę o tyle samo, więc ta różnica jest z definicji niezmienna.
+**Rozwiązanie:** Punktem odniesienia jest **przyklejony pasek**, bo usterka brzmiała „widać coś obok
+paska": `pasek.left - kropka.left ≤ 0`. Odchyłkę od linii osi mierzymy osobno, żeby poprawka nie
+zamieniła jednej usterki na drugą (kropka obok linii).
+**Lekcja:** Punkt odniesienia w pomiarze wybieraj z TREŚCI zgłoszenia, nie z sąsiedztwa w drzewie
+DOM. Jeśli układ odniesienia porusza się razem z mierzonym elementem, test przejdzie albo padnie
+z powodów niezwiązanych z usterką.
+
+## 2026-08-24 — Regułę w pliku „use server" bramka odrzuca słusznie
+**Problem:** Walidacja zrzutu („czy dołączać obraz") wylądowała jako prywatny helper w
+`src/actions/feedback.ts`. `check:domain` zaczerwienił się: pomocników w plikach akcji 35, próg 34.
+**Rozwiązanie:** Reguły zgłoszenia zamieszkały razem w `src/lib/ai/zgloszenie.ts` (tytuł roboczy,
+dopuszczalność zrzutu, limit rozmiaru) i dostały wspólny test.
+**Lekcja:** Bramka nie czepia się liczby — plik `"use server"` nie eksportuje funkcji synchronicznej,
+więc reguły w nim NIE DA SIĘ zaimportować do testu. Efekt uboczny przeniesienia bywa właściwym celem:
+limit zrzutu ma teraz jedno miejsce dla klienta (degradacja PNG → JPEG) i serwera (ostatnia linia
+obrony); dwie kopie rozjechałyby się po cichu, a objawem byłby zrzut odrzucany po „udanym" wysłaniu.
+
+## 2026-08-24 — Wiersz o stałej wysokości, który bywa pusty, jest pustą linią
+**Problem:** Właściciel: „czemu tu jest pusta linia na mobile?". W `ViewBar` pierwszy wiersz ma
+`minHeight: 48` przy `density="compact"`, a poniżej `md` jego jedyną treścią są akcje i ustawienia —
+tytuł jest tam `hidden md:flex`. Widok bez akcji (Zadania mają same filtry) dostawał 48 px pustki.
+**Rozwiązanie:** Gdy nie ma ani akcji, ani ustawień, wiersz jest `hidden md:contents` — znika na
+telefonie, a od `md` `display: contents` przywraca dokładnie dotychczasowy układ.
+**Lekcja:** `minHeight` na kontenerze, którego zawartość bywa warunkowa, to rezerwacja miejsca na
+nic. Przy przenoszeniu treści za `hidden md:*` sprawdź, czy opakowanie ma jeszcze po co istnieć
+w tym punkcie granicznym.

@@ -5,9 +5,9 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
-  MessageSquare, Eye, Undo2, FolderInput,
+  MessageSquare, Eye, Undo2, FolderInput, Image as ImageIcon,
 } from "lucide-react";
-import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare } from "../actions/tasks";
+import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare, getTaskAttachments, type TaskAttachmentDTO } from "../actions/tasks";
 import { ShareControl } from "@/components/sharing/ShareControl";
 import { createTaskTag } from "../actions/taskTags";
 import { TaskTagBadge } from "./TaskTagBadge";
@@ -16,6 +16,7 @@ import type { Task, TaskPriority, TaskTagDef, RecurringRule, ProjectStatusConfig
 import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatusConfig } from "@/types";
 import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { Modal } from "@/components/ui/Modal";
 
 interface TaskDetailProps {
   task: Task;
@@ -854,6 +855,11 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           />
         </div>
 
+        {/* 099: załączniki zadania — dziś w praktyce zrzut wskazanego elementu ze zgłoszenia.
+            Bloku nie ma, gdy nie ma czego pokazać: to nie jest widok, tylko dodatek do zadania,
+            więc pusty stan byłby samym szumem. */}
+        <TaskAttachments taskId={task.id} />
+
         {/* Comments */}
         <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
           <div className="flex items-center gap-1.5 mb-2">
@@ -898,6 +904,68 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           <div>Zaktualizowane: {new Date(task.updatedAt).toLocaleString("pl-PL")}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * 099: załączniki zadania. Kalka `NoteAttachments` z modułu Notatek (C-53 — ten sam kształt, ten
+ * sam sposób ładowania), zawężona do tego, co dziś istnieje: ODCZYT i podgląd. Dodawania ani
+ * kasowania tu nie ma — jedyny producent to zgłoszenie z trybu wskazywania, a załącznik ginie
+ * kaskadą razem z zadaniem.
+ */
+function TaskAttachments({ taskId }: { taskId: string }) {
+  const t = useTranslations("modules.tasks.TaskDetail");
+  const [items, setItems] = useState<TaskAttachmentDTO[] | null>(null);
+  const [podglad, setPodglad] = useState<TaskAttachmentDTO | null>(null);
+
+  useEffect(() => {
+    let aktualne = true;
+    getTaskAttachments(taskId)
+      .then((r) => { if (aktualne) setItems(r); })
+      .catch(() => { if (aktualne) setItems([]); });
+    return () => { aktualne = false; };
+  }, [taskId]);
+
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center gap-1.5 mb-2">
+        <ImageIcon size={13} style={{ color: "var(--text-muted)" }} />
+        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+          {t("zalaczniki")} ({items.length})
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {items.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => setPodglad(a)}
+            title={a.name}
+            className="overflow-hidden rounded border focus:outline-none"
+            style={{ borderColor: "var(--border)" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={a.url} alt={a.name} style={{ width: 96, height: 72, objectFit: "cover", display: "block" }} />
+          </button>
+        ))}
+      </div>
+
+      {/* Podgląd idzie wspólnym `Modal`-em, a nie własną nakładką (C-35): stamtąd biorą się Escape,
+          pułapka fokusu i margines na kreskę iPhone'a, których ręcznie rysowana warstwa nie ma. */}
+      {podglad && (
+        <Modal open onClose={() => setPodglad(null)} title={podglad.name} wide>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={podglad.url}
+            alt={podglad.name}
+            style={{ maxWidth: "100%", height: "auto", display: "block", borderRadius: "var(--radius-md)" }}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

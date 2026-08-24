@@ -650,7 +650,8 @@
         "zatwierdz": "Zatwierdź",
         "odrzucAkcje": "Odrzuć akcje",
         "odrzuc": "Odrzuć",
-        "otworzRaport": "Otwórz raport"
+        "otworzRaport": "Otwórz raport",
+        "priorytet": "Priorytet:"
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",
@@ -1309,7 +1310,9 @@
         "monitorowane": "Monitorowane",
         "odrzucone": "Odrzucone",
         "tematyKtoreMonitorujesz": "Tematy, które monitorujesz. Ich propozycje nie pojawią się już na liście gorących tematów.",
-        "przestanMonitorowac": "Przestań monitorować"
+        "przestanMonitorowac": "Przestań monitorować",
+        "proponowane": "Proponowane",
+        "wiecejDzialan": "Więcej działań"
       },
       "NewsItemCard": {
         "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła.",
@@ -1898,7 +1901,8 @@
         "odCzegoLiczycKolejny": "Od czego liczyć kolejny termin po wykonaniu",
         "usunPowtarzanie": "Usuń powtarzanie",
         "zrobioneNastepneLicz": "Zrobione — następne licz",
-        "nastepneWTejDacie": "Następne w tej dacie"
+        "nastepneWTejDacie": "Następne w tej dacie",
+        "zalaczniki": "Załączniki"
       },
       "TaskList": {
         "sprobujZmienicFiltrStatusu": "Spróbuj zmienić filtr statusu"
