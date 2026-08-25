@@ -1,0 +1,13 @@
+-- 100: dominująca ręka użytkownika (prawa/lewa) — steruje układem dolnego paska na telefonie
+-- oraz stroną, po której stoją: gwiazdka ulubionych, magiczna ikona asystenta i ikona zgłaszania.
+--
+-- Nośnikiem jest `UserMenuPref`, bo powłoka i tak czyta tę tabelę na każdej stronie (ten sam
+-- argument, którym 080 uzasadniło `favoritesCollapsed`) — osobna tabela oznaczałaby drugie
+-- zapytanie w `layout.tsx` przy każdym żądaniu.
+--
+-- DEFAULT jest WYMAGANY, nie kosmetyczny: kolumna jest NOT NULL, a tabela ma istniejące wiersze.
+-- Zostaje też na stałe (bez późniejszego DROP DEFAULT) — rozjazd między domyślnikiem bazy
+-- a domyślnikiem kodu (`defaultMenuPrefs()`) to klasyczne źródło „u nowego użytkownika jest inaczej".
+--
+-- Wartości: 'right' | 'left' — String + union w TypeScripcie, ŻADNEGO enuma Prisma (C-12).
+ALTER TABLE "UserMenuPref" ADD COLUMN IF NOT EXISTS "handedness" TEXT NOT NULL DEFAULT 'right';

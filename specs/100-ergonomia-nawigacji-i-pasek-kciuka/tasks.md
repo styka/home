@@ -62,25 +62,25 @@
 
 ## Faza C — Fundament danych dla ręki
 
-- [ ] **T-11** — Migracja `prisma/migrations/0260_reka_dominujaca/migration.sql`:
+- [x] **T-11** — Migracja `prisma/migrations/0260_reka_dominujaca/migration.sql`:
       `ALTER TABLE "UserMenuPref" ADD COLUMN IF NOT EXISTS "handedness" TEXT NOT NULL DEFAULT 'right';`
       — i **nic więcej** (`grep -E "^(DROP|ALTER TABLE .* DROP)"` pusty, C-15).
       *Gotowe, gdy:* `npm run check:migrations` przechodzi.
-- [ ] **T-12** — `prisma/schema.prisma`: `handedness String @default("right")` w `UserMenuPref`
+- [x] **T-12** — `prisma/schema.prisma`: `handedness String @default("right")` w `UserMenuPref`
       (**bez enuma** — C-12); `npx prisma migrate deploy` na lokalnym Postgresie + `prisma generate`.
       *Gotowe, gdy:* `npm run check:schema-drift` przechodzi.
-- [ ] **T-13** — `src/lib/modules.tsx`: `export type Reka = "right" | "left"`, `MenuPrefs.handedness`,
+- [x] **T-13** — `src/lib/modules.tsx`: `export type Reka = "right" | "left"`, `MenuPrefs.handedness`,
       `defaultMenuPrefs()` zwraca `"right"`.
-- [ ] **T-14** — `src/actions/menuPrefs.ts`: odczyt `handedness` z rzutowaniem na `Reka` i zejściem do
+- [x] **T-14** — `src/actions/menuPrefs.ts`: odczyt `handedness` z rzutowaniem na `Reka` i zejściem do
       `"right"` przy nieznanej wartości (kolumna jest `String` — walidacja należy do kodu); zapis
       w `updateMenuPrefs`; sprawdź, czy `revalidatePath` obejmuje całą powłokę, a nie tylko ustawienia
       — ręka zmienia chrom na każdej stronie.
       *Gotowe, gdy:* zapis i odczyt działają, `revalidatePath` na miejscu (C-20).
-- [ ] **T-15** — `src/components/settings/MenuPrefsEditor.tsx`: dwustanowy przełącznik „Dominująca
+- [x] **T-15** — `src/components/settings/MenuPrefsEditor.tsx`: dwustanowy przełącznik „Dominująca
       ręka: Prawa / Lewa" z `aria-pressed`, zapis wzorcem `persistTabBar` + `router.refresh()`;
       teksty do `messages/pl.json`.
       *Gotowe, gdy:* wybór przeżywa przeładowanie strony. **(AC-11)**
-- [ ] **T-16** — `src/app/layout.tsx`: `data-reka={menuPrefs.handedness}` na `<html>` (tam, gdzie
+- [x] **T-16** — `src/app/layout.tsx`: `data-reka={menuPrefs.handedness}` na `<html>` (tam, gdzie
       nakładane są inline tokeny skórki) — kanał dla lustrzenia czysto CSS-owego, bez FOUC.
 
 ## Faza D — Pasek kciuka i wachlarz (dotyka każdej trasy)

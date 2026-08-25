@@ -725,7 +725,11 @@
         "wGore": "W górę",
         "wDol": "W dół",
         "brakIkonDodajPonizej": "Brak ikon — dodaj poniżej.",
-        "usunZDolnegoPaska": "Usuń z dolnego paska"
+        "usunZDolnegoPaska": "Usuń z dolnego paska",
+        "dominujacaReka": "Dominująca ręka",
+        "dominujacaRekaOpis": "Po tej stronie ekranu staną: pozycje dolnego paska bliżej kciuka, gwiazdka ulubionych, magiczna ikona asystenta na komputerze i ikona zgłaszania. Magiczna ikona na telefonie zostaje na środku paska — po to, żeby nigdy nie trzeba jej było szukać.",
+        "rekaPrawa": "Prawa",
+        "rekaLewa": "Lewa"
       },
       "PrivacySettings": {
         "kompletTwoichDanychZe": "Komplet Twoich danych ze wszystkich modułów w formacie JSON (RODO art. 15/20).",
