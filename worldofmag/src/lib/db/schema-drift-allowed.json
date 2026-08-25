@@ -16,6 +16,10 @@
     {
       "pattern": "DROP INDEX \"ShoppingList_autoReplenish_workspace_key\"",
       "reason": "080 (zadanie 25): CZĘŚCIOWY indeks unikalny `ON \"ShoppingList\"(\"workspaceId\") WHERE \"autoReplenish\"` — trzyma niezmiennik „najwyżej jedna lista na braki z Magazynu w danej przestrzeni\". Prisma nie umie wyrazić indeksu warunkowego (`@@unique` objąłby WSZYSTKIE listy przestrzeni, czyli zabroniłby mieć więcej niż jedną listę zakupów w ogóle), więc indeks stoi w migracji i `migrate diff` zawsze zgłosi jego usunięcie. Usunięcie naprawdę zepsułoby regułę: dwie oznaczone listy sprawiłyby, że subskrybent dopisuje braki do przypadkowej z nich."
+    },
+    {
+      "pattern": "DROP INDEX .*YoutubeVideo_transkrypcja_trgm_idx",
+      "reason": "102: indeks pg_trgm na transkrypcjach filmów (szukanie po wszystkich zebranych transkrypcjach, AC-14) jest tworzony surowym SQL-em w migracji 0262. `schema.prisma` nie umie wyrazić indeksu GIN z operatorem trigramowym, więc `migrate diff` zawsze zgłosi jego usunięcie. Usunięcie sprawiłoby, że szukanie po dużej kolumnie tekstowej idzie skanem sekwencyjnym."
     }
   ]
 }
