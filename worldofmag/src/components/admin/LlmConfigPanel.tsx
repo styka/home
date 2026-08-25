@@ -234,6 +234,19 @@ function ProviderRow({ provider }: { provider: ProviderDTO }) {
         <span className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>
           {saved ? "zapisano" : provider.hasKey ? provider.apiKeyMasked : "brak klucza"}
         </span>
+        {/*
+          104 (punkt 5): klucz zapisany przed wprowadzeniem szyfrowania leży w bazie otwartym
+          tekstem — działa, bo odczyt jest wstecznie zgodny, i właśnie dlatego nic tego nie
+          zdradzało. Ponowny zapis tej samej wartości go zaszyfruje.
+        */}
+        {provider.hasKey && !provider.zaszyfrowany && (
+          <span
+            style={{ fontSize: 11, fontWeight: 600, color: "var(--accent-amber)", whiteSpace: "nowrap" }}
+            title={t("kluczJawnyTytul")}
+          >
+            {t("kluczJawny")}
+          </span>
+        )}
         <button onClick={() => setEditingKey((v) => !v)} className="text-xs px-2 py-1 rounded" style={{ color: "var(--text-secondary)" }}>
           Klucz
         </button>

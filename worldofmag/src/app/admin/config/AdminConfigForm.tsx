@@ -5,7 +5,12 @@ import { useState, useTransition } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import { setConfigValue } from "@/actions/config";
 
-type MaskedKey = { hasValue: boolean; masked: string };
+/**
+ * 104 (punkt 5): `zaszyfrowany` mówi, czy wartość W BAZIE niesie znacznik szyfrowania. Klucze
+ * zapisane przed wprowadzeniem szyfrowania leżą otwartym tekstem i takie zostaną, dopóki ktoś ich
+ * ponownie nie zapisze — a do tej pory nie było jak tego zobaczyć.
+ */
+type MaskedKey = { hasValue: boolean; masked: string; wymagaSzyfrowania: boolean; zaszyfrowany: boolean };
 
 interface AdminConfigFormProps {
   groqKey: MaskedKey;
@@ -178,7 +183,7 @@ function ApiKeyCard({
   sectionTitle: string;
   label: string;
   configKey: string;
-  current: { hasValue: boolean; masked: string };
+  current: MaskedKey;
   placeholder: string;
   help: React.ReactNode;
 }) {
@@ -201,6 +206,9 @@ function ApiKeyCard({
   }
 
   const maskedDisplay = current.hasValue ? current.masked : "Nie ustawiony";
+  // Ostrzegamy tylko o kluczach, które SZYFROWANIU podlegają — dla wartości jawnych z definicji
+  // (np. identyfikator projektu) brak znacznika nie jest usterką.
+  const jawny = savedHasValue && current.wymagaSzyfrowania && !current.zaszyfrowany;
 
   return (
     <section>
@@ -241,10 +249,34 @@ function ApiKeyCard({
                 color: "var(--text-muted)",
                 border: "1px solid var(--border)",
               }}
-              title={t("kluczJestZaszyfrowanyPokazujemy")}
+              title={jawny ? t("jawnyTytul") : t("kluczJestZaszyfrowanyPokazujemy")}
             >
               <span className="flex-1">Ustawiony: {maskedDisplay}</span>
+              {/*
+                Stan szyfrowania pokazujemy przy KAŻDYM ustawionym kluczu, nie tylko przy jawnym.
+                Sam brak ostrzeżenia jest dwuznaczny — nie wiadomo, czy klucz jest zaszyfrowany,
+                czy po prostu nikt tego nie sprawdził. Dokładnie ta dwuznaczność sprawiła, że
+                jawne klucze leżały niezauważone.
+              */}
+              <span
+                style={{
+                  color: jawny ? "var(--accent-amber)" : "var(--accent-green)",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {jawny ? t("jawnyZnacznik") : t("zaszyfrowanyZnacznik")}
+              </span>
             </div>
+          )}
+
+          {jawny && (
+            <p
+              className="mb-3 text-xs"
+              style={{ color: "var(--accent-amber)", lineHeight: 1.5, margin: "0 0 12px" }}
+            >
+              {t("jawnyOpis")}
+            </p>
           )}
 
           <div className="flex items-center gap-2">
