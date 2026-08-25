@@ -136,3 +136,37 @@ Największą wartością tego przebiegu nie są same trzy zgłoszenia, tylko to,
 istotnych usterek wyszły z pomiaru, nie z lektury kodu**: ikona 74 px od środka, gest niedomykający
 się przez miejsce deklaracji komponentu, gwiazdka ignorująca regułę, która „przecież działa".
 Wszystkie trzy wyglądały poprawnie w kodzie.
+
+
+---
+
+## 7. Domknięcie przebiegu
+
+| Krok | Stan |
+|------|------|
+| `claude/omnia-ui-improvements-c1ip8b` → push | ✅ |
+| merge do `develop` (commit scalający na gałęzi docelowej) → push | ✅ `a4a80dc` |
+| Kontrola integralności `merge-base --is-ancestor origin/master develop` | ✅ prawda — `develop` zawierał aktualną produkcję |
+| Promocja `develop → master` **fast-forward** (`--ff-only`) | ✅ bez commita scalającego |
+| Kontrola po merge | ✅ `origin/master == origin/develop == a4a80dc` |
+| `git push origin master` | ✅ |
+| Tag wydania `prod-100-…` | ⚠️ **utworzony lokalnie, NIE wypchnięty** |
+
+**Tag wydania — ograniczenie środowiska, nie awaria promocji.** `git push origin refs/tags/…` odbija
+się o **HTTP 403** z pośrednika sieciowego sandboxa (`RPC failed; HTTP 403`), a `git ls-remote --tags
+origin` nie zwraca żadnych tagów — pushowanie refów `refs/tags/*` jest w tym środowisku zablokowane
+niezależnie od treści. Cztery próby z narastającym odstępem dały ten sam wynik. Push **gałęzi**
+przechodzi normalnie, więc nie jest to problem z uprawnieniami do repozytorium.
+
+Zgodnie z C-52 **nie forsuję** tego obejściem (`--no-ff` ani force-push nie wchodzą w grę — i tak nie
+dotyczyłyby tagu). Właściwy cel C-52a jest osiągnięty: **`master` to bit w bit ten sam commit, który
+przeszedł testy na `develop`**, bez commita scalającego i bez rozjazdu historii. Brakuje wyłącznie
+datowanego znacznika, który jest śladem informacyjnym. Do wypchnięcia jedną komendą z maszyny
+właściciela:
+
+```
+git push origin refs/tags/prod-100-ergonomia-nawigacji-i-pasek-kciuka
+```
+
+*(tag istnieje lokalnie w tej sesji; po jej wygaśnięciu odtworzy go
+`git tag -a prod-100-ergonomia-nawigacji-i-pasek-kciuka a4a80dc -m "Ergonomia nawigacji — paski filtrów i pasek kciuka [produkcja]"`).*
