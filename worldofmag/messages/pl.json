@@ -2264,6 +2264,82 @@
         "brakZapisanychLokalizacjiDodaj": "Brak zapisanych lokalizacji. Dodaj miasto poniżej lub użyj GPS.",
         "dodajMiastoNpKrakow": "Dodaj miasto (np. Kraków)"
       }
+    },
+    "youtube": {
+      "YoutubePage": {
+        "tytul": "YouTube",
+        "odswiez": "Odśwież",
+        "odswiezanie": "Odświeżam…",
+        "kanaly": "Kanały",
+        "szukajPlaceholder": "Szukaj w transkrypcjach…",
+        "szukajEtykieta": "Szukaj w tytułach i transkrypcjach",
+        "brakTranskrypcji": "brak transkrypcji",
+        "oznaczObejrzany": "Obejrzany",
+        "oznaczOdrzucony": "Odrzuć",
+        "pustoTytul": "Nic nowego do obejrzenia",
+        "pustoOpis": "Dodaj kanały, które obserwujesz, i odśwież moduł — pokażemy, co się na nich pojawiło i czy warto to obejrzeć.",
+        "stan": {
+          "nowy": "Nowe",
+          "obejrzany": "Obejrzane",
+          "odrzucony": "Odrzucone"
+        },
+        "sort": {
+          "warto": "Czy warto",
+          "data": "Najnowsze"
+        }
+      },
+      "FilmSzczegol": {
+        "wrocDoListy": "← Wróć do listy",
+        "otworzNaYoutube": "Otwórz na YouTube",
+        "streszczenieTytul": "Streszczenie",
+        "wybierzDlugosc": "Wybierz długość streszczenia, żeby je przygotować.",
+        "generuje": "Przygotowuję streszczenie…",
+        "brakTranskrypcjiOpis": "Ten film nie ma dostępnej transkrypcji — streszczenie powstanie z tytułu i opisu.",
+        "transkrypcjaTytul": "Transkrypcja",
+        "brakTranskrypcjiEtykieta": "Brak transkrypcji. YouTube nie udostępnia napisów do tego filmu.",
+        "pokaz": "Pokaż transkrypcję",
+        "ukryj": "Ukryj transkrypcję",
+        "pytaniaTytul": "Zapytaj o ten film",
+        "pytaniePlaceholder": "O czym mówił w okolicach…?",
+        "pytanieEtykieta": "Pytanie do transkrypcji filmu",
+        "zapytaj": "Zapytaj",
+        "dlugosc": {
+          "krotkie": "Krótkie",
+          "srednie": "Średnie",
+          "dlugie": "Długie"
+        }
+      },
+      "KanalyPage": {
+        "tytul": "Kanały i ustawienia",
+        "wrocDoListy": "← Wróć do listy",
+        "dodajTytul": "Dodaj kanał",
+        "dodajOpis": "Wklej odnośnik do kanału, jego uchwyt (@nazwa) albo identyfikator.",
+        "adresPlaceholder": "https://www.youtube.com/@nazwa",
+        "adresEtykieta": "Adres kanału YouTube",
+        "dodaj": "Dodaj",
+        "kontoTytul": "Konto Google",
+        "kontoOpis": "Połącz konto, żeby zaimportować obserwowane kanały jednym kliknięciem. Moduł działa też bez tego — kanały możesz dodawać ręcznie.",
+        "kontoPolaczoneOpis": "Konto jest połączone. Możesz zaimportować subskrypcje albo odłączyć konto — kanały zostaną.",
+        "polacz": "Połącz konto YouTube",
+        "importuj": "Zaimportuj subskrypcje",
+        "rozlacz": "Odłącz konto",
+        "rozlaczenieOpis": "Kanały zostaną na liście — przestaną się tylko same aktualizować z subskrypcji.",
+        "potwierdzRozlaczenie": "Odłączyć konto YouTube?",
+        "listaTytul": "Obserwowane kanały ({ile})",
+        "brakKanalow": "Nie obserwujesz jeszcze żadnego kanału.",
+        "usunEtykieta": "Usuń kanał {nazwa}",
+        "potwierdzUsuniecie": "Usunąć kanał {nazwa}?",
+        "potwierdzOpis": "Kanał trafi do kosza — możesz go stamtąd przywrócić.",
+        "blad": {
+          "nierozpoznany": "Nie rozpoznaliśmy tego adresu jako kanału YouTube.",
+          "juz-jest": "Ten kanał jest już obserwowany.",
+          "brak-polaczenia": "Połączenie z kontem Google wygasło albo zostało cofnięte. Połącz konto ponownie."
+        },
+        "zrodlo": {
+          "reczne": "dodany ręcznie",
+          "subskrypcje": "z subskrypcji"
+        }
+      }
     }
   }
 }

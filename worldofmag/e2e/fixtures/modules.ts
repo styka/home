@@ -63,4 +63,4 @@ export function readModules(): E2EModule[] {
  * dopasowywać wpisy (bo ktoś rozbije je na kilka linii), test pokrycia zgłosi to jako błąd,
  * zamiast po cichu przetestować mniej modułów i dalej świecić na zielono.
  */
-export const EXPECTED_MODULE_COUNT = 21;
+export const EXPECTED_MODULE_COUNT = 22; // 102: doszedł moduł YouTube

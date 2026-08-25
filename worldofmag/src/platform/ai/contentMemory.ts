@@ -34,7 +34,12 @@ export type AiContentKind =
   | "news.hotTopics"
   // 080 (Z11): obserwatory pogody. Do tej pory jedyna sekcja AI, która wołała model z `useEffect`
   // przy KAŻDYM wejściu na moduł — stąd wieczny spinner i „bardzo często nie działają".
-  | "weather.watchers";
+  | "weather.watchers"
+  // 102: streszczenie filmu YouTube w wybranej długości. Klucz zakresu niesie identyfikator filmu
+  // I długość, bo to trzy osobne treści do zapamiętania, a nie jedna w trzech wariantach.
+  // Świadomie NIE ma tego w `AI_SECTION_KINDS`: tryb odświeżania dotyczy sekcji, która sama się
+  // pokazuje przy wejściu na stronę, a streszczenie powstaje wyłącznie po kliknięciu długości.
+  | "youtube.streszczenie";
 
 export interface RememberedContent<T> {
   value: T;

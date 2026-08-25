@@ -1,6 +1,7 @@
 import { prisma } from "@/platform/db/prisma";
 import type { PolitykaRetencji } from "@/platform/retention";
 import { RETENCJA_WIADOMOSCI } from "@/modules/news/retention";
+import { RETENCJA_YOUTUBE } from "@/modules/youtube/retention";
 import { RETENCJA_ZAKUPOW } from "@/modules/shopping/retention";
 
 /**
@@ -96,5 +97,6 @@ const RETENCJA_PLATFORMY: PolitykaRetencji[] = [
 export const POLITYKI_RETENCJI: PolitykaRetencji[] = [
   ...RETENCJA_PLATFORMY,
   ...RETENCJA_WIADOMOSCI,
+  ...RETENCJA_YOUTUBE,
   ...RETENCJA_ZAKUPOW,
 ];

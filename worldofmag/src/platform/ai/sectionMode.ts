@@ -42,6 +42,10 @@ export const AI_SECTION_LABELS: Record<AiContentKind, string> = {
   "storage.insights": "Magazynowanie — wnioski",
   "pets.insights": "Pety — wnioski",
   "kitchen.planWeek": "Kuchnia — plan tygodnia",
+  // 102: etykieta jest wymagana, bo mapa pokrywa CAŁĄ unię rodzajów. Sekcji nie ma natomiast
+  // w `AI_SECTION_KINDS` i to jest świadome: tryb odświeżania dotyczy sekcji, która pokazuje się
+  // sama przy wejściu na stronę, a streszczenie filmu powstaje wyłącznie po kliknięciu długości.
+  "youtube.streszczenie": "YouTube — streszczenie filmu",
 };
 
 /** Etykiety trybów wraz z wyjaśnieniem, bo sama nazwa nie mówi, co się stanie z kosztem. */

@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-25T13:04:46.085Z",
+  "wygenerowano": "2026-08-25T19:27:24.698Z",
   "zdolnosciPlatformy": [
     "admin",
     "ai",
@@ -71,7 +71,8 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "tasks",
     "truck",
     "warsztaty",
-    "weather"
+    "weather",
+    "youtube"
   ],
   "bramki": [
     "check-action-coverage",
@@ -112,8 +113,8 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "copy-spec-pipeline",
     "generate-architecture"
   ],
-  "liczbaModeli": 158,
-  "liczbaMigracji": 274,
+  "liczbaModeli": 162,
+  "liczbaMigracji": 275,
   "modeleZWersja": [
     "ShoppingList",
     "Note",
@@ -171,7 +172,10 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "Contact",
     "WorkspaceMember",
     "ResourceGrant",
-    "DomainEvent"
+    "DomainEvent",
+    "YoutubeChannel",
+    "YoutubeVideo",
+    "YoutubePref"
   ],
   "zapadki": [
     {

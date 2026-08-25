@@ -16,6 +16,7 @@ import shoppingServer from "@/modules/shopping/module.server";
 import tasksServer from "@/modules/tasks/module.server";
 import warsztatyServer from "@/modules/warsztaty/module.server";
 import weatherServer from "@/modules/weather/module.server";
+import youtubeServer from "@/modules/youtube/module.server";
 
 /**
  * 049 — KORZEŃ KOMPOZYCJI DLA STRONY SERWEROWEJ.
@@ -36,6 +37,7 @@ export const MODULE_SERVER: Record<string, ModuleServerContributions> = {
   languages: languagesServer,
   magazynowanie: magazynowanieServer,
   news: newsServer,
+  youtube: youtubeServer,
   notes: notesServer,
   pets: petsServer,
   portfel: portfelServer,

@@ -133,6 +133,16 @@
     "reason": "admin",
     "access": "admin"
   },
+  "ai:streszczenie": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "ai:zapytajOFilm": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "aiConversations:appendAiMessage": {
     "status": "excluded",
     "reason": "internal",
@@ -483,6 +493,34 @@
     "access": "open",
     "accessReason": "Skrzynka zgłoszeń: KAŻDY zalogowany użytkownik może wrzucić zgłoszenie do projektu wskazanego przez administratora, ale nie zyskuje prawa jego odczytu ani modyfikacji. Jedyne odstępstwo w aplikacji — patrz src/actions/feedback.ts."
   },
+  "filmy:getFilm": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "filmy:getFilmy": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_youtube_videos",
+    "access": "owner"
+  },
+  "filmy:getStanOdswiezania": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "filmy:odswiezYoutube": {
+    "status": "ai",
+    "action": "refresh_youtube",
+    "access": "owner"
+  },
+  "filmy:ustawStan": {
+    "status": "ai",
+    "action": "mark_youtube_watched",
+    "access": "owner"
+  },
   "flota:addFuelLog": {
     "status": "ai",
     "access": "owner"
@@ -718,6 +756,22 @@
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
+  },
+  "kanaly:dodajKanal": {
+    "status": "ai",
+    "action": "add_youtube_channel",
+    "access": "owner"
+  },
+  "kanaly:getKanaly": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "kanaly:usunKanal": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   },
   "katalog:addSourceFromCatalog": {
     "status": "excluded",
@@ -1645,6 +1699,22 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
+  },
+  "polaczenie:czyPolaczony": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "polaczenie:importujSubskrypcje": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "polaczenie:rozlaczYoutube": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
   },
   "portfel:addEntry": {
     "status": "ai",
@@ -2753,6 +2823,17 @@
     "status": "excluded",
     "reason": "settings",
     "access": "owner"
+  },
+  "ustawienia:getDomyslnaDlugosc": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
+  "ustawienia:ustawDomyslnaDlugosc": {
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
   },
   "warsztat:addSuggestedItems": {
     "status": "excluded",

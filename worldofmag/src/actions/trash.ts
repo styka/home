@@ -47,6 +47,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   if (item.module === "notes") await restoreNote(data);
   else if (item.module === "tasks") await restoreTask(data);
   else if (item.module === "weather") await restoreWeatherIdea(data);
+  else if (item.module === "youtube") await restoreYoutubeChannel(data);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
@@ -54,6 +55,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   revalidatePath("/notes");
   revalidatePath("/tasks");
   revalidatePath("/pogoda/pomysly");
+  revalidatePath("/youtube/kanaly");
 }
 
 export async function purgeTrashItem(id: string): Promise<void> {
@@ -226,6 +228,35 @@ async function restoreTask(d: Record<string, unknown>): Promise<void> {
  * wtedy tylko treść, której nowy wiersz nie ma (szczegóły) — twarde `create` wywaliłoby się na
  * naruszeniu unikalności.
  */
+/**
+ * 102 (AC-18): przywrócenie obserwowanego kanału YouTube.
+ *
+ * Przywracamy sam kanał, nie jego filmy — te znikły kaskadą przy usunięciu i **dobiorą się same**
+ * przy najbliższym odświeżeniu. Odtwarzanie ich z migawki dałoby setki wierszy sprzed tygodni,
+ * czyli stan, którego użytkownik nie chce oglądać, a który i tak zostałby nadpisany.
+ */
+async function restoreYoutubeChannel(d: Record<string, unknown>): Promise<void> {
+  const ownerId = d.ownerId as string;
+  const channelId = d.channelId as string;
+  if (!ownerId || !channelId) throw new Error("Uszkodzona migawka kanału");
+
+  await prisma.youtubeChannel.createMany({
+    data: [
+      {
+        ...(await filtrMoichRekordow(ownerId)),
+        channelId,
+        title: (d.title as string) ?? channelId,
+        handle: (d.handle as string | null) ?? null,
+        thumbnailUrl: (d.thumbnailUrl as string | null) ?? null,
+        zrodlo: (d.zrodlo as string) ?? "reczne",
+      },
+    ],
+    // Kanał mógł w międzyczasie wrócić inną drogą (import subskrypcji) — wtedy przywrócenie jest
+    // bezprzedmiotowe, a nie błędne.
+    skipDuplicates: true,
+  });
+}
+
 async function restoreWeatherIdea(d: Record<string, unknown>): Promise<void> {
   const id = d.id as string;
   const ownerId = d.ownerId as string;

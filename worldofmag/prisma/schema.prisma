@@ -39,6 +39,7 @@ model User {
   accounts                Account[]
   sessions                Session[]
   driveConnection         DriveConnection?      @relation("UserDriveConnection")
+  youtubeConnection       YoutubeConnection?    @relation("UserYoutubeConnection")
   driveFiles              DriveFile[]           @relation("UserDriveFiles")
   ownedTeams              Team[]                @relation("TeamOwner")
   teamMemberships         TeamMember[]
@@ -816,13 +817,13 @@ model Task {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  project         TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  parent          Task?         @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  subtasks        Task[]        @relation("TaskSubtasks")
-  previous        Task?         @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
-  nextOccurrences Task[]        @relation("TaskRecurrence")
-  createdBy       User?         @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  assignee        User?         @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
+  project         TaskProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parent          Task?            @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks        Task[]           @relation("TaskSubtasks")
+  previous        Task?            @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
+  nextOccurrences Task[]           @relation("TaskRecurrence")
+  createdBy       User?            @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignee        User?            @relation("TasksAssignedTo", fields: [assigneeId], references: [id], onDelete: SetNull)
   tags            TaskTaskTag[]
   comments        TaskComment[]
   shares          TaskShare[]
@@ -3265,6 +3266,9 @@ model Workspace {
   newsRefreshRuns       NewsRefreshRun[]
   workshops             Workshop[]
   contacts              Contact[]
+  youtubeChannels       YoutubeChannel[]
+  youtubeVideos         YoutubeVideo[]
+  youtubePrefs          YoutubePref[]
 
   @@index([kind])
 }
@@ -3361,4 +3365,117 @@ model DomainEvent {
 
   @@index([deliveredAt, createdAt]) // worker: „daj najstarsze niedostarczone" (zadanie 22)
   @@index([workspaceId, createdAt]) // strumień przestrzeni (zadanie 23)
+}
+
+// ─── 102: moduł YouTube ──────────────────────────────────────────────────────
+//
+// Wzorcem jest moduł Wiadomości: kanał = źródło, film = pozycja w puli, jedno odświeżenie obejmuje
+// cały moduł. Własność idzie przez `workspaceId` (po 079 nie ma już kolumn `ownerId`/`ownerTeamId`),
+// a moduł jest OSOBISTY — nie ma wariantu zespołowego.
+//
+// Statusy są kolumnami `String` z zawężającym typem TS po stronie kodu — nigdy enumami Prismy (C-12).
+
+/// Kanał YouTube obserwowany przez użytkownika.
+model YoutubeChannel {
+  id           String  @id @default(cuid())
+  /// Identyfikator kanału w YouTube („UC…"). Po nim idzie kanał RSS z listą filmów.
+  channelId    String
+  title        String
+  /// Uchwyt („@nazwa"), gdy znany — sam w sobie nie wystarcza do pobrania listy filmów.
+  handle       String?
+  thumbnailUrl String?
+  /// "reczne" | "subskrypcje" — skąd kanał się wziął. String + unia TS (C-12).
+  zrodlo       String  @default("reczne")
+
+  createdAt     DateTime  @default(now())
+  lastFetchedAt DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  videos YoutubeVideo[]
+
+  /// Ten sam kanał nie może wejść dwa razy — to jest mechanizm realizujący „import nie tworzy
+  /// duplikatów" (AC-3), a nie tylko higiena danych.
+  @@unique([workspaceId, channelId])
+  @@index([workspaceId])
+}
+
+/// Film z obserwowanego kanału.
+model YoutubeVideo {
+  id           String   @id @default(cuid())
+  videoId      String
+  title        String
+  description  String   @default("")
+  publishedAt  DateTime
+  thumbnailUrl String?
+  durationSec  Int?
+
+  /// "nowy" | "obejrzany" | "odrzucony"
+  stan String @default("nowy")
+
+  /// "oczekuje" | "jest" | "niedostepna"
+  ///
+  /// „niedostepna" jest NORMALNYM stanem, nie awarią: YouTube nie daje oficjalnej drogi do napisów
+  /// cudzego filmu, więc część pozycji jej nie dostanie. Lista, ocena i streszczenie z opisu
+  /// działają dalej (AC-8).
+  transkrypcjaStan String @default("oczekuje")
+
+  transkrypcja      String? @db.Text
+  transkrypcjaJezyk String?
+
+  /// Ocena „czy warto obejrzeć" (0–100) + jednozdaniowe uzasadnienie.
+  ///
+  /// Ocena siedzi w KOLUMNIE, a nie w pamięci treści AI, bo AC-11 wymaga ułożenia listy według niej
+  /// — a sortowanie musi się zdarzyć w bazie, razem z ograniczeniem liczby wierszy. Streszczenia,
+  /// których nikt nie sortuje, idą do `AiContent` i nie dokładają tu kolumn.
+  ocena      Int?
+  ocenaPowod String?
+  ocenaAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channelId String
+  channel   YoutubeChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, videoId])
+  @@index([workspaceId, stan, publishedAt])
+  @@index([workspaceId, ocena])
+  @@index([channelId])
+}
+
+/// Zgoda na odczyt subskrypcji z konta Google.
+///
+/// Kluczowana `userId`, a NIE `workspaceId` — i to nie jest niekonsekwencja wobec reszty modułu:
+/// zgoda OAuth jest wydana konkretnemu kontu Google, nie przestrzeni, w której leżą dane.
+/// Dokładnie tak samo rozwiązano `DriveConnection`.
+model YoutubeConnection {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  email                String?
+  refreshToken         String?
+  accessToken          String?
+  accessTokenExpiresAt DateTime?
+  connectedAt          DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation("UserYoutubeConnection", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Ustawienia modułu w przestrzeni.
+model YoutubePref {
+  id              String    @id @default(cuid())
+  /// "krotkie" | "srednie" | "dlugie"
+  domyslnaDlugosc String    @default("srednie")
+  lastRefreshAt   DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  /// Bez `@default(dbgenerated())` — na nowej tabeli nie ma czego wypełniać wstecz, a domyślnik
+  /// czyniłby pole opcjonalnym w kliencie Prismy (wzorzec `WeatherPref`, 082).
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
