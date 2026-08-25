@@ -121,7 +121,11 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   }));
   const widokiModulu = (idModulu: string): PozycjaWachlarza[] => {
     const m = MODULES.find((x) => x.id === idModulu);
-    if (!m) return [];
+    // Recenzja 100: moduł o adresie „/" (Strona główna) jest **prefiksem każdej ścieżki**, więc
+    // dopasowanie po prefiksie przypisałoby mu WSZYSTKIE zapisane widoki. Dziś jest to nieosiągalne
+    // (`resolveMenu` odsiewa `home` z listy), ale to jest dokładnie ten rodzaj pułapki, która wraca
+    // przy pierwszej zmianie o piętro wyżej — i wraca bezgłośnie, bo wynik nadal wygląda sensownie.
+    if (!m || m.href === "/") return [];
     return filterAccessibleFavorites(
       favoriteViews.filter((f) => f.path === m.href || f.path.startsWith(m.href + "/") || f.path.startsWith(m.href + "?")),
       userPermissions,

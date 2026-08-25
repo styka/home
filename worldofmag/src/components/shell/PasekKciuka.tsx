@@ -42,7 +42,15 @@ export function PasekKciuka({
   const t = useTranslations("components.shell.PasekKciuka");
   const { uchwyty } = useWachlarz();
 
-  if (pozycje.length === 0) return null;
+  /**
+   * Recenzja 100: pasek rysujemy TAKŻE przy pustej liście pozycji.
+   *
+   * Wcześniej było tu `return null`, co odbierało magicznej ikonie jej jedyne miejsce na telefonie
+   * u konta z bardzo wąskimi uprawnieniami: `resolveTabBar` schodzi wtedy do pustej listy, pasek
+   * znikał, a pływający wariant asystenta istnieje dopiero od `md`. Efekt: użytkownik bez dostępu
+   * do modułów tracił też dostęp do asystenta — czyli do jedynego narzędzia, które i tak działa
+   * niezależnie od uprawnień modułowych.
+   */
 
   /**
    * Podział na dwie strony wokół środka — i to jest miejsce, w którym łatwo zepsuć AC-13.
