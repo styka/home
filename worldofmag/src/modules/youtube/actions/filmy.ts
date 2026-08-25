@@ -7,6 +7,7 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
+import { naDto, adresFilmu, type FilmDTO } from "../domain/film";
 
 /**
  * 102 — FILMY: lista, szczegół, stan, odświeżenie.
@@ -20,48 +21,13 @@ import { ensureJobWorker } from "@/lib/jobs/registry";
 export type StanFilmu = "nowy" | "obejrzany" | "odrzucony";
 export type SortFilmow = "data" | "warto";
 
-export type FilmDTO = {
-  id: string;
-  videoId: string;
-  title: string;
-  description: string;
-  publishedAt: string;
-  thumbnailUrl: string | null;
-  stan: string;
-  transkrypcjaStan: string;
-  maTranskrypcje: boolean;
-  ocena: number | null;
-  ocenaPowod: string | null;
-  kanal: { id: string; title: string };
-};
+export type { FilmDTO };
 
 export type FilmSzczegolDTO = FilmDTO & {
   transkrypcja: string | null;
   transkrypcjaJezyk: string | null;
   adresYoutube: string;
 };
-
-function naDto(r: {
-  id: string; videoId: string; title: string; description: string; publishedAt: Date;
-  thumbnailUrl: string | null; stan: string; transkrypcjaStan: string; transkrypcja: string | null;
-  ocena: number | null; ocenaPowod: string | null;
-  channel: { id: string; title: string };
-}): FilmDTO {
-  return {
-    id: r.id,
-    videoId: r.videoId,
-    title: r.title,
-    description: r.description,
-    publishedAt: r.publishedAt.toISOString(),
-    thumbnailUrl: r.thumbnailUrl,
-    stan: r.stan,
-    transkrypcjaStan: r.transkrypcjaStan,
-    maTranskrypcje: !!r.transkrypcja,
-    ocena: r.ocena,
-    ocenaPowod: r.ocenaPowod,
-    kanal: { id: r.channel.id, title: r.channel.title },
-  };
-}
 
 export async function getFilmy(opcje?: {
   stan?: StanFilmu;
@@ -111,7 +77,7 @@ export async function getFilm(videoId: string): Promise<FilmSzczegolDTO | null> 
     ...naDto(r),
     transkrypcja: r.transkrypcja,
     transkrypcjaJezyk: r.transkrypcjaJezyk,
-    adresYoutube: `https://www.youtube.com/watch?v=${r.videoId}`,
+    adresYoutube: adresFilmu(r.videoId),
   };
 }
 
