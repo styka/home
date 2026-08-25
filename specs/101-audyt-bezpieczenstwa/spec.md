@@ -74,6 +74,12 @@ się przed osadzeniem w cudzej ramce i nie ogranicza wycieku adresów w nagłów
 - [ ] **AC-8** — Given otwarty raport, when właściciel czyta rozdział o sekretach, then wie, które
       dane wrażliwe aplikacja przechowuje, które z nich są szyfrowane, a które nie, i co się dzieje,
       gdy któryś wycieknie.
+- [ ] **AC-9** — Given użytkownika, który zapisał w aplikacji własną ikonę kategorii zawierającą
+      wykonywalną treść, when ta ikona wyświetla się **innemu** członkowi jego zespołu, then treść
+      **nie wykonuje się** w przeglądarce tej osoby, a sama ikona nadal wygląda normalnie.
+- [ ] **AC-10** — Given środowisko uruchomieniowe **bez** ustawionego sekretu podpisującego sesje,
+      when aplikacja startuje, then **zatrzymuje się z czytelnym błędem** zamiast działać dalej
+      z zastępczą wartością wpisaną w kodzie (build nadal musi przechodzić bez tego sekretu).
 
 ## 5. Zakres
 
@@ -85,12 +91,22 @@ się przed osadzeniem w cudzej ramce i nie ogranicza wycieku adresów w nagłów
 - Ponumerowana lista ustaleń z wagą oraz rekomendacje na przyszłość (co zrobić przed otwarciem
   aplikacji na wiele osób).
 - Dostarczenie raportu do aplikacji **razem z wdrożeniem**, idempotentnie.
-- **Naprawa braków niskiego ryzyka**: komplet podstawowych nagłówków bezpieczeństwa odpowiedzi.
+- **Naprawa braków niskiego ryzyka**, ustalona po rozpoznaniu (C-54 — zakres doprecyzowany na etapie
+  planu, bo dopiero rozpoznanie pokazało, co konkretnie jest zepsute):
+  1. komplet podstawowych nagłówków bezpieczeństwa odpowiedzi;
+  2. **odkażanie ikon kategorii** — dziś dowolna treść zapisana jako ikona trafia do przeglądarki
+     **innego członka zespołu** bez filtrowania (AC-9);
+  3. **twarde zatrzymanie startu** przy braku sekretu podpisującego sesje — dziś kod podstawia
+     zastępczą wartość, która leży w repozytorium (AC-10).
 
 **Poza zakresem (świadomie):**
 - **Pełna polityka bezpieczeństwa treści (CSP)** — decyzja właściciela: zbyt łatwo psuje działającą
   aplikację (skrypty osadzone, mapy, synteza mowy). Zostaje jako **rekomendacja w raporcie**.
 - Testy penetracyjne, skanery podatności, audyt zewnętrznej firmy.
+- **Aktualizacja podatnych zależności** — rozpoznanie znalazło 12 podatności (3 krytyczne, 8 wysokich),
+  w tym krytyczną w bibliotece logowania. Świadomie **nie** wchodzi do tej zmiany: bump biblioteki
+  uwierzytelniania musi iść osobnym commitem, bo gdy zepsuje logowanie, nie wolno go szukać w diffie
+  z nagłówkami. Raport wypisuje to jako rekomendację **numer jeden** wraz z poleceniem do wykonania.
 - Zmiany planu hostingu, migracja bazy, wprowadzanie nowych usług bezpieczeństwa.
 - Zmiany w modelu ról i uprawnień — audyt je **opisuje**, nie przebudowuje.
 - Drugi składnik logowania — rekomendacja, nie realizacja.
@@ -128,6 +144,11 @@ się przed osadzeniem w cudzej ramce i nie ogranicza wycieku adresów w nagłów
       osobne katalogi specyfikacji** (`101` i `102`) i jadą jednym przebiegiem pipeline'u na wspólnej
       gałęzi roboczej. Żadne zadanie nie zostało pominięte.
 - [x] **Założenie przyjęte domyślnie:** raport pisany po polsku, jak pozostałe raporty systemowe.
+- [x] **Zmiana zakresu na etapie planu (C-54).** Rozpoznanie wykazało dwa braki mieszczące się
+      w zaakceptowanej kategorii „naprawy niskiego ryzyka", więc weszły do zakresu razem z nagłówkami
+      (AC-9, AC-10). Nie wymagały pytania: właściciel już autoryzował naprawy niskiego ryzyka, a obie
+      poprawki są zawężające (odrzucają niebezpieczne przypadki), nie zmieniają zachowania widocznego
+      dla użytkownika i są odwracalne jednym commitem.
 - [x] **Założenie przyjęte domyślnie:** „zrobić ssh" z opisu zgłoszenia czytamy jako pytanie
       *„czy mamy dostęp do maszyny produkcyjnej i czy go potrzebujemy"*, a nie jako polecenie
       wystawienia serwera SSH — wystawianie własnego SSH na hostingu zarządzanym byłoby
