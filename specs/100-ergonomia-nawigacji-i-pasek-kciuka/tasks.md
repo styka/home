@@ -42,20 +42,20 @@
 
 ## Faza B — Zadania: filtr tagów o stałej wysokości (bez schematu) `[P]` względem fazy A
 
-- [ ] **T-6** — `src/modules/tasks/ui/FiltrTagow.tsx` wzorowany 1:1 na `SourceFilter` (083): przycisk
+- [x] **T-6** — `src/modules/tasks/ui/FiltrTagow.tsx` wzorowany 1:1 na `SourceFilter` (083): przycisk
       `py-3` z ikoną i etykietą „Wszystkie" / „3 z 18" + `AnchoredLayer` (`side="dol"`, `align="start"`,
       `width={300}`) z polem wyszukiwania, pozycją „Wszystkie tagi" i listą `TaskTagBadge`.
       Pusty wybór = wszystkie. Plik mieszka **w module** (jedyny konsument — C-36).
       *Gotowe, gdy:* panel filtruje po frazie i pozwala na wielokrotny wybór. **(AC-7, AC-9)**
-- [ ] **T-7** — Chipy wybranych tagów obok przycisku: `TaskTagBadge` + „×" zdejmujące **jeden** tag;
+- [x] **T-7** — Chipy wybranych tagów obok przycisku: `TaskTagBadge` + „×" zdejmujące **jeden** tag;
       rząd o stałej wysokości z `overflow-x-auto`.
       *Gotowe, gdy:* przy 3 z 18 widać trzy chipy i „×" działa pojedynczo. **(AC-8)**
-- [ ] **T-8** — `src/modules/tasks/ui/TaskFilters.tsx`: blok `allTags.map(...)` → `<FiltrTagow>`;
+- [x] **T-8** — `src/modules/tasks/ui/TaskFilters.tsx`: blok `allTags.map(...)` → `<FiltrTagow>`;
       `onTagToggle` i semantyka AND w `TasksPage` **nietknięte**. Przy okazji `color: isActive ? "#fff"`
       w liczniku zakładki statusu → `var(--on-accent)`.
       *Gotowe, gdy:* `grep -n '#fff' TaskFilters.tsx` nic nie zwraca, a filtrowanie daje ten sam wynik
       co przed zmianą. **(AC-6, AC-10)**
-- [ ] **T-9** — Teksty fazy B do `messages/pl.json` (`modules.tasks.FiltrTagow`).
+- [x] **T-9** — Teksty fazy B do `messages/pl.json` (`modules.tasks.FiltrTagow`).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi. **(AC-24)**
 - [ ] **T-10** — Pomiar AC-6: wysokość paska filtrów przy 3 i 18 tagach — obie liczby do notatek.
       **(AC-6)**

@@ -2134,6 +2134,14 @@
         "wyczyscWybor": "Pokaż wszystkie projekty",
         "nazwaZestawu": "Nazwa zestawu…",
         "zapiszJakoZestaw": "Zapisz wybór jako zestaw projektów"
+      },
+      "FiltrTagow": {
+        "filtrEtykiet": "Filtr etykiet",
+        "wszystkie": "Wszystkie",
+        "zIlu": "{wybrane} z {wszystkie}",
+        "szukajEtykiety": "Szukaj etykiety…",
+        "wszystkieEtykiety": "Wszystkie etykiety",
+        "nicNiePasuje": "Nic nie pasuje"
       }
     },
     "truck": {

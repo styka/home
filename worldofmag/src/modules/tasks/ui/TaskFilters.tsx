@@ -2,7 +2,7 @@
 
 import type { TaskStatusFilter, TaskTagDef } from "@/types";
 import { TASK_STATUS_FILTERS, TASK_STATUS_FILTER_LABELS } from "@/types";
-import { TaskTagBadge } from "./TaskTagBadge";
+import { FiltrTagow } from "./FiltrTagow";
 
 interface TaskFiltersProps {
   // Klucz zakładki: "ALL" | status systemowy | klucz własnego statusu (stąd string).
@@ -12,6 +12,8 @@ interface TaskFiltersProps {
   allTags: TaskTagDef[];
   selectedTagIds: string[];
   onTagToggle: (id: string) => void;
+  /** Zdejmuje wszystkie etykiety naraz („Wszystkie" w panelu). Pusty wybór = wszystkie zadania. */
+  onTagsClear: () => void;
   // Zakładki statusów do pokazania (zależne od konfiguracji listy). Domyślnie wszystkie systemowe.
   filters?: string[];
   // Etykiety zakładek (zawiera też nazwy własnych statusów). Fallback: klucz statusu.
@@ -20,7 +22,7 @@ interface TaskFiltersProps {
   showStatusTabs?: boolean;
 }
 
-export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, filters = TASK_STATUS_FILTERS, labels, showStatusTabs = true }: TaskFiltersProps) {
+export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds, onTagToggle, onTagsClear, filters = TASK_STATUS_FILTERS, labels, showStatusTabs = true }: TaskFiltersProps) {
   // Bez zakładek i bez tagów nie ma czego pokazywać (Kanban bez tagów) — nie renderuj pustego paska.
   if (!showStatusTabs && allTags.length === 0) return null;
   return (
@@ -50,7 +52,7 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
                   className="rounded-full px-1.5"
                   style={{
                     background: isActive ? "var(--accent-blue)" : "var(--bg-elevated)",
-                    color: isActive ? "#fff" : "var(--text-muted)",
+                    color: isActive ? "var(--on-accent)" : "var(--text-muted)",
                     fontSize: 10,
                     minWidth: 16,
                     textAlign: "center",
@@ -65,19 +67,16 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
       </div>
       )}
 
+      {/* 100 (AC-6..AC-9): jeden przycisk z licznikiem zamiast chipsa na każdą istniejącą etykietę.
+          Stary pasek rósł liniowo ze słownikiem tagów użytkownika; nowy ma wysokość niezależną od
+          ich liczby, a semantyka filtru (koniunkcja w `TasksPage`) zostaje bez zmiany. */}
       {allTags.length > 0 && (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto">
-          {allTags.map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => onTagToggle(tag.id)}
-              className="focus:outline-none flex-shrink-0"
-              style={{ opacity: selectedTagIds.length === 0 || selectedTagIds.includes(tag.id) ? 1 : 0.4 }}
-            >
-              <TaskTagBadge tag={tag} size="xs" />
-            </button>
-          ))}
-        </div>
+        <FiltrTagow
+          wszystkie={allTags}
+          wybrane={selectedTagIds}
+          onPrzelacz={onTagToggle}
+          onWyczysc={onTagsClear}
+        />
       )}
     </div>
   );
