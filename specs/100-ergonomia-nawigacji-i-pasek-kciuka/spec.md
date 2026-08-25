@@ -100,7 +100,8 @@ warunków naraz.
 
 ### C. Telefon — pasek kciuka, ręka, magiczna ikona i gest
 
-- [ ] **AC-11** — Given jestem w ustawieniach wyglądu, when szukam ustawienia ręki, then mogę wybrać
+- [ ] **AC-11** — Given jestem w ustawieniach, w sekcji rządzącej menu i dolnym paskiem, when szukam
+      ustawienia ręki, then mogę wybrać
       **prawa / lewa**, ustawienie jest **per użytkownik**, domyślnie **prawa**, i przeżywa
       przeładowanie strony oraz zalogowanie na innym urządzeniu.
 - [ ] **AC-12** — Given ustawiłem rękę na **lewą**, when patrzę na ekran telefonu, then **gwiazdka
@@ -156,7 +157,8 @@ warunków naraz.
   i widocznym stanem wyboru.
 - Zadania: zamiana pasa chipsów-tagów na **jeden przycisk filtra z licznikiem + panel wielokrotnego
   wyboru z wyszukiwarką**, plus **usuwalne chipy wybranych** przy przycisku.
-- Nowe **ustawienie „dominująca ręka"** (prawa/lewa) per użytkownik, dostępne w ustawieniach wyglądu.
+- Nowe **ustawienie „dominująca ręka"** (prawa/lewa) per użytkownik, dostępne w ustawieniach — w tej
+  samej sekcji, która już rządzi menu i dolnym paskiem (ręka jest ustawieniem TEGO paska, nie skórki).
 - **Dolny pasek na telefonie**: układ lustrzany wg ręki, zróżnicowane cele dotyku (większe bliżej
   kciuka), **magiczna ikona na stałe na środku i wyeksponowana**, likwidacja dotychczasowego
   pływającego przycisku asystenta na telefonie.
