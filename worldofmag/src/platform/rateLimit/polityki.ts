@@ -87,6 +87,30 @@ export const POLITYKI = {
     komunikatGodzina: "Wyczerpano godzinny limit zmian dostępu. Spróbuj później.",
     komunikatSlot: "Poprzednia zmiana dostępu jest jeszcze zapisywana.",
   },
+  /**
+   * 104 (punkt 4 planu domknięcia bezpieczeństwa) — FEED iCAL AGENDY.
+   *
+   * Jedyna trasa aplikacji działająca BEZ zalogowania: klient kalendarza nie ma sesji, więc
+   * uwierzytelnia się odwoływalnym tokenem w adresie. Token jest w porządku, ale do tej pory nic
+   * nie ograniczało liczby prób jego ZGADNIĘCIA.
+   *
+   * Podmiotem limitu jest adres źródłowy, a nie użytkownik — przy złym tokenie nie wiadomo jeszcze,
+   * o czyj kalendarz chodzi, więc liczenie po użytkowniku byłoby możliwe dopiero PO udanym trafieniu,
+   * czyli dokładnie za późno.
+   *
+   * Wartości wynikają z tego, jak zachowuje się prawdziwy klient kalendarza: odpytuje cyklicznie co
+   * kilkanaście minut, więc kilka żądań na minutę to i tak zapas na kilka urządzeń naraz. Zgadywanie
+   * tokenu przy takim limicie przestaje być wykonalne w jakimkolwiek sensownym czasie.
+   */
+  "kalendarz.feed": {
+    naMinute: 10,
+    naGodzine: 120,
+    rownolegle: null,
+    dzierzawaSek: 30,
+    komunikatMinuta: "Za dużo żądań do kanału kalendarza. Spróbuj za chwilę.",
+    komunikatGodzina: "Wyczerpano godzinny limit żądań do kanału kalendarza.",
+    komunikatSlot: "Poprzednie żądanie jest jeszcze obsługiwane.",
+  },
 } as const satisfies Record<string, Polityka>;
 
 export type ZakresLimitu = keyof typeof POLITYKI;

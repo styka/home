@@ -19,7 +19,7 @@ import { invalidatePriceCache } from "@/platform/llm/pricing";
 import { FOLLOWUPS_CONFIG_KEY, readFollowupsEnabled } from "@/platform/ai/followups";
 import { SPEECH_FORCE_BROWSER_KEY, readForceBrowserVoice } from "@/lib/tts/forceBrowser";
 import { TTS_CATALOG, findTtsProvider, findTtsProviderById, providerMatchesSpec, normalizeBaseUrl } from "@/lib/tts/catalog";
-import { encryptSecret, decryptSecret, maskSecret } from "@/lib/crypto/secrets";
+import { encryptSecret, decryptSecret, maskSecret, isEncrypted } from "@/lib/crypto/secrets";
 import { logAudit } from "@/platform/audit/audit";
 import { LLM_EFFORT_LABELS, LLM_EFFORT_LEVELS, parseEffort, type LlmEffort } from "@/platform/llm/effort";
 import { COST_ALERT_CONFIG_KEY, getDailyCostUsd, AI_COST_BADGE_CONFIG_KEY } from "@/platform/ai/usage";
@@ -47,6 +47,12 @@ export interface ProviderDTO {
   baseUrl: string;
   apiKeyMasked: string;
   hasKey: boolean;
+  /**
+   * 104 (punkt 5): czy klucz W BAZIE niesie znacznik szyfrowania. Klucze zapisane przed
+   * wprowadzeniem szyfrowania leżą otwartym tekstem — odczyt jest wstecznie zgodny, więc działają
+   * i nic tego nie zdradzało.
+   */
+  zaszyfrowany: boolean;
   enabled: boolean;
 }
 
@@ -82,6 +88,8 @@ export async function getLlmProviders(): Promise<ProviderDTO[]> {
     // A2: deszyfruj tylko po to, by pokazać maskę (4 ostatnie znaki realnego klucza).
     apiKeyMasked: maskSecret(decryptSecret(p.apiKey)),
     hasKey: Boolean(p.apiKey),
+    // Czytane z SUROWEJ wartości — po odszyfrowaniu jedno od drugiego jest nie do odróżnienia.
+    zaszyfrowany: isEncrypted(p.apiKey),
     enabled: p.enabled,
   }));
 }

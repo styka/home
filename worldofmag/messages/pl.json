@@ -141,7 +141,11 @@
           "kluczJestZaszyfrowanyPokazujemy": "Klucz jest zaszyfrowany — pokazujemy tylko maskę. Wpisz nowy, aby nadpisać.",
           "jakZdobycDarmowyKlucz": "Jak zdobyć darmowy klucz (≈2 000 zapytań/mc):",
           "dataForSearchFree": "(Data for Search / Free) — do ~2 000 zapytań miesięcznie, 1 zapytanie/s. Brave może poprosić o kartę do weryfikacji, ale plan Free pozostaje bezpłatny.",
-          "zachowanieDomyslneCzyliProjekt": "= zachowanie domyślne, czyli projekt o nazwie „Omnia” należący do administratora."
+          "zachowanieDomyslneCzyliProjekt": "= zachowanie domyślne, czyli projekt o nazwie „Omnia” należący do administratora.",
+          "zaszyfrowanyZnacznik": "zaszyfrowany",
+          "jawnyZnacznik": "JAWNY",
+          "jawnyTytul": "Ta wartość leży w bazie otwartym tekstem",
+          "jawnyOpis": "Ten klucz zapisano, zanim wprowadzono szyfrowanie, więc w bazie leży otwartym tekstem. Wklej go ponownie i zapisz — sam zapis go zaszyfruje. Wartości nie trzeba zmieniać."
         },
         "page": {
           "dostawcyIPrzypisanieModeli": "Dostawcy i przypisanie modeli do typów operacji (dispatch, myślenie, obrazy, generowanie)"
@@ -474,7 +478,9 @@
         "wywolaniaModeluTakzeZadania": "wywołania modelu — także zadania w tle (wiadomości, OCR, generowanie skórek), które nie mają zalogowanego użytkownika. Działa natychmiast; użytkownicy dostają uprzejmy komunikat, nie błąd.",
         "wylaczoneBudzetJestTylko": "Wyłączone = budżet jest tylko alarmem (powiadomienia przy 50 %, 80 % i 100 %), a wydatki rosną dalej. Włączone = po przekroczeniu kwoty AI zachowuje się jak przy wyłączniku, do końca miesiąca albo do podniesienia budżetu.",
         "dziennyProgAlertuKosztowego": "Dzienny próg alertu kosztowego (USD, 0 = wyłączony)",
-        "ileZlotychZa1": "Ile złotych za 1 USD. Wszędzie, gdzie pokazujemy kwotę w USD, doklejamy w nawiasie równowartość w PLN wg tego przelicznika (domyślnie 1 USD = 3,81 PLN)."
+        "ileZlotychZa1": "Ile złotych za 1 USD. Wszędzie, gdzie pokazujemy kwotę w USD, doklejamy w nawiasie równowartość w PLN wg tego przelicznika (domyślnie 1 USD = 3,81 PLN).",
+        "kluczJawny": "JAWNY",
+        "kluczJawnyTytul": "Ten klucz leży w bazie otwartym tekstem — wklej go ponownie i zapisz, żeby go zaszyfrować. Wartości nie trzeba zmieniać."
       },
       "PermissionManager": {
         "toBramaDostepuDo": "To brama dostępu do panelu administratora — nie można jej usunąć, dopóki ktoś z niej korzysta.",

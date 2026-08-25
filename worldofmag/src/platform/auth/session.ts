@@ -5,6 +5,7 @@ import { mirrorPersonalWorkspace } from "@/platform/workspaces/sync"
 import { prisma } from "@/platform/db/prisma"
 import { authConfig } from "@/auth.config"
 import { ZASTEPCZY_SEKRET_SESJI } from "./zastepczySekret"
+import { czyNaHostingu } from "@/platform/runtime/hosting"
 
 const ADMIN_EMAIL = "tyka.szymon@gmail.com"
 
@@ -26,11 +27,23 @@ if (!process.env.AUTH_SECRET) {
   process.env.AUTH_SECRET = ZASTEPCZY_SEKRET_SESJI
 }
 
-// E2E-only credentials provider. Gated by E2E_TEST_MODE so it can NEVER be
-// active in production (Render env never sets this var). Lets Playwright log
-// in as a known seeded user without going through Google OAuth.
+/**
+ * Uproszczone logowanie dla klikaczy — Playwright nie przejdzie przez ekran Google, więc loguje się
+ * jako znany użytkownik z seeda.
+ *
+ * 104 (punkt 3 planu domknięcia bezpieczeństwa) — DRUGI WARUNEK.
+ *
+ * Do tej pory bramką była wyłącznie zmienna `E2E_TEST_MODE`, a bezpieczeństwo opierało się na tym,
+ * że nikt nigdy nie ustawi jej na hostingu. To jest zabezpieczenie **jednopunktowe**: jedna pomyłka
+ * przy kopiowaniu konfiguracji między środowiskami otwiera logowanie bez hasła — po cichu, bez
+ * żadnego objawu.
+ *
+ * Drugim warunkiem jest „nie działamy na hostingu". Świadomie NIE jest nim `NODE_ENV`: od 098
+ * klikacze serwują aplikację przez `next start`, czyli same chodzą w trybie produkcyjnym — bramka
+ * po `NODE_ENV` wyłączyłaby logowanie testowe w testach (patrz `platform/runtime/hosting`).
+ */
 const e2eProviders =
-  process.env.E2E_TEST_MODE === "1"
+  process.env.E2E_TEST_MODE === "1" && !czyNaHostingu()
     ? [
         Credentials({
           id: "e2e",

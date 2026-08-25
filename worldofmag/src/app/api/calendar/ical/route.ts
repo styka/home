@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/platform/db/prisma";
 import { collectCalendarEvents } from "@/lib/calendarAgenda";
 import { buildICalendar } from "@/modules/calendar/contract";
+import { sprawdzLimit } from "@/platform/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,28 @@ export const dynamic = "force-dynamic";
  * `collectCalendarEvents` po userze/zespole — brak przecieku cross-user).
  */
 export async function GET(req: NextRequest) {
+  /**
+   * 104 (punkt 4 planu domknięcia bezpieczeństwa) — OGRANICZENIE LICZBY PRÓB.
+   *
+   * Limit stoi PRZED odczytem z bazy i jest liczony po adresie źródłowym, bo przy złym tokenie nie
+   * wiadomo jeszcze, o czyj kalendarz chodzi. Sprawdzanie limitu dopiero po trafieniu w token
+   * byłoby ochroną włączaną w chwili, w której nie ma już czego chronić.
+   *
+   * Gdy adresu nie da się ustalić, liczymy wszystkie takie żądania pod jednym kluczem — to
+   * zaostrza limit, a nie rozluźnia go, więc kierunek błędu jest właściwy.
+   */
+  const adres =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip")?.trim() ||
+    "nieznany";
+  const limit = await sprawdzLimit("kalendarz.feed", adres);
+  if (!limit.ok) {
+    return new NextResponse(limit.message, {
+      status: 429,
+      headers: { "Retry-After": String(limit.retryAfterSec) },
+    });
+  }
+
   const token = req.nextUrl.searchParams.get("token");
   if (!token) return new NextResponse("Missing token", { status: 401 });
 

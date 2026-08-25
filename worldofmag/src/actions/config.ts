@@ -3,7 +3,7 @@
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
-import { encryptSecret, decryptSecret, maskSecret, isSecretConfigKey } from "@/lib/crypto/secrets";
+import { encryptSecret, decryptSecret, maskSecret, isSecretConfigKey, isEncrypted } from "@/lib/crypto/secrets";
 import { logAudit } from "@/platform/audit/audit";
 import { revalidatePath } from "next/cache";
 
@@ -20,13 +20,33 @@ export async function getConfigValue(key: string): Promise<string | null> {
   return isSecretConfigKey(key) ? decryptSecret(row.value) : row.value;
 }
 
-/** A2: dla UI — nigdy nie wysyłaj surowego sekretu do klienta, tylko maskę + flagę. */
-export async function getConfigMasked(key: string): Promise<{ hasValue: boolean; masked: string }> {
+/**
+ * A2: dla UI — nigdy nie wysyłaj surowego sekretu do klienta, tylko maskę + flagi.
+ *
+ * 104 (punkt 5 planu domknięcia bezpieczeństwa) — DWIE NOWE FLAGI.
+ *
+ * Szyfrowanie sekretów dołożono później niż same sekrety, a odczyt jest wstecznie zgodny: wartość
+ * bez znacznika `enc:v1:` wraca bez zmian. Skutek: klucz zapisany przed tamtą zmianą **leży w bazie
+ * otwartym tekstem** i taki zostanie, dopóki ktoś go ponownie nie zapisze. Do tej pory nie było jak
+ * tego zobaczyć — panel twierdził, że klucz jest zaszyfrowany, nie sprawdzając tego.
+ *
+ * `isEncrypted` czytamy z **surowej** wartości z bazy, przed odszyfrowaniem — po odszyfrowaniu
+ * jedno od drugiego jest już nie do odróżnienia.
+ */
+export async function getConfigMasked(
+  key: string
+): Promise<{ hasValue: boolean; masked: string; wymagaSzyfrowania: boolean; zaszyfrowany: boolean }> {
   await requireAdmin();
+  const wymagaSzyfrowania = isSecretConfigKey(key);
   const row = await prisma.config.findUnique({ where: { key } });
-  if (!row?.value) return { hasValue: false, masked: "" };
-  const plain = isSecretConfigKey(key) ? decryptSecret(row.value) : row.value;
-  return { hasValue: !!plain, masked: maskSecret(plain) };
+  if (!row?.value) return { hasValue: false, masked: "", wymagaSzyfrowania, zaszyfrowany: false };
+  const plain = wymagaSzyfrowania ? decryptSecret(row.value) : row.value;
+  return {
+    hasValue: !!plain,
+    masked: maskSecret(plain),
+    wymagaSzyfrowania,
+    zaszyfrowany: isEncrypted(row.value),
+  };
 }
 
 export async function setConfigValue(key: string, value: string): Promise<void> {
