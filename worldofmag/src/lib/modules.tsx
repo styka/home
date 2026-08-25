@@ -62,6 +62,12 @@ export const MAX_TAB_BAR = 5;
 // Wymaganie właściciela: Strona główna, Zadania, Zakupy.
 export const DEFAULT_TAB_BAR = ["home", "tasks", "shopping"];
 
+/**
+ * 100: dominująca ręka. `String` + union zamiast enuma Prisma (C-12) — kolumna w bazie przyjmie
+ * cokolwiek, więc walidacja należy do kodu odczytującego (`readMenuPrefs`).
+ */
+export type Reka = "right" | "left";
+
 export type MenuPrefs = {
   order: string[];
   disabled: string[];
@@ -72,6 +78,12 @@ export type MenuPrefs = {
    * wymagało przewinięcia przez obszar, którego użytkownik w tym momencie nie potrzebował.
    */
   favoritesCollapsed: boolean;
+  /**
+   * 100: po której stronie ekranu stoi to, co obsługuje kciuk — dolny pasek, gwiazdka ulubionych,
+   * magiczna ikona asystenta i ikona zgłaszania. Domyślnie `"right"`: tak stoi aplikacja dzisiaj,
+   * a zmiana domyślnej byłaby cichą przeprowadzką układu u wszystkich użytkowników naraz.
+   */
+  handedness: Reka;
 };
 
 export function defaultMenuPrefs(): MenuPrefs {
@@ -80,6 +92,7 @@ export function defaultMenuPrefs(): MenuPrefs {
     disabled: MODULES.filter((m) => !m.defaultEnabled).map((m) => m.id),
     tabBar: [...DEFAULT_TAB_BAR],
     favoritesCollapsed: true,
+    handedness: "right",
   };
 }
 

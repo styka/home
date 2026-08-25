@@ -144,12 +144,26 @@ export function NaglowekSekcji({
   licznik,
   wyrozniony,
   akcje,
+  segmenty,
 }: {
   tytul: string;
   /** Pominięty = bez odznaki (sekcja, której nic się nie liczy, np. ustawienie). */
   licznik?: number;
   wyrozniony?: boolean;
   akcje?: ReactNode;
+  /**
+   * 100: przełącznik segmentowy **zamiast** pary „tytuł + licznik".
+   *
+   * Przyklejony nagłówek jest jedynym miejscem, które nazywa to, na co patrzysz. Gdy sekcja ma trzy
+   * siostrzane, wykluczające się listy, tą nazwą **jest** przełącznik — powtarzanie nad nim jeszcze
+   * jednego tytułu zjadałoby wiersz, którego przy 360 px nie ma.
+   *
+   * Mieszka to tutaj, a nie w module obok, z jednego konkretnego powodu: w tym komponencie siedzi
+   * `top: var(--news-pasek-h)` i wysokość, od której zależy zasłona dla sekcji poniżej. Drugi,
+   * podobnie wyglądający pasek rysowany gdzie indziej rozjechałby się z nią przy pierwszej zmianie
+   * (dokładnie ten błąd naprawiały 086 i 087).
+   */
+  segmenty?: ReactNode;
 }) {
   return (
     <div
@@ -170,14 +184,16 @@ export function NaglowekSekcji({
        * łamała się na drugą linię i napis bywał przycięty. Rozpychanie do prawej przejmują teraz
        * akcje (`ml-auto`), a zawijanie znika — było objawem, nie rozwiązaniem.
        */}
-      <div className="flex min-w-0 items-center gap-2">
-        <h3 className="min-w-0 truncate text-sm font-semibold text-[var(--text-primary)]">{tytul}</h3>
-        {licznik !== undefined && (
-          <span className="shrink-0 rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]">
-            {licznik}
-          </span>
-        )}
-      </div>
+      {segmenty ?? (
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className="min-w-0 truncate text-sm font-semibold text-[var(--text-primary)]">{tytul}</h3>
+          {licznik !== undefined && (
+            <span className="shrink-0 rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] text-[var(--text-muted)]">
+              {licznik}
+            </span>
+          )}
+        </div>
+      )}
       {akcje && <div className="ml-auto flex shrink-0 items-center gap-1">{akcje}</div>}
     </div>
   );

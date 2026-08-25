@@ -4,6 +4,72 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-25 — Komponent zadeklarowany w ciele innego komponentu gubi stan DOM przy każdym renderze
+**Problem:** Gest „przytrzymaj → wachlarz → przeciągnij → puść" na dolnym pasku nie domykał się:
+wachlarz się otwierał, podpowiedzi reagowały na ruch, ale puszczenie palca nic nie robiło. Logika
+gestu była poprawna co do joty — unieważniało ją MIEJSCE deklaracji zupełnie innego komponentu.
+`Pozycja` (przycisk paska) była funkcją zadeklarowaną **wewnątrz ciała** `PasekKciuka`, więc każdy
+render tworzył nowy **typ** komponentu. Otwarcie wachlarza zmienia wartość kontekstu → `PasekKciuka`
+się przerenderowuje → React widzi inny typ i **odmontowuje przyciski, montując nowe**. Razem ze
+starym węzłem DOM przepada `setPointerCapture`, więc `pointerup` trafia w próżnię.
+**Rozwiązanie:** `Pozycja` wyniesiona na poziom modułu (jak `NavItem` w `ModuleSidebar`), a to, czego
+potrzebowała z domknięcia, dostaje propsami. Klikacz z 14/14 zrobił się 15/15.
+**Lekcja:** Zagnieżdżona definicja komponentu to nie kwestia stylu — to gwarantowane
+odmontowanie poddrzewa przy każdym renderze rodzica. Zwykle objawia się „mruganiem" albo utratą
+tekstu w polu, ale gdy w grę wchodzi cokolwiek przywiązanego do WĘZŁA DOM (przechwycony wskaźnik,
+`focus`, obserwator, odtwarzacz), objaw jest zupełnie gdzie indziej niż przyczyna. Jeśli gest,
+ognisko albo animacja gubi się dokładnie w chwili zmiany stanu — sprawdź najpierw, czy renderowany
+komponent nie jest deklarowany w ciele rodzica.
+
+## 2026-08-25 — Test czytający regułę CSS przepuszcza brak jej zastosowania
+**Problem:** Lustrzenie chromu wg dominującej ręki miało jeden test: tworzył element z klasą
+`.omnia-plywajacy`, przełączał `data-reka` i sprawdzał, że `right` zamienia się na `left`. Test był
+zielony, a **gwiazdka ulubionych w górnym pasku telefonu i tak nie ruszała się z prawej strony** —
+bo reguła istniała i działała, tylko ten pasek jej nie używał. Test sprawdzał MECHANIZM, a zgłoszenie
+właściciela dotyczyło KONKRETNEGO elementu.
+**Rozwiązanie:** Test mierzy teraz pozycję prawdziwej gwiazdki na prawdziwej stronie przy obu
+ustawieniach ręki (296 px → 173 px przy oknie 390 px). Wykrył brak natychmiast.
+**Lekcja:** „Czy reguła działa" i „czy element jej używa" to dwa różne pytania, a testy odpowiadające
+na pierwsze dają fałszywe poczucie pokrycia dla drugiego. Gdy wymaganie mówi o konkretnym elemencie
+(„gwiazdka ma być po tej stronie"), test ma mierzyć TEN element — nie zastępczy węzeł wstrzyknięty do
+strony ani nie zawartość arkusza stylów.
+
+## 2026-08-25 — Dostawca kontekstu nie może być `dynamic(ssr: false)`
+**Problem:** Plan przewidywał, że nowy wachlarz nawigacji (gest „przytrzymaj → przeciągnij → puść")
+załadujemy leniwie przez `dynamic(..., { ssr: false })`, żeby nie dokładać bajtów do bundla KAŻDEJ
+trasy — komponent montuje powłoka, więc wchodzi wszędzie. Przy pisaniu kodu okazało się, że to
+niemożliwe, i to nie z powodu drobiazgu: wachlarz nie jest nakładką stojącą obok, tylko **dostawcą
+kontekstu**, z którego czytają dwa wyzwalacze w różnych miejscach drzewa (dolny pasek na telefonie
+i pozycje nawigacji bocznej na komputerze). Dostawca opakowuje `children` całej aplikacji, więc
+`ssr: false` znaczyłoby „żadna strona nie renderuje się na serwerze".
+**Rozwiązanie:** Zamiast obchodzić to w kodzie (np. rozbijać hook i nakładkę na dwa moduły, żeby
+tylko nakładka była leniwa — dwa pliki zamiast jednego problemu), poprawiliśmy **plan** i dopiero
+z niego wynikła implementacja: dostawca statyczny, bez ani jednej nowej zależności (gest napisany
+na gołym `PointerEvent`), a warstwa podpowiedzi renderowana dopiero po otwarciu. Budżet
+wydajnościowy przeszedł w paśmie ±5%.
+**Lekcja:** „Załadujmy to leniwie" jest własnością KOMPONENTU, nie pliku. Zanim wpiszesz
+`dynamic(ssr: false)` do planu, sprawdź, czy ten komponent czegoś nie **dostarcza** w dół drzewa —
+dostawca kontekstu, provider motywu, cokolwiek opakowującego `children` jest na to odporne z
+definicji. I gdy implementacja obala plan, poprawia się plan (C-54), a nie kod dopasowuje do
+nieaktualnego zapisu.
+
+## 2026-08-25 — Gest przytrzymania: wskaźnik przechwytuj dopiero przy otwarciu, nie na `pointerdown`
+**Problem:** Naturalny odruch przy pisaniu gestu „przytrzymaj i przeciągnij" to zawołać
+`setPointerCapture` od razu w `pointerdown` — wtedy mamy pewność, że wszystkie `pointermove`
+i `pointerup` trafią do nas. Tyle że przechwycenie natychmiast **zabiera przeglądarce przewijanie**,
+a palec startujący na pozycji nawigacji musi móc po prostu przewinąć listę. Ten sam problem ma
+`touch-action: none` postawione na całym pasku zamiast na pojedynczych pozycjach.
+**Rozwiązanie:** Do upływu progu (350 ms) gest jest „przezroczysty": nie przechwytujemy niczego,
+a ruch powyżej 12 px albo `pointercancel` od przeglądarki kasuje odliczanie — przewijanie wygrywa.
+`setPointerCapture` wołamy dopiero w callbacku licznika, czyli w chwili, gdy wachlarz naprawdę się
+otwiera. Drugi haczyk z tej samej rodziny: po wyborze z wachlarza przeglądarka i tak wyśle
+`click` — na `<a>` oznaczałoby to DRUGĄ nawigację, pod adres samego odnośnika. Stąd flaga
+„zjedzone kliknięcie" i osobny wariant uchwytów dla elementów, które nawigują same.
+**Lekcja:** Przy gestach czasowych rozdziel dwie fazy: „jeszcze nie wiadomo, co to jest"
+(przeglądarka rządzi) i „to na pewno mój gest" (dopiero teraz przejmuję kontrolę). Przechwycenie
+wskaźnika, `touch-action` i `preventDefault` należą wyłącznie do fazy drugiej — w pierwszej każde
+z nich odbiera użytkownikowi zachowanie, którego gest wcale nie potrzebował.
+
 ## 2026-08-24 — Przenosząc kod, przenieś też jego niezmienniki
 **Problem:** Formularz „zapisz ten widok" wyjąłem z gwiazdki do osobnego komponentu, żeby zmieścił
 się w jednym dialogu ulubionych. Przy przepisywaniu zniknął niezmiennik opisany w 042: adres do

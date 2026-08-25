@@ -17,6 +17,7 @@ import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
+import { useWachlarz } from "./WachlarzNawigacji";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface ModuleSidebarProps {
@@ -130,6 +131,11 @@ function NavItem({
   children?: React.ReactNode;
 }) {
   const t = useTranslations("components.shell.ModuleSidebar");
+  // 100 (AC-21): TA SAMA czynność co na telefonie — przytrzymanie pozycji nawigacji otwiera
+  // wachlarz. Odnośnik zostaje odnośnikiem (krótkie kliknięcie, środkowy przycisk, „otwórz w nowej
+  // karcie" działają jak dotąd); gest tylko go uzupełnia.
+  const { uchwytyLinku } = useWachlarz();
+  const gest = uchwytyLinku();
   const isActive = exact ? pathname === href : pathname.startsWith(href);
   const activeColor = accentColor ?? "var(--text-primary)";
 
@@ -150,8 +156,10 @@ function NavItem({
   return (
     <Link
       href={href}
+      {...gest}
       className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
       style={{
+        ...gest.style,
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
         color: isActive ? activeColor : "var(--text-secondary)",
       }}
@@ -308,7 +316,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * Cztery ikony: dzwonek, zapis widoku, ściągawka skrótów, tryb administratora. Ściągawka jest
        * TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania).
        */}
-      <div className="mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
+      {/* 100: rząd idzie za dominującą ręką (`omnia-chrom-konta` + `html[data-reka]`) — te same
+          ikony, ta sama kolejność względem kciuka co na telefonie. */}
+      <div className="omnia-chrom-konta mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
         {/* 087 (AC-20): od lewej dom, gwiazdka, skróty. Ikona domu zastępuje pozycję „Strona
             główna" w nawigacji — stoi pierwsza, bo to najczęstszy powrót. */}
         <Link

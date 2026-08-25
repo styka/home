@@ -112,6 +112,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className="dark"
       data-skin-scheme={skin.colorScheme}
       data-chrome-frame={chromeFrame}
+      // 100: dominująca ręka jako atrybut na <html>. Rzeczy, które są wyłącznie kwestią KOLEJNOŚCI
+      // w rzędzie (chrom konta w panelu bocznym), lustrzą się wtedy czystym CSS-em i bez migotania —
+      // ten sam powód, dla którego tokeny skórki są tu nakładane serwerowo. Tam, gdzie potrzebny
+      // jest JS (rozkład pozycji paska, strona pływających przycisków), rękę niesie `menuPrefs`,
+      // które powłoka i tak dostaje.
+      data-reka={menuPrefs.handedness}
       style={tokensToStyle(skin.tokens)}
     >
       <head>

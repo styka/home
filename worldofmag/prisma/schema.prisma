@@ -211,6 +211,10 @@ model UserMenuPref {
   // rozwinięta sekcja spychała pozycje modułów poniżej pierwszego ekranu. Nośnikiem jest ta
   // tabela, bo pasek boczny i tak ją czyta — osobny magazyn dokładałby zapytanie na każdą stronę.
   favoritesCollapsed Boolean  @default(true)
+  // 100: dominująca ręka — "right" | "left" (String + union TS, nigdy enum Prisma — C-12).
+  // Steruje układem dolnego paska na telefonie i stroną gwiazdki / magicznej ikony / robaczka.
+  // Mieszka TU, bo powłoka czyta tę tabelę na każdej stronie; osobna tabela = drugie zapytanie.
+  handedness         String   @default("right")
   updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown, Eye, EyeOff, Loader2, X, Plus, Smartphone } from "lucide-react";
+import { ChevronUp, ChevronDown, Eye, EyeOff, Loader2, X, Plus, Smartphone, Hand } from "lucide-react";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { accessibleModulesInOrder, MAX_TAB_BAR, type MenuPrefs, type ModuleDef } from "@/lib/modules";
+import { accessibleModulesInOrder, MAX_TAB_BAR, type MenuPrefs, type ModuleDef, type Reka } from "@/lib/modules";
 
 export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[]; prefs: MenuPrefs }) {
   const t = useTranslations("components.settings.MenuPrefsEditor");
@@ -18,6 +18,7 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
   const allAccessible = accessibleModulesInOrder(permissions, prefs);
   const byId = new Map(allAccessible.map((m) => [m.id, m]));
   const [tabBar, setTabBar] = useState<string[]>(() => prefs.tabBar.filter((id) => byId.has(id)));
+  const [reka, setReka] = useState<Reka>(prefs.handedness);
 
   function persist(nextRows: ModuleDef[], nextDisabled: string[]) {
     setRows(nextRows);
@@ -64,6 +65,14 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
   function addTab(id: string) {
     if (tabBar.includes(id) || tabBar.length >= MAX_TAB_BAR) return;
     persistTabBar([...tabBar, id]);
+  }
+
+  function persistReka(next: Reka) {
+    setReka(next);
+    startTransition(async () => {
+      await updateMenuPrefs({ handedness: next });
+      router.refresh();
+    });
   }
 
   const available = allAccessible.filter((m) => !tabBar.includes(m.id));
@@ -114,6 +123,49 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
             </div>
           );
         })}
+      </div>
+
+      {/* 100 (AC-11): dominująca ręka.
+          Stoi TU, a nie w „Wyglądzie", bo to nie jest kwestia motywu — to ustawienie dokładnie tych
+          elementów, którymi rządzi ta sekcja: dolnego paska i chromu obsługiwanego kciukiem.
+          JEDEN przełącznik na wszystkie z nich; trzy osobne byłyby trzema odpowiedziami na jedno
+          pytanie „którą ręką trzymasz telefon". */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+          <Hand size={13} /> {t("dominujacaReka")}
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 4 }}>
+          {t("dominujacaRekaOpis")}
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          {([
+            { id: "right" as const, etykieta: t("rekaPrawa") },
+            { id: "left" as const, etykieta: t("rekaLewa") },
+          ]).map((opcja) => {
+            const wybrana = reka === opcja.id;
+            return (
+              <button
+                key={opcja.id}
+                onClick={() => persistReka(opcja.id)}
+                aria-pressed={wybrana}
+                className="focus:outline-none"
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  borderRadius: 8,
+                  border: `1px solid ${wybrana ? "var(--accent-blue)" : "var(--border)"}`,
+                  background: wybrana ? "var(--bg-elevated)" : "var(--bg-surface)",
+                  color: wybrana ? "var(--text-primary)" : "var(--text-muted)",
+                  fontSize: 14,
+                  fontWeight: wybrana ? 600 : 400,
+                  cursor: "pointer",
+                }}
+              >
+                {opcja.etykieta}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Dolny pasek (mobile) */}

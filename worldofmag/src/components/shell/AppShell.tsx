@@ -22,13 +22,15 @@ import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
+import { PasekKciuka } from "./PasekKciuka";
+import { WachlarzNawigacji, type PozycjaWachlarza } from "./WachlarzNawigacji";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
 import { FavoritesOverlay } from "@/components/favorites/FavoritesOverlay";
-import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
+import { filterAccessibleFavorites, type FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 
 interface AppShellProps {
@@ -103,6 +105,34 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   // Dolny pasek (mobile): osobno konfigurowalny zestaw/kolejność ikon (niezależny od menu).
   const tabBar = resolveTabBar(userPermissions, menuPrefs);
 
+  /**
+   * 100: dane dla gestu nawigacji. Poziom 1 to `enabled` z `resolveMenu` — lista już przefiltrowana
+   * po uprawnieniach, więc wachlarz nie robi własnej kontroli dostępu i nie może się z nią rozjechać.
+   * Poziom 2 to zapisane widoki danego modułu, przepuszczone przez `filterAccessibleFavorites`
+   * (tę samą funkcję, której używa reszta powłoki).
+   */
+  const reka = menuPrefs.handedness;
+  const pozycjeWachlarza: PozycjaWachlarza[] = enabled.map((m) => ({
+    id: m.id,
+    etykieta: m.label,
+    href: m.href,
+    Icon: m.Icon,
+    color: m.color,
+  }));
+  const widokiModulu = (idModulu: string): PozycjaWachlarza[] => {
+    const m = MODULES.find((x) => x.id === idModulu);
+    // Recenzja 100: moduł o adresie „/" (Strona główna) jest **prefiksem każdej ścieżki**, więc
+    // dopasowanie po prefiksie przypisałoby mu WSZYSTKIE zapisane widoki. Dziś jest to nieosiągalne
+    // (`resolveMenu` odsiewa `home` z listy), ale to jest dokładnie ten rodzaj pułapki, która wraca
+    // przy pierwszej zmianie o piętro wyżej — i wraca bezgłośnie, bo wynik nadal wygląda sensownie.
+    if (!m || m.href === "/") return [];
+    return filterAccessibleFavorites(
+      favoriteViews.filter((f) => f.path === m.href || f.path.startsWith(m.href + "/") || f.path.startsWith(m.href + "?")),
+      userPermissions,
+      isPathLocked,
+    ).map((f) => ({ id: f.id, etykieta: f.label, href: f.path }));
+  };
+
   return (
     /* 085: dostawca trybu administratora obejmuje CAŁĄ powłokę — wskaźniki kosztu siedzą
        w modułach, powiadomienia w rogu ekranu, narzędzia w warstwie pływającej; wszystkie czytają
@@ -115,6 +145,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         Musi opakowywać `children`, bo to strony modułów rejestrują swoje skróty (i mają
         pierwszeństwo przed globalnymi). */}
     <ShortcutsProvider>
+    {/* 100: dostawca gestu obejmuje CAŁĄ powłokę, bo wyzwalacze są w dwóch miejscach —
+        w dolnym pasku (telefon) i w nawigacji bocznej (komputer) — a wachlarz ma być jeden.
+        Ten sam powód, dla którego przełącznik ulubionych i skróty są montowane raz (042). */}
+    <WachlarzNawigacji pozycje={pozycjeWachlarza} glebiej={widokiModulu} reka={reka}>
     <DataFreshness />
     {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent).
         085 (AC-8): same decydują, czy się rysować — czytają tryb administratora z kontekstu. */}
@@ -140,7 +174,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         className="md:hidden flex-shrink-0 border-b"
         style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center gap-2 px-3" style={{ height: 44 }}>
+        {/* 100 (AC-12, AC-22): górny pasek telefonu idzie za DOMINUJĄCĄ RĘKĄ, tak jak rząd chromu
+            na komputerze — ta sama reguła `.omnia-chrom-konta`, ten sam atrybut `html[data-reka]`.
+            Bez tego gwiazdka ulubionych zostawałaby po prawej u osoby leworęcznej, a właściciel
+            prosił o lustrzenie wprost także dla niej. W `row-reverse` `ml-auto` niżej przesuwa grupę
+            chromu na wizualnie LEWĄ krawędź, więc marginesów nie trzeba ruszać. */}
+        <div className="omnia-chrom-konta flex items-center gap-2 px-3" style={{ height: 44 }}>
           <button
             onClick={() => setMenuOpen(true)}
             className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"
@@ -291,37 +330,15 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
        * Pasek widoku ZOSTAJE: nadal rysuje go `ModuleView` osadzony w stronie modułu, bo powłoka
        * nie zna tytułu modułu i dostałaby podwójne nagłówki w ~20 modułach.
        */}
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-14 md:pb-0">
+      {/* 100: `pb-16`, nie `pb-14` — magiczna ikona wystaje 14 px ponad krawędź paska, więc bez
+          tego zjadałaby ostatni wiersz każdej długiej listy (AC-19). */}
+      <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-16 md:pb-0">
         {children}
       </main>
 
-      {/* Mobile bottom tab bar */}
-      {tabBar.length > 0 && (
-        <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex border-t"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            borderColor: "var(--border)",
-            paddingBottom: "env(safe-area-inset-bottom)",
-            height: "calc(56px + env(safe-area-inset-bottom))",
-          }}
-        >
-          {tabBar.map((m) => {
-            const isActive = m.exact ? pathname === m.href : pathname.startsWith(m.href);
-            return (
-              <Link
-                key={m.id}
-                href={m.href}
-                className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs"
-                style={{ color: isActive ? m.color : "var(--text-muted)" }}
-              >
-                <m.Icon size={20} />
-                <span style={{ fontSize: 10 }}>{m.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      )}
+      {/* 100: dolny pasek to teraz PASEK KCIUKA — układ lustrzany wg ręki, magiczna ikona na
+          stałe na środku, a przytrzymanie dowolnej pozycji otwiera wachlarz nawigacji. */}
+      <PasekKciuka pozycje={tabBar} reka={reka} pathname={pathname} />
 
       <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
       <ShortcutsCheatSheet />
@@ -332,6 +349,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           klawiszowego: ukryte narzędzie, które nadal daje się odpalić, wygląda na usterkę. */}
       {isAdmin && <FeedbackInspector />}
     </div>
+    </WachlarzNawigacji>
     </ShortcutsProvider>
     </ConflictProvider>
     </ConfirmProvider>

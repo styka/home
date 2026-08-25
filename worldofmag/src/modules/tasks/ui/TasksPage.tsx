@@ -852,6 +852,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         allTags={allTags}
         selectedTagIds={selectedTagIds}
         onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+        onTagsClear={() => setSelectedTagIds([])}
         filters={statusFilters}
         labels={filterLabels}
         showStatusTabs={layout !== "kanban"}
