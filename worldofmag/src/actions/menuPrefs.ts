@@ -3,19 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { defaultMenuPrefs, MAX_TAB_BAR, MODULES, type MenuPrefs, type Reka } from "@/lib/modules";
+import { czytajReke, defaultMenuPrefs, MAX_TAB_BAR, MODULES, type MenuPrefs, type Reka } from "@/lib/modules";
 
 const VALID_IDS = new Set(MODULES.map((m) => m.id));
-
-/**
- * 100: `handedness` jest kolumną `String` (C-12 — bez enumów Prisma), więc baza przyjmie dowolną
- * wartość: starą migrację, ręczną poprawkę z `psql`, literówkę w skrypcie. Zawężenie do unii robi
- * więc KOD, w jednym miejscu, i schodzi do `"right"` — a nie rzuca, bo nieznana preferencja
- * wyglądu nigdy nie jest powodem, żeby nie dało się wyświetlić strony.
- */
-function czytajReke(wartosc: string | null | undefined): Reka {
-  return wartosc === "left" ? "left" : "right";
-}
 
 /** Preferencje menu zalogowanego użytkownika; brak wiersza ⇒ wartości domyślne. */
 export async function getMenuPrefs(): Promise<MenuPrefs> {
