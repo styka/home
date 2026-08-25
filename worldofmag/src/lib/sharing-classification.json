@@ -89,6 +89,10 @@
     "services": {
       "rodzaj": "wlasciciel",
       "powod": "Marketplace ma WŁASNY model widoczności (ogłoszenie publiczne, zapytanie między stronami). Rozdz. 8.10 mówi wprost, że `ServiceStaff` ZOSTAJE, bo to rola w firmie, a nie dostęp do zasobu — wciągnięcie tego w `ResourceGrant` pomyliłoby dwa różne pojęcia."
+    },
+    "youtube": {
+      "rodzaj": "wlasciciel",
+      "powod": "102: kanały, filmy i transkrypcje są ściśle osobiste (moduł nie ma wariantu zespołowego). Dostęp to wyłącznie „czy to moja przestrzeń\" — deklaracja wyrażałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
     }
   }
 }

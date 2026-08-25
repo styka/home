@@ -24,12 +24,13 @@ import magazynowanieModule from "@/modules/magazynowanie/module";
 import warsztatyModule from "@/modules/warsztaty/module";
 import languagesModule from "@/modules/languages/module";
 import habitsModule from "@/modules/habits/module";
+import youtubeModule from "@/modules/youtube/module";
 
 // Definicja górnego (konfigurowalnego) modułu menu. Pozycje dolne (Ustawienia,
 // Zaproszenia, Admin) NIE są tutaj — pozostają na stałe w komponentach paska.
 export type ModuleDef = ResolvedModule;
 
-const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule, homeModule];
+const DECLARED: ResolvedModule[] = [truckModule, youtubeModule, contactsModule, reportsModule, qaModule, habitsModule, languagesModule, warsztatyModule, magazynowanieModule, notesModule, flotaModule, healthModule, newsModule, weatherModule, servicesModule, kitchenModule, petsModule, portfelModule, shoppingModule, tasksModule, calendarModule, homeModule];
 
 /**
  * Kolejność pozycji w menu — decyzja produktowa, więc trzyma się jednej listy, a nie kolejności,
@@ -37,7 +38,7 @@ const DECLARED: ResolvedModule[] = [truckModule, contactsModule, reportsModule, 
  */
 const MODULE_ORDER = [
   "home", "calendar", "shopping", "tasks", "notes", "pets", "kitchen", "languages", "health",
-  "news", "weather", "habits", "services", "contacts", "qa", "truck", "flota", "portfel",
+  "news", "youtube", "weather", "habits", "services", "contacts", "qa", "truck", "flota", "portfel",
   "magazynowanie", "warsztaty", "reports",
 ];
 

@@ -176,6 +176,14 @@
       "entries": [
         "src/components/sharing/SharingPage.tsx"
       ]
+    },
+    "youtube": {
+      "status": "done",
+      "entries": [
+        "src/modules/youtube/ui/YoutubePage.tsx",
+        "src/modules/youtube/ui/FilmSzczegol.tsx",
+        "src/modules/youtube/ui/KanalyPage.tsx"
+      ]
     }
   },
   "colorExceptions": {

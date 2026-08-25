@@ -7,7 +7,8 @@ import { prisma } from "@/platform/db/prisma";
 const RETENTION_DAYS = 30;
 
 // 037: „weather" = propozycje „co robić" z modułu Pogoda (biblioteka pomysłów).
-export type TrashModule = "notes" | "tasks" | "weather";
+// 102: „youtube" = obserwowany kanał (filmy znikają kaskadą i dobiorą się przy odświeżeniu).
+export type TrashModule = "notes" | "tasks" | "weather" | "youtube";
 
 /**
  * 066 (zadanie 16) — WERSJA ROBOCZA ODRZUCONA PRZY KONFLIKCIE.
