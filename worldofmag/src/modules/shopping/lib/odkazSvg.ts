@@ -90,6 +90,7 @@ function bezpiecznaWartosc(wartosc: string): boolean {
     w.includes("data:") ||
     w.includes("url(") ||
     w.includes("<") ||
+    w.includes(">") ||
     w.includes("&#")
   );
 }
@@ -135,8 +136,14 @@ export function odkazSvg(tresc: string | null | undefined): string {
   }
 
   // 3. Pozostałe znaczniki przepisujemy po nazwie i atrybucie; nieznane znikają.
+  /**
+   * Część atrybutowa dopuszcza `>` **wewnątrz cudzysłowu**. Bez tego pierwszy `>` w wartości kończył
+   * znacznik w połowie, a reszta wejścia — razem z tym, co atakujący tam wpisał — wypadała z parsera
+   * jako zwykły tekst (niewykonywalny, ale wynik przestawał być poprawnie zbudowany).
+   * Wzorzec `(?:"[^"]*"|'[^']*'|[^>])*?` czyta wartość w cudzysłowie jako całość.
+   */
   s = s.replace(
-    /<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9:-]*)([^>]*?)(\/?)\s*>/g,
+    /<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)\s*>/g,
     (_dopasowanie, zamykajacy: string, nazwa: string, atrybuty: string, samozamykajacy: string) => {
       const n = nazwa.toLowerCase();
       if (!DOZWOLONE_ELEMENTY.has(n)) return "";

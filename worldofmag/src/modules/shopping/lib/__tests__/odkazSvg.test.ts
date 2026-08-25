@@ -96,3 +96,39 @@ test("obrazek data: — rastry tak, svg+xml nie", () => {
   assert.equal(bezpiecznyObrazekData("data:image/svg+xml;base64,AAAA"), false);
   assert.equal(bezpiecznyObrazekData("data:text/html;base64,AAAA"), false);
 });
+
+/**
+ * Przypadki przeciwnika dołożone na etapie RECENZJI. Pierwszy z nich wykrył wtedy realną wadę:
+ * `>` wewnątrz wartości atrybutu urywał znacznik w połowie, a reszta wejścia wypadała z parsera
+ * jako tekst. Nie dawało się tego wykonać, ale wynik przestawał być poprawnie zbudowany — a to
+ * jest dokładnie ten rodzaj usterki, który przy następnej zmianie staje się luką.
+ */
+
+test("`>` w wartości atrybutu nie urywa znacznika ani nie wypuszcza tekstu atakującego", () => {
+  const wynik = odkazSvg('<path d="M0 0" fill="a>b" onload="alert(1)">');
+  assert.equal(wynik, '<path d="M0 0">');
+  assert.ok(!wynik.includes("onload"));
+  assert.ok(!wynik.includes("alert"));
+});
+
+test("znacznik składany z kawałków nie odtwarza się jako element", () => {
+  // Klasyczne obejście filtrów: po usunięciu par `<script></script>` fragmenty sklejają się
+  // w `<script>`. U nas biała lista z kroku 3 i tak go nie przepuszcza — zostaje sam TEKST,
+  // który w SVG nie jest wykonywany.
+  const wynik = odkazSvg("<scr<script></script>ipt>alert(1)</scr<script></script>ipt>");
+  assert.ok(!wynik.includes("<script"), "znacznik odtworzył się");
+  assert.ok(!/<[a-z]/i.test(wynik), "w wyniku nie powinno zostać ŻADNEGO znacznika");
+});
+
+test("kształt składany z kawałków traci ładunek", () => {
+  assert.equal(odkazSvg("<circ<script></script>le onload=alert(1)>"), "<circle>");
+});
+
+test("wielkość liter nie omija usuwania niebezpiecznych elementów", () => {
+  assert.equal(odkazSvg('<IMAGE HREF="x" ONERROR="alert(1)"/>').trim(), "");
+});
+
+test("encja nie przemyca schematu javascript:", () => {
+  const wynik = odkazSvg('<path d="M0 0" fill="&#106;avascript:alert(1)"/>');
+  assert.ok(!wynik.includes("avascript"));
+});
