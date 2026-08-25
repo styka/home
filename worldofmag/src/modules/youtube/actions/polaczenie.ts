@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { logEvent } from "@/platform/observability/log";
-import { odszyfrujToken, zaszyfrujToken, refreshAccessToken, pobierzSubskrypcje } from "@/lib/youtube/oauth";
+import { odszyfrujToken, zaszyfrujToken, refreshAccessToken, pobierzSubskrypcje } from "../lib/oauth";
 import { dopiszKanaly } from "../lib/zapisKanalow";
 
 /**

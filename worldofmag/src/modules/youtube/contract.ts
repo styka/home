@@ -11,4 +11,11 @@
  */
 
 export { getFilmy, odswiezYoutube } from "./actions/filmy";
+
+/**
+ * Przepływ zgody Google — dla CIENKICH tras w `src/app/api/youtube/*`. Trasa robi wyłącznie to,
+ * czego moduł zrobić nie może (ciasteczko + przekierowanie); kolejność kroków zostaje tutaj.
+ */
+export { przygotujZgode, zapiszZgode, YOUTUBE_STATE_COOKIE } from "./lib/zgoda";
+export type { WynikZgody } from "./lib/zgoda";
 export type { FilmDTO, StanFilmu, SortFilmow } from "./actions/filmy";

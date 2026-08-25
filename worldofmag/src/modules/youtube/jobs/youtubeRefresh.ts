@@ -70,7 +70,8 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
   });
   wynik.kanalow = kanaly.length;
 
-  for (const [i, kanal] of kanaly.entries()) {
+  for (let i = 0; i < kanaly.length; i++) {
+    const kanal = kanaly[i];
     ctx.progress?.(`Sprawdzam kanały (${i + 1}/${kanaly.length})…`);
     const filmy = await filmyKanalu(kanal.channelId);
     if (filmy.length === 0) continue;
@@ -101,7 +102,8 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
       select: { id: true, videoId: true },
     });
 
-    for (const [i, film] of doPobrania.entries()) {
+    for (let i = 0; i < doPobrania.length; i++) {
+      const film = doPobrania[i];
       ctx.progress?.(`Pobieram transkrypcje (${i + 1}/${doPobrania.length})…`);
       wynik.transkrypcjiProbowano++;
       const t = await pobierzTranskrypcje(film.videoId);
