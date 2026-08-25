@@ -329,3 +329,31 @@ html[data-chrome-frame="corners"] .omnia-chrome-frame { display: block; }
   from { opacity: 0; transform: translateX(12px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
+/* ---------------------------------------------------------------------------
+   100: strona pływających przycisków wynika z DOMINUJĄCEJ RĘKI.
+
+   Robione czystym CSS-em na atrybucie `html[data-reka]`, a nie propsem: to jest
+   wyłącznie kwestia tego, przy której krawędzi element stoi, więc przeciąganie
+   ręki przez dwa komponenty (asystent, zgłaszanie) tylko po to, żeby zamienić
+   `right` na `left`, byłoby drogą wersją reguły w arkuszu. Atrybut nakłada
+   serwer w `layout.tsx`, więc nie ma migotania przy pierwszym renderze.
+
+   Na komputerze lewa krawędź jest zajęta przez panel boczny — dlatego przy
+   ręce lewej odsuwamy się o jego szerokość, zamiast wjeżdżać pod niego.
+   --------------------------------------------------------------------------- */
+.omnia-plywajacy { right: 1.25rem; }
+html[data-reka="left"] .omnia-plywajacy { right: auto; left: 1.25rem; }
+@media (min-width: 768px) {
+  html[data-reka="left"] .omnia-plywajacy { left: calc(var(--sidebar-width) + 1.25rem); }
+}
+
+/* Magiczna ikona asystenta jest na telefonie WYŁĄCZNIE na środku dolnego paska
+   (`PasekKciuka`), więc jej pływający wariant istnieje dopiero od `md`. Wysokość
+   sterujemy klasą, a nie stylem w komponencie, bo inline `display: flex` wygrałby
+   z każdą regułą ukrywającą. */
+.omnia-fab-asystent { display: none; }
+@media (min-width: 768px) { .omnia-fab-asystent { display: flex; } }
+
+/* Rząd chromu konta (gwiazdka, tryb administratora, dzwonek) też idzie za ręką. */
+html[data-reka="left"] .omnia-chrom-konta { flex-direction: row-reverse; }

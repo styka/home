@@ -85,14 +85,14 @@
 
 ## Faza D — Pasek kciuka i wachlarz (dotyka każdej trasy)
 
-- [ ] **T-17** — `src/components/shell/PasekKciuka.tsx`: układ `[poz][poz] [✨] [poz][poz]`, magiczna
+- [x] **T-17** — `src/components/shell/PasekKciuka.tsx`: układ `[poz][poz] [✨] [poz][poz]`, magiczna
       ikona **na środku**, 52 px, okrągła, `translateY(-14px)` z pierścieniem `var(--bg-base)`, klik →
       `openAssistant()` z `@/platform/ai/assistantBus`. Kolejność pozycji lustrzana wg ręki; pozycje
       po stronie dominującej szersze (`flex-grow` 1.35 vs 1) i z większą ikoną — ale **każda**
       z `min-height: 44px` / `min-width: 44px`. `env(safe-area-inset-bottom)` zachowane.
       *Gotowe, gdy:* pomiar `getBoundingClientRect()` każdej pozycji daje ≥ 44×44.
       **(AC-13, AC-14)**
-- [ ] **T-18** — `src/components/shell/WachlarzNawigacji.tsx`: gest na gołym `PointerEvent` —
+- [x] **T-18** — `src/components/shell/WachlarzNawigacji.tsx`: gest na gołym `PointerEvent` —
       `pointerdown` + `setPointerCapture` + timer 350 ms → wachlarz; `pointermove` podświetla
       **najbliższą** podpowiedź (odległość od środka, nie `elementFromPoint`); `pointerup` na
       podświetlonej → `router.push`, poza → zamknięcie bez nawigacji; `Escape` zamyka; ruch powyżej
@@ -101,33 +101,35 @@
       Portal do `body`, warstwa **9994**. `prefers-reduced-motion` → `transition: none`.
       *Gotowe, gdy:* gest działa dotykiem i myszą, a zwykłe przewijanie palcem startującym na pasku
       nadal przewija. **(AC-15, AC-16, AC-18)**
-- [ ] **T-19** — Zawartość wachlarza: poziom 1 = `resolveMenu(userPermissions, prefs).enabled` (już
+- [x] **T-19** — Zawartość wachlarza: poziom 1 = `resolveMenu(userPermissions, prefs).enabled` (już
       po uprawnieniach), rozłożone na łuku ~120 px wychylonym w stronę dominującej ręki, drugi
       pierścień powyżej 8 pozycji; poziom 2 = ulubione widoki tego modułu (`favoriteViews`
       przefiltrowane po prefiksie ścieżki **i** przez `filterAccessibleFavorites`), otwierane po
       zatrzymaniu palca ~400 ms bez puszczania. Moduł bez zapisanych widoków = liść.
       **Żadnej nowej listy modułów** — `MobileModuleSubNav` zostaje nietknięty (C-36).
       *Gotowe, gdy:* wachlarz pokazuje wyłącznie moduły dostępne dla roli. **(AC-15)**
-- [ ] **T-20** — `src/components/shell/AppShell.tsx`: inline `<nav>` dolnego paska → `<PasekKciuka>`;
-      montaż `<WachlarzNawigacji>` przez `dynamic(..., { ssr: false })`; przekazanie `reka` do
+- [x] **T-20** — `src/components/shell/AppShell.tsx`: inline `<nav>` dolnego paska → `<PasekKciuka>`;
+      powłoka owinięta dostawcą `<WachlarzNawigacji>` (**nie** `dynamic(ssr:false)` — patrz korekta
+      w planie §9: to dostawca kontekstu opakowujący `children`, więc `ssr:false` wyłączyłby
+      renderowanie serwerowe całej aplikacji); przekazanie `reka` do
       `FeedbackInspector` i `AICommandSheet`; `<main>` `pb-14` → `pb-16`.
       *Gotowe, gdy:* przewinięta do końca długa lista zadań pokazuje ostatni wiersz w całości.
       **(AC-19)**
-- [ ] **T-21** — Krótkie tapnięcie bez regresji: brak przekroczenia progu czasu → `router.push` na
+- [x] **T-21** — Krótkie tapnięcie bez regresji: brak przekroczenia progu czasu → `router.push` na
       adres pozycji (nawigacja **imperatywna**, bo `setPointerCapture` zmienia cel `pointerup`, więc
       nie liczymy na klik w `<a>`).
       *Gotowe, gdy:* pojedyncze tapnięcie w pozycję nadal nawiguje. **(AC-17)**
-- [ ] **T-22** — `src/components/assistant/AICommandSheet.tsx`: FAB widoczny wyłącznie od `md:`
+- [x] **T-22** — `src/components/assistant/AICommandSheet.tsx`: FAB widoczny wyłącznie od `md:`
       (poniżej jego rolę przejmuje środek paska); przy ręce `left` pozycjonowany
       `left: calc(var(--sidebar-width) + 1.25rem)` zamiast `right-5`, żeby nie wjechał pod panel
       boczny. Reszta komponentu bez zmian.
       *Gotowe, gdy:* na telefonie nie ma drugiego przycisku asystenta. **(AC-13, AC-20)**
-- [ ] **T-23** `[P]` — `src/components/shell/FeedbackInspector.tsx`: strona robaczka wg ręki tą samą
+- [x] **T-23** `[P]` — `src/components/shell/FeedbackInspector.tsx`: strona robaczka wg ręki tą samą
       regułą; istniejące piętrowanie `z-index` i wariant „nad modalem" zachowane. **(AC-12)**
-- [ ] **T-24** `[P]` — `src/components/shell/ModuleSidebar.tsx`: rząd chromu konta (gwiazdka, tryb
+- [x] **T-24** `[P]` — `src/components/shell/ModuleSidebar.tsx`: rząd chromu konta (gwiazdka, tryb
       admina, dzwonek) wg ręki — czystym CSS-em przez `html[data-reka="left"]`; pozycje nawigacji
       podpięte pod ten sam gest przytrzymania co pasek. **(AC-12, AC-21, AC-22)**
-- [ ] **T-25** — Teksty fazy D do `messages/pl.json` (`components.shell.PasekKciuka`,
+- [x] **T-25** — Teksty fazy D do `messages/pl.json` (`components.shell.PasekKciuka`,
       `components.shell.WachlarzNawigacji`).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi. **(AC-24)**
 
@@ -139,9 +141,8 @@
 - [ ] **T-27** — `next lint` + `tsc --noEmit -p tsconfig.test.json` + `next build` na **lokalnym**
       Postgresie (C-13 — `scripts/migrate.js` NIE odpalamy). **(AC-23)**
 - [ ] **T-28** — `npm run check:perf`. Nowe komponenty powłoki wchodzą do bundla każdej trasy, więc
-      to bramka z realnym ryzykiem. Przy pęknięciu pasma ±5 % — najpierw sprawdź, czy wachlarz
-      naprawdę jest `dynamic(ssr:false)`; podniesienie progu tylko świadomie i w osobnym commicie
-      z uzasadnieniem.
+      to bramka z realnym ryzykiem. Przy pęknięciu pasma ±5 % — sprawdź najpierw, czy nie wjechała
+      żadna nowa zależność; podniesienie progu tylko świadomie i w osobnym commicie z uzasadnieniem.
 - [ ] **T-29** — Aktualizacja `CLAUDE.md`: opis chromu (dolny pasek, stałe miejsce magicznej ikony,
       ustawienie ręki, wachlarz nawigacji) — obecny opis przestaje być prawdziwy.
 - [ ] **T-30** — Wpis do `doświadczenia.md` (C-51) o nieoczywistym problemie z tego przebiegu —

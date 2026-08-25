@@ -795,6 +795,13 @@
         "powodKlucz": "Dostawca odrzucił klucz API.",
         "powodModel": "Dostawca nie zna wybranego modelu lub głosu.",
         "powodLimit": "Wyczerpany limit u dostawcy."
+      },
+      "PasekKciuka": {
+        "nawigacjaGlowna": "Nawigacja główna",
+        "asystentAi": "Asystent AI"
+      },
+      "WachlarzNawigacji": {
+        "nawigacjaGestem": "Nawigacja gestem"
       }
     },
     "shortcuts": {

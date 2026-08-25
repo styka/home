@@ -1626,10 +1626,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           onClick={() => setIsOpen(true)}
           title="Asystent AI"
           aria-label={t("otworzAsystentaAi")}
-          className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
+          className="omnia-fab-asystent omnia-plywajacy fixed md:bottom-6"
           // Nad pełnoekranowym panelem roboczym (mobilny podgląd zadania, z-50) FAB musi
           // stać wyżej niż panel, ale niżej niż toasty (z-60). Poza panelem zostaje na 41.
-          style={{ zIndex: panelOpen ? 55 : 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
+          // 100: `display` NIE jest tu ustawiane — steruje nim klasa `omnia-fab-asystent`, bo styl
+          // wpisany w atrybut wygrałby z regułą chowającą przycisk na telefonie (tam magiczna ikona
+          // stoi na stałe na środku dolnego paska).
+          style={{ zIndex: panelOpen ? 55 : 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
         >
           <Sparkles size={22} />
         </button>

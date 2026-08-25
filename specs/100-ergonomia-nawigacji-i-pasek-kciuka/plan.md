@@ -273,9 +273,15 @@ z realnym ryzykiem; patrz §9).
 
 - **`check:perf` (±5 %)** — `PasekKciuka` i `WachlarzNawigacji` wchodzą do bundla **każdej** trasy,
   bo montuje je powłoka. To najbardziej prawdopodobna przyczyna czerwonego builda w tej zmianie.
-  → Mitygacja: wachlarz ładowany `dynamic(..., { ssr: false })` i montowany dopiero po pierwszym
-  przytrzymaniu; zero nowych zależności (gest pisany na `PointerEvent`, **nie** na bibliotece).
-  Jeśli mimo to pasmo pęknie — podnieść próg w manifeście świadomie, w osobnym commicie z uzasadnieniem.
+  → **Korekta z etapu `/implement` (C-54): `dynamic(..., { ssr: false })` na wachlarzu jest
+  NIEMOŻLIWY i pierwotny zapis planu był tu błędny.** Wachlarz nie jest nakładką montowaną obok —
+  jest **dostawcą kontekstu**, z którego czytają wyzwalacze w dwóch miejscach (dolny pasek i pozycje
+  nawigacji bocznej). Dostawca opakowuje `children` całej powłoki, więc `ssr: false` oznaczałoby, że
+  **żadna strona nie renderuje się na serwerze**. Rozdzielenie hooka od nakładki dałoby dwa moduły
+  zamiast jednego problemu — a sam ciężar jest mały: ~350 wierszy, **zero zależności** (gest pisany
+  na gołym `PointerEvent`), a warstwa podpowiedzi renderuje się dopiero po otwarciu.
+  Mitygacja zostaje więc jedna i wystarczająca: brak nowych zależności. Jeśli pasmo ±5 % pęknie —
+  podnieść próg w manifeście świadomie, w osobnym commicie z uzasadnieniem.
 - **Gest kontra przewijanie** — `touch-action: none` na całym pasku zablokowałoby przewijanie palcem
   startującym na pasku. → Ustawiamy je **tylko** na pozycjach, a timer anulujemy przy ruchu powyżej
   progu przed upływem 350 ms.

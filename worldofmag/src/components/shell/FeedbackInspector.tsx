@@ -211,10 +211,14 @@ export function FeedbackInspector() {
           onClick={() => setActive(true)}
           title={t("zglosBladSugestieWskaz")}
           aria-label={t("trybZglaszaniaBleduLub")}
+          /* 100: na telefonie magiczna ikona zeszła z rogu na środek dolnego paska, więc róg jest
+             wolny — robaczek zajmuje go zawsze (72 px nad paskiem). Na komputerze asystent nadal
+             pływa w rogu, więc tam robaczek stoi piętro wyżej, jak dotąd. Stronę wybiera
+             `omnia-plywajacy` na podstawie dominującej ręki. */
           className={
             modalOpen
-              ? "fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
-              : "fixed right-5 bottom-[calc(132px+env(safe-area-inset-bottom))] md:bottom-[84px]"
+              ? "omnia-plywajacy fixed bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6"
+              : "omnia-plywajacy fixed bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-[84px]"
           }
           // Nad panelem roboczym (mobilny podgląd zadania, z-50) wynosimy przycisk nad panel
           // (54 < FAB asystenta 55 < toasty 60), zachowując pozycję „nad-modalową" gdy modalOpen.
