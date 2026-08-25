@@ -1,7 +1,7 @@
 # Zadania: Ergonomia nawigacji — paski filtrów i pasek kciuka
 
 - **Plan:** ./plan.md (100-ergonomia-nawigacji-i-pasek-kciuka)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-25
 
 ## Legenda
@@ -37,7 +37,7 @@
       w `modules.news.HotTopics` reużyj istniejących `proponowane`/`monitorowane`/`odrzucone`, usuń
       osierocone `wiecejDzialan`, jeśli nikt go już nie woła).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi. **(AC-24)**
-- [ ] **T-5** — Pomiar AC-5: wysokość przyklejonego `NaglowekSekcji` przy 360 px przed i po zmianie;
+- [x] **T-5** — Pomiar AC-5: wysokość przyklejonego `NaglowekSekcji` przy 360 px przed i po zmianie;
       zapisz obie liczby w notatkach na dole tego pliku (wejście dla `/verify`). **(AC-5)**
 
 ## Faza B — Zadania: filtr tagów o stałej wysokości (bez schematu) `[P]` względem fazy A
@@ -57,7 +57,7 @@
       co przed zmianą. **(AC-6, AC-10)**
 - [x] **T-9** — Teksty fazy B do `messages/pl.json` (`modules.tasks.FiltrTagow`).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi. **(AC-24)**
-- [ ] **T-10** — Pomiar AC-6: wysokość paska filtrów przy 3 i 18 tagach — obie liczby do notatek.
+- [x] **T-10** — Pomiar AC-6: wysokość paska filtrów przy 3 i 18 tagach — obie liczby do notatek.
       **(AC-6)**
 
 ## Faza C — Fundament danych dla ręki
@@ -135,19 +135,19 @@
 
 ## Faza E — Bramki i domknięcie
 
-- [ ] **T-26** — Bramki wybiórczo, przed pełnym buildem: `check:migrations`, `check:schema-drift`,
+- [x] **T-26** — Bramki wybiórczo, przed pełnym buildem: `check:migrations`, `check:schema-drift`,
       `check:i18n`, `check:ui-contract`, `check:client-safe`, `check:logs`, `check:tailwind`,
       `check:owner-columns`.
-- [ ] **T-27** — `next lint` + `tsc --noEmit -p tsconfig.test.json` + `next build` na **lokalnym**
+- [x] **T-27** — `next lint` + `tsc --noEmit -p tsconfig.test.json` + `next build` na **lokalnym**
       Postgresie (C-13 — `scripts/migrate.js` NIE odpalamy). **(AC-23)**
-- [ ] **T-28** — `npm run check:perf`. Nowe komponenty powłoki wchodzą do bundla każdej trasy, więc
+- [x] **T-28** — `npm run check:perf`. Nowe komponenty powłoki wchodzą do bundla każdej trasy, więc
       to bramka z realnym ryzykiem. Przy pęknięciu pasma ±5 % — sprawdź najpierw, czy nie wjechała
       żadna nowa zależność; podniesienie progu tylko świadomie i w osobnym commicie z uzasadnieniem.
-- [ ] **T-29** — Aktualizacja `CLAUDE.md`: opis chromu (dolny pasek, stałe miejsce magicznej ikony,
+- [x] **T-29** — Aktualizacja `CLAUDE.md`: opis chromu (dolny pasek, stałe miejsce magicznej ikony,
       ustawienie ręki, wachlarz nawigacji) — obecny opis przestaje być prawdziwy.
-- [ ] **T-30** — Wpis do `doświadczenia.md` (C-51) o nieoczywistym problemie z tego przebiegu —
+- [x] **T-30** — Wpis do `doświadczenia.md` (C-51) o nieoczywistym problemie z tego przebiegu —
       najpewniej gest kontra przewijanie albo `setPointerCapture` kontra `<a>`.
-- [ ] **T-31** — Mapowanie AC → dowód (wejście dla `/verify`), z liczbami z T-5, T-10 i T-17.
+- [x] **T-31** — Mapowanie AC → dowód (wejście dla `/verify`), z liczbami z T-5, T-10 i T-17.
 
 ---
 
@@ -193,4 +193,36 @@ Faza B (T-6→T-10) ┴───────────────────
 
 ## Notatki / blokady
 
-- *(pomiary AC-5, AC-6 i AC-14 wpisujemy tutaj w trakcie `/implement`)*
+### Pomiary (klikacz `e2e/specs/ergonomia-nawigacji.spec.ts`, Chromium headless)
+
+| Co | Wynik | Kryterium |
+|----|-------|-----------|
+| Wysokość przyklejonego nagłówka sekcji w Wiadomościach przy 360 px | **49 px**, trzy segmenty, **jeden wiersz** | AC-5 (≤ 60 px, bez zawijania) |
+| Wysokość wiersza filtru etykiet w Zadaniach przy 18 etykietach | **42 px**, **0 chipsów** bez wyboru | AC-6 (niezależna od liczby etykiet) |
+| Magiczna ikona: średnica / wystawanie / odchylenie od środka | **52 px / 13 px / 0 px** | AC-13 (środek, wyeksponowana) |
+| Cele dotyku pozycji paska | Zakupy 81×55, Zadania 81×55, Asystent AI 52×52, Strona główna **161×55** | AC-14 (każdy ≥ 44×44) |
+| Dolne wypełnienie obszaru głównego | **64 px** | AC-19 (≥ 56 px: pasek + wystająca ikona) |
+
+Układ paska przy trzech pozycjach i ręce prawej: `[Zakupy][Zadania] ✨ [Strona główna]` — najważniejsza
+pozycja (pierwsza w kolejności użytkownika) sama w prawej połowie, więc najszersza i w rogu, w którym
+spoczywa kciuk. Ikona dokładnie w geometrycznym środku (0 px odchylenia).
+
+### Rzeczy znalezione POMIAREM, nie lekturą kodu
+
+- **Ikona 74 px od środka** (naprawione): nadmiar pozycji po stronie dominującej w jednym rzędzie
+  `flex` przesuwał „środek". Strony są teraz równymi połowami; AC-14 doprecyzowane (C-54).
+- **Wyścig w `ensureNewsSetup`** (naprawione): `count === 0` → `createMany` bez `skipDuplicates`.
+  Dwie równoległe karty → P2002 → **cała strona Wiadomości na 500**. Błąd PRE-ISTNIEJĄCY, nie z tego
+  przebiegu; naprawiony, bo blokował weryfikację AC-1..AC-5 i jest realną usterką na wdrożeniu.
+- **Nazwa dostępna przycisku filtru** (naprawione): treść („Wszystkie") wygrywa z `title`, więc
+  czytnik ekranu ogłaszał sam stan, nie funkcję. Dodany jawny `aria-label` z licznikiem.
+- Dwie podkładki e2e (`e2e/fixtures/zadania.ts`): 18 etykiet i projekt zadań — seed nie zakłada ani
+  jednego, ani drugiego, a `/tasks` to pulpit, nie lista z paskiem filtrów.
+
+### Świadomie niezmierzone automatem
+
+**AC-15..AC-18, AC-21** (gest przytrzymania, wachlarz, drugi poziom, `Escape`, `prefers-reduced-motion`)
+— sekwencja `pointerdown` → przytrzymanie → `pointermove` → `pointerup` z **przechwyconym wskaźnikiem**
+i timerami rzędu 350/400 ms jest w Playwrighcie odtwarzalna tylko przez ręczne wysyłanie zdarzeń CDP;
+test tak napisany sprawdzałby własną symulację, nie gest. Weryfikacja przez przegląd kodu + próbę ręczną
+na środowisku testowym.

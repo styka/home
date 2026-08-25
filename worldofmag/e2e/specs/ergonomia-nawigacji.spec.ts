@@ -21,7 +21,7 @@ async function otworz(page: import("@playwright/test").Page, adres: string) {
 
 test.describe("Wiadomości — przełącznik segmentowy", () => {
   test("[100-AC1] trzy listy tematów stoją w pasku, bez otwierania menu", async ({ page }) => {
-    await otworz(page, "/wiadomosci?tresc=gorace");
+    await otworz(page, "/wiadomosci?widok=hot");
 
     const przelacznik = page.getByRole("tablist", { name: /Listy tematów/i });
     await expect(przelacznik).toBeVisible({ timeout: 20_000 });
@@ -32,7 +32,7 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
   });
 
   test("[100-AC2] wybrany segment niesie stan dla czytnika ekranu", async ({ page }) => {
-    await otworz(page, "/wiadomosci?tresc=gorace");
+    await otworz(page, "/wiadomosci?widok=hot");
     const przelacznik = page.getByRole("tablist", { name: /Listy tematów/i });
     await expect(przelacznik).toBeVisible({ timeout: 20_000 });
 
@@ -43,7 +43,7 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
   });
 
   test("[100-AC3] w sekcji propozycji nie ma już menu ⋮", async ({ page }) => {
-    await otworz(page, "/wiadomosci?tresc=gorace");
+    await otworz(page, "/wiadomosci?widok=hot");
     await expect(page.getByRole("tablist", { name: /Listy tematów/i })).toBeVisible({ timeout: 20_000 });
 
     // Menu z 099 miało dostępną nazwę „Więcej działań" i było JEDYNYM wejściem do dwóch list.
@@ -52,7 +52,7 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
   });
 
   test("[100-AC4] lista o zerowym liczniku jest widoczna, ale wyłączona", async ({ page }) => {
-    await otworz(page, "/wiadomosci?tresc=gorace");
+    await otworz(page, "/wiadomosci?widok=hot");
     const przelacznik = page.getByRole("tablist", { name: /Listy tematów/i });
     await expect(przelacznik).toBeVisible({ timeout: 20_000 });
 
@@ -68,7 +68,7 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
 
   test("[100-AC5] przyklejony nagłówek sekcji mieści się w jednym wierszu przy 360 px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 720 });
-    await otworz(page, "/wiadomosci?tresc=gorace");
+    await otworz(page, "/wiadomosci?widok=hot");
     const przelacznik = page.getByRole("tablist", { name: /Listy tematów/i });
     await expect(przelacznik).toBeVisible({ timeout: 20_000 });
 
@@ -96,13 +96,15 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
 });
 
 test.describe("Zadania — filtr etykiet", () => {
-  // Filtr nie renderuje się przy pustym słowniku etykiet, a seed żadnych nie zakłada.
+  // Filtr nie renderuje się przy pustym słowniku etykiet ani na pulpicie `/tasks` — potrzebny jest
+  // projekt i etykiety, a seed nie zakłada ani jednego, ani drugiego.
+  let projekt = "";
   test.beforeAll(async () => {
-    await ensureEtykietyZadan();
+    projekt = await ensureEtykietyZadan();
   });
 
   test("[100-AC6] wysokość paska filtrów nie zależy od liczby etykiet", async ({ page }) => {
-    await otworz(page, "/tasks");
+    await otworz(page, `/tasks/${projekt}`);
     await expect(page.getByRole("button", { name: /Filtr etykiet/i }).first()).toBeVisible({ timeout: 20_000 });
 
     const pomiar = await page.evaluate(() => {
@@ -127,7 +129,7 @@ test.describe("Zadania — filtr etykiet", () => {
   });
 
   test("[100-AC7/AC9] panel filtruje po frazie, pusty wybór znaczy „wszystkie”", async ({ page }) => {
-    await otworz(page, "/tasks");
+    await otworz(page, `/tasks/${projekt}`);
     const przycisk = page.getByRole("button", { name: /Filtr etykiet/i }).first();
     await expect(przycisk).toBeVisible({ timeout: 20_000 });
 

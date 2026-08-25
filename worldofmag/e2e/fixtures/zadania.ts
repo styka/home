@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { E2E_ADMIN } from "./users";
 
 /**
  * 100 — etykiety zadań dla klikacza.
@@ -18,7 +19,14 @@ export const ETYKIETY_E2E = [
   "sprzątanie", "wspólne", "zakupy", "zdrowie", "dom", "ogród",
 ];
 
-export async function ensureEtykietyZadan(): Promise<void> {
+/**
+ * Zwraca identyfikator projektu, w którym filtr etykiet w ogóle się rysuje.
+ *
+ * `/tasks` to PULPIT modułu (liczniki i skróty), a nie lista z paskiem filtrów — pasek żyje pod
+ * `/tasks/[projectId]`, i dokładnie stamtąd pochodzi zgłoszenie właściciela. Seed nie zakłada
+ * żadnego projektu, więc podkładka musi go stworzyć, inaczej test mierzyłby nieistniejący pasek.
+ */
+export async function ensureEtykietyZadan(): Promise<string> {
   // `TaskTagDef` jest słownikiem GLOBALNYM (unikalna nazwa, bez przestrzeni), więc nie ma tu
   // czego wiązać z użytkownikiem — inaczej niż w podkładce Pogody.
   await prisma.taskTagDef.createMany({
@@ -30,4 +38,22 @@ export async function ensureEtykietyZadan(): Promise<void> {
     // Baza klikacza jest długowieczna, a fixture ma być idempotentna.
     skipDuplicates: true,
   });
+
+  const user = await prisma.user.findUnique({ where: { email: E2E_ADMIN.email } });
+  if (!user) throw new Error("Brak użytkownika E2E — uruchom ensureE2EFixtures() najpierw");
+  const przestrzen = await prisma.workspace.findFirst({ where: { personalUserId: user.id } });
+  if (!przestrzen) throw new Error("Brak przestrzeni osobistej użytkownika E2E");
+
+  const NAZWA = "Ergonomia — projekt klikacza";
+  const istnieje = await prisma.taskProject.findFirst({
+    where: { workspaceId: przestrzen.id, name: NAZWA },
+    select: { id: true },
+  });
+  if (istnieje) return istnieje.id;
+
+  const projekt = await prisma.taskProject.create({
+    data: { workspaceId: przestrzen.id, name: NAZWA },
+    select: { id: true },
+  });
+  return projekt.id;
 }

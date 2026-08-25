@@ -61,6 +61,10 @@ export function FiltrTagow({
           aria-haspopup="dialog"
           aria-expanded={otwarty}
           title={t("filtrEtykiet")}
+          // Nazwa dostępna musi mówić, CZYM ten przycisk jest, a nie tylko jaki ma stan: sama
+          // treść („Wszystkie", „3 z 18") czytnikowi ekranu nic nie mówi, a to ona wygrywa
+          // z atrybutem `title`. Stąd jawna etykieta z licznikiem doklejonym na końcu.
+          aria-label={`${t("filtrEtykiet")}: ${etykieta}`}
           className={cn(
             // Szerokość zmienia się o kilka znaków licznika i ani razu o wysokość — to jest cały
             // sens tej zmiany (AC-6).
