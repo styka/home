@@ -69,7 +69,11 @@ export function YoutubePage({
     if (!postep) return;
     const id = setInterval(async () => {
       const s = await getStanOdswiezania();
-      if (!s || s.status === "DONE" || s.status === "FAILED") {
+      // Warunek jest POZYTYWNY („czy jeszcze trwa"), a nie listą stanów końcowych. Lista końcowych
+      // musiałaby wymieniać także `CANCELLED` — i każdy stan dołożony w przyszłości. Pominięcie
+      // choćby jednego znaczy wieczne „Odświeżam…" i pętlę odpytującą bazę co dwie sekundy bez końca.
+      const trwa = s && (s.status === "QUEUED" || s.status === "RUNNING");
+      if (!trwa) {
         setPostep(null);
         przeladuj();
         clearInterval(id);

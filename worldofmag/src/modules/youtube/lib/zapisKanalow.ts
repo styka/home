@@ -16,15 +16,25 @@ export async function dopiszKanaly(
   kanaly: Array<{ channelId: string; title: string; handle?: string | null; thumbnailUrl?: string | null }>,
   zrodlo: ZrodloKanalu
 ): Promise<number> {
+  if (kanaly.length === 0) return 0;
   const wlasnosc = await wlasnoscOsobistaDoZapisu(userId);
-  let dodane = 0;
-  for (const k of kanaly) {
-    const wynik = await prisma.youtubeChannel.createMany({
-      data: [{ ...wlasnosc, channelId: k.channelId, title: k.title, handle: k.handle ?? null, thumbnailUrl: k.thumbnailUrl ?? null, zrodlo }],
-      skipDuplicates: true,
-    });
-    dodane += wynik.count;
-  }
+
+  // JEDEN zapis na całą partię, nie jeden na kanał. `skipDuplicates` odsiewa istniejące po stronie
+  // bazy, więc pętla dawałaby dokładnie ten sam wynik — tyle że kontem z dwustoma subskrypcjami
+  // płaciłaby dwieście podróży do bazy zamiast jednej.
+  const wynik = await prisma.youtubeChannel.createMany({
+    data: kanaly.map((k) => ({
+      ...wlasnosc,
+      channelId: k.channelId,
+      title: k.title,
+      handle: k.handle ?? null,
+      thumbnailUrl: k.thumbnailUrl ?? null,
+      zrodlo,
+    })),
+    skipDuplicates: true,
+  });
+  const dodane = wynik.count;
+
   if (dodane > 0) {
     logEvent("info", "youtube.kanaly.dopisane", { ile: dodane, zrodlo });
     revalidatePath("/youtube/kanaly");

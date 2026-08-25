@@ -62,8 +62,16 @@ export function KanalyPage({ poczatkowe, polaczony }: { poczatkowe: KanalDTO[]; 
   }
 
   function importuj() {
+    setBlad(null);
     startTransition(async () => {
-      await importujSubskrypcje();
+      const wynik = await importujSubskrypcje();
+      // Zgoda mogła zostać cofnięta po stronie Google. Milczące połknięcie tego wyniku dawałoby
+      // przycisk, który „nic nie robi" — najgorszy możliwy stan, bo nie da się go odróżnić od
+      // konta bez nowych subskrypcji.
+      if (!wynik.ok) {
+        setBlad(t("blad.brak-polaczenia"));
+        return;
+      }
       setKanaly(await getKanaly());
     });
   }
