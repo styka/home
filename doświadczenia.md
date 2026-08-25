@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-25 — Bramki puszczone pojedynczo to NIE jest `npm run build`
+**Problem:** Deploy na Render padł, choć u siebie miałem „wszystko zielone". Weryfikowałem tak:
+`tsc`, `next lint`, `next build`, a do tego kilkanaście bramek wywołanych **po jednej**
+(`check:i18n`, `check:perf`, `check:migrations`…). Ani razu nie odpaliłem pełnego `npm run build` —
+a to on jest komendą Rendera. Przez to **trzynaście bramek z łańcucha nigdy u mnie nie ruszyło**,
+w tym `check:domain`, która wywaliła deploy: dołożona przeze mnie funkcja `czytajReke` w pliku
+`"use server"` podbiła zapadkę „pomocników w plikach akcji" z 34 na 35.
+**Rozwiązanie:** Reguła wyprowadzona do `src/lib/modules.tsx`, gdzie i tak mieszka jej typ `Reka` —
+tam jest zwykłą funkcją, więc **da się ją zaimportować do testu**, o co bramce chodziło. Potem
+pełny `npm run build` lokalnie (na LOKALNYM Postgresie, C-13): 38 bramek, `next build`, budżet
+wydajnościowy i `migrate.js` z seedem — wszystko przeszło.
+**Lekcja:** Lista bramek w `package.json` rośnie i nikt jej nie pamięta w całości. „Odpaliłem te,
+których zmiana dotyczy" jest zgadywaniem, którą bramkę zmiana obchodzi — a `check:domain` reaguje
+na **jedną nową funkcję pomocniczą**, czego nie sposób przewidzieć. Jedyny wiarygodny sprawdzian
+przed merge to ta sama komenda, którą odpala hosting: `npm run build`, w całości, przeciw lokalnej
+bazie. Trwa kilka minut i zastępuje wszystkie domysły naraz.
+
+**Dopisek o dostępie:** logów Rendera nie da się przeczytać z sandboxa Claude Code on the web —
+`api.render.com` i `*.onrender.com` odbijają się o `CONNECT tunnel failed, response 403`, a klucza
+API nie ma w repo (`render.yaml` trzyma sekrety jako `sync: false`). Nie trzeba ich jednak
+konfigurować: Render odpala `npm ci && npx prisma generate && npm run build`, więc odtworzenie tego
+lokalnie pokazuje ten sam błąd. Logi są potrzebne wyłącznie do awarii **runtime'u** na prawdziwej
+bazie — czyli tego, czego lokalna baza z definicji nie odtworzy.
+
 ## 2026-08-25 — Komponent zadeklarowany w ciele innego komponentu gubi stan DOM przy każdym renderze
 **Problem:** Gest „przytrzymaj → wachlarz → przeciągnij → puść" na dolnym pasku nie domykał się:
 wachlarz się otwierał, podpowiedzi reagowały na ruch, ale puszczenie palca nic nie robiło. Logika

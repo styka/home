@@ -68,6 +68,22 @@ export const DEFAULT_TAB_BAR = ["home", "tasks", "shopping"];
  */
 export type Reka = "right" | "left";
 
+/**
+ * Zawęża wartość z bazy do unii `Reka`.
+ *
+ * Mieszka TU, a nie przy zapisie w `actions/menuPrefs.ts`, i to jest wymóg bramki, nie porządek:
+ * plik z `"use server"` eksportuje wyłącznie funkcje asynchroniczne, więc reguły w nim zawartej
+ * **nie da się zaimportować do testu** (`check:domain`, zadanie 19). Tutaj stoi obok własnego typu
+ * i jest zwykłą funkcją — sprawdzalną.
+ *
+ * Schodzi do `"right"` zamiast rzucać, bo kolumna jest `String` (C-12) i przyjmie cokolwiek:
+ * starą migrację, ręczną poprawkę z `psql`, literówkę w skrypcie. Nieznana preferencja WYGLĄDU
+ * nigdy nie jest powodem, żeby nie dało się wyświetlić strony.
+ */
+export function czytajReke(wartosc: string | null | undefined): Reka {
+  return wartosc === "left" ? "left" : "right";
+}
+
 export type MenuPrefs = {
   order: string[];
   disabled: string[];
