@@ -6,6 +6,9 @@ import { openAssistant } from "@/platform/ai/assistantBus";
 import type { ModuleDef, Reka } from "@/lib/modules";
 import { useWachlarz } from "./WachlarzNawigacji";
 
+/** Kształt uchwytów gestu, tak jak zwraca je `useWachlarz().uchwyty`. */
+type UchwytyPozycji = ReturnType<ReturnType<typeof useWachlarz>["uchwyty"]>;
+
 /**
  * 100: dolny pasek na telefonie — ergonomia kciuka, magiczna ikona na środku, gest przytrzymania.
  *
@@ -67,38 +70,6 @@ export function PasekKciuka({
   const lewa = reka === "left" ? bliskie : [...dalekie].reverse();
   const prawa = reka === "left" ? [...dalekie] : [...bliskie].reverse();
 
-  function Pozycja({ m, blisko }: { m: ModuleDef; blisko: boolean }) {
-    const aktywna = m.exact ? pathname === m.href : pathname.startsWith(m.href);
-    const { style: styleGestu, ...gest } = uchwyty(m.href);
-    return (
-      <button
-        type="button"
-        aria-current={aktywna ? "page" : undefined}
-        aria-label={m.label}
-        {...gest}
-        className="flex flex-col items-center justify-center gap-0.5"
-        style={{
-          ...styleGestu,
-          // Wewnątrz połowy wszystkie pozycje dzielą ją po równo — przewaga kciuka bierze się
-          // z tego, ILE ich w tej połowie jest (patrz podział wyżej), a nie z mnożnika, który
-          // między dwoma pojemnikami o stałej szerokości i tak nie miałby czego przesunąć.
-          flexGrow: 1,
-          flexBasis: 0,
-          minWidth: 44,
-          minHeight: 44,
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          color: aktywna ? m.color : "var(--text-muted)",
-        }}
-      >
-        <m.Icon size={blisko ? 22 : 20} />
-        <span style={{ fontSize: 10 }}>{m.label}</span>
-      </button>
-    );
-  }
-
   return (
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t"
@@ -112,7 +83,7 @@ export function PasekKciuka({
     >
       <div className="flex flex-1 items-stretch" style={{ minWidth: 0 }}>
         {lewa.map((m) => (
-          <Pozycja key={m.id} m={m} blisko={reka === "left"} />
+          <Pozycja key={m.id} m={m} blisko={reka === "left"} pathname={pathname} uchwyty={uchwyty} />
         ))}
       </div>
 
@@ -145,9 +116,61 @@ export function PasekKciuka({
 
       <div className="flex flex-1 items-stretch" style={{ minWidth: 0 }}>
         {prawa.map((m) => (
-          <Pozycja key={m.id} m={m} blisko={reka === "right"} />
+          <Pozycja key={m.id} m={m} blisko={reka === "right"} pathname={pathname} uchwyty={uchwyty} />
         ))}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Pozycja paska — komponent **najwyższego poziomu**, i to jest wymóg poprawności, nie porządek.
+ *
+ * Pierwsza wersja deklarowała tę funkcję wewnątrz ciała `PasekKciuka`. Każdy render tworzył wtedy
+ * **nowy typ komponentu**, a otwarcie wachlarza zmienia wartość kontekstu, więc `PasekKciuka` się
+ * przerenderowuje — React widział inny typ i **odmontowywał przyciski, montując nowe**. Razem ze
+ * starym węzłem przepadał `setPointerCapture`, więc `pointerup` nigdy nie docierał do uchwytu
+ * i gest się nie domykał. Ten sam powód, dla którego `NavItem` w `ModuleSidebar` też stoi na
+ * poziomie modułu.
+ */
+function Pozycja({
+  m,
+  blisko,
+  pathname,
+  uchwyty,
+}: {
+  m: ModuleDef;
+  blisko: boolean;
+  pathname: string;
+  uchwyty: (href: string) => UchwytyPozycji;
+}) {
+  const aktywna = m.exact ? pathname === m.href : pathname.startsWith(m.href);
+  const { style: styleGestu, ...gest } = uchwyty(m.href);
+  return (
+    <button
+      type="button"
+      aria-current={aktywna ? "page" : undefined}
+      aria-label={m.label}
+      {...gest}
+      className="flex flex-col items-center justify-center gap-0.5"
+      style={{
+        ...styleGestu,
+        // Wewnątrz połowy wszystkie pozycje dzielą ją po równo — przewaga kciuka bierze się
+        // z tego, ILE ich w tej połowie jest (patrz podział w `PasekKciuka`), a nie z mnożnika,
+        // który między dwoma pojemnikami o stałej szerokości i tak nie miałby czego przesunąć.
+        flexGrow: 1,
+        flexBasis: 0,
+        minWidth: 44,
+        minHeight: 44,
+        background: "none",
+        border: "none",
+        padding: 0,
+        cursor: "pointer",
+        color: aktywna ? m.color : "var(--text-muted)",
+      }}
+    >
+      <m.Icon size={blisko ? 22 : 20} />
+      <span style={{ fontSize: 10 }}>{m.label}</span>
+    </button>
   );
 }

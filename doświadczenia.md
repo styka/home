@@ -4,6 +4,36 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-25 — Komponent zadeklarowany w ciele innego komponentu gubi stan DOM przy każdym renderze
+**Problem:** Gest „przytrzymaj → wachlarz → przeciągnij → puść" na dolnym pasku nie domykał się:
+wachlarz się otwierał, podpowiedzi reagowały na ruch, ale puszczenie palca nic nie robiło. Logika
+gestu była poprawna co do joty — unieważniało ją MIEJSCE deklaracji zupełnie innego komponentu.
+`Pozycja` (przycisk paska) była funkcją zadeklarowaną **wewnątrz ciała** `PasekKciuka`, więc każdy
+render tworzył nowy **typ** komponentu. Otwarcie wachlarza zmienia wartość kontekstu → `PasekKciuka`
+się przerenderowuje → React widzi inny typ i **odmontowuje przyciski, montując nowe**. Razem ze
+starym węzłem DOM przepada `setPointerCapture`, więc `pointerup` trafia w próżnię.
+**Rozwiązanie:** `Pozycja` wyniesiona na poziom modułu (jak `NavItem` w `ModuleSidebar`), a to, czego
+potrzebowała z domknięcia, dostaje propsami. Klikacz z 14/14 zrobił się 15/15.
+**Lekcja:** Zagnieżdżona definicja komponentu to nie kwestia stylu — to gwarantowane
+odmontowanie poddrzewa przy każdym renderze rodzica. Zwykle objawia się „mruganiem" albo utratą
+tekstu w polu, ale gdy w grę wchodzi cokolwiek przywiązanego do WĘZŁA DOM (przechwycony wskaźnik,
+`focus`, obserwator, odtwarzacz), objaw jest zupełnie gdzie indziej niż przyczyna. Jeśli gest,
+ognisko albo animacja gubi się dokładnie w chwili zmiany stanu — sprawdź najpierw, czy renderowany
+komponent nie jest deklarowany w ciele rodzica.
+
+## 2026-08-25 — Test czytający regułę CSS przepuszcza brak jej zastosowania
+**Problem:** Lustrzenie chromu wg dominującej ręki miało jeden test: tworzył element z klasą
+`.omnia-plywajacy`, przełączał `data-reka` i sprawdzał, że `right` zamienia się na `left`. Test był
+zielony, a **gwiazdka ulubionych w górnym pasku telefonu i tak nie ruszała się z prawej strony** —
+bo reguła istniała i działała, tylko ten pasek jej nie używał. Test sprawdzał MECHANIZM, a zgłoszenie
+właściciela dotyczyło KONKRETNEGO elementu.
+**Rozwiązanie:** Test mierzy teraz pozycję prawdziwej gwiazdki na prawdziwej stronie przy obu
+ustawieniach ręki (296 px → 173 px przy oknie 390 px). Wykrył brak natychmiast.
+**Lekcja:** „Czy reguła działa" i „czy element jej używa" to dwa różne pytania, a testy odpowiadające
+na pierwsze dają fałszywe poczucie pokrycia dla drugiego. Gdy wymaganie mówi o konkretnym elemencie
+(„gwiazdka ma być po tej stronie"), test ma mierzyć TEN element — nie zastępczy węzeł wstrzyknięty do
+strony ani nie zawartość arkusza stylów.
+
 ## 2026-08-25 — Dostawca kontekstu nie może być `dynamic(ssr: false)`
 **Problem:** Plan przewidywał, że nowy wachlarz nawigacji (gest „przytrzymaj → przeciągnij → puść")
 załadujemy leniwie przez `dynamic(..., { ssr: false })`, żeby nie dokładać bajtów do bundla KAŻDEJ

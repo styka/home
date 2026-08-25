@@ -1634,7 +1634,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
           // stoi na stałe na środku dolnego paska).
           style={{ zIndex: panelOpen ? 55 : 41, width: 52, height: 52, borderRadius: "50%", border: "none", background: "var(--accent-blue)", color: "var(--on-accent)", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.35)", cursor: "pointer" }}
         >
-          <Sparkles size={22} />
+          <Sparkles size={24} />
         </button>
       )}
 

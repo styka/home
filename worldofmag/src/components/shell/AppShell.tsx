@@ -170,7 +170,12 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         className="md:hidden flex-shrink-0 border-b"
         style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center gap-2 px-3" style={{ height: 44 }}>
+        {/* 100 (AC-12, AC-22): górny pasek telefonu idzie za DOMINUJĄCĄ RĘKĄ, tak jak rząd chromu
+            na komputerze — ta sama reguła `.omnia-chrom-konta`, ten sam atrybut `html[data-reka]`.
+            Bez tego gwiazdka ulubionych zostawałaby po prawej u osoby leworęcznej, a właściciel
+            prosił o lustrzenie wprost także dla niej. W `row-reverse` `ml-auto` niżej przesuwa grupę
+            chromu na wizualnie LEWĄ krawędź, więc marginesów nie trzeba ruszać. */}
+        <div className="omnia-chrom-konta flex items-center gap-2 px-3" style={{ height: 44 }}>
           <button
             onClick={() => setMenuOpen(true)}
             className="flex items-center justify-center w-8 h-8 rounded flex-shrink-0"

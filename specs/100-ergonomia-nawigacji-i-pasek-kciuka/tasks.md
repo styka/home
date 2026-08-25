@@ -1,7 +1,7 @@
 # Zadania: Ergonomia nawigacji — paski filtrów i pasek kciuka
 
 - **Plan:** ./plan.md (100-ergonomia-nawigacji-i-pasek-kciuka)
-- **Status:** in-progress (nawrót z `/verify`)
+- **Status:** done
 - **Data:** 2026-08-25
 
 ## Legenda
@@ -151,7 +151,7 @@
 
 ## Faza F — nawrót z `/verify` (braki z `verify.md`)
 
-- [ ] **T-32** — `PasekKciuka`: wynieść `Pozycja` **poza ciało komponentu** (na poziom modułu, jak
+- [x] **T-32** — `PasekKciuka`: wynieść `Pozycja` **poza ciało komponentu** (na poziom modułu, jak
       `NavItem` w `ModuleSidebar`). Deklaracja wewnątrz ciała tworzy **nowy typ komponentu przy każdym
       renderze**, więc otwarcie wachlarza (zmiana wartości kontekstu → przerenderowanie `PasekKciuka`)
       każe Reactowi odmontować przyciski paska i zamontować nowe. Razem ze starym węzłem przepada
@@ -159,17 +159,17 @@
       *Gotowe, gdy:* `Pozycja` jest funkcją najwyższego poziomu (dostaje `uchwyty`, `pathname`
       i `blisko` propsami), a gest z paska domyka się w próbie ręcznej.
       **(AC-15, odblokowuje AC-16 i AC-17)**
-- [ ] **T-33** — Górny pasek na telefonie (`AppShell.tsx:202`): grupa chromu konta (gwiazdka
+- [x] **T-33** — Górny pasek na telefonie (`AppShell.tsx:202`): grupa chromu konta (gwiazdka
       ulubionych, tryb administratora, dzwonek) ma iść za dominującą ręką. Reguła
       `.omnia-chrom-konta` **już istnieje** i działa na komputerze — brakuje jej zastosowania na
       telefonie. Uwaga: `ml-auto` w `row-reverse` przesuwa element na wizualnie lewą krawędź, więc
       klasa wystarczy bez zmiany marginesów.
       *Gotowe, gdy:* przy ręce lewej gwiazdka stoi po lewej stronie górnego paska; klikacz sprawdza
       to pomiarem, a nie z lektury CSS. **(AC-12, AC-22)**
-- [ ] **T-34** `[P]` — Drobiazg kosmetyczny z `verify.md`: ikona asystenta ma 22 px na komputerze
+- [x] **T-34** `[P]` — Drobiazg kosmetyczny z `verify.md`: ikona asystenta ma 22 px na komputerze
       i 24 px na telefonie. Różnica nie wynika z żadnej decyzji — została po starym kodzie.
       Ujednolicić do 24 px. **(AC-20)**
-- [ ] **T-35** — Rozszerzyć `e2e/specs/ergonomia-nawigacji.spec.ts` o pomiar T-33 (pozycja gwiazdki
+- [x] **T-35** — Rozszerzyć `e2e/specs/ergonomia-nawigacji.spec.ts` o pomiar T-33 (pozycja gwiazdki
       w górnym pasku przy obu ustawieniach ręki), przebudować i puścić klikacz ponownie — komplet
       musi być zielony.
 
@@ -226,6 +226,7 @@ Faza B (T-6→T-10) ┴───────────────────
 | Magiczna ikona: średnica / wystawanie / odchylenie od środka | **52 px / 13 px / 0 px** | AC-13 (środek, wyeksponowana) |
 | Cele dotyku pozycji paska | Zakupy 81×55, Zadania 81×55, Asystent AI 52×52, Strona główna **161×55** | AC-14 (każdy ≥ 44×44) |
 | Dolne wypełnienie obszaru głównego | **64 px** | AC-19 (≥ 56 px: pasek + wystająca ikona) |
+| Środek gwiazdki ulubionych w górnym pasku (okno 390 px) | ręka prawa **296 px** → lewa **173 px** | AC-12/AC-22 (przechodzi przez połowę ekranu) |
 
 Układ paska przy trzech pozycjach i ręce prawej: `[Zakupy][Zadania] ✨ [Strona główna]` — najważniejsza
 pozycja (pierwsza w kolejności użytkownika) sama w prawej połowie, więc najszersza i w rogu, w którym

@@ -219,6 +219,38 @@ test.describe("Pasek kciuka i dominująca ręka", () => {
     console.log(`[100-AC19] dolne wypełnienie obszaru głównego: ${zapas} px`);
   });
 
+  test("[100-AC12/AC22] gwiazdka ulubionych w górnym pasku idzie za ręką", async ({ page }) => {
+    await otworz(page, "/tasks");
+    await expect(page.getByRole("navigation", { name: /Nawigacja główna/i })).toBeVisible({ timeout: 20_000 });
+
+    // Mierzymy POZYCJĘ, nie obecność reguły w arkuszu: nawrót z /verify wziął się właśnie stąd, że
+    // reguła istniała (i działała na komputerze), a górny pasek telefonu jej nie używał. Test
+    // czytający CSS przepuściłby ten błąd drugi raz.
+    const zmierz = () =>
+      page.evaluate(() => {
+        const gwiazdka = Array.from(document.querySelectorAll<HTMLElement>("button")).find((b) =>
+          /Ulubione/i.test(b.getAttribute("aria-label") ?? ""),
+        );
+        if (!gwiazdka) return null;
+        const r = gwiazdka.getBoundingClientRect();
+        return { srodek: Math.round(r.left + r.width / 2), szerokoscOkna: window.innerWidth };
+      });
+
+    const prawa = await zmierz();
+    expect(prawa, "gwiazdka ulubionych nie znaleziona w górnym pasku").not.toBeNull();
+    // Domyślnie ręka prawa — gwiazdka w prawej połowie ekranu.
+    expect(prawa!.srodek).toBeGreaterThan(prawa!.szerokoscOkna / 2);
+
+    await page.evaluate(() => document.documentElement.setAttribute("data-reka", "left"));
+    const lewa = await zmierz();
+    // Po przełączeniu — w lewej połowie. Atrybut nakłada serwer w `layout.tsx`; tutaj sprawdzamy,
+    // że pasek NA NIEGO REAGUJE.
+    expect(lewa!.srodek).toBeLessThan(lewa!.szerokoscOkna / 2);
+    await page.evaluate(() => document.documentElement.setAttribute("data-reka", "right"));
+
+    console.log(`[100-AC12] środek gwiazdki: prawa ${prawa!.srodek} px, lewa ${lewa!.srodek} px (okno ${prawa!.szerokoscOkna} px)`);
+  });
+
   test("[100-AC12] przy ręce lewej pływające przyciski idą na lewą krawędź", async ({ page }) => {
     await otworz(page, "/tasks");
     await expect(page.getByRole("navigation", { name: /Nawigacja główna/i })).toBeVisible({ timeout: 20_000 });
