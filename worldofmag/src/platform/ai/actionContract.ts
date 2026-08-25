@@ -178,6 +178,11 @@ export const WATCHER_HORIZON_OPTIONS = optionsFrom({
 // ── Wspólny słownik etykiet parametrów ───────────────────────────────────────
 // Fallback dla pól, których kontrakt nie opisuje wprost. Klucz = nazwa parametru.
 export const PARAM_LABELS: Record<string, string> = {
+  // 102: nazwa jest celowo jednoznaczna („adres" znaczyłby co innego w innych akcjach), dzięki
+  // czemu etykieta może żyć w słowniku WSPÓLNYM. Wpis per akcja (`fields`) byłby tu pułapką:
+  // parser kontraktu w bramce dopasowuje blok wpisu do pierwszej linii `  },`, więc wpis
+  // jednoliniowy stojący wyżej połyka następne i `fields` przestaje być widziane.
+  adresKanalu: "Odnośnik lub uchwyt kanału",
   amount: "Kwota",
   active: "Aktywne",
   archived: "Zarchiwizowane",
@@ -517,6 +522,11 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   create_news_source: { label: "Dodaj źródło wiadomości", fields: { descriptor: f("Opis źródła") } },
   update_news_source: { label: "Zmień źródło wiadomości", fields: { descriptor: f("Opis źródła"), enabled: bool("Włączone") } },
   delete_news_source: { label: "Usuń źródło wiadomości" },
+
+  // ── YOUTUBE ───────────────────────────────────────────────────────────────
+  add_youtube_channel: { label: "Dodaj kanał YouTube" },
+  refresh_youtube: { label: "Odśwież YouTube" },
+  mark_youtube_watched: { label: "Oznacz film jako obejrzany" },
 
   // ── POGODA ────────────────────────────────────────────────────────────────
   add_weather_location: { label: "Dodaj lokalizację pogodową" },

@@ -19,7 +19,8 @@ export type AIActionModule =
   | "news"
   | "weather"
   | "contacts"
-  | "reports";
+  | "reports"
+  | "youtube";
 
 export interface AIAction {
   id: string;

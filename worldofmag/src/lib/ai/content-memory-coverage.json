@@ -146,5 +146,13 @@
   "src/modules/tasks/jobs/feedbackTitle.ts": {
     "mode": "on-demand",
     "reason": "Tytuł JEDNEGO, konkretnego zgłoszenia. Pamięć treści zwracałaby tytuł policzony dla innego opisu, a wynik i tak trwale zapisuje się w polu Task.title — to baza jest tu nośnikiem, nie AiContent."
+  },
+  "src/modules/youtube/actions/ai.ts": {
+    "mode": "remembered",
+    "reason": "102: streszczenie filmu to treść DO CZYTANIA — ta sama przy każdym wejściu na szczegół, więc idzie przez rememberedContent i drugi raz nie kosztuje (AC-9, AC-10). Pytanie do filmu w tym samym pliku jest świadomie POZA pamięcią: każde pytanie jest inne, więc zapis zwracałby odpowiedź na cudze pytanie."
+  },
+  "src/modules/youtube/jobs/youtubeRefresh.ts": {
+    "mode": "on-demand",
+    "reason": "102: ocena „czy warto obejrzeć\" powstaje raz na film w przebiegu odświeżania i jest zapisywana w kolumnie (AC-11 wymaga sortowania listy po niej, czego pamięć treści nie umie). Pamięć zwracałaby ocenę sprzed zmiany materiału."
   }
 }
