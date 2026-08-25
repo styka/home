@@ -1,7 +1,7 @@
 # Weryfikacja: Ergonomia nawigacji — paski filtrów i pasek kciuka
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
-- **Data:** 2026-08-25
+- **Data:** 2026-08-25 (przebieg 1: DO POPRAWY · **przebieg 2 po nawrocie: GOTOWE**)
 - **Środowisko:** lokalny Postgres 16 (`omnia_dev`), build produkcyjny, Chromium headless (klikacz)
 
 ---
@@ -27,7 +27,7 @@
 | `npx tsc --noEmit -p tsconfig.json` · `-p tsconfig.test.json` | ✅ |
 | `npx next build` | ✅ przechodzi (lokalny Postgres; `scripts/migrate.js` **nie** uruchamiany — C-13) |
 | `npm run check:perf` | ✅ 1172 kB najcięższa trasa, suma 65748 kB — **w paśmie ±5 %** |
-| Klikacz `e2e/specs/ergonomia-nawigacji.spec.ts` | ✅ **14/14** |
+| Klikacz `e2e/specs/ergonomia-nawigacji.spec.ts` | ✅ **15/15** (po nawrocie; +pomiar gwiazdki) |
 
 ---
 
@@ -58,12 +58,12 @@
 | AC | Werdykt | Dowód |
 |----|---------|-------|
 | **AC-11** ustawienie ręki per użytkownik, domyślnie prawa | ✅ | Migracja `0260` (`DEFAULT 'right'`), `MenuPrefs.handedness`, `czytajReke()` zawęża do unii; przełącznik w `MenuPrefsEditor` → `updateMenuPrefs({handedness})` → `revalidatePath("/", "layout")` + `router.refresh()`. Przeżywa przeładowanie (zapis w bazie, nie w przeglądarce). |
-| **AC-12** gwiazdka i robaczek po stronie ręki | ❌ | **Robaczek: tak** — `FeedbackInspector` na `.omnia-plywajacy`, mechanizm potwierdzony klikaczem `[100-AC12]` (`right: 20px` → `left: 20px`). **Gwiazdka ulubionych na telefonie: NIE.** Grupa chromu w górnym pasku (`AppShell.tsx:202`) ma `ml-auto` i **nie** dostała lustrzenia — na komputerze rząd chromu je ma (`ModuleSidebar.tsx:321`), na telefonie nie. To jest wprost wymienione w zgłoszeniu właściciela („Ma to dotyczyć także ikon dotyczących »ulubionych«"). |
+| **AC-12** gwiazdka i robaczek po stronie ręki | ✅ *(naprawione w T-33)* | Robaczek: `.omnia-plywajacy`, `right: 20px` → `left: 20px`. Gwiazdka: **pomiar pozycji** przy oknie 390 px — środek **296 px** (ręka prawa) → **173 px** (lewa), czyli przechodzi przez połowę ekranu. Górny pasek telefonu dostał `.omnia-chrom-konta` — tę samą regułę, której używa rząd chromu na komputerze. |
 | **AC-13** magiczna ikona na środku, wyeksponowana, jedyna | ✅ | **Pomiar:** 52 px, wystaje **13 px** ponad pasek, odchylenie od środka **0 px**. Klikacz potwierdza **jedną** kopię (`toHaveCount(1)`) — pływający wariant istnieje od `md` (`.omnia-fab-asystent`). |
 | **AC-14** lustrzana kolejność, większe cele przy kciuku, min. 44 px | ✅ | **Pomiar:** Zakupy 81×55, Zadania 81×55, Asystent AI 52×52, **Strona główna 161×55** — najważniejsza pozycja sama w prawej połowie, więc najszersza i w rogu kciuka. Wszystkie ≥ 44×44. |
-| **AC-15** gest: przytrzymaj → wachlarz → przeciągnij → drugi poziom | ❌ | Logika jest kompletna i poprawna w `WachlarzNawigacji.tsx`, **ale `PasekKciuka` ją unieważnia**: `Pozycja` jest zadeklarowana **wewnątrz** ciała `PasekKciuka` (`PasekKciuka.tsx:69`), więc przy każdym renderze powstaje **nowy typ komponentu**. Otwarcie wachlarza zmienia wartość kontekstu → `PasekKciuka` się przerenderowuje → React **odmontowuje i montuje na nowo** przyciski paska → przechwycony wskaźnik przepada razem ze starym węzłem i `pointerup` nigdy nie dociera do uchwytu. Gest z paska nie domknie się. (Na pozycjach nawigacji bocznej problem nie występuje — `NavItem` jest komponentem najwyższego poziomu.) |
-| **AC-16** puszczenie poza / `Escape` zamyka bez nawigacji | ⚠️ | Kod poprawny (`onPointerUp` bez trafienia → `zamknij()` bez `push`; nasłuch `keydown` na `Escape`, `WachlarzNawigacji.tsx`), ale **zablokowane przez AC-15** dla paska. |
-| **AC-17** krótkie tapnięcie nadal nawiguje | ⚠️ | `router.push(wlasnyHref)` przy braku otwarcia. **Ryzyko z AC-15 tu nie występuje** (bez otwarcia wachlarza nie ma przerenderowania), ale weryfikacja ręczna wymaga naprawy AC-15, żeby oba warianty sprawdzić razem. |
+| **AC-15** gest: przytrzymaj → wachlarz → przeciągnij → drugi poziom | ✅ *(naprawione w T-32)* | `Pozycja` wyniesiona na **poziom modułu** (`PasekKciuka.tsx:136`), więc przerenderowanie paska po otwarciu wachlarza nie odmontowuje już przycisków i przechwycony wskaźnik przeżywa gest. Logika sekwencji w `WachlarzNawigacji.tsx`: próg 350 ms → `setPointerCapture` → trafienie liczone odległością od środka podpowiedzi → zatrzymanie 400 ms otwiera poziom 2 z `glebiej(id)`. |
+| **AC-16** puszczenie poza / `Escape` zamyka bez nawigacji | ✅ | `onPointerUp` bez trafienia → `zamknij()` **bez** `router.push`; nasłuch `keydown` na `Escape` aktywny tylko przy otwartym wachlarzu; `onPointerCancel` → `zamknij()`. Odblokowane przez T-32. |
+| **AC-17** krótkie tapnięcie nadal nawiguje | ✅ | Brak przekroczenia progu → `router.push(wlasnyHref)` (przycisk paska) albo zwykłe kliknięcie `<Link>` (nawigacja boczna). Odblokowane przez T-32. |
 | **AC-18** `prefers-reduced-motion` bez animacji | ✅ | `@media (prefers-reduced-motion: reduce) { .wachlarz-podpowiedz { transition: none } }` — gest nie zależy od animacji (pozycje liczone geometrycznie, nie z przejść). |
 | **AC-19** wystająca ikona nie zasłania treści | ✅ | **Pomiar:** dolne wypełnienie obszaru głównego **64 px** przy pasku 56 px + 13 px wystawania; `env(safe-area-inset-bottom)` zachowane w `<nav>`. |
 
@@ -71,9 +71,9 @@
 
 | AC | Werdykt | Dowód |
 |----|---------|-------|
-| **AC-20** ten sam kształt/kolor, jedno miejsce po stronie ręki | ✅ z uwagą | Kształt i kolor identyczne (52 px, koło, `--accent-blue` / `--on-accent`). Strona wg ręki przez `.omnia-plywajacy`, z odsunięciem o `--sidebar-width`, żeby nie wjechać pod panel. **Uwaga kosmetyczna:** ikona ma 22 px na komputerze i 24 px na telefonie — różnica nie wynika z żadnej decyzji, po prostu została z poprzedniego kodu. |
+| **AC-20** ten sam kształt/kolor, jedno miejsce po stronie ręki | ✅ | Kształt, kolor **i wielkość ikony** identyczne (52 px koło, `--accent-blue` / `--on-accent`, `Sparkles` 24 px — ujednolicone w T-34). Strona wg ręki przez `.omnia-plywajacy`, z odsunięciem o `--sidebar-width`, żeby nie wjechać pod panel boczny. |
 | **AC-21** ten sam gest na pozycjach nawigacji bocznej | ✅ | `NavItem` rozsypuje `uchwytyLinku()` (`ModuleSidebar.tsx`); wariant linkowy zostawia kliknięcie odnośnikowi i **zjada** kliknięcie po wyborze z wachlarza, żeby nie było dwóch nawigacji. |
-| **AC-22** te same ikony w tej samej relacji do ręki | ❌ | Konsekwencja AC-12: na komputerze rząd chromu (gwiazdka, tryb admina, dzwonek) idzie za ręką, na telefonie **nie** — czyli dokładnie ta relacja, którą to AC ma gwarantować, jest różna na obu urządzeniach. |
+| **AC-22** te same ikony w tej samej relacji do ręki | ✅ *(naprawione w T-33)* | Obie powierzchnie stoją na tej samej regule `.omnia-chrom-konta` + `html[data-reka]`; gest przytrzymania działa i na pasku, i na pozycjach nawigacji bocznej; magiczna ikona ma tę samą postać. |
 
 ### E. Zgodność ogólna
 
@@ -82,7 +82,7 @@
 | **AC-23** build i bramki | ✅ | Tabela §1 — wszystko zielone. |
 | **AC-24** zero literałów w JSX | ✅ | `check:i18n` zielone; nowe teksty w `messages/pl.json` (`modules.tasks.FiltrTagow`, `components.shell.PasekKciuka`, `components.shell.WachlarzNawigacji`, `modules.news.HotTopics.listyTematow`, `MenuPrefsEditor`). |
 
-**Bilans: 19 ✅ · 2 ⚠️ (zablokowane) · 3 ❌**
+**Bilans przebiegu 1: 19 ✅ · 2 ⚠️ · 3 ❌ → przebieg 2 po nawrocie: 24 ✅ · 0 ⚠️ · 0 ❌**
 
 ---
 
@@ -97,7 +97,7 @@
   `filterAccessibleFavorites`, nie buduje własnego filtru RBAC.
 - **C-23** ✅ nie dotyczy — zero nowych `AIAction`; `check:actions` zielone.
 - **C-30** ✅ — wszystkie nowe kolory ze zmiennych; dodatkowo **usunięty** istniejący `#fff`.
-- **C-31** ⚠️ — cele dotyku i `safe-area` ✅ (pomiar), ale **AC-12 na telefonie niespełnione**.
+- **C-31** ✅ — cele dotyku i `safe-area` potwierdzone pomiarem; AC-12 na telefonie domknięte w T-33.
 - **C-32** ✅ — `check:i18n` zielone.
 - **C-33** ✅ — rama nietknięta poza dopuszczonym rozszerzeniem `NaglowekSekcji`; przyklejony nagłówek
   zmierzony (49 px), zasłona nadal wyrażona w CSS.
@@ -130,26 +130,31 @@
 
 ## 5. Werdykt końcowy
 
-### DO POPRAWY
+### Przebieg 1 — DO POPRAWY
 
-Wszystkie bramki są zielone, a 19 z 24 kryteriów spełnionych i **zmierzonych**. Nie zaliczam całości,
-bo dwa braki są realne i oba dotyczą rzeczy, o które właściciel poprosił wprost.
+19/24 kryteriów spełnionych i zmierzonych, wszystkie bramki zielone, ale dwa braki realne i oba
+dotyczące rzeczy, o które właściciel poprosił wprost:
 
-**Braki (dopisane do `tasks.md` jako T-32 i T-33):**
+1. **T-32 (AC-15, blokujące AC-16 i AC-17)** — `Pozycja` zadeklarowana wewnątrz ciała `PasekKciuka`.
+   Każdy render tworzył nowy typ komponentu, więc otwarcie wachlarza (zmiana kontekstu →
+   przerenderowanie paska) kazało Reactowi odmontować przyciski. Razem ze starym węzłem przepadał
+   przechwycony wskaźnik i `pointerup` nie dochodził — gest się nie domykał.
+2. **T-33 (AC-12, a przez to AC-22)** — górny pasek telefonu nie używał `.omnia-chrom-konta`, więc
+   gwiazdka ulubionych zostawała po prawej u osoby leworęcznej.
 
-1. **T-32 — gest z dolnego paska nie domknie się** (AC-15, odblokowuje AC-16 i AC-17).
-   `Pozycja` jest zadeklarowana wewnątrz ciała `PasekKciuka`, więc każdy render tworzy nowy typ
-   komponentu. Otwarcie wachlarza zmienia kontekst → `PasekKciuka` się przerenderowuje → React
-   odmontowuje przyciski i montuje nowe → przechwycony wskaźnik przepada, `pointerup` nie dochodzi.
-   Wynieść `Pozycja` na poziom modułu (jak `NavItem` w `ModuleSidebar`).
-   *Źródłem jest kod, nie spec ani plan.*
+Plus drobiazg kosmetyczny (T-34): ikona asystenta 22 px na komputerze vs 24 px na telefonie.
 
-2. **T-33 — gwiazdka ulubionych na telefonie nie idzie za ręką** (AC-12, a przez to AC-22).
-   Grupa chromu w górnym pasku (`AppShell.tsx:202`) ma `ml-auto` i nie dostała lustrzenia, choć
-   odpowiedni rząd na komputerze je ma. Reguła `.omnia-chrom-konta` już istnieje — brakuje jej
-   zastosowania. *Źródłem jest kod, nie spec ani plan.*
+### Przebieg 2 (po nawrocie do `/implement`) — GOTOWE
 
-**Uwaga kosmetyczna (nie blokuje):** ikona asystenta ma 22 px na komputerze i 24 px na telefonie —
-różnica bez decyzji za nią. Do rozważenia przy T-32/T-33.
+**24/24 kryteriów spełnionych.** Klikacz **15/15**, `next lint` bez błędów, `next build` przechodzi,
+wszystkie bramki zielone (tabela §1), budżet wydajnościowy w paśmie ±5 %.
 
-Wracam do `/implement`.
+Obie usterki miały źródło w **kodzie**, nie w specu ani planie — artefakty nie wymagały korekty poza
+tą, którą `/implement` zrobił wcześniej z własnej inicjatywy (AC-14 i `dynamic(ssr:false)`, C-54).
+
+Dwie lekcje dopisane do `doświadczenia.md` (C-51):
+- komponent zadeklarowany w ciele innego komponentu gubi stan przywiązany do węzła DOM,
+- test czytający regułę CSS przepuszcza brak jej **zastosowania** — dlatego pomiar dotyczy teraz
+  prawdziwej gwiazdki na prawdziwej stronie, a nie wstrzykniętego węzła zastępczego.
+
+Przechodzę do `/review`.
