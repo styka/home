@@ -47,6 +47,53 @@ const nextConfig = {
     // na visibility/focus) domyka cross-device świeżość bez ręcznego odświeżania strony.
     staleTimes: { dynamic: 0 },
   },
+  /**
+   * 101 (AC-6, AC-7) — NAGŁÓWKI BEZPIECZEŃSTWA.
+   *
+   * Do tej pory aplikacja nie wysyłała przeglądarce ŻADNEGO z nich: nie wymuszała HTTPS, nie broniła
+   * się przed osadzeniem w cudzej ramce i nie ograniczała adresów wyciekających w nagłówku odsyłacza
+   * (co ma znaczenie zwłaszcza dla feedu iCal, gdzie token jest częścią adresu).
+   *
+   * `Content-Security-Policy` świadomie NIE wchodzi (decyzja właściciela, spec 101 §5): aplikacja
+   * używa stylów osadzanych, map Leaflet i syntezy mowy, więc restrykcyjne CSP wymaga osobnego
+   * przebiegu z własną listą wyjątków i własną weryfikacją. Zostaje jako rekomendacja w raporcie.
+   */
+  async headers() {
+    const naglowki = [
+      // Zakaz osadzania w cudzej ramce — aplikacja nigdzie nie jest osadzana.
+      { key: "X-Frame-Options", value: "DENY" },
+      // Zakaz zgadywania typu treści (plik zapisany jako obrazek nie wykona się jako skrypt).
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      // Do innych źródeł wychodzi samo pochodzenie, nigdy pełna ścieżka z parametrami.
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      /**
+       * UWAGA — tu najłatwiej wyrządzić szkodę. Aplikacja REALNIE używa wszystkich trzech uprawnień:
+       * kamery (skanowanie kodów kreskowych w Magazynowaniu), mikrofonu (dyktowanie głosem
+       * w asystencie) i geolokalizacji (Pogoda). Wartość `()` zamiast `(self)` wyłączyłaby te funkcje
+       * w całej aplikacji — po cichu, bo błąd zobaczyłby dopiero użytkownik przy próbie użycia.
+       */
+      {
+        key: "Permissions-Policy",
+        value: "camera=(self), microphone=(self), geolocation=(self), interest-cohort=()",
+      },
+    ]
+
+    /**
+     * HSTS tylko na produkcji i **bez** zgłoszenia do listy `preload`. Powód jest asymetryczny:
+     * sam nagłówek przestaje obowiązywać po wygaśnięciu `max-age`, natomiast wpis na liście
+     * przeglądarek jest krokiem faktycznie nieodwracalnym. Na localhoście nagłówek i tak nie ma
+     * zastosowania (przeglądarki honorują HSTS wyłącznie po HTTPS), ale nie wysyłamy go tam wcale.
+     */
+    if (process.env.NODE_ENV === "production") {
+      naglowki.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains",
+      })
+    }
+
+    return [{ source: "/:path*", headers: naglowki }]
+  },
+
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // 084 (zadanie 28): `platform/sharing/cache.ts` sięga po `node:async_hooks` (zakres operacji

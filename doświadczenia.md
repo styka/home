@@ -4,6 +4,53 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-25 — `Permissions-Policy` odbiera funkcje po cichu, a `pgrep -f` łapie sam siebie
+**Problem:** Dwie pułapki z jednego zadania (audyt bezpieczeństwa, spec 101).
+
+Pierwsza: dokładając nagłówki bezpieczeństwa, „domyślnym rozsądnym" ustawieniem `Permissions-Policy`
+wydaje się wyłączenie wszystkiego, czego nie znamy — czyli `camera=(), microphone=(), geolocation=()`.
+W tej aplikacji to wyłączyłoby **trzy realnie działające funkcje**: skanowanie kodów kreskowych
+(Magazynowanie), dyktowanie głosem (asystent) i ustalanie pozycji (Pogoda). Nic by o tym nie
+powiedziało — build zielony, klikacze zielone, bo żaden test nie sięga po sprzęt. Błąd zobaczyłby
+dopiero użytkownik, któremu skaner „przestał działać bez powodu".
+
+Druga: do czekania na build w tle użyłem `pgrep -f "npm run build|migrate.js"`. Wzorzec dopasował się
+do **linii poleceń samej pętli sprawdzającej** (zawiera przecież ten tekst), więc pętla widziała
+„proces żyje" jeszcze długo po tym, jak build się skończył. Zmarnowane osiemnaście minut na
+oczekiwanie na coś, co było gotowe.
+
+**Rozwiązanie:** W `Permissions-Policy` wszystkie trzy uprawnienia dostały `(self)` — zawężamy je do
+własnego pochodzenia, zamiast odbierać. W pliku konfiguracji stoi komentarz mówiący wprost, że
+`()` zamiast `(self)` psuje te funkcje, bo to jedyne miejsce, gdzie następna osoba to przeczyta.
+Do czekania na proces w tle: sprawdzać **plik wynikowy albo znacznik zakończenia w logu**, a nie
+`pgrep` po wzorcu, który sam siedzi w linii poleceń.
+
+**Lekcja:** Nagłówek bezpieczeństwa, który **odbiera zdolności**, wymaga wcześniejszej listy zdolności
+faktycznie używanych przez aplikację — inaczej „hartowanie" jest cichą awarią, a bramki go nie złapią,
+bo żadna nie sięga po kamerę ani mikrofon. I: `pgrep -f` widzi także własną powłokę; wzorzec, który
+opisuje szukany proces, opisuje zwykle również polecenie, które go szuka.
+
+## 2026-08-25 — Odkażać trzeba przy ODCZYCIE, nie tylko przy zapisie
+**Problem:** Audyt (spec 101) znalazł nieodkażaną treść ikony kategorii wstrzykiwaną do drzewa
+dokumentu. Odruch mówi: „napraw zapis — niech do bazy nie wchodzą śmieci". To by nie wystarczyło
+z dwóch niezależnych powodów. Po pierwsze, **w bazie leżą już wiersze zapisane przed poprawką** —
+naprawiony zapis nie dotyka ani jednego z nich. Po drugie, ta sama treść miała **trzy** miejsca
+renderowania (`IconDisplay` plus dwa lokalne komponenty `SvgIcon` w `CategoryGroup` i
+`CategoryManager`) — a plan wymieniał tylko pierwsze; pozostałe dwa znalazły się dopiero przy
+przeglądzie kodu, bo były osobnymi kopiami tego samego pomysłu.
+
+**Rozwiązanie:** Odkażanie w obu punktach: przy zapisie (żeby nie gromadzić ładunków) i przy każdym
+z trzech odczytów (żeby objąć to, co już zapisane). Biała lista elementów rysunkowych zamiast czarnej
+listy niebezpiecznych — czarna wymagałaby znajomości wszystkich dróg wykonania kodu w SVG, a tych
+przybywa z każdą wersją przeglądarki (`onload` na kształcie, `<animate onbegin>`, `<image onerror>`).
+
+**Lekcja:** Przy naprawie luki w danych **zapis jest przyszłością, odczyt jest teraźniejszością** —
+sama poprawka zapisu zostawia w bazie wszystko, co weszło wcześniej. I zanim uzna się sink za jeden:
+`grep` po wzorcu wstrzyknięcia w całym module, bo skopiowany komponent pomocniczy nie ma wspólnej
+nazwy z oryginałem.
+
+---
+
 ## 2026-08-25 — Bramki puszczone pojedynczo to NIE jest `npm run build`
 **Problem:** Deploy na Render padł, choć u siebie miałem „wszystko zielone". Weryfikowałem tak:
 `tsc`, `next lint`, `next build`, a do tego kilkanaście bramek wywołanych **po jednej**

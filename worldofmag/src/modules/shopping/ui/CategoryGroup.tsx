@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { odkazSvg } from "../lib/odkazSvg";
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { ChevronDown, ChevronRight, GripVertical } from "lucide-react";
 import {
@@ -44,7 +45,7 @@ function SvgIcon({ content, size = 14 }: { content: string; size?: number }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: odkazSvg(content) }}
       aria-hidden
     />
   );

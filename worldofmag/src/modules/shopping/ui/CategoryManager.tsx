@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { odkazSvg } from "../lib/odkazSvg";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, Image as ImageIcon, Users } from "lucide-react";
 import type { CategoryWithUsage } from "../actions/categories";
@@ -28,7 +29,7 @@ function SvgIconSmall({ content }: { content: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ color: "var(--text-secondary)" }}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: odkazSvg(content) }}
       aria-hidden
     />
   );
