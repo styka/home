@@ -4,6 +4,54 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-25 — Polski cudzysłów „…” w literale JS: otwierający typograficzny, zamykający ASCII
+**Problem:** Trzy razy w jednym zadaniu (moduł YouTube, spec 102) wywrócił mi się plik na tym samym:
+pisząc po polsku w komentarzu albo w prompcie wstawiałem `„tekst"` — otwierający cudzysłów
+typograficzny (U+201E), a **zamykający zwykły ASCII `"`**. Wewnątrz literału `"..."` ten drugi
+**kończy łańcuch**, więc reszta linii staje się kodem. `tsc` sypie wtedy kaskadą
+`TS1005: ',' expected`, wskazując miejsca oddalone od przyczyny, a w pliku testowym objawiało się to
+jako „1 test, 1 fail" zamiast czterech testów.
+
+**Rozwiązanie:** Zamykający też musi być typograficzny (`”`, U+201D). Para to `„…”`, nie `„…"`.
+
+**Lekcja:** Kaskada `TS1005` w jednej linii tekstu po polsku to prawie zawsze niedomknięty cudzysłów,
+a nie błąd składni tam, gdzie kompilator pokazuje. Piszemy po polsku (C-32), więc ten znak trafia
+do promptów i komentarzy stale — warto go sprawdzać odruchowo przy każdym `„`.
+
+## 2026-08-25 — Parser wpisów w bramce kontraktu akcji jest wrażliwy na KOLEJNOŚĆ
+**Problem:** `check:actions` uparcie żądała polskiej etykiety dla parametru `adres`, choć wpis
+`add_youtube_channel` miał `fields: { adres: f("…") }`. Trzy podejścia (jedna linia, wiele linii)
+nic nie zmieniły. Przyczyna nie była w moim wpisie: bramka wycina bloki wyrażeniem
+`/^ {2}(\w+):\s*\{([\s\S]*?)\n {2}\},?$/gm`, czyli domyka wpis na **pierwszej linii
+`  },`**. Wpis jednoliniowy (`refresh_news: { label: "…" },`) takiej linii nie ma, więc leniwe
+dopasowanie biegnie dalej i **połyka kolejne wpisy**. Zmierzone: `log_dose` połknął 1641 znaków
+razem z moim wpisem, przez co `fields` nigdy nie było widziane.
+
+**Rozwiązanie:** Etykieta poszła do `PARAM_LABELS`, które bramka parsuje **linia po linii** i od tej
+kruchości nie zależy. Nazwa parametru została zawężona do `adresKanalu`, żeby w słowniku wspólnym
+była jednoznaczna.
+
+**Lekcja:** Gdy bramka „nie widzi" poprawnego wpisu, sprawdź, czy jej parser nie ma zależności od
+sąsiadów — zamiast trzeci raz przestawiać własny kod. Dwie minuty na uruchomieniu jej regexa na
+własnym pliku (`node -e`) dają odpowiedź, której trzy podejścia na ślepo nie dały.
+
+## 2026-08-25 — `src/lib/<nazwa>/` to rozmieszczenie SPRZED przebudowy modułowej
+**Problem:** Integrację OAuth dla nowego modułu YouTube położyłem w `src/lib/youtube/oauth.ts`,
+kopiując rozmieszczenie działającego połączenia z Dyskiem (`src/lib/drive/`). Build padł na bramce
+rejestru: „moduł »youtube« ma kod POZA swoim katalogiem".
+
+**Rozwiązanie:** Kod przeniesiony do `src/modules/youtube/lib/`, a trasy w `src/app/api/youtube/*`
+dostały przez kontrakt **dwie funkcje na przepływ** (`przygotujZgode`, `zapiszZgode`) zamiast
+mechaniki OAuth. Trasa robi teraz wyłącznie to, czego moduł zrobić nie może: ustawia ciasteczko
+i przekierowuje.
+
+**Lekcja:** `src/lib/drive/`, `src/lib/news/` i podobne pochodzą sprzed Fazy 1 i **nie są wzorcem dla
+nowego kodu** — kod w starym miejscu omija granicę modułu, bo reguła ESLint go nie pilnuje. Przy
+nowym module wzorca szukaj w `src/modules/`, nie w `src/lib/`; jeśli trasa potrzebuje czegoś od
+modułu, kontrakt ma wystawiać **czynność**, a nie kroki, z których się składa.
+
+---
+
 ## 2026-08-25 — `Permissions-Policy` odbiera funkcje po cichu, a `pgrep -f` łapie sam siebie
 **Problem:** Dwie pułapki z jednego zadania (audyt bezpieczeństwa, spec 101).
 
