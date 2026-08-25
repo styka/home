@@ -1,7 +1,7 @@
 # Zadania: Ergonomia nawigacji — paski filtrów i pasek kciuka
 
 - **Plan:** ./plan.md (100-ergonomia-nawigacji-i-pasek-kciuka)
-- **Status:** done
+- **Status:** in-progress (nawrót z `/verify`)
 - **Data:** 2026-08-25
 
 ## Legenda
@@ -149,6 +149,30 @@
       najpewniej gest kontra przewijanie albo `setPointerCapture` kontra `<a>`.
 - [x] **T-31** — Mapowanie AC → dowód (wejście dla `/verify`), z liczbami z T-5, T-10 i T-17.
 
+## Faza F — nawrót z `/verify` (braki z `verify.md`)
+
+- [ ] **T-32** — `PasekKciuka`: wynieść `Pozycja` **poza ciało komponentu** (na poziom modułu, jak
+      `NavItem` w `ModuleSidebar`). Deklaracja wewnątrz ciała tworzy **nowy typ komponentu przy każdym
+      renderze**, więc otwarcie wachlarza (zmiana wartości kontekstu → przerenderowanie `PasekKciuka`)
+      każe Reactowi odmontować przyciski paska i zamontować nowe. Razem ze starym węzłem przepada
+      **przechwycony wskaźnik**, więc `pointerup` nie dociera do uchwytu i gest się nie domyka.
+      *Gotowe, gdy:* `Pozycja` jest funkcją najwyższego poziomu (dostaje `uchwyty`, `pathname`
+      i `blisko` propsami), a gest z paska domyka się w próbie ręcznej.
+      **(AC-15, odblokowuje AC-16 i AC-17)**
+- [ ] **T-33** — Górny pasek na telefonie (`AppShell.tsx:202`): grupa chromu konta (gwiazdka
+      ulubionych, tryb administratora, dzwonek) ma iść za dominującą ręką. Reguła
+      `.omnia-chrom-konta` **już istnieje** i działa na komputerze — brakuje jej zastosowania na
+      telefonie. Uwaga: `ml-auto` w `row-reverse` przesuwa element na wizualnie lewą krawędź, więc
+      klasa wystarczy bez zmiany marginesów.
+      *Gotowe, gdy:* przy ręce lewej gwiazdka stoi po lewej stronie górnego paska; klikacz sprawdza
+      to pomiarem, a nie z lektury CSS. **(AC-12, AC-22)**
+- [ ] **T-34** `[P]` — Drobiazg kosmetyczny z `verify.md`: ikona asystenta ma 22 px na komputerze
+      i 24 px na telefonie. Różnica nie wynika z żadnej decyzji — została po starym kodzie.
+      Ujednolicić do 24 px. **(AC-20)**
+- [ ] **T-35** — Rozszerzyć `e2e/specs/ergonomia-nawigacji.spec.ts` o pomiar T-33 (pozycja gwiazdki
+      w górnym pasku przy obu ustawieniach ręki), przebudować i puścić klikacz ponownie — komplet
+      musi być zielony.
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania
@@ -162,15 +186,15 @@
 | AC-8 | T-7 |
 | AC-10 | T-8 |
 | AC-11 | T-13, T-14, T-15 |
-| AC-12 | T-16, T-23, T-24 |
+| AC-12 | T-16, T-23, T-24, **T-33** |
 | AC-13 | T-17, T-22 |
 | AC-14 | T-17 |
-| AC-15 | T-18, T-19 |
-| AC-16, AC-18 | T-18 |
-| AC-17 | T-21 |
+| AC-15 | T-18, T-19, **T-32** |
+| AC-16, AC-18 | T-18, **T-32** |
+| AC-17 | T-21, **T-32** |
 | AC-19 | T-20 |
-| AC-20 | T-22 |
-| AC-21, AC-22 | T-24 |
+| AC-20 | T-22, **T-34** |
+| AC-21, AC-22 | T-24, **T-33** |
 | AC-23 | T-26, T-27, T-28 |
 | AC-24 | T-4, T-9, T-25 |
 
