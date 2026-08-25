@@ -5,6 +5,7 @@ import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { odkazSvg } from "../lib/odkazSvg";
 
 export type CategoryIconVariantData = {
   id: string;
@@ -28,7 +29,9 @@ export async function saveAndActivateCategoryIcon(
   });
 
   const variant = await prisma.categoryIconVariant.create({
-    data: { categoryName, svgContent, isActive: true, userId: session.user.id },
+    // 101 (AC-9): treść ikony bywa widoczna dla INNYCH członków zespołu, więc do bazy trafia już
+    // odkażona. Odkażanie przy odczycie zostaje mimo to — obejmuje wiersze zapisane przed poprawką.
+    data: { categoryName, svgContent: odkazSvg(svgContent), isActive: true, userId: session.user.id },
   });
 
   revalidatePath("/shopping");
@@ -193,7 +196,8 @@ export async function saveToLibrary(
   const variant = await prisma.categoryIconVariant.create({
     data: {
       categoryName: theme?.trim() || "__library__",
-      svgContent,
+      svgContent: odkazSvg(svgContent), // 101 (AC-9) — jak wyżej
+
       isActive: false,
       userId: session.user.id,
     },

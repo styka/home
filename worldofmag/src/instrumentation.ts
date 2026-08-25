@@ -11,6 +11,41 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // 101 (AC-10) — STRAŻNIK SEKRETU SESJI.
+  //
+  // `session.ts` podstawia wartość zastępczą, gdy brak `AUTH_SECRET` — bo bez niej nie przeszedłby
+  // `next build`. Ta wygoda ma jednak cenę: gdyby zmiennej zabrakło na produkcji, aplikacja
+  // wstałaby i **działała**, podpisując sesje sekretem leżącym w publicznym repozytorium. Nic by
+  // o tym nie powiedziało — a każdy mógłby podrobić cudzą sesję.
+  //
+  // `register()` uruchamia się przy STARCIE SERWERA, a nie podczas budowania, więc jest to jedyne
+  // miejsce, gdzie można zatrzymać proces, nie psując builda (którego wymóg z AC-10 broni wprost).
+  const { ZASTEPCZY_SEKRET_SESJI } = await import("@/platform/auth/zastepczySekret");
+  const sekret = process.env.AUTH_SECRET;
+  if (!sekret || sekret === ZASTEPCZY_SEKRET_SESJI) {
+    throw new Error(
+      "AUTH_SECRET nie jest ustawiony (albo ma wartość zastępczą z czasu budowania). " +
+        "Aplikacja NIE wystartuje: bez własnego sekretu sesje byłyby podpisywane wartością " +
+        "znaną publicznie, co pozwala podrobić sesję dowolnego użytkownika. " +
+        "Ustaw zmienną środowiskową AUTH_SECRET w konfiguracji usługi."
+    );
+  }
+
+  // Skutek uboczny strażnika, który warto nazwać: `secrets.ts` wyprowadza klucz szyfrowania
+  // z `CONFIG_SECRET` **albo** `AUTH_SECRET`, a dopiero przy braku obu sięga po stałą z repozytorium.
+  // Skoro powyżej `AUTH_SECRET` jest już zagwarantowany, ta niebezpieczna gałąź stała się
+  // nieosiągalna — ustalenie U-09 z audytu domyka się samo.
+  //
+  // Zostaje jednak pułapka eksploatacyjna: bez własnego `CONFIG_SECRET` kluczem szyfrującym jest
+  // sekret sesji, więc **rotacja `AUTH_SECRET` unieważnia wszystkie zapisane klucze API** (nie dadzą
+  // się odszyfrować). Ostrzegamy raz przy starcie, bo w momencie rotacji nikt o tym nie pamięta.
+  if (!process.env.CONFIG_SECRET) {
+    const { logEvent } = await import("@/platform/observability/log");
+    logEvent("warn", "konfiguracja.brak_config_secret", {
+      skutek: "klucz szyfrowania sekretów pochodzi z AUTH_SECRET; jego rotacja unieważni zapisane klucze API",
+    });
+  }
+
   const { reportServerError } = await import("@/platform/observability/report");
 
   process.on("unhandledRejection", (reason) => {

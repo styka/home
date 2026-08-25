@@ -4,11 +4,26 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { mirrorPersonalWorkspace } from "@/platform/workspaces/sync"
 import { prisma } from "@/platform/db/prisma"
 import { authConfig } from "@/auth.config"
+import { ZASTEPCZY_SEKRET_SESJI } from "./zastepczySekret"
 
 const ADMIN_EMAIL = "tyka.szymon@gmail.com"
 
+/**
+ * 101 (AC-10) — WARTOŚĆ ZASTĘPCZA SEKRETU SESJI.
+ *
+ * `next build` wykonuje ten moduł, a bez `AUTH_SECRET` NextAuth rzuca — więc na czas budowania
+ * podstawiamy wartość zastępczą. Cena tego rozwiązania jest jednak poważna: gdyby zmiennej
+ * zabrakło **w czasie działania**, aplikacja podpisywałaby sesje sekretem, który leży w publicznym
+ * repozytorium — czyli każdy mógłby podrobić cudzą sesję, a aplikacja wyglądałaby na sprawną.
+ *
+ * Dlatego wartość jest **nazwaną stałą** w `./zastepczySekret` (plik bez zależności — patrz tam),
+ * a nie literałem: strażnik w `src/instrumentation.ts`
+ * (uruchamiany przy starcie serwera, NIE podczas budowania) porównuje się z nią i zatrzymuje proces.
+ * Gdyby literał stał w dwóch miejscach, poprawiony w jednym rozjechałby strażnika po cichu.
+ */
+
 if (!process.env.AUTH_SECRET) {
-  process.env.AUTH_SECRET = "build-time-placeholder-set-real-value-on-render"
+  process.env.AUTH_SECRET = ZASTEPCZY_SEKRET_SESJI
 }
 
 // E2E-only credentials provider. Gated by E2E_TEST_MODE so it can NEVER be

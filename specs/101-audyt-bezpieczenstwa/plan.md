@@ -94,9 +94,13 @@ przebiegu z listą wyjątków i własną weryfikacją.
   atrybuty geometryczne/prezentacyjne. Odrzucamy **wszystko inne**, w szczególności każdy atrybut
   zaczynający się od `on`, elementy `script`, `animate`, `set`, `foreignObject`, `image`, `use`,
   oraz każdy `href`/`xlink:href`.
-- **Odkażamy w DWÓCH miejscach i to jest celowe:** przy **zapisie** (`saveAndActivateCategoryIcon`,
-  `saveToLibrary`, `assignIconToCategory` — wszystkie ścieżki przyjmujące treść) *oraz* przy
-  **wyświetleniu** (`IconDisplay`). Samo odkażanie przy zapisie nie wystarcza, bo **w bazie leżą już
+- **Odkażamy w DWÓCH miejscach i to jest celowe:** przy **zapisie** *oraz* przy **wyświetleniu**.
+  **Korekta z etapu implementacji (C-54):** obu list było w planie za mało.
+  Treść przyjmują **dwie** ścieżki zapisu, nie trzy — `assignIconToCategory` tylko przenosi istniejący
+  wiersz, więc nie ma czego odkażać. Renderują ją natomiast **trzy** komponenty, nie jeden:
+  `IconDisplay` oraz dwie osobne kopie pomocniczego `SvgIcon` w `CategoryGroup.tsx`
+  i `CategoryManager.tsx`. Kopie nie dzielą nazwy z oryginałem, więc wyszły dopiero z `grep`
+  po wzorcu wstrzyknięcia — stąd wniosek do `doświadczenia.md`. Samo odkażanie przy zapisie nie wystarcza, bo **w bazie leżą już
   wiersze zapisane bez filtrowania** — to je zabezpiecza dopiero odkażanie przy odczycie. Samo
   odkażanie przy odczycie też nie wystarcza, bo zostawiałoby ładunek w bazie.
 - **Gałąź `data:image/`** w `IconDisplay` (renderowana jako `<img src>`) zawężamy do
@@ -121,6 +125,9 @@ a brak sekretu sesji nie jest.
 | `src/modules/shopping/lib/odkazSvg.ts` | nowy | biała lista dla treści ikony (AC-9) |
 | `src/modules/shopping/lib/__tests__/odkazSvg.test.ts` | nowy | dowód, że ładunki są odrzucane, a zwykłe ikony przechodzą |
 | `src/modules/shopping/ui/IconDisplay.tsx` | edycja | odkażanie przy wyświetleniu + zawężenie `data:image/` |
+| `src/modules/shopping/ui/CategoryGroup.tsx` | edycja | druga kopia sinka (C-54, wykryta w implementacji) |
+| `src/modules/shopping/ui/CategoryManager.tsx` | edycja | trzecia kopia sinka (C-54, jw.) |
+| `src/platform/auth/zastepczySekret.ts` | nowy | stała bez zależności — `instrumentation.ts` jest pakowany także dla środowiska brzegowego |
 | `src/modules/shopping/actions/categoryIcons.ts` | edycja | odkażanie przy zapisie |
 | `src/instrumentation.ts` | edycja | zatrzymanie startu bez sekretu sesji (AC-10) |
 | `src/platform/auth/session.ts` | edycja | nazwana stała zastępczej wartości |
