@@ -16,24 +16,24 @@
 
 ## Faza A — Wiadomości: przełącznik segmentowy (bez schematu)
 
-- [ ] **T-1** — Wspólny `src/components/ui/nav/PrzelacznikSegmentowy.tsx`: pozycje
+- [x] **T-1** — Wspólny `src/components/ui/nav/PrzelacznikSegmentowy.tsx`: pozycje
       `{ id, etykieta, licznik, wylaczona? }`, `wybrana`, `onWybor`. Segment nieaktywny renderowany
       jako `<button disabled aria-disabled>` (nie pomijany). Kolory wyłącznie ze zmiennych CSS,
       teksty przez `t()`.
       *Gotowe, gdy:* komponent istnieje, jest typowany, `tsc` czysto; **wpięcie w T-3** (C-35 — nie
       zostawiamy go bez konsumenta).
-- [ ] **T-2** — `NaglowekSekcji` w `src/modules/news/ui/sekcjeTematow.tsx`: opcjonalny prop
+- [x] **T-2** — `NaglowekSekcji` w `src/modules/news/ui/sekcjeTematow.tsx`: opcjonalny prop
       `segmenty?: ReactNode`, który **zastępuje** grupę „tytuł + licznik". Komentarz z uzasadnieniem
       (przyklejony nagłówek nazywa to, na co patrzysz; przy trzech siostrzanych listach tą nazwą jest
       przełącznik) + dlaczego tutaj, a nie obok (`top: var(--news-pasek-h)` i wysokość zasłony).
       *Gotowe, gdy:* wywołania bez `segmenty` zachowują się identycznie jak dziś.
-- [ ] **T-3** — `src/modules/news/ui/HotTopics.tsx`: dwa boole `showHidden`/`showMonitorowane` → jeden
+- [x] **T-3** — `src/modules/news/ui/HotTopics.tsx`: dwa boole `showHidden`/`showMonitorowane` → jeden
       stan `lista: "proponowane" | "monitorowane" | "odrzucone"`; `MenuProponowanych` **skasowane**
       w całości wraz z osieroconymi importami; treść (karty, listy, `AiContentMeta`) renderowana wg
       `lista`, bez zmian w `add`/`hide`/`unhide`/`przestanMonitorowac`.
       *Gotowe, gdy:* `grep -n "MoreVertical\|MenuProponowanych" HotTopics.tsx` nie zwraca nic,
       a każda z trzech list jest osiągalna jednym kliknięciem. **(AC-1, AC-2, AC-3, AC-4)**
-- [ ] **T-4** — Teksty fazy A do `messages/pl.json` (namespace `components.ui.nav.PrzelacznikSegmentowy`;
+- [x] **T-4** — Teksty fazy A do `messages/pl.json` (namespace `components.ui.nav.PrzelacznikSegmentowy`;
       w `modules.news.HotTopics` reużyj istniejących `proponowane`/`monitorowane`/`odrzucone`, usuń
       osierocone `wiecejDzialan`, jeśli nikt go już nie woła).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi. **(AC-24)**

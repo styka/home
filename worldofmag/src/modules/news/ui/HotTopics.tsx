@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import type { HotTopic } from "../lib/goraceTematy";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Plus, Loader2, EyeOff, Undo2, Check, Trash2, MoreVertical, Eye } from "lucide-react";
-import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { Plus, Loader2, EyeOff, Undo2, Check, Trash2 } from "lucide-react";
+import { PrzelacznikSegmentowy } from "@/components/ui/nav/PrzelacznikSegmentowy";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -38,8 +38,14 @@ export function HotTopics({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [hidden, setHidden] = useState<HiddenTopicDTO[] | null>(null);
-  const [showHidden, setShowHidden] = useState(false);
-  const [showMonitorowane, setShowMonitorowane] = useState(false);
+  /**
+   * 100: JEDEN stan zamiast dwóch niezależnych booli.
+   *
+   * Trzy listy wykluczają się wzajemnie — ogląda się jedną naraz. Para booli dopuszczała stan
+   * „obie otwarte", którego przełącznik segmentowy nie umie pokazać, a użytkownik i tak nie umiał
+   * odróżnić od żadnego innego.
+   */
+  const [lista, setLista] = useState<"proponowane" | "monitorowane" | "odrzucone">("proponowane");
   // Odciski tematów oznaczonych jako monitorowane w TEJ sesji przeglądu.
   const [monitored, setMonitored] = useState<Set<string>>(new Set());
   const [busy, startBusy] = useTransition();
@@ -155,36 +161,56 @@ export function HotTopics({
 
   const topics = data?.topics ?? [];
 
+  /**
+   * 100: gdy wybrana lista opustoszeje (odznaczono ostatni odrzucony temat, zdjęto ostatni
+   * monitorowany), wracamy do „Proponowanych" — CZYSTĄ DERYWACJĄ, nie efektem.
+   *
+   * Efekt naprawiający stan po fakcie renderuje najpierw pustą listę z wyłączonym segmentem,
+   * a dopiero potem się budzi. To jest ta sama pomyłka, którą 087 opisało o piętro wyżej:
+   * liczba (tu: wybór) przeliczana w efekcie zawsze kiedyś nie nadąży.
+   */
+  const listaEfektywna =
+    (lista === "monitorowane" && monitorowane.length === 0) ||
+    (lista === "odrzucone" && (hidden?.length ?? 0) === 0)
+      ? "proponowane"
+      : lista;
+
   return (
     <div>
       {/* 083 (AC-28): TEN SAM przyklejony nagłówek sekcji, co w wiadomościach, na osi czasu i w
           zakładce Źródeł. Właściciel prosił o spójność trzech zakładek wprost — a spójność, która
           bierze się ze wspólnego komponentu, nie rozjeżdża się przy pierwszej zmianie stylu; taka,
           która bierze się z podobnie wyglądającego, skopiowanego JSX-a, rozjeżdża się zawsze. */}
-      {/* 099 (AC-16, AC-17): nagłówek czyta „Proponowane", a nie „Gorące tematy" — że są gorące,
-          mówi już zakładka, więc powtórzenie zjadało jedyny wiersz, w którym trzeba było zmieścić
-          jeszcze dwa przełączniki. Same przełączniki schodzą do menu ⋮ — tego samego wzorca, którym
-          087 schowało edycję i usuwanie tematu; przy 360 px trzy rzeczy w tym wierszu się nie
-          mieściły. */}
+      {/* 100 (AC-1..AC-4): trzy listy jako PRZEŁĄCZNIK SEGMENTOWY, nie jako menu ⋮.
+          099 schowało „Monitorowane" i „Odrzucone" pod trzykropkiem, żeby zmieścić się w jednym
+          wierszu przy 360 px — i to była zła cena. Menu nie mówi ani co jest dostępne (trzeba je
+          otworzyć), ani co jest wybrane (stan siedzi w zamkniętej warstwie), a właściciel zgłosił
+          dokładnie oba objawy. Przełącznik mieści te same trzy pozycje w tym samym jednym wierszu,
+          bo licznik zastępuje słowo: nazwa listy nie musi być powtórzona nad nią. */}
       <NaglowekSekcji
         tytul={t("proponowane")}
-        licznik={topics.length}
-        akcje={
-          <MenuProponowanych
-            liczbaMonitorowanych={monitorowane.length}
-            liczbaOdrzuconych={hidden?.length ?? 0}
-            monitorowaneOtwarte={showMonitorowane}
-            odrzuconeOtwarte={showHidden}
-            onMonitorowane={() => setShowMonitorowane((v) => !v)}
-            onOdrzucone={() => setShowHidden((v) => !v)}
+        segmenty={
+          <PrzelacznikSegmentowy
+            ariaLabel={t("listyTematow")}
+            wybrana={listaEfektywna}
+            onWybor={(id) => setLista(id as typeof lista)}
+            pozycje={[
+              // „Proponowane" nigdy nie jest wyłączone: to lista domyślna, a jej pustka bywa
+              // stanem przejściowym (ładowanie, oczekiwanie na analizę), nie brakiem listy.
+              { id: "proponowane", etykieta: t("proponowane"), licznik: topics.length, wylaczona: false },
+              { id: "monitorowane", etykieta: t("monitorowane"), licznik: monitorowane.length },
+              { id: "odrzucone", etykieta: t("odrzucone"), licznik: hidden?.length ?? 0 },
+            ]}
           />
         }
       />
-      <p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</p>
+      {listaEfektywna === "proponowane" && (
+        <p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("ostatnie24hWszystkieZrodla")}</p>
+      )}
 
       {/* 041: koszt stoi WEWNĄTRZ paska, a nie obok — to jedna informacja o tej samej treści.
           Przy stanie oczekiwania pasek się nie pokazuje: nie ma jeszcze czego opisywać. */}
-      {!data?.pending && (
+      {listaEfektywna === "proponowane" && !data?.pending && (
         <div className="mb-4">
           <AiContentMeta
             generatedAt={data?.generatedAt ?? undefined}
@@ -202,7 +228,7 @@ export function HotTopics({
         </div>
       )}
 
-      {showMonitorowane && monitorowane.length > 0 && (
+      {listaEfektywna === "monitorowane" && (
         <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
           <p className="mb-2 text-xs text-[var(--text-muted)]">{t("tematyKtoreMonitorujesz")}</p>
           <ul className="space-y-2">
@@ -218,7 +244,7 @@ export function HotTopics({
         </div>
       )}
 
-      {showHidden && hidden && hidden.length > 0 && (
+      {listaEfektywna === "odrzucone" && hidden && (
         <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-3">
           <p className="mb-2 text-xs text-[var(--text-muted)]">
             {t("teTematyNieBeda")}
@@ -241,7 +267,7 @@ export function HotTopics({
         </div>
       )}
 
-      {loading && data === null ? (
+      {listaEfektywna !== "proponowane" ? null : loading && data === null ? (
         <div className="flex flex-col items-center gap-2 py-12 text-[var(--text-muted)]">
           <Loader2 className="animate-spin" />
           <span className="text-sm">{t("analizujeNaglowkiZOstatnich")}</span>
@@ -303,92 +329,6 @@ export function HotTopics({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/**
- * 099 (AC-17, AC-18): menu ⋮ sekcji „Proponowane".
- *
- * Stoi na tym samym prymitywie (`AnchoredLayer`) i ma ten sam kształt, co menu tematu z 087 —
- * dwa różnie wyglądające menu w jednym module rozjeżdżają się przy pierwszej zmianie stylu.
- *
- * Pozycja z zerowym licznikiem NIE jest renderowana (pusta lista monitorowanych to nie jest wybór,
- * tylko ślepy zaułek), a gdy obie są puste — nie ma po co pokazywać samego przycisku.
- */
-function MenuProponowanych({
-  liczbaMonitorowanych,
-  liczbaOdrzuconych,
-  monitorowaneOtwarte,
-  odrzuconeOtwarte,
-  onMonitorowane,
-  onOdrzucone,
-}: {
-  liczbaMonitorowanych: number;
-  liczbaOdrzuconych: number;
-  monitorowaneOtwarte: boolean;
-  odrzuconeOtwarte: boolean;
-  onMonitorowane: () => void;
-  onOdrzucone: () => void;
-}) {
-  const t = useTranslations("modules.news.HotTopics");
-  const [otwarte, setOtwarte] = useState(false);
-  const kotwicaRef = useRef<HTMLDivElement>(null);
-
-  if (liczbaMonitorowanych === 0 && liczbaOdrzuconych === 0) return null;
-
-  const pozycja =
-    "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-hover)]";
-
-  return (
-    <div ref={kotwicaRef} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOtwarte((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={otwarte}
-        title={t("wiecejDzialan")}
-        aria-label={t("wiecejDzialan")}
-        className="shrink-0 rounded-md p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-      >
-        <MoreVertical size={16} />
-      </button>
-
-      <AnchoredLayer
-        anchorRef={kotwicaRef}
-        open={otwarte}
-        onClose={() => setOtwarte(false)}
-        side="dol"
-        align="koniec"
-        width={240}
-        role="menu"
-        ariaLabel={t("wiecejDzialan")}
-      >
-        {liczbaMonitorowanych > 0 && (
-          <button
-            type="button"
-            role="menuitem"
-            aria-pressed={monitorowaneOtwarte}
-            className={pozycja}
-            onClick={() => { setOtwarte(false); onMonitorowane(); }}
-          >
-            <Eye size={15} className="shrink-0 text-[var(--text-muted)]" />
-            {t("monitorowane")} ({liczbaMonitorowanych})
-          </button>
-        )}
-        {liczbaOdrzuconych > 0 && (
-          <button
-            type="button"
-            role="menuitem"
-            aria-pressed={odrzuconeOtwarte}
-            className={pozycja}
-            onClick={() => { setOtwarte(false); onOdrzucone(); }}
-          >
-            <EyeOff size={15} className="shrink-0 text-[var(--text-muted)]" />
-            {t("odrzucone")} ({liczbaOdrzuconych})
-          </button>
-        )}
-      </AnchoredLayer>
     </div>
   );
 }
