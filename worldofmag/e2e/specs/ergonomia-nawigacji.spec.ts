@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/test";
+import { ensureEtykietyZadan } from "../fixtures/zadania";
 
 /**
  * 100 — ERGONOMIA NAWIGACJI: paski filtrów i pasek kciuka.
@@ -95,6 +96,11 @@ test.describe("Wiadomości — przełącznik segmentowy", () => {
 });
 
 test.describe("Zadania — filtr etykiet", () => {
+  // Filtr nie renderuje się przy pustym słowniku etykiet, a seed żadnych nie zakłada.
+  test.beforeAll(async () => {
+    await ensureEtykietyZadan();
+  });
+
   test("[100-AC6] wysokość paska filtrów nie zależy od liczby etykiet", async ({ page }) => {
     await otworz(page, "/tasks");
     await expect(page.getByRole("button", { name: /Filtr etykiet/i }).first()).toBeVisible({ timeout: 20_000 });

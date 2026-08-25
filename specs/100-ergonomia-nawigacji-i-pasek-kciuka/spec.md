@@ -112,8 +112,16 @@ warunków naraz.
       pozostałe pozycje i wystaje ponad górną krawędź paska), i jest to **jej jedyne miejsce** — nie ma
       już drugiego, pływającego przycisku asystenta w rogu ekranu.
 - [ ] **AC-14** — Given ustawiłem rękę, when patrzę na rozkład pozycji dolnego paska, then kolejność
-      pozycji jest **lustrzana** względem ustawienia, pozycje **bliżej dominującego kciuka mają większe
-      cele dotyku**, a **żaden cel dotyku nie jest mniejszy niż 44 px** (C-31).
+      pozycji jest **lustrzana** względem ustawienia (najważniejsza pozycja ląduje w rogu, w którym
+      spoczywa kciuk), pozycje **bliżej dominującego kciuka mają większą ikonę**, przy nieparzystej
+      liczbie pozycji **także więcej miejsca**, a **żaden cel dotyku nie jest mniejszy niż 44 px**
+      (C-31).
+      > **Doprecyzowane na etapie `/implement` (C-54).** Pierwsza wersja mówiła po prostu „większe
+      > cele dotyku" i implementacja realizowała to mnożnikiem szerokości w jednym rzędzie `flex`.
+      > Pomiar klikaczem pokazał, że to **kłóci się z AC-13**: przy nieparzystej liczbie pozycji
+      > nierówne grupy przesuwały magiczną ikonę o **74 px od środka paska**. Środek jest ważniejszy
+      > (to jedyny element, którego nigdy nie wolno szukać), więc strony są teraz równymi połowami,
+      > a przewaga kciuka bierze się z kolejności, z liczby pozycji w połowie i z wielkości ikony.
 - [ ] **AC-15** — Given przytrzymuję palec (lub wciśnięty przycisk myszy) na pozycji dolnego paska,
       when minie próg przytrzymania, then **nad paskiem rozwija się wachlarz podpowiedzi nawigacji**;
       when przeciągam palec na jedną z nich i puszczam, then **przechodzę pod ten adres**; when

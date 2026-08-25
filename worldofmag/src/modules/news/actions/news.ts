@@ -93,8 +93,14 @@ export async function ensureNewsSetup(): Promise<void> {
     // a `wlasnoscOsobistaDoZapisu` potrafi domknąć brakującą przestrzeń — wołanie go w `map`
     // wykonałoby tę próbę tyle razy, ile jest domyślnych źródeł.
     const wlasnosc = await wlasnoscOsobistaDoZapisu(user.id);
+    // 100: `skipDuplicates` NIE jest ostrożnościowe. „Policz, a jeśli zero — wstaw" to klasyczne
+    // sprawdź-i-działaj: dwie równoległe karty (albo dwa procesy klikacza) widzą zero i obie
+    // wstawiają, a `@@unique([workspaceId, key])` odbija drugą — z P2002 lecącym w górę i całą
+    // stroną Wiadomości na 500. Złapane pomiarem w 100: dwaj pracownicy Playwrighta weszli na
+    // /wiadomosci naraz i strona się nie wyrenderowała. Ten sam zapis stoi już w `newsRefresh.ts`.
     await prisma.newsSource.createMany({
       data: DEFAULT_SOURCES.map((s) => ({ ...s, ...wlasnosc })),
+      skipDuplicates: true,
     });
   }
   await prisma.newsPref.upsert({

@@ -19,8 +19,9 @@ import { useWachlarz } from "./WachlarzNawigacji";
  *    niedoróbka lustrzenia, tylko jego cel: jedyny element, którego nigdy nie trzeba szukać, ma
  *    nie zmieniać miejsca po przełączeniu ręki. Reszta paska jest lustrzana, ona nie.
  * 2. **Różnica między ręką dominującą a drugą jest w NADMIARZE, nigdy w niedomiarze.** Pozycje
- *    bliżej kciuka są szersze i mają większą ikonę, ale każda — także ta najdalsza — trzyma
- *    minimum 44 × 44 px (C-31). Zwężenie „tej dalszej" byłoby karą za trzymanie telefonu inaczej.
+ *    bliżej kciuka mają większą ikonę, a przy nieparzystej ich liczbie także więcej miejsca —
+ *    ale każda, także ta najdalsza, trzyma minimum 44 × 44 px (C-31). Zwężenie „tej dalszej"
+ *    byłoby karą za trzymanie telefonu inaczej.
  * 3. **To nie jest `<Link>`.** Nawigacją steruje gest z `WachlarzNawigacji`: krótkie tapnięcie
  *    prowadzi wprost, przytrzymanie otwiera wachlarz. Dwie ścieżki nawigacji (kliknięcie w `<a>`
  *    i `router.push` z gestu) musiałyby się zgadzać co do pikseli, bo przy przechwyconym wskaźniku
@@ -40,13 +41,31 @@ export function PasekKciuka({
 
   if (pozycje.length === 0) return null;
 
-  // Podział na dwie strony wokół środka. Przy nieparzystej liczbie nadmiar ląduje po stronie
-  // dominującej ręki — tam, gdzie kciuk sięga taniej.
-  const polowa = Math.ceil(pozycje.length / 2);
-  const bliskie = reka === "left" ? pozycje.slice(0, polowa) : pozycje.slice(pozycje.length - polowa);
-  const dalekie = reka === "left" ? pozycje.slice(polowa) : pozycje.slice(0, pozycje.length - polowa);
-  const lewa = reka === "left" ? bliskie : dalekie;
-  const prawa = reka === "left" ? dalekie : bliskie;
+  /**
+   * Podział na dwie strony wokół środka — i to jest miejsce, w którym łatwo zepsuć AC-13.
+   *
+   * Pierwsza wersja rozdzielała pozycje wprost do jednego rzędu `flex`, dosypując nadmiar po
+   * stronie dominującej. Skutek zmierzony klikaczem: przy trzech pozycjach (1 z lewej, 2 z prawej)
+   * magiczna ikona stała **74 px od środka paska** — bo „środek" był wtedy środkiem między dwiema
+   * nierównymi grupami, a nie środkiem ekranu.
+   *
+   * Dlatego strony są DWOMA POJEMNIKAMI po `flex: 1`: każdy zajmuje dokładnie połowę wolnej
+   * szerokości niezależnie od tego, ile pozycji trzyma, więc ikona jest w geometrycznym środku
+   * zawsze. Przewaga kciuka bierze się z trzech innych rzeczy, nie z rozjechanego środka:
+   *  - **kolejność jest lustrzana** — pozycja najważniejsza (pierwsza w kolejności użytkownika)
+   *    ląduje w rogu, w którym kciuk spoczywa,
+   *  - przy **nieparzystej** liczbie nadmiar idzie na stronę DALSZĄ, więc bliższe pozycje dzielą
+   *    tę samą połowę na mniej części i każda wychodzi szersza,
+   *  - bliższe pozycje mają większą ikonę.
+   * Minimum 44 × 44 px obowiązuje wszystkie (C-31) — różnica jest w nadmiarze, nigdy w niedomiarze.
+   */
+  const ileBlisko = Math.floor(pozycje.length / 2);
+  const bliskie = pozycje.slice(0, ileBlisko);
+  const dalekie = pozycje.slice(ileBlisko);
+  // Wewnątrz połowy najważniejsza pozycja ma być najdalej od środka (w rogu pod kciukiem), a każda
+  // kolejna bliżej — stąd odwrócenie po stronie prawej i naturalna kolejność po lewej.
+  const lewa = reka === "left" ? bliskie : [...dalekie].reverse();
+  const prawa = reka === "left" ? [...dalekie] : [...bliskie].reverse();
 
   function Pozycja({ m, blisko }: { m: ModuleDef; blisko: boolean }) {
     const aktywna = m.exact ? pathname === m.href : pathname.startsWith(m.href);
@@ -60,8 +79,10 @@ export function PasekKciuka({
         className="flex flex-col items-center justify-center gap-0.5"
         style={{
           ...styleGestu,
-          // Nadmiar po stronie kciuka; minimum jest wspólne i nienaruszalne (C-31).
-          flexGrow: blisko ? 1.35 : 1,
+          // Wewnątrz połowy wszystkie pozycje dzielą ją po równo — przewaga kciuka bierze się
+          // z tego, ILE ich w tej połowie jest (patrz podział wyżej), a nie z mnożnika, który
+          // między dwoma pojemnikami o stałej szerokości i tak nie miałby czego przesunąć.
+          flexGrow: 1,
           flexBasis: 0,
           minWidth: 44,
           minHeight: 44,
@@ -89,9 +110,11 @@ export function PasekKciuka({
         height: "calc(56px + env(safe-area-inset-bottom))",
       }}
     >
-      {lewa.map((m) => (
-        <Pozycja key={m.id} m={m} blisko={reka === "left"} />
-      ))}
+      <div className="flex flex-1 items-stretch" style={{ minWidth: 0 }}>
+        {lewa.map((m) => (
+          <Pozycja key={m.id} m={m} blisko={reka === "left"} />
+        ))}
+      </div>
 
       {/* Magiczna ikona — stałe miejsce, wyeksponowana ponad krawędź paska. Pierścień w kolorze
           tła daje wrażenie, że przycisk „wychodzi" z paska, a nie leży na nim. */}
@@ -120,9 +143,11 @@ export function PasekKciuka({
         </button>
       </div>
 
-      {prawa.map((m) => (
-        <Pozycja key={m.id} m={m} blisko={reka === "right"} />
-      ))}
+      <div className="flex flex-1 items-stretch" style={{ minWidth: 0 }}>
+        {prawa.map((m) => (
+          <Pozycja key={m.id} m={m} blisko={reka === "right"} />
+        ))}
+      </div>
     </nav>
   );
 }
