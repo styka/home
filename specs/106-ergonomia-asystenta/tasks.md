@@ -1,7 +1,7 @@
 # Zadania: Ergonomia asystenta AI — chrom, sesje i tryb dokowania
 
 - **Plan:** ./plan.md (106-ergonomia-asystenta)
-- **Status:** w toku (T-15 — klikacze w biegu)
+- **Status:** zrobione
 - **Data:** 2026-08-26
 
 > Kolejność: od najłatwiejszego do najtrudniejszego i zgodnie z zależnościami
@@ -139,7 +139,7 @@
       prod DB).
       **Gotowe, gdy:** wszystko zielone do `next build` włącznie.
 
-- [~] **T-15** — Klikacze Playwright wg `docs/e2e/uruchamianie-e2e-claude.md`
+- [x] **T-15** — Klikacze Playwright wg `docs/e2e/uruchamianie-e2e-claude.md`
       (`nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`), **bez `networkidle`**
       (`check:e2e-waits`). Sprawdź, czy zmiana nie wywróciła istniejących scenariuszy asystenta
       i powłoki.
@@ -186,4 +186,14 @@ i `T-12` (opakowanie w powłoce). `T-9`, `T-10` i `T-11` dotykają tego samego p
 Zrównoleglić da się `T-6`, `T-7` i `T-8`.
 
 ## Notatki / blokady
-- Brak.
+
+**T-15 — wynik klikaczy, z ustaloną bazą odniesienia.** Pełny zestaw na tej gałęzi: **215 przeszło,
+14 padło**. Na commicie sprzed zmiany (`745175e`): **216 przeszło, 13 padło**. Różnicę stanowi
+dokładnie jeden test — `[vs-AC4] ulubiony zapisany z filtrami wraca z filtrami`. Uruchomiony
+**sam, w izolacji**, pada **tak samo na bazie** (9 przeszło / 1 padł, ten sam błąd: dialog ulubionych
+nie zawiera zapisanego widoku). Czyli nie jest to regresja tej zmiany, tylko zależność od stanu
+ulubionych zostawionego przez wcześniejszy przebieg — nazywa ją wprost drugi test padający **także
+w bazie**: „Nie udało się wyczyścić ulubionych w 40 iteracjach".
+
+Pozostałe 13 to znane porażki specyfikacji funkcjonalnych, o których mówi `scripts/e2e-web.sh`
+i `docs/e2e/uruchamianie-e2e-claude.md`. **Regresji wprowadzonych przez 106: zero.**
