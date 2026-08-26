@@ -16,6 +16,14 @@ async function otworz(page: import("@playwright/test").Page, adres: string) {
   await page.waitForLoadState("load").catch(() => {});
 }
 
+/**
+ * Nazwa gwiazdki ZMIENIA SIĘ wraz ze stanem: „Zapisz ten widok w ulubionych" ↔ „Usuń ten widok
+ * z ulubionych" — bo `aria-label` ma mówić, co przycisk ZROBI, a nie jak się nazywa zbiór (AC-27).
+ * Lokator musi więc łapać oba warianty; wzorzec dopasowany tylko do jednego gubi przycisk dokładnie
+ * w momencie, w którym test sprawdza przełączenie.
+ */
+const GWIAZDKA = /ten widok (w|z) ulubionych/i;
+
 const pasekWidoczny = async (page: import("@playwright/test").Page) => {
   const pasek = page.getByRole("navigation", { name: /Nawigacja główna/i });
   await expect(pasek).toBeVisible({ timeout: 20_000 });
@@ -33,7 +41,7 @@ test.describe("Skład dolnego paska", () => {
       // Dom, asystent, ulubione i historia — nazwy dostępne mówią, CO przycisk robi (AC-27).
       await expect(pasek.getByRole("button", { name: /Przejdź na stronę główną/i })).toHaveCount(1);
       await expect(page.getByRole("button", { name: /^Asystent AI$/ })).toHaveCount(1);
-      await expect(pasek.getByRole("button", { name: /ten widok w ulubionych/i })).toHaveCount(1);
+      await expect(pasek.getByRole("button", { name: GWIAZDKA })).toHaveCount(1);
       await expect(pasek.getByRole("button", { name: /(poprzedniej strony|Historia jest pusta)/i })).toHaveCount(1);
     }
   });
@@ -93,7 +101,7 @@ test.describe("Skład dolnego paska", () => {
 
     const wDolnym = page
       .getByRole("navigation", { name: /Nawigacja główna/i })
-      .getByRole("button", { name: /ten widok w ulubionych/i });
+      .getByRole("button", { name: GWIAZDKA });
     await expect(wDolnym).toHaveCount(1);
   });
 });
@@ -105,7 +113,7 @@ test.describe("Gwiazdka jako inteligentna ikona", () => {
     await otworz(page, "/tasks");
     const pasek = await pasekWidoczny(page);
 
-    const gwiazdka = pasek.getByRole("button", { name: /ten widok w ulubionych/i });
+    const gwiazdka = pasek.getByRole("button", { name: GWIAZDKA });
     const stanPoczatkowy = await gwiazdka.getAttribute("aria-pressed");
 
     await gwiazdka.click();
@@ -122,7 +130,7 @@ test.describe("Gwiazdka jako inteligentna ikona", () => {
   test("[103-AC6] zapis melduje się ulotnym potwierdzeniem, nie oknem dialogowym", async ({ page }) => {
     await otworz(page, "/tasks");
     const pasek = await pasekWidoczny(page);
-    const gwiazdka = pasek.getByRole("button", { name: /ten widok w ulubionych/i });
+    const gwiazdka = pasek.getByRole("button", { name: GWIAZDKA });
 
     await gwiazdka.click();
     // Żadnego modala — to była treść zgłoszenia („a nie tym dialogiem który był do tej pory").

@@ -27,16 +27,32 @@ test.describe("085 — chrom konta", () => {
     await expect(gwiazdkaUlubionych(page, /Ulubione/i)).toBeVisible({ timeout: 15_000 });
   });
 
-  test("[085-AC1] gwiazdka stoi obok dzwonka — na telefonie i na komputerze", async ({ page }) => {
-    // MOBILE: pasek górny (md:hidden) + brak panelu bocznego.
+  test("[085-AC1] gwiazdka: na telefonie w pasku KCIUKA, na komputerze obok dzwonka", async ({ page }) => {
+    /**
+     * 103 ZMIENIŁO POŁOWĘ TEGO KRYTERIUM — świadomie, na wniosek właściciela: „Powinna tam być
+     * ikona ulubionych czyli gwiazdka (zamiast na górnym pasku)".
+     *
+     * Na telefonie gwiazdka zeszła z górnego paska do DOLNEGO, bo górna krawędź jest poza zasięgiem
+     * kciuka trzymającego urządzenie, a zapis widoku jest czynnością wykonywaną wielokrotnie
+     * dziennie. Reguła z 085 — „gwiazdka ma jedno miejsce i jest nim chrom, nie treść strony" —
+     * obowiązuje dalej; zmieniło się, KTÓRY to chrom na telefonie.
+     *
+     * Część komputerowa (rząd ikon obok dzwonka) została nietknięta i jest sprawdzana niżej bez zmian.
+     */
+    // MOBILE: gwiazdka NIE w pasku górnym, tylko w pasku kciuka.
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/pogoda");
     await page.waitForLoadState("load").catch(() => {});
     const mobil = await page.evaluate(() => {
       const widoczne = (el: Element | null) => !!el && el.getClientRects().length > 0;
-      const gwiazdka = Array.from(document.querySelectorAll("button")).find((b) =>
-        /Ulubione/i.test(b.getAttribute("aria-label") ?? ""),
-      );
+      const chrom = document.querySelector(".omnia-chrom-konta");
+      const pasekKciuka = document.querySelector('nav[aria-label="Nawigacja główna"]');
+      const gwiazdkaW = (zakres: Element | null) =>
+        zakres
+          ? Array.from(zakres.querySelectorAll("button")).find((b) =>
+              /ulubion/i.test(b.getAttribute("aria-label") ?? ""),
+            ) ?? null
+          : null;
       const dzwonek = Array.from(document.querySelectorAll("button")).find((b) =>
         /Powiadomienia/i.test(b.getAttribute("aria-label") ?? ""),
       );
@@ -44,19 +60,17 @@ test.describe("085 — chrom konta", () => {
         /skrót/i.test(b.getAttribute("aria-label") ?? ""),
       );
       return {
-        gwiazdkaWidoczna: widoczne(gwiazdka ?? null),
+        gwiazdkaWTopBarze: widoczne(gwiazdkaW(chrom)),
+        gwiazdkaWPaskuKciuka: widoczne(gwiazdkaW(pasekKciuka)),
         dzwonekWidoczny: widoczne(dzwonek ?? null),
-        // Odległość gwiazdki od dzwonka w poziomie — „obok" znaczy w tym samym rzędzie.
-        wTymSamymRzedzie:
-          gwiazdka && dzwonek
-            ? Math.abs(gwiazdka.getBoundingClientRect().top - dzwonek.getBoundingClientRect().top) < 8
-            : false,
         skrotyWidoczne: widoczne(skroty ?? null),
       };
     });
     console.log(`WERYFIKACJA mobile: ${JSON.stringify(mobil)}`);
-    expect(mobil.gwiazdkaWidoczna).toBe(true);
-    expect(mobil.wTymSamymRzedzie).toBe(true);
+    // 103: w GÓRNYM pasku gwiazdki już nie ma — jej jedynym miejscem na telefonie jest pasek dolny.
+    expect(mobil.gwiazdkaWTopBarze, "gwiazdka zeszła z górnego paska do paska kciuka (103)").toBe(false);
+    expect(mobil.gwiazdkaWPaskuKciuka, "gwiazdka musi stać w pasku kciuka").toBe(true);
+    expect(mobil.dzwonekWidoczny, "dzwonek zostaje w górnym pasku").toBe(true);
     expect(mobil.skrotyWidoczne, "ściągawka skrótów NIE ma się pokazywać na telefonie").toBe(false);
 
     // DESKTOP: od 087 chrom stoi w DWÓCH wierszach — patrz [087-AC19/AC20] niżej. Tutaj sprawdzamy
