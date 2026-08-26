@@ -20,6 +20,23 @@ import type { LucideIcon } from "lucide-react";
  * **kontrola typów w miejscu deklaracji**: brakujące pole to błąd kompilacji w `module.ts` modułu,
  * a nie cicha nieobecność w menu zauważona miesiąc później.
  */
+/**
+ * 103: jeden szybki cel modułu — pozycja drugiego poziomu wachlarza nawigacji.
+ *
+ * Etykieta jest tekstem DEKLARACJI, nie JSX-em, więc `check:i18n` jej nie dotyczy; polski pozostaje
+ * językiem źródłowym (C-32) tak samo jak w `label` modułu, które stoi obok.
+ */
+export interface SzybkiCelModulu {
+  /** Unikalny w obrębie modułu — służy za klucz podpowiedzi w wachlarzu. */
+  id: string;
+  /** Nazwa po polsku, krótka: podpowiedź ma szerokość ~84 px. */
+  etykieta: string;
+  /** Adres wewnątrz modułu; może nieść stan widoku albo akcję (`?akcja=…`). */
+  href: string;
+  /** Ikona podpowiedzi; bez niej wachlarz rysuje pierwszą literę etykiety. */
+  Icon?: LucideIcon;
+}
+
 export type ModuleDeclaration = {
   /** Identyfikator modułu — klucz w preferencjach menu i pulpitu. Musi być unikalny. */
   id: string;
@@ -59,6 +76,24 @@ export type ModuleDeclaration = {
    * (rozdz. 9.3 opisuje ten sam wzorzec dla kafelka pulpitu).
    */
   sideNav?: () => Promise<{ default: ComponentType }>;
+  /**
+   * 103: SZYBKIE CELE modułu — 2–5 najważniejszych miejsc, do których prowadzi drugi poziom
+   * wachlarza nawigacji (gest przytrzymania na telefonie).
+   *
+   * **Dlaczego to pole NIE jest leniwe**, w przeciwieństwie do `sideNav`/`ai`/`jobs`: leniwość jest
+   * tam wymogiem poprawności, bo tamte pola wciągają do grafu **komponent kliencki albo Prismę**.
+   * Tutaj nie ma czego wciągać — to czyste dane plus ikona, czyli dokładnie to, co deklaracja już
+   * wozi w `Icon`, `label` i `color`. Owinięcie tego w `import()` dołożyłoby granicę asynchroniczną
+   * w środku gestu, który ma odpowiedzieć zanim palec dojedzie do podpowiedzi.
+   *
+   * Cel może być zwykłą podstroną (`/kitchen/plan`) albo **akcją wyrażoną adresem**
+   * (`/tasks?akcja=nowy-projekt`) — powłoka wyłącznie nawiguje, a stan otwartego formularza czyta
+   * z adresu sam moduł. Dzięki temu taka akcja jest favouritowalna i działa z linku.
+   *
+   * `href` **musi mieścić się w `routes` modułu** — pilnuje tego `npm run check:module-registry`,
+   * bo cel prowadzący poza moduł to albo literówka, albo obejście granicy (C-36).
+   */
+  szybkieCele?: SzybkiCelModulu[];
   //
   // UWAGA: wkład SERWEROWY modułu (asystent, zadania w tle, kalendarz) **nie należy tutaj** —
   // ta deklaracja trafia przez `MODULES` do komponentu klienckiego powłoki. Patrz
