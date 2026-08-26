@@ -1,7 +1,7 @@
 # Zadania: Panel szybkiej nawigacji zamiast łukowego wachlarza
 
 - **Plan:** ./plan.md (104-panel-szybkiej-nawigacji)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-26
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -115,14 +115,14 @@
       martwe asercje.
       *Gotowe, gdy:* zestaw przechodzi poza **zastanymi** niepowodzeniami udowodnionymi w run 103.
 
-- [ ] **T-16** — **Mapowanie AC → wynik** (wejście dla `/verify`): dla każdego z 25 kryteriów zapisz,
+- [x] **T-16** — **Mapowanie AC → wynik** (wejście dla `/verify`): dla każdego z 25 kryteriów zapisz,
       czym zostało sprawdzone i z jakim wynikiem. AC bez pokrycia wraca do implementacji (C-54).
 
 - [x] **T-17** — **Przypis w specu run 103** (C-54): jego AC-3 mówił o pięciu pozycjach jako suficie;
       dopisz jedno zdanie, że zastąpiło je AC-6 z run 104 (sześć pozycji, 48,7 px). Artefakty mają
       się nie rozjeżdżać.
 
-- [ ] **T-18** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem.
+- [x] **T-18** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem.
 
 ## Mapowanie kryteriów akceptacji → zadania
 
