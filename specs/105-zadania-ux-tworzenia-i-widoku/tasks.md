@@ -109,20 +109,20 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 5 — Teksty, manifesty, klikacze
 
-- [ ] **T-11** — **Teksty do `messages/pl.json`** (C-32): namespace'y
+- [x] **T-11** — **Teksty do `messages/pl.json`** (C-32): namespace'y
   `modules.tasks.FormularzZadania`, `modules.tasks.SzybkieDodanieZadania` + dopisy do
   `modules.tasks.TaskDetail` i `modules.tasks.TasksPage`. Zero literałów z polskimi znakami
   w komponentach.
   *Gotowe, gdy:* `npm run check:i18n` przechodzi (bramka sprawdza też, czy każde `t("klucz")`
   ma wpis).
 
-- [ ] **T-12** `[P]` — **Manifesty pokrycia AI po przeniesieniu wywołania LLM.**
+- [x] **T-12** `[P]` — **Manifesty pokrycia AI po przeniesieniu wywołania LLM.**
   Wywołanie `llm.tasks.suggestTitle` przenosi się z `QuickAddTask.tsx` do `FormularzZadania.tsx`.
   Sprawdź `src/lib/ai/content-memory-coverage.json` i `src/lib/ai/cost-badge-coverage.json` — jeśli
   trzymają wpis pod starą ścieżką, **przenieś go**, nie twórz drugiego.
   *Gotowe, gdy:* `npm run check:content-memory` i `npm run check:cost-badge` przechodzą.
 
-- [ ] **T-13** — **Klikacze** (`e2e/specs/tasks-ux.spec.ts`): (a) po akcji masowej kolumna
+- [x] **T-13** — **Klikacze** (`e2e/specs/tasks-ux.spec.ts`): (a) po akcji masowej kolumna
   zaznaczeń **zostaje** i da się wykonać kolejną akcję bez klikania ikony trybu; (b) pole dodawania
   rośnie bez wewnętrznego przewijania (wzorzec istniejącego `[ux-AC23]`: `scrollHeight ≈
   clientHeight`); (c) tryb pełny chowa listę i przeżywa przeładowanie. **Żadnego `networkidle`**
@@ -132,14 +132,14 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 6 — Bramki i domknięcie
 
-- [ ] **T-14** — **Bramki lokalnie** (C-13: lokalny Postgres, **nigdy prod `DATABASE_URL`**).
+- [x] **T-14** — **Bramki lokalnie** (C-13: lokalny Postgres, **nigdy prod `DATABASE_URL`**).
   `pg_ctlcluster 16 main start`, `.env.local` na `127.0.0.1:5432`, `npx prisma migrate deploy`,
   następnie `npm run check:i18n`, `check:ui-contract`, `check:client-safe`, `check:tailwind`,
   `check:e2e-waits`, `check:owner-columns`, `check:pagination`, `tsc --noEmit -p tsconfig.test.json`,
   `next lint --dir src`, `next build`. **Krok `scripts/migrate.js` pomijamy.**
   *Gotowe, gdy:* wszystko zielone do `next build` włącznie.
 
-- [ ] **T-15** — **Uruchomienie klikaczy**:
+- [~] **T-15** — **Uruchomienie klikaczy**:
   `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`, potem `tail -40 /tmp/e2e.log`.
   *Gotowe, gdy:* suite przechodzi albo każdy czerwony test ma ustaloną przyczynę niezwiązaną
   z tą zmianą.

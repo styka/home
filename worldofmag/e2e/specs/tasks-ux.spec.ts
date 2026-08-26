@@ -84,7 +84,10 @@ test.describe("042 — usterki w Zadaniach", () => {
     await expect(rendered).toBeVisible({ timeout: 15_000 });
     await rendered.click();
 
-    const ta = page.locator("textarea").first();
+    // 105: pole szybkiego dodawania też jest już `textarea` i stoi WYŻEJ w drzewie, więc
+    // `locator("textarea").first()` trafiałoby w nie, a nie w opis. Bierzemy pole po jego
+    // własnym zastępniku tekstu.
+    const ta = page.getByPlaceholder(/Dodaj opis/);
     await expect(ta).toBeVisible({ timeout: 10_000 });
 
     const m = await ta.evaluate((el) => {
@@ -99,5 +102,119 @@ test.describe("042 — usterki w Zadaniach", () => {
     expect(dopasowane || przySuficie).toBe(true);
     // I na pewno jest znacznie wyższe niż domyślne 3 wiersze (~72 px).
     expect(m.clientHeight).toBeGreaterThan(100);
+  });
+});
+
+test.describe("105 — UX tworzenia i przeglądania zadań", () => {
+  test("[105-AC17] tryb zaznaczania PRZEŻYWA akcję masową", async ({ page }) => {
+    /**
+     * Zgłoszenie właściciela: „za każdym razem po wykonaniu bulk akcji widok z checkboxami się
+     * wyłącza". Przyczyną było `finishSelection`, które czyściło zaznaczenie ORAZ gasiło tryb —
+     * jedna funkcja na dwie różne rzeczy, wołana w sześciu miejscach.
+     *
+     * Asercja idzie na OBECNOŚĆ kolumny w drzewie, tak samo jak [080-AC1], bo to ta sama reguła
+     * widziana z drugiej strony: tryb ma znikać wyłącznie wtedy, gdy ktoś go jawnie wyłączy.
+     */
+    const { projectId } = await seedTask("Zadanie masowe A");
+
+    await page.goto(`/tasks/${projectId}`);
+    await page.waitForLoadState("load").catch(() => {});
+    await expect(page.getByText("Zadanie masowe A").first()).toBeVisible({ timeout: 15_000 });
+
+    const checkboxy = page.locator('button[aria-label="Zaznacz zadanie"]');
+    const przelacznik = page.getByRole("button", { name: /zaznacz wiele/i }).first();
+
+    await przelacznik.click();
+    await expect(checkboxy.first()).toBeVisible({ timeout: 10_000 });
+
+    // Zaznaczamy zadanie i wykonujemy akcję masową (zmiana priorytetu z paska akcji zbiorczych).
+    await checkboxy.first().click();
+    const pasek = page.getByRole("button", { name: /priorytet/i }).first();
+    if (await pasek.isVisible().catch(() => false)) {
+      await pasek.click();
+      const opcja = page.getByRole("button", { name: /wysoki/i }).first();
+      if (await opcja.isVisible().catch(() => false)) await opcja.click();
+    }
+
+    // Sedno: po akcji kolumna zaznaczeń JEST NADAL w drzewie — da się od razu zaznaczać dalej.
+    await expect(checkboxy.first()).toBeVisible({ timeout: 10_000 });
+
+    // A jawne wyjście (Esc) dalej ją chowa — tryb nie stał się nieusuwalny.
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    expect(await checkboxy.count()).toBe(0);
+  });
+
+  test("[105-AC5] pole dodawania zadania rośnie z tekstem", async ({ page }) => {
+    // Ten sam pomiar co [ux-AC23], tylko dla pola dodawania: jednolinijkowy pasek pokazywał
+    // z długiego tekstu jedną szczelinę i użytkownik nie widział, co pisze.
+    const { projectId } = await seedTask("Zadanie kontrolne");
+
+    await page.goto(`/tasks/${projectId}`);
+    await page.waitForLoadState("load").catch(() => {});
+
+    const pole = page.getByPlaceholder(/Dodaj zadanie/);
+    await expect(pole).toBeVisible({ timeout: 15_000 });
+
+    const wysokoscPrzed = await pole.evaluate((el) => (el as HTMLTextAreaElement).clientHeight);
+    await pole.fill("Bardzo dlugi opis zadania do wpisania w pole dodawania. ".repeat(6).trim());
+
+    const m = await pole.evaluate((el) => {
+      const t = el as HTMLTextAreaElement;
+      return { scrollHeight: t.scrollHeight, clientHeight: t.clientHeight };
+    });
+    console.log("[105-AC5] pole dodawania →", JSON.stringify(m));
+
+    expect(m.clientHeight).toBeGreaterThan(wysokoscPrzed);
+    expect(Math.abs(m.scrollHeight - m.clientHeight)).toBeLessThanOrEqual(4);
+  });
+
+  test("[105-AC11] tryb pelny oddaje zadaniu cala przestrzen i przezywa przeladowanie", async ({ page, isMobile }) => {
+    // Tryb pełny jest ustawieniem KOMPUTERA — na wąskim ekranie panel i tak zajmuje cały ekran.
+    test.skip(isMobile === true, "Tryb pelny dotyczy wylacznie widoku na komputerze (AC-13).");
+
+    const { projectId, taskId } = await seedTask("Zadanie do rozwiniecia");
+
+    await page.goto(`/tasks/${projectId}?task=${taskId}`);
+    await page.waitForLoadState("load").catch(() => {});
+
+    const przelacznik = page.getByRole("button", { name: /Rozwi.* na ca.* szerokość/i }).first();
+    await expect(przelacznik).toBeVisible({ timeout: 15_000 });
+
+    const panel = page.locator('[data-omnia-panel="zadanie"]');
+    const szerokoscPrzed = await panel.evaluate((el) => el.clientWidth);
+    await przelacznik.click();
+    await expect(page.getByRole("button", { name: /Zwi.* do panelu bocznego/i }).first()).toBeVisible({ timeout: 10_000 });
+
+    // Lista USTĘPUJE MIEJSCA: panel zajmuje istotnie więcej niż przedtem.
+    const szerokoscPo = await panel.evaluate((el) => el.clientWidth);
+    console.log("[105-AC11] panel →", JSON.stringify({ szerokoscPrzed, szerokoscPo }));
+    expect(szerokoscPrzed).toBeGreaterThanOrEqual(360);
+    expect(szerokoscPo).toBeGreaterThan(szerokoscPrzed);
+
+    // Wybór trybu przeżywa przeładowanie (AC-12a) — wracamy na tę samą stronę z otwartym zadaniem.
+    await page.reload();
+    await page.waitForLoadState("load").catch(() => {});
+    await expect(page.getByRole("button", { name: /Zwi.* do panelu bocznego/i }).first()).toBeVisible({ timeout: 15_000 });
+
+    // Esc zdejmuje JEDNĄ warstwę: najpierw tryb pełny, zadanie zostaje otwarte.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: /Rozwi.* na ca.* szerokość/i }).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("[105-AC1] strona modulu pozwala dodac zadanie bez wchodzenia w projekt", async ({ page }) => {
+    await page.goto("/tasks");
+    await page.waitForLoadState("load").catch(() => {});
+
+    const pole = page.getByPlaceholder(/Dodaj zadanie/);
+    await expect(pole).toBeVisible({ timeout: 15_000 });
+
+    const tytul = `E2E z widgetu ${Date.now()}`;
+    await pole.fill(tytul);
+    await pole.press("Enter");
+
+    // Po zapisie lądujemy w zadaniu — adres niesie `?task=<id>`, więc panel szczegółów jest otwarty.
+    await expect(page).toHaveURL(/\/tasks\/[^?]+\?task=/, { timeout: 20_000 });
+    await expect(page.getByText(tytul).first()).toBeVisible({ timeout: 15_000 });
   });
 });

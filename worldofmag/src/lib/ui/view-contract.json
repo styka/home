@@ -235,10 +235,6 @@
       "kind": "paleta-danych",
       "reason": "Kolor awatara wyliczany z identyfikatora użytkownika."
     },
-    "src/modules/tasks/ui/QuickAddTask.tsx": {
-      "kind": "paleta-danych",
-      "reason": "Kolory priorytetów zadania — semantyczne, stałe w każdej skórce."
-    },
     "src/modules/tasks/ui/TaskDetail.tsx": {
       "kind": "paleta-danych",
       "reason": "Kolory priorytetów zadania."

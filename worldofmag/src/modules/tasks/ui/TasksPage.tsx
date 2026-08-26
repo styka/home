@@ -992,6 +992,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               />
             )}
             <div
+              data-omnia-panel="zadanie"
               className={`hidden md:flex flex-col ${uklad.pelny ? "flex-1 min-w-0" : "flex-shrink-0"}`}
               style={uklad.pelny ? undefined : { width: ograniczSzerokosc(uklad.szerokosc, typeof window === "undefined" ? 1440 : window.innerWidth) }}
             >
