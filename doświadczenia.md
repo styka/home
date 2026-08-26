@@ -4,6 +4,20 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Stała ze specu Playwrighta nie istnieje wewnątrz `page.evaluate`
+**Problem:** Test układu paska padał z `ReferenceError: WSTECZ is not defined` — w miejscu, które
+wygląda na pomiar pikseli, a nie na literówkę. `WSTECZ` to zwykła stała na górze pliku spec-a,
+używana w kilku innych testach bez problemu. Różnica: tutaj weszła **do środka `page.evaluate()`**.
+
+**Rozwiązanie:** Wzorzec wpisany wprost w ciele funkcji wykonywanej w przeglądarce.
+
+**Lekcja:** `page.evaluate` serializuje funkcję i wykonuje ją **w kontekście strony** — domknięcia
+nad zmiennymi z procesu Node nie przechodzą przez tę granicę, choć edytor i `tsc` widzą je jako
+poprawne (typy się zgadzają, bo to ten sam plik). Wyrażeń regularnych nie da się też przekazać
+argumentem, bo nie przechodzą serializacji. Reguła: **wewnątrz `evaluate` używaj wyłącznie tego, co
+tam wpisałeś albo przekazałeś argumentem prostego typu.** Objaw jest mylący, bo błąd wskazuje test,
+a nie granicę, którą przekroczył.
+
 ## 2026-08-26 — Polski cudzysłów zamykający „ASCII" zamyka literał w kodzie
 **Problem:** Dwa razy w jednym przebiegu wywrócił się transpilator na nazwie testu w rodzaju
 `test("[104-AC18] tapnięcie „wstecz" cofa o jeden krok", …)`. Otwierający „ jest zwykłym znakiem,

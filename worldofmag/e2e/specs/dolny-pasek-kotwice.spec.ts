@@ -174,7 +174,14 @@ test.describe("Kolejność kotwic pod kciukiem", () => {
       const srodek = (b: Element) => b.getBoundingClientRect().left + b.getBoundingClientRect().width / 2;
       const znajdz = (re: RegExp) =>
         Array.from(nav.querySelectorAll<HTMLElement>("button")).find((b) => re.test(b.getAttribute("aria-label") ?? ""));
-      const historia = znajdz(WSTECZ);
+      /**
+       * Wzorzec wpisany TUTAJ, a nie wzięty ze stałej `WSTECZ` z góry pliku — i to nie jest
+       * powtórzenie przez nieuwagę. `page.evaluate` wykonuje się **w przeglądarce**, a stała żyje
+       * po stronie Node: domknięcie nie przechodzi przez tę granicę i kończy się
+       * `ReferenceError: WSTECZ is not defined` w środku testu, który wygląda na test układu.
+       * Wyrażeń regularnych nie da się też przekazać argumentem (nie przechodzą serializacji).
+       */
+      const historia = znajdz(/(poprzedniej strony|Nie ma jeszcze dokąd wracać)/i);
       const gwiazdka = znajdz(/ten widok (w|z) ulubionych/i);
       const dom = znajdz(/Przejdź na stronę główną/i);
       if (!historia || !gwiazdka || !dom) return null;
