@@ -341,16 +341,26 @@ test.describe("Panel szybkiej nawigacji (104)", () => {
       const panel = document.querySelector<HTMLElement>('[role="dialog"][aria-label*="Szybka nawigacja"]');
       if (!panel) return null;
       const r = panel.getBoundingClientRect();
+      // Przewijać ma się WNĘTRZE panelu, a sam panel — nie. Dwa zagnieżdżone kontenery znaczyłyby,
+      // że przewija się ten zewnętrzny, czyli wyszukiwarka i stopka odjeżdżają razem z listą.
       const przewijalny = Array.from(panel.querySelectorAll<HTMLElement>("*")).some(
         (el) => getComputedStyle(el).overflowY === "auto",
       );
-      return { wysokosc: Math.round(r.height), okno: window.innerHeight, gora: Math.round(r.top), przewijalny };
+      const panelPrzewija = getComputedStyle(panel).overflowY === "auto";
+      return {
+        wysokosc: Math.round(r.height),
+        okno: window.innerHeight,
+        gora: Math.round(r.top),
+        przewijalny,
+        panelPrzewija,
+      };
     });
 
     expect(pomiar).not.toBeNull();
     expect(pomiar!.wysokosc).toBeLessThanOrEqual(pomiar!.okno);
     expect(pomiar!.gora).toBeGreaterThanOrEqual(0);
     expect(pomiar!.przewijalny, "lista ma własne przewijanie, panel nie rośnie w nieskończoność").toBe(true);
+    expect(pomiar!.panelPrzewija, "sam panel NIE przewija — inaczej nagłówek i stopka odjeżdżają").toBe(false);
   });
 
   test("[104-AC23] ustawienia paska są w stopce panelu", async ({ page }) => {

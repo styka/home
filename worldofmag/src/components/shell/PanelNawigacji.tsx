@@ -90,8 +90,15 @@ export function PanelNawigacji({
       width={320}
       role="dialog"
       ariaLabel={t("tytul")}
+      /**
+       * `AnchoredLayer` domyślnie sam przewija swoją zawartość (`overflowY: auto`). Tutaj to
+       * WYŁĄCZAMY, bo inaczej powstałyby DWA zagnieżdżone kontenery przewijania i przewijałby się
+       * ten zewnętrzny — czyli wyszukiwarka i stopka odjechałyby razem z listą, zamiast zostać na
+       * miejscu. Panel bierze przewijanie na siebie: nagłówek i stopka stoją, przewija się środek.
+       */
+      style={{ overflowY: "hidden", display: "flex", flexDirection: "column" }}
     >
-      <div style={{ display: "flex", flexDirection: "column", maxHeight: "inherit" }}>
+      <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         {/* Wyszukiwarka — pierwsza, bo znając nazwę to najkrótsza droga. */}
         <div style={{ padding: 8, borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
           <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
