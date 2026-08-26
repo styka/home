@@ -216,6 +216,11 @@ model UserMenuPref {
   // Steruje układem dolnego paska na telefonie i stroną gwiazdki / magicznej ikony / robaczka.
   // Mieszka TU, bo powłoka czyta tę tabelę na każdej stronie; osobna tabela = drugie zapytanie.
   handedness         String   @default("right")
+  // 106: kiedy użytkownik widział dany prompt wznowienia — JSON `{ "<klucz>": "YYYY-MM-DD" }`
+  // w JEGO strefie czasowej. Nośnikiem jest ta tabela z tego samego powodu co wyżej: powłoka i tak
+  // ją czyta na każdej stronie, więc dialog nie dokłada zapytania. Data, a nie znacznik czasu, bo
+  // reguła brzmi „nie częściej niż raz dziennie" — porównanie dat wyraża ją wprost i bez arytmetyki.
+  promptyPokazane    String   @default("{}")
   updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -3478,4 +3483,27 @@ model YoutubePref {
   /// czyniłby pole opcjonalnym w kliencie Prismy (wzorzec `WeatherPref`, 082).
   workspaceId String    @unique
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// 106 — PROMPT WZNOWIENIA PRACY.
+///
+/// Treść, którą administrator kopiuje i wkleja do Claude Code, żeby wznowić pracę w nowej sesji.
+/// Mieszka w bazie, a nie w kodzie, bo zmienia się razem z postępem prac — i zmienia ją migracja,
+/// czyli ta sama droga, którą dostarczamy raporty. Tabela SYSTEMOWA: bez właściciela i bez
+/// przestrzeni (wzorzec `NewsSourceCatalog`) — dotyczy aplikacji, nie czyjegoś konta.
+model PromptWznowienia {
+  id        String   @id @default(cuid())
+  /// Stabilny klucz wpisu — po nim idzie idempotentny seed i zapamiętanie „widziałem to dziś".
+  klucz     String   @unique
+  tytul     String
+  /// Krótkie wprowadzenie nad promptem: co jest niedokończone i dlaczego to wraca.
+  wstep     String
+  /// Treść do skopiowania.
+  tresc     String
+  /// Wyłączenie zamiast kasowania — historia zostaje, a wpis przestaje się pokazywać.
+  aktywny   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aktywny])
 }

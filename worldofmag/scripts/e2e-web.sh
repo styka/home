@@ -116,6 +116,18 @@ npx tsx prisma/seed.ts >/dev/null \
 npx tsx prisma/seeds/qa-all.ts >/dev/null \
   || echo "  ⚠ seed scenariuszy QA nie przeszedł (powód wyżej) — specy QA mogą być czerwone"
 
+# 106: WYŁĄCZAMY PROMPT WZNOWIENIA PRACY w bazie klikacza.
+#
+# Dialog wznowienia jest MODALNY (przechwytuje kliknięcia) i pokazuje się administratorowi po
+# wejściu do aplikacji — a konto, na którym chodzą klikacze, jest administratorem. Bez tego okno
+# zasłoniłoby pierwszy klik w każdym spec-u, i to NIEDETERMINISTYCZNIE, bo pojawia się dopiero po
+# odpowiedzi akcji serwerowej.
+#
+# Świadomie robimy to DANYMI w bazie testowej, a nie warunkiem w kodzie: gałąź „nie pokazuj
+# w trybie testowym" zostałaby w ścieżce produkcyjnej na zawsze i nikt by jej już nie sprawdził.
+psql "$DATABASE_URL" -q -c 'UPDATE "PromptWznowienia" SET "aktywny" = false;' 2>/dev/null \
+  || echo "  ⚠ nie udało się wyłączyć promptu wznowienia — dialog może zasłaniać klikacze"
+
 # 098: SERWER PRODUKCYJNY, NIE DEWELOPERSKI.
 #
 # Do 098 klikacz chodził na `npm run dev`. W trybie deweloperskim Next kompiluje trasę przy

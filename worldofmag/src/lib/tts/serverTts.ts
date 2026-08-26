@@ -63,8 +63,11 @@ export async function synthesizeSpeech(input: { text: string; voiceId?: string |
 
   if (!res.ok) {
     // Treść błędu dostawcy może zawierać fragmenty konfiguracji — nie przepuszczamy jej do klienta.
-    // Wychodzi wyłącznie POWÓD wyprowadzony ze statusu (C-41).
-    throw new SpeechError(powodZeStatusu(res.status));
+    // Wychodzi wyłącznie POWÓD (C-41). Treść czytamy jednak PO TO, żeby ten powód był prawdziwy:
+    // sam status potrafi kłamać (patrz `powodZOdpowiedzi`). Obcinamy ją, bo do rozpoznania wystarczy
+    // początek, a całość bywa stroną HTML.
+    const tresc = await res.text().catch(() => "");
+    throw new SpeechError(powodZOdpowiedzi(res.status, tresc), tresc.slice(0, 500) || undefined);
   }
 
   return parseSpeechResponse(cfg.kind, res, req.contentTypeFallback);
@@ -92,6 +95,36 @@ export function powodZeStatusu(status: number): SpeechFailureReason {
   if (status === 400 || status === 404 || status === 422) return "model";
   if (status >= 500) return "provider";
   return "provider";
+}
+
+/**
+ * 106: POWÓD Z ODPOWIEDZI, a nie z samego statusu.
+ *
+ * Poprzednia wersja czytała wyłącznie kod statusu — i to okazało się za mało. **Część dostawców
+ * zwraca 401 przy wyczerpanych kredytach**, a powód podaje dopiero w treści (ElevenLabs:
+ * `quota_exceeded`). Status mówił więc „odrzucony klucz", panel powtarzał to użytkownikowi,
+ * a właściciel po raz drugi wygenerował nowy klucz — na darmo, bo klucz był w porządku.
+ *
+ * Kolejność jest istotna: treść ma pierwszeństwo przed statusem, bo to ona niesie prawdę
+ * w przypadku, dla którego ta funkcja powstała. Dopasowanie jest celowo zgrubne i szuka słów,
+ * których dostawcy używają wymiennie — dokładna składnia różni się u każdego i zmienia się w czasie.
+ */
+const SLOWA_LIMITU = [
+  "quota",
+  "credit",
+  "insufficient_quota",
+  "insufficient funds",
+  "billing",
+  "payment",
+  "exceeded",
+  "limit reached",
+  "out of characters",
+];
+
+export function powodZOdpowiedzi(status: number, tresc: string): SpeechFailureReason {
+  const t = tresc.toLowerCase();
+  if (SLOWA_LIMITU.some((w) => t.includes(w))) return "quota";
+  return powodZeStatusu(status);
 }
 
 /**

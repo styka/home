@@ -78,3 +78,21 @@ export function userTomorrowStart(
 ): Date {
   return new Date(userDayBounds(tz, base).end.getTime() + 1);
 }
+
+/**
+ * 106 — DATA W STREFIE UŻYTKOWNIKA, jako `YYYY-MM-DD`.
+ *
+ * Potrzebna do reguły „nie częściej niż raz dziennie". Porównanie DAT wyraża tę regułę wprost —
+ * inaczej niż arytmetyka na znacznikach czasu, która przy „24 godzinach od ostatniego pokazu"
+ * przesuwałaby okienko z dnia na dzień i po tygodniu wypadałaby w środku nocy.
+ *
+ * `en-CA` daje dokładnie format `YYYY-MM-DD`, bez ręcznego składania z części.
+ */
+export function dataWStrefie(tz: string, at: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}

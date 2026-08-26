@@ -38,3 +38,33 @@ test("SpeechError: szczegóły dostawcy nie trafiają do komunikatu (C-41)", () 
   assert.equal(err.reason, "auth");
   assert.equal(err.detail, tajne, "szczegół zostaje dostępny dla logu serwerowego");
 });
+
+/**
+ * 106 — POWÓD MA BYĆ PRAWDZIWY, A NIE WYPROWADZONY ZE STATUSU.
+ *
+ * Zgłoszenie właściciela: „lektor odrzuca klucz API, mimo że dałem nowy". Klucz był poprawny —
+ * skończyły się kredyty, a dostawca powiedział to **odpowiedzią 401 z powodem w treści**. Sam status
+ * kazał nam mówić „zły klucz", więc właściciel po raz drugi wygenerował klucz na darmo.
+ */
+import { powodZOdpowiedzi } from "@/lib/tts/serverTts";
+
+test("401 z powodem limitu w treści to LIMIT, nie odrzucony klucz", () => {
+  assert.equal(powodZOdpowiedzi(401, '{"detail":{"status":"quota_exceeded"}}'), "quota");
+  assert.equal(powodZOdpowiedzi(401, "You have run out of credits"), "quota");
+  assert.equal(powodZOdpowiedzi(401, '{"error":{"code":"insufficient_quota"}}'), "quota");
+});
+
+test("401 bez śladu limitu nadal znaczy odrzucony klucz", () => {
+  assert.equal(powodZOdpowiedzi(401, '{"error":"invalid api key"}'), "auth");
+  assert.equal(powodZOdpowiedzi(403, ""), "auth");
+});
+
+test("pozostałe statusy zachowują dotychczasowe znaczenie", () => {
+  assert.equal(powodZOdpowiedzi(404, ""), "model");
+  assert.equal(powodZOdpowiedzi(429, ""), "quota");
+  assert.equal(powodZOdpowiedzi(500, ""), "provider");
+});
+
+test("wielkość liter nie ma znaczenia", () => {
+  assert.equal(powodZOdpowiedzi(401, "QUOTA EXCEEDED"), "quota");
+});

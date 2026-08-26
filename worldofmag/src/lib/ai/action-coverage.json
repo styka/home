@@ -1926,6 +1926,17 @@
     "action": "update_project_group",
     "access": "owner"
   },
+  "promptWznowienia:getPromptDoPokazania": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
+  "promptWznowienia:oznaczPromptPokazany": {
+    "status": "excluded",
+    "reason": "admin",
+    "access": "admin"
+  },
   "qa:createEpic": {
     "status": "excluded",
     "reason": "admin",

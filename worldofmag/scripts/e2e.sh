@@ -41,6 +41,12 @@ $DC -f docker-compose.e2e.yml up -d --wait
 echo "▶ Stosuję migracje…"
 npx prisma migrate deploy
 
+# 106: patrz komentarz w scripts/e2e-web.sh — modalny dialog wznowienia zasłoniłby pierwszy klik
+# w każdym spec-u (konto klikacza jest administratorem). Wyłączamy go DANYMI w bazie testowej.
+docker compose -f docker-compose.e2e.yml exec -T postgres \
+  psql -U e2e -d worldofmag_e2e -q -c 'UPDATE "PromptWznowienia" SET "aktywny" = false;' >/dev/null 2>&1 \
+  || echo "  ⚠ nie udało się wyłączyć promptu wznowienia — dialog może zasłaniać klikacze"
+
 echo "▶ Testy E2E…"
 # Sanity-check: czy Chromium w ogóle wystartuje w tym środowisku. W świeżym
 # kontenerze (Claude on the web) często brakuje bibliotek systemowych przeglądarki,

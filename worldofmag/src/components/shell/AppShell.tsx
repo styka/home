@@ -13,6 +13,7 @@ import { DataFreshness } from "./DataFreshness";
 import { AICommandSheet } from "@/components/assistant/AICommandSheet";
 import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
+import { PromptWznowieniaDialog } from "./PromptWznowieniaDialog";
 import { NotificationBell } from "./NotificationBell";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SpeechFallbackNotice } from "@/components/shell/SpeechFallbackNotice";
@@ -348,6 +349,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           przy wyłączonym trybie znika razem z resztą dodatków. Sam komponent pilnuje też skrótu
           klawiszowego: ukryte narzędzie, które nadal daje się odpalić, wygląda na usterkę. */}
       {isAdmin && <FeedbackInspector />}
+      {/* 106: przypomnienie o przerwanej robocie — dialog, nie powiadomienie, i nie częściej
+          niż raz dziennie. Pilnuje tego akcja serwerowa (data w strefie użytkownika), nie
+          komponent: powłoka montuje się przy każdym pełnym wejściu na stronę. */}
+      {isAdmin && <PromptWznowieniaDialog />}
     </div>
     </WachlarzNawigacji>
     </ShortcutsProvider>

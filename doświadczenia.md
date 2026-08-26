@@ -4,6 +4,36 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Kod odpowiedzi mówi, ŻE się nie udało; dlaczego — mówi treść
+**Problem:** Lektor uparcie twierdził, że dostawca mowy **odrzuca klucz API**. Właściciel wygenerował
+z tego powodu dwa nowe klucze — na darmo, bo klucz był poprawny. Skończyły się miesięczne kredyty.
+Część dostawców (m.in. ElevenLabs) odpowiada na wyczerpany limit tym samym `401`, co na zły klucz,
+a prawdziwy powód podaje dopiero w treści odpowiedzi. Kod czytał wyłącznie status i wybierał
+najczęstszą interpretację, czyli mylił użytkownika w sposób kosztowny: kierował go do panelu kluczy.
+
+**Rozwiązanie:** `powodZOdpowiedzi(status, tresc)` w `src/lib/tts/serverTts.ts` — treść odpowiedzi
+jest czytana **zanim** padnie wyjątek (`await res.text()`), a słowa limitu w niej rozstrzygają
+o powodzie. Status został fallbackiem, nie jedynym źródłem. 9 testów.
+
+**Lekcja:** Przy dostawcach zewnętrznych **kod HTTP jest sygnałem porażki, nie jej diagnozą**.
+Zanim zbudujesz komunikat dla użytkownika z samego statusu, przeczytaj ciało odpowiedzi — inaczej
+komunikat brzmi pewnie i kieruje w ślepą uliczkę, co jest gorsze niż „nie udało się".
+
+## 2026-08-26 — Nowy modal w powłoce psuje CAŁY zestaw klikaczy, i to niedeterministycznie
+**Problem:** Dialog wznowienia pracy wisi w `AppShell` i pokazuje się administratorowi po wejściu do
+aplikacji. Konto, na którym chodzą klikacze, jest administratorem — a `Modal` (Radix) rysuje warstwę
+przechwytującą kliknięcia. Efekt: okno zasłania **pierwszy klik w każdym spec-u**. Gorzej: pojawia
+się dopiero po odpowiedzi akcji serwerowej, więc raz zdąży, raz nie — czerwony wynik przestaje
+znaczyć „regresja".
+
+**Rozwiązanie:** Wyłączenie promptu **danymi w bazie klikacza** (`UPDATE "PromptWznowienia" SET
+"aktywny" = false;` w `scripts/e2e-web.sh` i `scripts/e2e.sh`), a nie warunkiem w kodzie.
+
+**Lekcja:** Dokładając cokolwiek modalnego do powłoki, sprawdź najpierw, czy nie zasłoni klikaczy —
+to nie jest „jeden czerwony test", tylko cały zestaw. I rozstrzygaj to **danymi w bazie testowej**:
+gałąź „nie pokazuj w trybie testowym" zostaje w ścieżce produkcyjnej na zawsze i nikt jej już nie
+sprawdzi.
+
 ## 2026-08-25 — Polski cudzysłów „…” w literale JS: otwierający typograficzny, zamykający ASCII
 **Problem:** Trzy razy w jednym zadaniu (moduł YouTube, spec 102) wywrócił mi się plik na tym samym:
 pisząc po polsku w komentarzu albo w prompcie wstawiałem `„tekst"` — otwierający cudzysłów
