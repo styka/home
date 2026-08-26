@@ -35,12 +35,21 @@ export function useHistoriaNawigacji(favorites: FavoriteViewDTO[]): WpisHistorii
     const etykieta = ulubiony?.label ?? suggestFavoriteLabel(sciezka, modul?.label);
     setBiezaca(sciezka);
 
-    setHistoria((poprzednia) => {
-      const nowa = dopisz(poprzednia, { sciezka, etykieta, czas: Date.now() });
-      zapisz(nowa);
-      return nowa;
-    });
+    setHistoria((poprzednia) => dopisz(poprzednia, { sciezka, etykieta, czas: Date.now() }));
   }, [pathname, favorites]);
+
+  /**
+   * Zapis do pamięci sesji idzie OSOBNYM efektem, a nie wewnątrz `setHistoria(...)`.
+   *
+   * Funkcja aktualizująca stan musi być czysta: React wolno wywołać ją dwa razy dla jednej zmiany
+   * (tak robi tryb ścisły w środowisku deweloperskim, żeby wykryć właśnie takie efekty uboczne).
+   * Tutaj podwójny zapis byłby nieszkodliwy, bo zapisuje tę samą wartość — ale wzorzec „efekt
+   * uboczny w updaterze" wraca później w miejscu, w którym już szkodzi, więc nie zostawiamy go
+   * jako przykładu do naśladowania.
+   */
+  useEffect(() => {
+    if (historia.length > 0) zapisz(historia);
+  }, [historia]);
 
   /**
    * Bieżąca strona NIE jest pozycją historii — „wróć tu, gdzie jesteś" nie jest nawigacją. Odsiew
