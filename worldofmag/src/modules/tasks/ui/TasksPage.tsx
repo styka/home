@@ -18,6 +18,8 @@ import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
 import { ProjectScopeFilter } from "./ProjectScopeFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useIsNarrowScreen } from "@/hooks/useVisualViewport";
+import { odczytajUklad, zapiszUklad, ograniczSzerokosc, UKLAD_DOMYSLNY } from "../lib/ukladSzczegolow";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "../actions/tasks";
@@ -113,6 +115,30 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // propie `tasks`, więc bez tej migawki panel szczegółów/edycji by się zamknął. Trzymamy
   // panel otwarty na ostatniej znanej wersji; z listy zadanie i tak znika.
   const [openTaskSnapshot, setOpenTaskSnapshot] = useState<Task | null>(null);
+  /**
+   * 105 (AC-9..AC-12a) — UKŁAD PANELU SZCZEGÓŁÓW.
+   *
+   * Zgłoszenie właściciela: „komponent z widokiem zadania jest przyklejony do prawej strony
+   * przeglądarki i jest taki wąski i niski". Panel miał sztywne 380 px i nie dało się z tym nic
+   * zrobić. Teraz szerokość jest ustawialna, a `pelny` oddaje zadaniu całą przestrzeń modułu.
+   *
+   * Pierwszy render idzie z wartościami DOMYŚLNYMI, a preferencja wczytuje się dopiero w efekcie:
+   * serwer nie zna `localStorage`, więc odczyt w trakcie renderu zerwałby hydratację (ta sama
+   * pułapka co w `doświadczenia.md`, 2026-08-02).
+   */
+  const [uklad, setUklad] = useState(UKLAD_DOMYSLNY);
+  useEffect(() => { setUklad(odczytajUklad()); }, []);
+  const zapiszIUstawUklad = useCallback((zmiana: Partial<typeof UKLAD_DOMYSLNY>) => {
+    setUklad((poprzedni) => { const nowy = { ...poprzedni, ...zmiana }; zapiszUklad(nowy); return nowy; });
+  }, []);
+  const przeciaganieRef = useRef<{ startX: number; startSzerokosc: number } | null>(null);
+  /**
+   * Tryb pełny jest ustawieniem KOMPUTERA — na telefonie panel i tak przykrywa cały ekran własnym
+   * elementem. Bez tego warunku włączony tryb chowałby listę także na wąskim ekranie, gdzie nie ma
+   * jej czym zastąpić. Używamy istniejącego hooka, zamiast dokładać drugi sposób pytania o szerokość.
+   */
+  const waskiEkran = useIsNarrowScreen();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   // Prezentacja listy: "default" = naturalne grupowanie widoku (dni/projekty), "priority" = po priorytetach.
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
@@ -500,11 +526,14 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         if (selectionMode || selectedIds.size > 0) { zakonczZaznaczanie(); return; }
         if (aiSearchResults) { setAiSearchResults(null); setSearchQuery(""); return; }
         if (isSearchOpen) { setSearchQuery(""); setIsSearchOpen(false); return; }
+        // 105 (AC-12): `Esc` zdejmuje jedną warstwę. W trybie pełnym najbliższą warstwą jest sam
+        // tryb, nie otwarte zadanie — dopiero drugie `Esc` zamyka zadanie.
+        if (openTaskId && uklad.pelny) { zapiszIUstawUklad({ pelny: false }); return; }
         if (openTaskId) { setOpenTaskId(null); return; }
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds, uklad.pelny, zapiszIUstawUklad]
   );
 
   useKeyboardShortcuts(handlers);
@@ -894,7 +923,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {layout === "kanban" ? (
+        {/* 105 (AC-11): w trybie pełnym lista USTĘPUJE MIEJSCA — nie jest chowana przezroczystością,
+            tylko nie renderowana, żeby panel dostał całą szerokość obszaru roboczego. Tryb dotyczy
+            wyłącznie komputera (`md:`), więc na telefonie warunek jest zawsze fałszywy: tam panel
+            i tak przykrywa cały ekran osobnym elementem. */}
+        {openTask && uklad.pelny && !waskiEkran ? null : layout === "kanban" ? (
           <KanbanBoard tasks={kanbanTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
         ) : layout === "timeline" ? (
           <TimelineView tasks={timelineTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
@@ -920,19 +953,60 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
         {/* Detail panel — desktop */}
         {openTask && (
-          <div
-            className="hidden md:flex flex-col border-l flex-shrink-0"
-            style={{ width: 380, borderColor: "var(--border)" }}
-          >
-            <TaskDetail
-              task={openTask}
-              allTags={allTags}
-              allProjects={allProjects}
-              statusConfig={statusConfig}
-              onClose={() => setOpenTaskId(null)}
-              onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}
-            />
-          </div>
+          <>
+            {/* 105 (AC-10): UCHWYT zmiany szerokości. `setPointerCapture` sprawia, że kursor
+                wyprowadzony poza wąski pasek nie gubi przeciągania. Zapis do pamięci następuje na
+                `pointerup`, nie przy każdym ruchu — inaczej jedno przeciągnięcie to kilkadziesiąt
+                zapisów. Strzałki obsługujemy, bo moduł jest keyboard-first (C-31). */}
+            {!uklad.pelny && (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={t("zmienSzerokoscPanelu")}
+                tabIndex={0}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  przeciaganieRef.current = { startX: e.clientX, startSzerokosc: uklad.szerokosc };
+                }}
+                onPointerMove={(e) => {
+                  const start = przeciaganieRef.current;
+                  if (!start) return;
+                  // Panel jest po PRAWEJ, więc ruch w lewo POSZERZA go — stąd odejmowanie.
+                  const nowa = ograniczSzerokosc(start.startSzerokosc - (e.clientX - start.startX), window.innerWidth);
+                  setUklad((p) => ({ ...p, szerokosc: nowa }));
+                }}
+                onPointerUp={(e) => {
+                  if (!przeciaganieRef.current) return;
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                  przeciaganieRef.current = null;
+                  zapiszIUstawUklad({});
+                }}
+                onKeyDown={(e) => {
+                  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                  e.preventDefault();
+                  const krok = e.key === "ArrowLeft" ? 16 : -16;
+                  zapiszIUstawUklad({ szerokosc: ograniczSzerokosc(uklad.szerokosc + krok, window.innerWidth) });
+                }}
+                className="hidden md:block flex-shrink-0 w-1.5 cursor-col-resize"
+                style={{ backgroundColor: "var(--border)" }}
+              />
+            )}
+            <div
+              className={`hidden md:flex flex-col ${uklad.pelny ? "flex-1 min-w-0" : "flex-shrink-0"}`}
+              style={uklad.pelny ? undefined : { width: ograniczSzerokosc(uklad.szerokosc, typeof window === "undefined" ? 1440 : window.innerWidth) }}
+            >
+              <TaskDetail
+                task={openTask}
+                allTags={allTags}
+                allProjects={allProjects}
+                statusConfig={statusConfig}
+                szeroki={uklad.pelny}
+                onPrzelaczSzeroki={() => zapiszIUstawUklad({ pelny: !uklad.pelny })}
+                onClose={() => setOpenTaskId(null)}
+                onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}
+              />
+            </div>
+          </>
         )}
 
         {/* Detail panel — mobile modal (padding-top = pasek stanu/notch iPhone).

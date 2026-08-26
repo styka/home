@@ -79,12 +79,12 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 4 — Widok szczegółów zadania
 
-- [ ] **T-8** — **Preferencja układu panelu** (nowy `src/modules/tasks/lib/ukladSzczegolow.ts`).
+- [x] **T-8** — **Preferencja układu panelu** (nowy `src/modules/tasks/lib/ukladSzczegolow.ts`).
   Odczyt/zapis `localStorage` pod kluczem `omnia.zadania.uklad`
   (`{ szerokosc: number; pelny: boolean }`), całość w `try/catch`, domyślne `{ 480, false }`.
   *Gotowe, gdy:* helper zwraca domyślne przy zablokowanym magazynie i nie rzuca. **[AC-10, AC-12a]**
 
-- [ ] **T-9** — **`TaskDetail`: sekcje jako stałe + układ na szerokość**
+- [x] **T-9** — **`TaskDetail`: sekcje jako stałe + układ na szerokość**
   (`src/modules/tasks/ui/TaskDetail.tsx`). Dwanaście sekcji ciała przypisanych do stałych
   (`const sekcjaTytul = (…)`), złożonych w dwa warianty: wąski = **dzisiejsza kolejność jeden do
   jednego**, szeroki (`szeroki === true`) = siatka `minmax(0,1fr) 340px` — lewa kolumna treść
@@ -95,7 +95,7 @@ i to jest świadome, nie przeoczone.
   *Gotowe, gdy:* wąski panel wygląda identycznie jak przed zmianą, a szeroki rozkłada treść
   na dwie kolumny. **[AC-11]**
 
-- [ ] **T-10** — **`TasksPage`: szerokość, uchwyt, tryb pełny** (`src/modules/tasks/ui/TasksPage.tsx`).
+- [x] **T-10** — **`TasksPage`: szerokość, uchwyt, tryb pełny** (`src/modules/tasks/ui/TasksPage.tsx`).
   Panel desktopowy bierze szerokość z T-8 (ograniczenie `[360, min(900, 70vw)]`); uchwyt na lewej
   krawędzi (`onPointerDown` + `setPointerCapture`, `cursor: col-resize`, `role="separator"`,
   `aria-orientation="vertical"`, strzałki co 16 px — moduł jest keyboard-first), zapis **na

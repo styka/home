@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
   X, Trash2, CheckCircle2, Circle, Clock, AlertCircle, MinusCircle, Loader2,
   RefreshCw, Tag, Calendar, Timer, ChevronDown, ChevronLeft, Plus, Send, Sparkles,
-  MessageSquare, Eye, Undo2, FolderInput, Image as ImageIcon,
+  MessageSquare, Eye, Undo2, FolderInput, Image as ImageIcon, Maximize2, Minimize2,
 } from "lucide-react";
 import { updateTask, deleteTask, updateTaskTags, addTaskComment, createTask, completeRecurringTask, shareTaskByEmail, removeTaskShare, getTaskAttachments, type TaskAttachmentDTO } from "../actions/tasks";
 import { ShareControl } from "@/components/sharing/ShareControl";
@@ -25,6 +25,13 @@ interface TaskDetailProps {
   statusConfig?: ProjectStatusConfig;
   onClose: () => void;
   onDelete: () => void;
+  /**
+   * 105 (AC-11): czy panel dostał całą przestrzeń modułu. Steruje wyłącznie UKŁADEM treści —
+   * o tym, ile miejsca panel zajmuje, decyduje `TasksPage`, bo to ono rysuje listę obok.
+   */
+  szeroki?: boolean;
+  /** Podane = pokaż przełącznik trybu pełnego (tylko na komputerze). */
+  onPrzelaczSzeroki?: () => void;
 }
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
@@ -43,7 +50,7 @@ const RECURRING_TYPES = [
 ];
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
-export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete }: TaskDetailProps) {
+export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete, szeroki = false, onPrzelaczSzeroki }: TaskDetailProps) {
   const t = useTranslations("modules.tasks.TaskDetail");
   const confirmDialog = useConfirm();
   const [title, setTitle] = useState(task.title);
@@ -326,6 +333,590 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   const statusOpt = statusMetaFor(status, effectiveConfig);
   const comments = (task.comments ?? []) as NonNullable<Task["comments"]>;
 
+  /**
+   * 105 (AC-11) — SEKCJE JAKO STAŁE, po to żeby ten sam panel dało się złożyć na dwa sposoby.
+   *
+   * Wąski panel ma dziś sensowną kolejność (status i priorytet na górze, potem tytuł, opis, daty…),
+   * a szeroki musi rozłożyć treść na dwie kolumny — inaczej „zadanie na całej przestrzeni" to
+   * dalej ta sama wąska szpalta, tylko z pustym polem obok. Dwa warianty JSX-a znaczyłyby dwa
+   * układy do utrzymywania i pewność, że po pierwszej poprawce się rozjadą.
+   *
+   * Dlatego KAŻDA sekcja ma dokładnie jedną definicję, a niżej różni się już tylko to, w jakiej
+   * kolejności i w której kolumnie się je składa. Kolejność wariantu wąskiego jest przepisana
+   * jeden do jednego ze stanu sprzed 105 — to ma być podmiana opakowania, nie przebudowa panelu.
+   */
+  /* Status + Priority */
+  const sekcjaStatus = (
+    <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <select
+        value={status}
+        onChange={(e) => handleStatusChange(e.target.value)}
+        className="flex-1 bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
+        style={{ borderColor: "var(--border)", color: statusOpt.color }}
+      >
+        {statusOptions.map((s) => (
+          <option key={s.value} value={s.value}>{s.label}</option>
+        ))}
+      </select>
+      <select
+        value={priority}
+        onChange={(e) => handlePriorityChange(e.target.value as TaskPriority)}
+        className="bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
+        style={{ borderColor: "var(--border)", color: TASK_PRIORITY_COLORS[priority], width: 100 }}
+      >
+        {PRIORITY_OPTIONS.map((p) => (
+          <option key={p.value} value={p.value}>{p.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
+  /* Cykliczne: zamknij z odstępstwem od reguły (jednorazowo) */
+  const sekcjaCyklZamkniecie = (
+    task.recurring && status !== "DONE" && (
+      <div className="px-4 py-2 border-b" style={{ borderColor: "var(--border)" }}>
+        <button
+          onClick={() => setShowCompleteOpts((v) => !v)}
+          className="flex items-center gap-1.5 text-xs focus:outline-none"
+          style={{ color: "var(--text-muted)" }}
+          title={t("oznaczZrobioneAlePolicz")}
+        >
+          <CheckCircle2 size={12} /> {t("zrobioneZOdstepstwem")}
+          <ChevronDown size={12} style={{ transform: showCompleteOpts ? "rotate(180deg)" : undefined }} />
+        </button>
+        {showCompleteOpts && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            <button
+              onClick={() => handleCompleteRecurring({ anchor: "DUE" })}
+              className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            >
+              {t("zrobioneNastepneLicz")} <strong>od terminu</strong>
+            </button>
+            <button
+              onClick={() => handleCompleteRecurring({ anchor: "COMPLETION" })}
+              className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            >
+              {t("zrobioneNastepneLicz")} <strong>{t("odDzis")}</strong>
+            </button>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={completeNextDate}
+                onChange={(e) => setCompleteNextDate(e.target.value)}
+                className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              />
+              <button
+                onClick={() => handleCompleteRecurring({ nextDueOverride: new Date(completeNextDate).toISOString() })}
+                disabled={!completeNextDate}
+                className="text-xs px-2 py-1.5 rounded focus:outline-none disabled:opacity-40"
+                style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
+                title={t("zrobioneNastepneWystapienieW")}
+              >
+                {t("nastepneWTejDacie")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  );
+
+  /* Weryfikacja — gdy zadanie czeka na zatwierdzenie */
+  const sekcjaWeryfikacja = (
+    status === "IN_VERIFICATION" && (
+      <div
+        className="flex flex-col gap-2 px-4 py-3 border-b"
+        style={{ borderColor: "var(--border)", background: "rgba(245,158,11,0.08)" }}
+      >
+        <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--accent-amber)" }}>
+          <Eye size={13} /> {t("oczekujeNaWeryfikacje")}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleStatusChange("DONE")}
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none"
+            style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
+            title="Zweryfikowano — oznacz jako zrobione"
+          >
+            <CheckCircle2 size={13} /> {t("zatwierdz")}
+          </button>
+          <button
+            onClick={() => handleStatusChange("IN_PROGRESS")}
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none border"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            title={t("odrzucWrocDoRealizacji")}
+          >
+            <Undo2 size={13} /> {t("odrzuc")}
+          </button>
+        </div>
+      </div>
+    )
+  );
+
+  /* Title */
+  const sekcjaTytul = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <input
+        ref={titleRef}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={handleTitleBlur}
+        className="w-full bg-transparent font-semibold focus:outline-none"
+        style={{ fontSize: 16, color: "var(--text-primary)", lineHeight: 1.4 }}
+        placeholder={t("tytulZadania")}
+      />
+    </div>
+  );
+
+  /* Description — Markdown: klik = edycja, blur = render */
+  const sekcjaOpis = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
+      {editingDesc ? (
+        <textarea
+          autoFocus
+          // Ref-callback dopasowuje wysokość SYNCHRONICZNIE po zamontowaniu (przed odmalowaniem),
+          // więc wejście w edycję długiego opisu nie mruga najpierw trzema wierszami.
+          ref={autoSizeDescription}
+          value={description}
+          onChange={(e) => { setDescription(e.target.value); autoSizeDescription(e.currentTarget); }}
+          onBlur={handleDescriptionBlur}
+          rows={3}
+          placeholder={t("dodajOpisMarkdownObslugiwany")}
+          className="w-full bg-transparent text-sm focus:outline-none resize-none"
+          style={{ color: "var(--text-secondary)", lineHeight: 1.6, overflowY: "auto" }}
+        />
+      ) : description.trim() ? (
+        <div
+          onClick={() => setEditingDesc(true)}
+          className="text-sm cursor-text"
+          style={{ color: "var(--text-secondary)" }}
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(description) }}
+        />
+      ) : (
+        <button
+          onClick={() => setEditingDesc(true)}
+          className="text-sm text-left w-full focus:outline-none"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {t("dodajOpisMarkdownObslugiwany")}
+        </button>
+      )}
+    </div>
+  );
+
+  /* Dates + Time */
+  const sekcjaDaty = (
+    <div className="px-4 py-3 border-b space-y-2" style={{ borderColor: "var(--border)" }}>
+      {allProjects.length > 0 && (
+        <div className="flex items-center gap-2">
+          <FolderInput size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+          <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Projekt</label>
+          <select
+            value={task.projectId ?? ""}
+            onChange={(e) => { if (e.target.value && e.target.value !== task.projectId) run(() => updateTask(task.id, { projectId: e.target.value })); }}
+            className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            title={t("przeniesDoInnegoProjektu")}
+          >
+            {task.projectId == null && <option value="">— bez projektu —</option>}
+            {[...allProjects].sort((a, b) => Number(b.isInbox) - Number(a.isInbox)).map((p) => (
+              <option key={p.id} value={p.id}>{p.isInbox ? "📥" : p.emoji} {p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Termin</label>
+        <input
+          type="datetime-local"
+          value={dueDate}
+          onChange={(e) => handleDueDateChange(e.target.value)}
+          className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+          style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Start</label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => handleStartDateChange(e.target.value)}
+          className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+          style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+        />
+      </div>
+      {/* 022: data zrobienia tuż pod „Start", jako normalne pole daty (edytowalne,
+          gdy zadanie jest zrobione). */}
+      {task.completedAt && (
+        <div className="flex items-center gap-2">
+          <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+          <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Zrobione</label>
+          <input
+            type="date"
+            value={completedAt}
+            onChange={(e) => handleCompletedAtChange(e.target.value)}
+            title={t("dataWykonaniaMozeszJa")}
+            className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+          />
+        </div>
+      )}
+      {/* 022: aktywne cykliczne pokazuje „datę ostatniego zrobienia" (poprzednika),
+          a nie własną — read-only, dla rozróżnienia. */}
+      {task.lastCompletedAt && !task.completedAt && (
+        <div className="flex items-center gap-2">
+          <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+          <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Ostatnio</label>
+          <span className="flex-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+            {new Date(task.lastCompletedAt).toLocaleDateString("pl-PL")}
+          </span>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <Timer size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+        <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Szacowany czas</label>
+        <div className="flex items-center gap-1 flex-1">
+          <input
+            type="number"
+            value={estimatedMins}
+            onChange={(e) => handleEstimatedChange(e.target.value)}
+            placeholder="min"
+            min={0}
+            className="bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)", width: 64 }}
+          />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>min</span>
+          <button
+            onClick={handleAIEstimate}
+            disabled={aiLoading === "estimate"}
+            className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded focus:outline-none"
+            style={{ color: "var(--accent-purple)", background: "rgba(168,85,247,0.1)" }}
+            title="Oszacuj przez AI"
+          >
+            {aiLoading === "estimate" ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+            AI
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* Tags */
+  const sekcjaTagi = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center gap-1 mb-2">
+        <Tag size={13} style={{ color: "var(--text-muted)" }} />
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>Tagi</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {allTags.map((tag) => (
+          <button key={tag.id} onClick={() => toggleTag(tag.id)} className="focus:outline-none" style={{ opacity: selectedTagIds.includes(tag.id) ? 1 : 0.35 }}>
+            <TaskTagBadge tag={tag} />
+          </button>
+        ))}
+        {showTagInput ? (
+          <div className="flex items-center gap-1">
+            <input
+              autoFocus
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddTag();
+                if (e.key === "Escape") { setShowTagInput(false); setNewTagName(""); }
+              }}
+              placeholder="Nowy tag…"
+              className="bg-transparent text-xs focus:outline-none border-b"
+              style={{ borderColor: "var(--accent-blue)", color: "var(--text-primary)", width: 80 }}
+            />
+            <button onClick={handleAddTag} className="text-xs focus:outline-none" style={{ color: "var(--accent-blue)" }}>+</button>
+          </div>
+        ) : (
+          <button onClick={() => setShowTagInput(true)} className="text-xs px-1.5 py-0.5 rounded focus:outline-none" style={{ color: "var(--text-muted)", border: "1px dashed var(--border)" }}>
+            + Tag
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  /* Recurring */
+  const sekcjaPowtarzalnosc = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <button
+        onClick={() => setShowRecurring((v) => !v)}
+        className="flex items-center gap-1.5 text-xs focus:outline-none"
+        style={{ color: showRecurring ? "var(--accent-purple)" : "var(--text-muted)" }}
+      >
+        <RefreshCw size={12} />
+        {showRecurring ? "Powtarzanie skonfigurowane" : "Ustaw powtarzanie"}
+        <ChevronDown size={12} style={{ transform: showRecurring ? "rotate(180deg)" : undefined, transition: "transform 150ms" }} />
+      </button>
+
+      {showRecurring && (
+        <div className="mt-2 space-y-2">
+          <div className="flex items-center gap-2">
+            <select
+              value={recurringType}
+              onChange={(e) => setRecurringType(e.target.value as RecurringRule["type"])}
+              className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            >
+              {RECURRING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>co</span>
+            <input
+              type="number"
+              value={recurringInterval}
+              onChange={(e) => setRecurringInterval(Math.max(1, parseInt(e.target.value) || 1))}
+              min={1}
+              className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)", width: 48 }}
+            />
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {recurringType === "DAILY" ? "dni" : recurringType === "WEEKLY" ? "tyg." : recurringType === "MONTHLY" ? "mies." : "lat"}
+            </span>
+          </div>
+
+          {recurringType === "WEEKLY" && (
+            <div className="flex gap-1">
+              {DAY_LABELS.map((day, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setRecurringDays((prev) => prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx])}
+                  className="w-7 h-7 rounded text-xs focus:outline-none"
+                  style={{
+                    backgroundColor: recurringDays.includes(idx) ? "var(--accent-purple)" : "var(--bg-elevated)",
+                    color: recurringDays.includes(idx) ? "#fff" : "var(--text-muted)",
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {recurringType === "MONTHLY" && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("dzienMiesiaca")}</span>
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={recurringDayOfMonth}
+                onChange={(e) => setRecurringDayOfMonth(e.target.value)}
+                placeholder="np. 15"
+                className="w-16 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+                title={t("kolejneWystapienieZawszeTego")}
+              />
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>(puste = jak termin)</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>Koniec:</span>
+            <input
+              type="date"
+              value={recurringEndDate}
+              onChange={(e) => setRecurringEndDate(e.target.value)}
+              className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("nastepnyTermin")}</span>
+            <select
+              value={recurringAnchor}
+              onChange={(e) => setRecurringAnchor(e.target.value as "DUE" | "COMPLETION")}
+              className="flex-1 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
+              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              title={t("odCzegoLiczycKolejny")}
+            >
+              <option value="DUE">licz od terminu</option>
+              <option value="COMPLETION">licz od daty wykonania</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={handleRecurringSave}
+              disabled={recurringSaving}
+              className="text-xs px-2 py-1 rounded focus:outline-none inline-flex items-center gap-1 disabled:opacity-70"
+              style={{
+                backgroundColor: recurringSaved ? "var(--accent-green)" : "var(--accent-purple)",
+                color: "var(--on-accent)",
+              }}
+            >
+              {recurringSaving ? (
+                <><Loader2 size={12} className="animate-spin" /> Zapisywanie…</>
+              ) : recurringSaved ? (
+                <><CheckCircle2 size={12} /> Zapisano</>
+              ) : (
+                "Zapisz"
+              )}
+            </button>
+            <button onClick={handleRecurringClear} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>
+              {t("usunPowtarzanie")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  /* Subtasks */
+  const sekcjaPodzadania = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+          Podzadania {(task.subtasks ?? []).length > 0 && `(${(task.subtasks ?? []).filter((s) => s.status === "DONE").length}/${(task.subtasks ?? []).length})`}
+        </span>
+        <button
+          onClick={handleAISuggestSubtasks}
+          disabled={aiLoading === "subtasks"}
+          className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded focus:outline-none"
+          style={{ color: "var(--accent-purple)", background: "rgba(168,85,247,0.1)" }}
+          title="Sugeruj podzadania przez AI"
+        >
+          {aiLoading === "subtasks" ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+          AI
+        </button>
+      </div>
+
+      {/* AI suggestions */}
+      {aiSuggestions.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {aiSuggestions.map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-xs flex-1" style={{ color: "var(--text-secondary)" }}>{s}</span>
+              <button
+                onClick={() => {
+                  startTransition(async () => {
+                    await createTask({ title: s, parentTaskId: task.id, projectId: task.projectId });
+                    setAiSuggestions((prev) => prev.filter((_, idx) => idx !== i));
+                  });
+                }}
+                className="text-xs px-1.5 py-0.5 rounded focus:outline-none"
+                style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+              >
+                +
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Existing subtasks */}
+      {(task.subtasks ?? []).map((sub) => (
+        <div key={sub.id} className="flex items-center gap-2 py-1">
+          <input
+            type="checkbox"
+            checked={sub.status === "DONE"}
+            onChange={() => run(() => updateTask(sub.id, { status: sub.status === "DONE" ? "TODO" : "DONE" }))}
+            className="flex-shrink-0"
+            style={{ accentColor: "var(--accent-green)" }}
+          />
+          <span className="text-sm flex-1" style={{ color: "var(--text-secondary)", textDecoration: sub.status === "DONE" ? "line-through" : undefined }}>
+            {sub.title}
+          </span>
+        </div>
+      ))}
+
+      {/* Add subtask */}
+      <div className="flex items-center gap-2 mt-2">
+        <input
+          value={newSubtask}
+          onChange={(e) => setNewSubtask(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAddSubtask(); }}
+          placeholder="Dodaj podzadanie…"
+          className="flex-1 bg-transparent text-xs focus:outline-none border-b"
+          style={{ borderColor: "var(--border)", color: "var(--text-primary)", paddingBottom: 2 }}
+        />
+        <button onClick={handleAddSubtask} disabled={!newSubtask.trim()} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--accent-blue)" }}>
+          <Plus size={13} />
+        </button>
+      </div>
+    </div>
+  );
+
+  /* Sharing — ujednolicony komponent „Udostępnij" (Z-193/T-10) */
+  const sekcjaUdostepnianie = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <ShareControl
+        module="tasks"
+        shares={(task.shares ?? []).map((s) => ({
+          id: s.id,
+          label: s.user?.name ?? s.user?.email ?? s.team?.name ?? "Nieznany",
+          role: s.role,
+        }))}
+        onShareByEmail={(email, role) => shareTaskByEmail(task.id, email, role as "VIEWER" | "EDITOR")}
+        onRemoveShare={(id) => run(() => removeTaskShare(id))}
+      />
+    </div>
+  );
+
+  /* 099: załączniki zadania — dziś w praktyce zrzut wskazanego elementu ze zgłoszenia.
+  Bloku nie ma, gdy nie ma czego pokazać: to nie jest widok, tylko dodatek do zadania,
+  więc pusty stan byłby samym szumem. */
+  const sekcjaZalaczniki = (
+    <TaskAttachments taskId={task.id} />
+  );
+
+  /* Comments */
+  const sekcjaKomentarze = (
+    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-center gap-1.5 mb-2">
+        <MessageSquare size={13} style={{ color: "var(--text-muted)" }} />
+        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+          Komentarze {comments.length > 0 && `(${comments.length})`}
+        </span>
+      </div>
+
+      {comments.map((c) => (
+        <div key={c.id} className="mb-2">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              {c.user?.name ?? "Anonim"}
+            </span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {new Date(c.createdAt).toLocaleDateString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{c.content}</p>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-2 mt-2">
+        <input
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
+          placeholder="Dodaj komentarz…"
+          className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1.5"
+          style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+        />
+        <button onClick={handleAddComment} disabled={!commentText.trim()} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--accent-blue)" }}>
+          <Send size={13} />
+        </button>
+      </div>
+    </div>
+  );
+
+  /* Meta */
+  const sekcjaMeta = (
+    <div className="px-4 py-3 text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
+      <div>Utworzone: {new Date(task.createdAt).toLocaleString("pl-PL")}</div>
+      <div>Zaktualizowane: {new Date(task.updatedAt).toLocaleString("pl-PL")}</div>
+    </div>
+  );
+
   return (
     <div
       className="flex flex-col h-full border-l overflow-hidden"
@@ -348,6 +939,20 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           <span className="text-xs hidden md:inline" style={{ color: "var(--text-muted)" }}>{t("szczegolyZadania")}</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* 105 (AC-11): tryb pełny istnieje wyłącznie na komputerze — na telefonie panel i tak
+              zajmuje cały ekran, więc nie ma czego przełączać (C-31). */}
+          {onPrzelaczSzeroki && (
+            <button
+              onClick={onPrzelaczSzeroki}
+              aria-pressed={szeroki}
+              className="hidden md:flex p-1.5 rounded hover:opacity-70 focus:outline-none"
+              style={{ color: szeroki ? "var(--accent-blue)" : "var(--text-muted)" }}
+              title={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
+              aria-label={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
+            >
+              {szeroki ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+          )}
           <button
             onClick={handleDelete}
             className="p-1.5 rounded hover:opacity-70 focus:outline-none"
@@ -361,554 +966,46 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
           </button>
         </div>
       </div>
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
-        {/* Status + Priority */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <select
-            value={status}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            className="flex-1 bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
-            style={{ borderColor: "var(--border)", color: statusOpt.color }}
-          >
-            {statusOptions.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-          <select
-            value={priority}
-            onChange={(e) => handlePriorityChange(e.target.value as TaskPriority)}
-            className="bg-transparent text-sm focus:outline-none border rounded px-2 py-1"
-            style={{ borderColor: "var(--border)", color: TASK_PRIORITY_COLORS[priority], width: 100 }}
-          >
-            {PRIORITY_OPTIONS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Cykliczne: zamknij z odstępstwem od reguły (jednorazowo) */}
-        {task.recurring && status !== "DONE" && (
-          <div className="px-4 py-2 border-b" style={{ borderColor: "var(--border)" }}>
-            <button
-              onClick={() => setShowCompleteOpts((v) => !v)}
-              className="flex items-center gap-1.5 text-xs focus:outline-none"
-              style={{ color: "var(--text-muted)" }}
-              title={t("oznaczZrobioneAlePolicz")}
-            >
-              <CheckCircle2 size={12} /> {t("zrobioneZOdstepstwem")}
-              <ChevronDown size={12} style={{ transform: showCompleteOpts ? "rotate(180deg)" : undefined }} />
-            </button>
-            {showCompleteOpts && (
-              <div className="mt-2 flex flex-col gap-1.5">
-                <button
-                  onClick={() => handleCompleteRecurring({ anchor: "DUE" })}
-                  className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                >
-                  {t("zrobioneNastepneLicz")} <strong>od terminu</strong>
-                </button>
-                <button
-                  onClick={() => handleCompleteRecurring({ anchor: "COMPLETION" })}
-                  className="text-left text-xs px-2 py-1.5 rounded focus:outline-none border"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                >
-                  {t("zrobioneNastepneLicz")} <strong>{t("odDzis")}</strong>
-                </button>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="date"
-                    value={completeNextDate}
-                    onChange={(e) => setCompleteNextDate(e.target.value)}
-                    className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                    style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                  />
-                  <button
-                    onClick={() => handleCompleteRecurring({ nextDueOverride: new Date(completeNextDate).toISOString() })}
-                    disabled={!completeNextDate}
-                    className="text-xs px-2 py-1.5 rounded focus:outline-none disabled:opacity-40"
-                    style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
-                    title={t("zrobioneNastepneWystapienieW")}
-                  >
-                    {t("nastepneWTejDacie")}
-                  </button>
-                </div>
-              </div>
-            )}
+        {szeroki ? (
+          /* Szeroko: po lewej to, co się CZYTA i PISZE, po prawej metadane zadania. */
+          <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1fr) 340px" }}>
+            <div className="min-w-0">
+              {sekcjaTytul}
+              {sekcjaOpis}
+              {sekcjaPodzadania}
+              {sekcjaKomentarze}
+              {sekcjaMeta}
+            </div>
+            <div className="min-w-0 border-l" style={{ borderColor: "var(--border)" }}>
+              {sekcjaStatus}
+              {sekcjaCyklZamkniecie}
+              {sekcjaWeryfikacja}
+              {sekcjaDaty}
+              {sekcjaTagi}
+              {sekcjaPowtarzalnosc}
+              {sekcjaUdostepnianie}
+              {sekcjaZalaczniki}
+            </div>
           </div>
+        ) : (
+          <>
+            {sekcjaStatus}
+            {sekcjaCyklZamkniecie}
+            {sekcjaWeryfikacja}
+            {sekcjaTytul}
+            {sekcjaOpis}
+            {sekcjaDaty}
+            {sekcjaTagi}
+            {sekcjaPowtarzalnosc}
+            {sekcjaPodzadania}
+            {sekcjaUdostepnianie}
+            {sekcjaZalaczniki}
+            {sekcjaKomentarze}
+            {sekcjaMeta}
+          </>
         )}
-
-        {/* Weryfikacja — gdy zadanie czeka na zatwierdzenie */}
-        {status === "IN_VERIFICATION" && (
-          <div
-            className="flex flex-col gap-2 px-4 py-3 border-b"
-            style={{ borderColor: "var(--border)", background: "rgba(245,158,11,0.08)" }}
-          >
-            <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--accent-amber)" }}>
-              <Eye size={13} /> {t("oczekujeNaWeryfikacje")}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleStatusChange("DONE")}
-                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none"
-                style={{ backgroundColor: "var(--accent-green)", color: "var(--on-accent)" }}
-                title="Zweryfikowano — oznacz jako zrobione"
-              >
-                <CheckCircle2 size={13} /> {t("zatwierdz")}
-              </button>
-              <button
-                onClick={() => handleStatusChange("IN_PROGRESS")}
-                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded focus:outline-none border"
-                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                title={t("odrzucWrocDoRealizacji")}
-              >
-                <Undo2 size={13} /> {t("odrzuc")}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Title */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <input
-            ref={titleRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleTitleBlur}
-            className="w-full bg-transparent font-semibold focus:outline-none"
-            style={{ fontSize: 16, color: "var(--text-primary)", lineHeight: 1.4 }}
-            placeholder={t("tytulZadania")}
-          />
-        </div>
-
-        {/* Description — Markdown: klik = edycja, blur = render */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <style dangerouslySetInnerHTML={{ __html: MARKDOWN_STYLES }} />
-          {editingDesc ? (
-            <textarea
-              autoFocus
-              // Ref-callback dopasowuje wysokość SYNCHRONICZNIE po zamontowaniu (przed odmalowaniem),
-              // więc wejście w edycję długiego opisu nie mruga najpierw trzema wierszami.
-              ref={autoSizeDescription}
-              value={description}
-              onChange={(e) => { setDescription(e.target.value); autoSizeDescription(e.currentTarget); }}
-              onBlur={handleDescriptionBlur}
-              rows={3}
-              placeholder={t("dodajOpisMarkdownObslugiwany")}
-              className="w-full bg-transparent text-sm focus:outline-none resize-none"
-              style={{ color: "var(--text-secondary)", lineHeight: 1.6, overflowY: "auto" }}
-            />
-          ) : description.trim() ? (
-            <div
-              onClick={() => setEditingDesc(true)}
-              className="text-sm cursor-text"
-              style={{ color: "var(--text-secondary)" }}
-              dangerouslySetInnerHTML={{ __html: markdownToHtml(description) }}
-            />
-          ) : (
-            <button
-              onClick={() => setEditingDesc(true)}
-              className="text-sm text-left w-full focus:outline-none"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {t("dodajOpisMarkdownObslugiwany")}
-            </button>
-          )}
-        </div>
-
-        {/* Dates + Time */}
-        <div className="px-4 py-3 border-b space-y-2" style={{ borderColor: "var(--border)" }}>
-          {allProjects.length > 0 && (
-            <div className="flex items-center gap-2">
-              <FolderInput size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Projekt</label>
-              <select
-                value={task.projectId ?? ""}
-                onChange={(e) => { if (e.target.value && e.target.value !== task.projectId) run(() => updateTask(task.id, { projectId: e.target.value })); }}
-                className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                title={t("przeniesDoInnegoProjektu")}
-              >
-                {task.projectId == null && <option value="">— bez projektu —</option>}
-                {[...allProjects].sort((a, b) => Number(b.isInbox) - Number(a.isInbox)).map((p) => (
-                  <option key={p.id} value={p.id}>{p.isInbox ? "📥" : p.emoji} {p.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-            <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Termin</label>
-            <input
-              type="datetime-local"
-              value={dueDate}
-              onChange={(e) => handleDueDateChange(e.target.value)}
-              className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-            <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Start</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => handleStartDateChange(e.target.value)}
-              className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-              style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-            />
-          </div>
-          {/* 022: data zrobienia tuż pod „Start", jako normalne pole daty (edytowalne,
-              gdy zadanie jest zrobione). */}
-          {task.completedAt && (
-            <div className="flex items-center gap-2">
-              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Zrobione</label>
-              <input
-                type="date"
-                value={completedAt}
-                onChange={(e) => handleCompletedAtChange(e.target.value)}
-                title={t("dataWykonaniaMozeszJa")}
-                className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-              />
-            </div>
-          )}
-          {/* 022: aktywne cykliczne pokazuje „datę ostatniego zrobienia" (poprzednika),
-              a nie własną — read-only, dla rozróżnienia. */}
-          {task.lastCompletedAt && !task.completedAt && (
-            <div className="flex items-center gap-2">
-              <Calendar size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-              <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Ostatnio</label>
-              <span className="flex-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-                {new Date(task.lastCompletedAt).toLocaleDateString("pl-PL")}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Timer size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-            <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Szacowany czas</label>
-            <div className="flex items-center gap-1 flex-1">
-              <input
-                type="number"
-                value={estimatedMins}
-                onChange={(e) => handleEstimatedChange(e.target.value)}
-                placeholder="min"
-                min={0}
-                className="bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
-                style={{ borderColor: "var(--border)", color: "var(--text-secondary)", width: 64 }}
-              />
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>min</span>
-              <button
-                onClick={handleAIEstimate}
-                disabled={aiLoading === "estimate"}
-                className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded focus:outline-none"
-                style={{ color: "var(--accent-purple)", background: "rgba(168,85,247,0.1)" }}
-                title="Oszacuj przez AI"
-              >
-                {aiLoading === "estimate" ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                AI
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-1 mb-2">
-            <Tag size={13} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>Tagi</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {allTags.map((tag) => (
-              <button key={tag.id} onClick={() => toggleTag(tag.id)} className="focus:outline-none" style={{ opacity: selectedTagIds.includes(tag.id) ? 1 : 0.35 }}>
-                <TaskTagBadge tag={tag} />
-              </button>
-            ))}
-            {showTagInput ? (
-              <div className="flex items-center gap-1">
-                <input
-                  autoFocus
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddTag();
-                    if (e.key === "Escape") { setShowTagInput(false); setNewTagName(""); }
-                  }}
-                  placeholder="Nowy tag…"
-                  className="bg-transparent text-xs focus:outline-none border-b"
-                  style={{ borderColor: "var(--accent-blue)", color: "var(--text-primary)", width: 80 }}
-                />
-                <button onClick={handleAddTag} className="text-xs focus:outline-none" style={{ color: "var(--accent-blue)" }}>+</button>
-              </div>
-            ) : (
-              <button onClick={() => setShowTagInput(true)} className="text-xs px-1.5 py-0.5 rounded focus:outline-none" style={{ color: "var(--text-muted)", border: "1px dashed var(--border)" }}>
-                + Tag
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Recurring */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <button
-            onClick={() => setShowRecurring((v) => !v)}
-            className="flex items-center gap-1.5 text-xs focus:outline-none"
-            style={{ color: showRecurring ? "var(--accent-purple)" : "var(--text-muted)" }}
-          >
-            <RefreshCw size={12} />
-            {showRecurring ? "Powtarzanie skonfigurowane" : "Ustaw powtarzanie"}
-            <ChevronDown size={12} style={{ transform: showRecurring ? "rotate(180deg)" : undefined, transition: "transform 150ms" }} />
-          </button>
-
-          {showRecurring && (
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center gap-2">
-                <select
-                  value={recurringType}
-                  onChange={(e) => setRecurringType(e.target.value as RecurringRule["type"])}
-                  className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                >
-                  {RECURRING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>co</span>
-                <input
-                  type="number"
-                  value={recurringInterval}
-                  onChange={(e) => setRecurringInterval(Math.max(1, parseInt(e.target.value) || 1))}
-                  min={1}
-                  className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)", width: 48 }}
-                />
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {recurringType === "DAILY" ? "dni" : recurringType === "WEEKLY" ? "tyg." : recurringType === "MONTHLY" ? "mies." : "lat"}
-                </span>
-              </div>
-
-              {recurringType === "WEEKLY" && (
-                <div className="flex gap-1">
-                  {DAY_LABELS.map((day, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setRecurringDays((prev) => prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx])}
-                      className="w-7 h-7 rounded text-xs focus:outline-none"
-                      style={{
-                        backgroundColor: recurringDays.includes(idx) ? "var(--accent-purple)" : "var(--bg-elevated)",
-                        color: recurringDays.includes(idx) ? "#fff" : "var(--text-muted)",
-                      }}
-                    >
-                      {day}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {recurringType === "MONTHLY" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("dzienMiesiaca")}</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={31}
-                    value={recurringDayOfMonth}
-                    onChange={(e) => setRecurringDayOfMonth(e.target.value)}
-                    placeholder="np. 15"
-                    className="w-16 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                    style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                    title={t("kolejneWystapienieZawszeTego")}
-                  />
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>(puste = jak termin)</span>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>Koniec:</span>
-                <input
-                  type="date"
-                  value={recurringEndDate}
-                  onChange={(e) => setRecurringEndDate(e.target.value)}
-                  className="bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>{t("nastepnyTermin")}</span>
-                <select
-                  value={recurringAnchor}
-                  onChange={(e) => setRecurringAnchor(e.target.value as "DUE" | "COMPLETION")}
-                  className="flex-1 bg-transparent text-xs border rounded px-2 py-1 focus:outline-none"
-                  style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
-                  title={t("odCzegoLiczycKolejny")}
-                >
-                  <option value="DUE">licz od terminu</option>
-                  <option value="COMPLETION">licz od daty wykonania</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2 items-center">
-                <button
-                  onClick={handleRecurringSave}
-                  disabled={recurringSaving}
-                  className="text-xs px-2 py-1 rounded focus:outline-none inline-flex items-center gap-1 disabled:opacity-70"
-                  style={{
-                    backgroundColor: recurringSaved ? "var(--accent-green)" : "var(--accent-purple)",
-                    color: "var(--on-accent)",
-                  }}
-                >
-                  {recurringSaving ? (
-                    <><Loader2 size={12} className="animate-spin" /> Zapisywanie…</>
-                  ) : recurringSaved ? (
-                    <><CheckCircle2 size={12} /> Zapisano</>
-                  ) : (
-                    "Zapisz"
-                  )}
-                </button>
-                <button onClick={handleRecurringClear} className="text-xs focus:outline-none" style={{ color: "var(--text-muted)" }}>
-                  {t("usunPowtarzanie")}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Subtasks */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-              Podzadania {(task.subtasks ?? []).length > 0 && `(${(task.subtasks ?? []).filter((s) => s.status === "DONE").length}/${(task.subtasks ?? []).length})`}
-            </span>
-            <button
-              onClick={handleAISuggestSubtasks}
-              disabled={aiLoading === "subtasks"}
-              className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded focus:outline-none"
-              style={{ color: "var(--accent-purple)", background: "rgba(168,85,247,0.1)" }}
-              title="Sugeruj podzadania przez AI"
-            >
-              {aiLoading === "subtasks" ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-              AI
-            </button>
-          </div>
-
-          {/* AI suggestions */}
-          {aiSuggestions.length > 0 && (
-            <div className="mb-2 space-y-1">
-              {aiSuggestions.map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs flex-1" style={{ color: "var(--text-secondary)" }}>{s}</span>
-                  <button
-                    onClick={() => {
-                      startTransition(async () => {
-                        await createTask({ title: s, parentTaskId: task.id, projectId: task.projectId });
-                        setAiSuggestions((prev) => prev.filter((_, idx) => idx !== i));
-                      });
-                    }}
-                    className="text-xs px-1.5 py-0.5 rounded focus:outline-none"
-                    style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
-                  >
-                    +
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Existing subtasks */}
-          {(task.subtasks ?? []).map((sub) => (
-            <div key={sub.id} className="flex items-center gap-2 py-1">
-              <input
-                type="checkbox"
-                checked={sub.status === "DONE"}
-                onChange={() => run(() => updateTask(sub.id, { status: sub.status === "DONE" ? "TODO" : "DONE" }))}
-                className="flex-shrink-0"
-                style={{ accentColor: "var(--accent-green)" }}
-              />
-              <span className="text-sm flex-1" style={{ color: "var(--text-secondary)", textDecoration: sub.status === "DONE" ? "line-through" : undefined }}>
-                {sub.title}
-              </span>
-            </div>
-          ))}
-
-          {/* Add subtask */}
-          <div className="flex items-center gap-2 mt-2">
-            <input
-              value={newSubtask}
-              onChange={(e) => setNewSubtask(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddSubtask(); }}
-              placeholder="Dodaj podzadanie…"
-              className="flex-1 bg-transparent text-xs focus:outline-none border-b"
-              style={{ borderColor: "var(--border)", color: "var(--text-primary)", paddingBottom: 2 }}
-            />
-            <button onClick={handleAddSubtask} disabled={!newSubtask.trim()} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--accent-blue)" }}>
-              <Plus size={13} />
-            </button>
-          </div>
-        </div>
-
-        {/* Sharing — ujednolicony komponent „Udostępnij" (Z-193/T-10) */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <ShareControl
-            module="tasks"
-            shares={(task.shares ?? []).map((s) => ({
-              id: s.id,
-              label: s.user?.name ?? s.user?.email ?? s.team?.name ?? "Nieznany",
-              role: s.role,
-            }))}
-            onShareByEmail={(email, role) => shareTaskByEmail(task.id, email, role as "VIEWER" | "EDITOR")}
-            onRemoveShare={(id) => run(() => removeTaskShare(id))}
-          />
-        </div>
-
-        {/* 099: załączniki zadania — dziś w praktyce zrzut wskazanego elementu ze zgłoszenia.
-            Bloku nie ma, gdy nie ma czego pokazać: to nie jest widok, tylko dodatek do zadania,
-            więc pusty stan byłby samym szumem. */}
-        <TaskAttachments taskId={task.id} />
-
-        {/* Comments */}
-        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-1.5 mb-2">
-            <MessageSquare size={13} style={{ color: "var(--text-muted)" }} />
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-              Komentarze {comments.length > 0 && `(${comments.length})`}
-            </span>
-          </div>
-
-          {comments.map((c) => (
-            <div key={c.id} className="mb-2">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                  {c.user?.name ?? "Anonim"}
-                </span>
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {new Date(c.createdAt).toLocaleDateString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{c.content}</p>
-            </div>
-          ))}
-
-          <div className="flex items-center gap-2 mt-2">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
-              placeholder="Dodaj komentarz…"
-              className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1.5"
-              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-            <button onClick={handleAddComment} disabled={!commentText.trim()} className="focus:outline-none disabled:opacity-30" style={{ color: "var(--accent-blue)" }}>
-              <Send size={13} />
-            </button>
-          </div>
-        </div>
-
-        {/* Meta */}
-        <div className="px-4 py-3 text-xs space-y-1" style={{ color: "var(--text-muted)" }}>
-          <div>Utworzone: {new Date(task.createdAt).toLocaleString("pl-PL")}</div>
-          <div>Zaktualizowane: {new Date(task.updatedAt).toLocaleString("pl-PL")}</div>
-        </div>
       </div>
     </div>
   );

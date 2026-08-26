@@ -1960,7 +1960,9 @@
         "nastepneWTejDacie": "Następne w tej dacie",
         "zalaczniki": "Załączniki",
         "usunacZadanie": "Usunąć zadanie?",
-        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić."
+        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić.",
+        "rozwinNaCalosc": "Rozwiń na całą szerokość",
+        "zwinDoPanelu": "Zwiń do panelu bocznego"
       },
       "TaskList": {
         "sprobujZmienicFiltrStatusu": "Spróbuj zmienić filtr statusu"
@@ -2169,7 +2171,8 @@
         "edytujGrupeNazwaProjekty": "Edytuj grupę (nazwa / projekty)",
         "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)",
         "usunacZadanie": "Usunąć zadanie?",
-        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić."
+        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić.",
+        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania"
       },
       "TasksSideNav": {
         "nowaGrupaProjektow": "Nowa grupa projektów",
