@@ -53,7 +53,7 @@
       (AC-11), zachowanie przy rzucającym `sessionStorage` (prywatne okno).
       *Gotowe, gdy:* `npm run test:unit` zielony.
 
-- [ ] **T-7** `[P]` — **Konwencja akcji-adresu.** `src/lib/nawigacja/akcjaZAdresu.ts`:
+- [x] **T-7** `[P]` — **Konwencja akcji-adresu.** `src/lib/nawigacja/akcjaZAdresu.ts`:
       `uzyjAkcjiZAdresu(nazwa) → { aktywna, zamknij }` — czyta `?akcja=<nazwa>`, `zamknij()` robi
       `router.replace` bez tego parametru (adres favouritowalny i działający z linku — AC-20; widok
       nie zostaje „zawieszony" w stanie otwartego formularza).
@@ -62,7 +62,7 @@
 
 ## Faza 2 — Powłoka: pasek, wachlarz, historia, gwiazdka
 
-- [ ] **T-8** — **Wspólny przełącznik ulubionego.** `src/components/favorites/useUlubioneBiezacego.ts`:
+- [x] **T-8** — **Wspólny przełącznik ulubionego.** `src/components/favorites/useUlubioneBiezacego.ts`:
       `{ zapisany, przelacz }` na `addFavoriteView` / `removeFavoriteViewByPath` w `useTransition`
       + `router.refresh()` + toast z nazwą widoku; błąd (adres nie do zapisania, limit 30) → toast
       błędu i **stan bez zmian** (AC-9). Bieżący adres czytany z `window.location` w efekcie,
@@ -70,14 +70,14 @@
       *Gotowe, gdy:* hook nie woła `confirmDialog` (czynność jest odwracalna — C-34) i nie ma
       literałów PL (C-32).
 
-- [ ] **T-9** — **Rejestrator historii.** `src/components/shell/useHistoriaNawigacji.ts`: reaguje na
+- [x] **T-9** — **Rejestrator historii.** `src/components/shell/useHistoriaNawigacji.ts`: reaguje na
       zmianę `pathname`, składa etykietę (nazwa modułu z rejestru → etykieta ulubionego, jeśli adres
       jest zapisany → `suggestFavoriteLabel`), dopisuje przez `dopisz()` z T-5. Bieżąca strona **nie
       jest** pozycją historii.
       *Gotowe, gdy:* powrót na tę samą stronę nie mnoży wpisów, a odświeżenie strony historii nie
       gubi.
 
-- [ ] **T-10** — **Źródła wachlarza.** `src/components/shell/WachlarzNawigacji.tsx`: typ
+- [x] **T-10** — **Źródła wachlarza.** `src/components/shell/WachlarzNawigacji.tsx`: typ
       `ZrodloWachlarza { pozycje?, naTap?, ustawienia? }` i **wstecznie zgodna** sygnatura
       `uchwyty(href, zrodlo?)`. Źródło domyślne = moduły + tap nawigujący + doklejona **stała,
       ostatnia pozycja „Ustawienia paska"** (`/settings#menu`, AC-23).
@@ -85,7 +85,7 @@
       poziom 1 dla pozycji modułowej zawsze ten sam (AC-21), zjadanie kliknięcia po wyborze.
       *Gotowe, gdy:* `uchwytyLinku()` w nawigacji bocznej działa bez zmiany wywołania.
 
-- [ ] **T-11** — **Poziom 2 ze scalenia.** Funkcja scalająca `szybkieCele` modułu z ulubionymi
+- [x] **T-11** — **Poziom 2 ze scalenia.** Funkcja scalająca `szybkieCele` modułu z ulubionymi
       widokami tego modułu: **dedupe po `href`**, pierwszeństwo wpisu użytkownika (jego etykieta to
       jego decyzja), całość przez `filterAccessibleFavorites(..., isPathLocked)` (AC-16/AC-18/AC-22).
       Zostaje pułapka z run 100: moduł o adresie `/` jest prefiksem każdej ścieżki — nie wolno mu
@@ -93,7 +93,7 @@
       *Gotowe, gdy:* test jednostkowy: moduł bez ulubionych → same cele (AC-17); z ulubionymi → suma
       bez duplikatu adresu.
 
-- [ ] **T-12** — **`PasekKciuka` na czterech rodzajach pozycji.** Przyjmuje `dalekie`/`bliskie`
+- [x] **T-12** — **`PasekKciuka` na czterech rodzajach pozycji.** Przyjmuje `dalekie`/`bliskie`
       zamiast `ModuleDef[]`. Geometrię run 100 zostawiamy nietkniętą: dwa pojemniki `flex: 1`,
       magiczna ikona w **geometrycznym** środku, minimum 44 × 44 px dla każdej pozycji, większa ikona
       bliżej kciuka, lustrzenie wg ręki (AC-3, AC-4). Komponenty pozycji **na poziomie modułu**, nie
@@ -103,7 +103,7 @@
       hold → wachlarz historii; przy pustej liście wyszarzona + toast „nie ma dokąd wracać", AC-13).
       *Gotowe, gdy:* każda kotwica ma `aria-label` mówiący **co robi** (AC-27), zero hexów (C-30).
 
-- [ ] **T-13** — **Wpięcie w `AppShell`.** Gwiazdka **znika z górnego paska telefonu** (AC-10);
+- [x] **T-13** — **Wpięcie w `AppShell`.** Gwiazdka **znika z górnego paska telefonu** (AC-10);
       montujemy rejestrator historii; `PasekKciuka` dostaje `pozycjePaska(...)`; wachlarz dostaje
       źródła i scaloną funkcję poziomu 2. Jeśli wariant `topbar` w `FavoriteStarButton` zostaje bez
       konsumenta — **usuń go** (martwe API we wspólnym komponencie jest gorsze niż jego brak, C-35

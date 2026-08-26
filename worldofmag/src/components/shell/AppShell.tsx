@@ -22,11 +22,11 @@ import { ConflictProvider } from "@/components/ui/ConflictProvider";
 import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
 import { isPathLocked } from "@/lib/pathPermissions";
-import { MODULES, resolveMenu, resolveTabBar, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
-import { PasekKciuka } from "./PasekKciuka";
+import { MODULES, resolveMenu, pozycjePaska, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { WachlarzNawigacji, type PozycjaWachlarza } from "./WachlarzNawigacji";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
+import { PasekKciukaPolaczony } from "./PasekKciukaPolaczony";
+import { celeGlebiej } from "@/lib/nawigacja/celeModulu";
 import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
@@ -103,8 +103,13 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  // Dolny pasek (mobile): osobno konfigurowalny zestaw/kolejność ikon (niezależny od menu).
-  const tabBar = resolveTabBar(userPermissions, menuPrefs);
+  /**
+   * 103: dolny pasek nie jest już listą modułów — skład (kotwice + moduły) liczy czysta funkcja
+   * w korzeniu kompozycji, bo tę samą arytmetykę czyta ekran ustawień menu.
+   */
+  const domDostepny = !isLocked("/");
+  const { dalekie, bliskie } = pozycjePaska(userPermissions, menuPrefs, domDostepny);
+
 
   /**
    * 100: dane dla gestu nawigacji. Poziom 1 to `enabled` z `resolveMenu` — lista już przefiltrowana
@@ -120,19 +125,23 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     Icon: m.Icon,
     color: m.color,
   }));
-  const widokiModulu = (idModulu: string): PozycjaWachlarza[] => {
-    const m = MODULES.find((x) => x.id === idModulu);
-    // Recenzja 100: moduł o adresie „/" (Strona główna) jest **prefiksem każdej ścieżki**, więc
-    // dopasowanie po prefiksie przypisałoby mu WSZYSTKIE zapisane widoki. Dziś jest to nieosiągalne
-    // (`resolveMenu` odsiewa `home` z listy), ale to jest dokładnie ten rodzaj pułapki, która wraca
-    // przy pierwszej zmianie o piętro wyżej — i wraca bezgłośnie, bo wynik nadal wygląda sensownie.
-    if (!m || m.href === "/") return [];
-    return filterAccessibleFavorites(
-      favoriteViews.filter((f) => f.path === m.href || f.path.startsWith(m.href + "/") || f.path.startsWith(m.href + "?")),
-      userPermissions,
-      isPathLocked,
-    ).map((f) => ({ id: f.id, etykieta: f.label, href: f.path }));
+  /**
+   * 103: drugi poziom wachlarza to szybkie cele MODUŁU scalone z zapisanymi widokami użytkownika
+   * (do 100 były to wyłącznie ulubione, więc u konta, które nic nie zapisało, drugiego poziomu nie
+   * było wcale). Scalanie i filtr uprawnień siedzą w `celeGlebiej` — czystej, testowalnej funkcji;
+   * tam też została zamknięta pułapka „moduł o adresie / jest prefiksem każdej ścieżki".
+   */
+  const widokiModulu = (idModulu: string): PozycjaWachlarza[] =>
+    celeGlebiej(MODULES.find((x) => x.id === idModulu), favoriteViews, userPermissions, isPathLocked);
+
+  /** 103: stała, ostatnia pozycja poziomu 1 — wejście do ustawień samego paska (nie zajmuje slotu). */
+  const ustawieniaPaska: PozycjaWachlarza = {
+    id: "ustawienia-paska",
+    etykieta: t("ustawieniaPaska"),
+    href: "/settings#menu",
+    Icon: Settings,
   };
+
 
   return (
     /* 085: dostawca trybu administratora obejmuje CAŁĄ powłokę — wskaźniki kosztu siedzą
@@ -149,7 +158,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
     {/* 100: dostawca gestu obejmuje CAŁĄ powłokę, bo wyzwalacze są w dwóch miejscach —
         w dolnym pasku (telefon) i w nawigacji bocznej (komputer) — a wachlarz ma być jeden.
         Ten sam powód, dla którego przełącznik ulubionych i skróty są montowane raz (042). */}
-    <WachlarzNawigacji pozycje={pozycjeWachlarza} glebiej={widokiModulu} reka={reka}>
+    <WachlarzNawigacji pozycje={pozycjeWachlarza} glebiej={widokiModulu} ustawieniaPaska={ustawieniaPaska} reka={reka}>
     <DataFreshness />
     {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent).
         085 (AC-8): same decydują, czy się rysować — czytają tryb administratora z kontekstu. */}
@@ -210,20 +219,13 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
               jest pływającym przyciskiem (FeedbackInspector) — działa też nad
               modalem, czego przycisk w pasku (pod modalem) nie potrafił. */}
           <div className="ml-auto flex items-center flex-shrink-0">
-            {/* 083: gwiazdka „zapisz ten widok" ZNIKA z tego paska — zostaje wyłącznie w pasku
-                widoku (`ViewBar`), czyli przy widoku, którego dotyczy. Trzy wejścia do jednej akcji
-                nie dawały wyboru, tylko niepewność, które jest właściwe.
-                Skok do ulubionych (poniżej) zostaje: to inna czynność i jedyne jej wejście na
-                telefonie. Świadomy koszt: na trasach bez `ModuleView` (`/admin/*`) nie da się już
-                zapisać widoku — zapis widoku administracyjnego nie jest realną potrzebą. */}
-            {/* 087 (AC-21): osobny przycisk „Ulubione widoki" ZNIKA. Gwiazdka niżej otwiera ten sam
-                dialog i dokłada operację na bieżącym widoku, więc drugie wejście było wyłącznie
-                pytaniem „które z nich jest właściwe". */}
-            {/* 085 (AC-1): gwiazdka „zapisz to miejsce" WRACA do górnego paska — tym razem jako
-                JEDYNE jej wejście na telefonie (w 083 wyszła stąd do paska widoku, a właściciel
-                poprosił, żeby stała przy ikonach obok dzwonka). Działa też na trasach bez ramy
-                modułu, np. w panelu administracyjnym (AC-3). */}
-            <FavoriteStarButton favorites={favoriteViews} placement="topbar" />
+            {/* 103 (AC-10): gwiazdka ulubionych ZNIKA z górnego paska telefonu i staje się kotwicą
+                paska DOLNEGO. Zgłoszenie właściciela: „Powinna tam być ikona ulubionych czyli
+                gwiazdka (zamiast na górnym pasku)". Powód jest ergonomiczny, nie estetyczny: górna
+                krawędź telefonu jest poza zasięgiem kciuka trzymającego urządzenie, a zapisanie
+                widoku to czynność wykonywana wielokrotnie dziennie. Na komputerze gwiazdka zostaje
+                w rzędzie chromu konta (`FavoriteStarButton` z wariantem `chrome`) — tam ograniczenia
+                zasięgu nie ma, a rząd chromu jest jej ustalonym miejscem od 086. */}
             {/* 085: przełącznik TRYBU ADMINISTRATORA stoi obok dzwonka — w chromie konta. */}
             <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
@@ -339,7 +341,14 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       {/* 100: dolny pasek to teraz PASEK KCIUKA — układ lustrzany wg ręki, magiczna ikona na
           stałe na środku, a przytrzymanie dowolnej pozycji otwiera wachlarz nawigacji. */}
-      <PasekKciuka pozycje={tabBar} reka={reka} pathname={pathname} />
+      <PasekKciukaPolaczony
+        dalekie={dalekie}
+        bliskie={bliskie}
+        reka={reka}
+        pathname={pathname}
+        favoriteViews={favoriteViews}
+        userPermissions={userPermissions}
+      />
 
       <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
       <ShortcutsCheatSheet />
