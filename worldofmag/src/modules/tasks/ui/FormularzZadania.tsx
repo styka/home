@@ -113,25 +113,34 @@ export const FormularzZadania = forwardRef<FormularzZadaniaHandle, FormularzZada
 
       startTransition(async () => {
         try {
-          // Wpisany tekst traktujemy jako TREŚĆ zadania, a tytuł generujemy z niej. Wyjątek:
-          // krótki, jednowierszowy tekst to po prostu sam tytuł („kup mleko") — wtedy nie dublujemy
-          // go w opisie ani nie wołamy LLM. Reguła przeniesiona z `QuickAddTask` bez zmian.
-          const samTytul = !text.includes("\n") && text.length <= 50;
+          // Trzy przypadki, w tej kolejności — kolejność jest tu istotna:
+          //
+          // 1. Użytkownik wpisał WŁASNY tytuł → tytuł jest jego, a wpisana treść zostaje OPISEM.
+          //    Także wtedy, gdy treść jest krótka: gdyby zadziałał punkt 2, tytuł nadpisałby
+          //    treść i to, co użytkownik napisał, przepadłoby bez śladu.
+          // 2. Krótki, jednowierszowy tekst bez własnego tytułu to po prostu sam tytuł
+          //    („kup mleko") — nie dublujemy go w opisie ani nie wołamy modelu.
+          // 3. Dłuższy tekst → treść jest opisem, tytuł powstaje z niej (model, a gdy go nie ma —
+          //    pierwszy wiersz). Reguła przeniesiona z `QuickAddTask` bez zmian.
           const recznyTytul = tytul.trim();
+          const samTytul = !text.includes("\n") && text.length <= 50;
 
-          let finalnyTytul = recznyTytul || text;
+          let finalnyTytul: string;
           let description: string | null = null;
 
-          if (!samTytul) {
+          if (recznyTytul) {
+            finalnyTytul = recznyTytul;
             description = text;
-            if (!recznyTytul) {
-              finalnyTytul = tytulZTresci(text);
-              try {
-                const res = await llm.tasks.suggestTitle(text);
-                if (res.title?.trim()) finalnyTytul = res.title.trim();
-              } catch {
-                /* brak LLM / offline — zostaje tytuł lokalny */
-              }
+          } else if (samTytul) {
+            finalnyTytul = text;
+          } else {
+            description = text;
+            finalnyTytul = tytulZTresci(text);
+            try {
+              const res = await llm.tasks.suggestTitle(text);
+              if (res.title?.trim()) finalnyTytul = res.title.trim();
+            } catch {
+              /* brak LLM / offline — zostaje tytuł lokalny */
             }
           }
 
