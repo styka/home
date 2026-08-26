@@ -112,7 +112,7 @@
 
 ## Faza 3 — Moduły: szybkie cele i akcje-adresy
 
-- [ ] **T-14** — **`szybkieCele` w 22 deklaracjach** (`src/modules/*/module.ts`), 2–5 pozycji na
+- [x] **T-14** — **`szybkieCele` w 22 deklaracjach** (`src/modules/*/module.ts`), 2–5 pozycji na
       moduł, wyłącznie adresy **istniejące** i mieszczące się w `routes` modułu. Nawigacyjne tam,
       gdzie moduł ma podstrony (Zakupy → Mapy sklepów / Kategorie / Produkty; Kuchnia → Przepisy /
       Plan / Spiżarnia; Zadania → Dziś / Zaległe / Tagi; Magazynowanie → Szukaj / Etykiety /
@@ -120,14 +120,14 @@
       głównej gotowy formularz dodawania.
       *Gotowe, gdy:* każdy zadeklarowany adres odpowiada istniejącej trasie w `src/app/`.
 
-- [ ] **T-15** — **9. kontrola w `scripts/check-module-registry.js`**: (a) każdy moduł deklaruje
+- [x] **T-15** — **9. kontrola w `scripts/check-module-registry.js`**: (a) każdy moduł deklaruje
       **co najmniej jeden** szybki cel — inaczej AC-17 przestaje być prawdą przy pierwszym nowym
       module; (b) każdy `href` mieści się w `routes` swojego modułu — cel prowadzący poza moduł to
       literówka albo obejście granicy (C-36). Kontrola musi **fałszywie nie przechodzić**: sprawdź ją
       sondą (tymczasowy zły `href` → bramka czerwona), tak jak `check:boundaries` sprawdza sam siebie.
       *Gotowe, gdy:* `npm run check:module-registry` zielony na prawdziwym drzewie i czerwony na sondzie.
 
-- [ ] **T-16** — **Konsumenci akcji-adresu (C-35).** `akcja=nowy-projekt` w Zadaniach (AC-19),
+- [x] **T-16** — **Konsumenci akcji-adresu (C-35).** `akcja=nowy-projekt` w Zadaniach (AC-19),
       `akcja=nowa-notatka` w Notatkach, `akcja=nowa-lista` w Zakupach, `akcja=nowy-nawyk`
       w Nawykach, `akcja=nowy-kontakt` w Kontaktach — każdy widok ma już stan `isAdding`
       lub odpowiednik, hook z T-7 podaje wartość początkową i sprząta adres przy zamknięciu.
@@ -136,7 +136,7 @@
 
 ## Faza 4 — Ustawienia i teksty
 
-- [ ] **T-17** — **Ekran ustawień paska.** `src/components/settings/MenuPrefsEditor.tsx`: sekcja
+- [x] **T-17** — **Ekran ustawień paska.** `src/components/settings/MenuPrefsEditor.tsx`: sekcja
       dolnego paska dostaje `id="menu"` (cel `/settings#menu`), limit `MAKS_MODULOW_W_PASKU`
       i **zdanie o tym, czego usunąć się nie da** — dom, asystent, ulubione i historia są kotwicami
       (AC-24). `home` znika z listy modułów do dodania.
@@ -144,7 +144,7 @@
       (walidacja po stronie akcji, bo kolumna to JSON i przyjmie cokolwiek) + `revalidatePath` (C-20).
       *Gotowe, gdy:* zapis z 5 modułami zostawia 2, a `/settings#menu` przewija do właściwej sekcji.
 
-- [ ] **T-18** — **Teksty w `messages/pl.json`** (C-32): wszystkie nowe napisy powłoki
+- [x] **T-18** — **Teksty w `messages/pl.json`** (C-32): wszystkie nowe napisy powłoki
       (`components.shell.PasekKciuka`, `components.shell.WachlarzNawigacji`,
       `components.shell.HistoriaNawigacji`), toasty gwiazdki i historii, opis w edytorze menu.
       *Gotowe, gdy:* `npm run check:i18n` zielony (od 097 to **reguła absolutna** — literał
@@ -152,22 +152,25 @@
 
 ## Faza 5 — Bramki i domknięcie
 
-- [ ] **T-19** — **Bramki jakości, kolejno:** `check:module-registry` → `check:boundaries` →
+- [x] **T-19** — **Bramki jakości, kolejno:** `check:module-registry` → `check:boundaries` →
       `check:i18n` → `check:logs` → `check:ui-contract` → `check:client-safe` → `check:test-types` →
       `npm run test:unit` → `next lint`.
       *Gotowe, gdy:* wszystkie zielone. Nie łataj bramki wyjątkiem w manifeście bez zapisanego powodu.
 
-- [ ] **T-20** — **`next build` na lokalnym Postgresie** (C-13 — **nigdy** prod `DATABASE_URL`;
+- [x] **T-20** — **`next build` na lokalnym Postgresie** (C-13 — **nigdy** prod `DATABASE_URL`;
       zatrzymujemy się **przed** `scripts/migrate.js`).
       *Gotowe, gdy:* build przechodzi do końca `next build`.
 
-- [ ] **T-21** — **Budżet wydajnościowy.** `npm run check:perf` po `next build`. Kod ląduje
+- [x] **T-21** — **Budżet wydajnościowy.** `npm run check:perf` po `next build`. Kod ląduje
       w **powłoce**, czyli na KAŻDEJ trasie, więc wzrost jest oczekiwany. Zmierz go, podnieś
       `src/lib/ui/perf-baseline.json` i **zapisz uzasadnienie**. Jeśli wzrost przekroczy ~15 kB —
       wróć do planu (§9): rejestrator historii idzie do pliku ładowanego dynamicznie.
       *Gotowe, gdy:* bramka zielona, a nowy próg ma podany powód.
+      **Wynik: próg NIE wymagał zmiany** — najcięższa trasa 1172 kB (`/shopping/[listId]`), suma
+      67 465 kB, wszystko w paśmie ±5 %. Kod powłoki dołożył mniej, niż wynosi tolerancja szumu
+      aktualizacji zależności, więc podnoszenie progu byłoby zapisaniem nieistniejącego kosztu.
 
-- [ ] **T-22** — **Klikacze (e2e).** `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`.
+- [~] **T-22** — **Klikacze (e2e).** `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`.
       Nowe/rozszerzone scenariusze dla gestu i paska; **nigdy `networkidle`** (aplikacja trzyma
       otwarty strumień zdarzeń — `check:e2e-waits`).
       *Gotowe, gdy:* zestaw przechodzi, a nowe scenariusze pokrywają AC z tabeli w T-23.
@@ -176,7 +179,7 @@
       speca zapisz, **czym** zostało sprawdzone (test jednostkowy / klikacz / bramka / przegląd)
       i z jakim wynikiem. AC bez pokrycia = zadanie wraca do implementacji (C-54).
 
-- [ ] **T-24** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem
+- [x] **T-24** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem
       — po polsku, w formacie `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` /
       `**Lekcja:**`, zacommitowany razem ze zmianą.
 
