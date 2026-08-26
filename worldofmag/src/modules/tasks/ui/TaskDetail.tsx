@@ -265,7 +265,13 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
   }
 
   async function handleDelete() {
-    if (!(await confirmDialog({ title: "Usunąć zadanie?", destructive: true }))) return;
+    // 105 (AC-15): okno musi powiedzieć, KTÓRE zadanie znika i gdzie trafia. Sam tytuł
+    // („Usunąć zadanie?") zostawiał użytkownika bez informacji, że usunięcie jest odwracalne.
+    if (!(await confirmDialog({
+      title: t("usunacZadanie"),
+      description: t("zadanieTrafiDoKosza", { tytul: task.title }),
+      destructive: true,
+    }))) return;
     startTransition(async () => {
       await deleteTask(task.id);
       onDelete();

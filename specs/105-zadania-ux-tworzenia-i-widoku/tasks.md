@@ -19,19 +19,19 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 1 — Poprawki punktowe (najtańsze, niezależne od reszty)
 
-- [ ] **T-1** — **Puste ciało okna potwierdzenia** (`src/components/ui/Modal.tsx`).
+- [x] **T-1** — **Puste ciało okna potwierdzenia** (`src/components/ui/Modal.tsx`).
   Ciało (`<div className="flex-1 overflow-y-auto px-5 py-4">`) renderuj tylko, gdy `children` niesie
   treść (`children != null && children !== false`). Bez zmian w `ConfirmDialog`/`ConfirmProvider`.
   *Gotowe, gdy:* okno `confirmDialog({ title, destructive: true })` bez `description` nie ma pustego
   obszaru między nagłówkiem a stopką, a okna z treścią wyglądają jak dotąd. **[AC-16]**
 
-- [ ] **T-2** `[P]` — **Treść potwierdzenia usunięcia zadania.**
+- [x] **T-2** `[P]` — **Treść potwierdzenia usunięcia zadania.**
   `TaskDetail.tsx` (linia z „Usunąć zadanie?") i `TasksPage.tsx` (usuwanie pojedynczego zadania
   z listy) dostają `description` z tytułem zadania i wzmianką o Koszu; teksty przez `t()`
   (`messages/pl.json`). `destructive: true` zostaje.
   *Gotowe, gdy:* okno mówi, KTÓRE zadanie usuwam i gdzie trafi. **[AC-15]**
 
-- [ ] **T-3** `[P]` — **Odczyt ostatnio używanego projektu** (`src/app/tasks/page.tsx`).
+- [~] **T-3** `[P]` — **Odczyt ostatnio używanego projektu** (`src/app/tasks/page.tsx`).
   `prisma.task.findFirst({ where: { createdById: userId, projectId: { not: null } }, orderBy:
   { createdAt: "desc" }, select: { projectId: true } })` dołożone do istniejącego `Promise.all`;
   wynik jako prop `ostatniProjektId` do `TasksHomePage`. Bez `ownerId`/`workspaceId`
@@ -41,7 +41,7 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 2 — Trwały tryb zaznaczania
 
-- [ ] **T-4** — **Rozdzielenie `finishSelection`** (`src/modules/tasks/ui/TasksPage.tsx`).
+- [x] **T-4** — **Rozdzielenie `finishSelection`** (`src/modules/tasks/ui/TasksPage.tsx`).
   Dwie funkcje zamiast jednej: `wyczyscZaznaczenie(msg)` (zeruje `selectedIds` + kotwicę, pokazuje
   komunikat, **zostawia `selectionMode`**) i `zakonczZaznaczanie()` (dodatkowo gasi tryb).
   Podmiana w sześciu wywołaniach wg tabeli z planu §5.6: `applyBulk`, `deleteBulk` i `onClear`

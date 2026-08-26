@@ -75,9 +75,23 @@ export function Modal({ open = true, onClose, title, children, footer, wide, hid
                 </Dialog.Close>
               )}
             </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {children}
-            </div>
+            {/**
+              * 105 (AC-16): ciało renderujemy TYLKO wtedy, gdy jest co pokazać.
+              *
+              * Wcześniej ten `div` stał zawsze — z `flex-1` i wypełnieniem `px-5 py-4`. Okno bez
+              * treści (a takie jest KAZDE `confirmDialog` bez `description`, czyli większość
+              * z ~54 wywołań w aplikacji) dostawało przez to rozciągniętą, pustą lukę między
+              * nagłówkiem a przyciskami. Właściciel zgłosił to jako „popup jakby czegoś w nim
+              * brakowało" — i miał rację: miejsce na treść było, treści nie było.
+              *
+              * `false` sprawdzamy osobno od `null`/`undefined`, bo wołający pisze
+              * `{warunek && <p/>}`, co przy fałszywym warunku daje właśnie `false`.
+              */}
+            {children != null && children !== false && (
+              <div className="flex-1 overflow-y-auto px-5 py-4" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {children}
+              </div>
+            )}
             {footer && (
               /**
                * 087 (AC-14): STOPKA NAD OBSZAREM GESTÓW SYSTEMOWYCH.

@@ -1958,7 +1958,9 @@
         "usunPowtarzanie": "Usuń powtarzanie",
         "zrobioneNastepneLicz": "Zrobione — następne licz",
         "nastepneWTejDacie": "Następne w tej dacie",
-        "zalaczniki": "Załączniki"
+        "zalaczniki": "Załączniki",
+        "usunacZadanie": "Usunąć zadanie?",
+        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić."
       },
       "TaskList": {
         "sprobujZmienicFiltrStatusu": "Spróbuj zmienić filtr statusu"
@@ -2165,7 +2167,9 @@
         "przewinPasekAkcjiW": "Przewiń pasek akcji w lewo",
         "przewinPasekAkcjiW2": "Przewiń pasek akcji w prawo",
         "edytujGrupeNazwaProjekty": "Edytuj grupę (nazwa / projekty)",
-        "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)"
+        "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)",
+        "usunacZadanie": "Usunąć zadanie?",
+        "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić."
       },
       "TasksSideNav": {
         "nowaGrupaProjektow": "Nowa grupa projektów",

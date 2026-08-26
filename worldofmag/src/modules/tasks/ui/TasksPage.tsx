@@ -361,12 +361,29 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   }, [displayedTasks, activeFilter, selectedTagIds, statusConfig]);
 
   // ─── Bulkowa edycja: handlery zaznaczenia ──────────────────────────────────
-  function finishSelection(msg: string | null) {
-    setSelectionMode(false);
+  /**
+   * 105 (AC-17..AC-20) — DWIE funkcje zamiast jednej.
+   *
+   * Do 105 stało tu `finishSelection`, które robiło dwie rzeczy naraz: czyściło zaznaczenie
+   * ORAZ gasiło tryb. Wołane było w sześciu miejscach — i to jest cała przyczyna zgłoszenia:
+   * po każdej akcji masowej tryb checkboxów znikał, więc kolejną serię trzeba było zaczynać od
+   * ponownego klikania ikony. Nazwa („zakończ") pasowała do trzech z sześciu wywołań, a do
+   * trzech pozostałych nie — i nikt tego nie widział, bo obie rzeczy siedziały w jednym ciele.
+   *
+   * Rozdzielenie jest tu ważniejsze niż wygląda: dopóki „wyczyść" i „wyjdź" są jedną funkcją,
+   * każde nowe wywołanie znowu wybierze przypadkiem oba zachowania.
+   */
+  /** Po akcji masowej: zaznaczenie znika (te zadania są już zmienione), TRYB ZOSTAJE. */
+  function wyczyscZaznaczenie(msg: string | null) {
     setSelectedIds(new Set());
     setLastSelectedId(null);
     setBulkMessage(msg);
     if (msg) setTimeout(() => setBulkMessage(null), 4000);
+  }
+  /** Jawne wyjście z trybu: przycisk w pasku akcji, `Esc`, opuszczenie widoku listy. */
+  function zakonczZaznaczanie() {
+    setSelectionMode(false);
+    wyczyscZaznaczenie(null);
   }
   function toggleSelectOne(id: string) {
     setSelectionMode(true);
@@ -389,7 +406,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     if (ids.length === 0) return;
     startBulkTransition(async () => {
       const res = await bulkUpdateTasks(ids, patch);
-      finishSelection(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
+      wyczyscZaznaczenie(res.skipped > 0 ? `Zmieniono ${res.updated} z ${ids.length} (pominięto ${res.skipped})` : `Zmieniono ${res.updated}`);
     });
   }
   async function deleteBulk() {
@@ -398,13 +415,13 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     if (!(await confirmDialog({ title: `Usunąć ${ids.length} zaznaczonych zadań? Trafią do Kosza.`, destructive: true }))) return;
     startBulkTransition(async () => {
       const res = await bulkDeleteTasks(ids);
-      finishSelection(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
+      wyczyscZaznaczenie(res.skipped > 0 ? `Usunięto ${res.deleted} z ${ids.length} (pominięto ${res.skipped})` : `Usunięto ${res.deleted}`);
     });
   }
 
   // Zaznaczanie działa tylko w widoku listy — przy zmianie układu wyczyść stan.
   useEffect(() => {
-    if (layout !== "list") { setSelectionMode(false); setSelectedIds(new Set()); setLastSelectedId(null); }
+    if (layout !== "list") { zakonczZaznaczanie(); }
   }, [layout]);
 
   // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
@@ -456,7 +473,13 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       },
       onDelete: async () => {
         if (!focusedTaskId) return;
-        if (!(await confirmDialog({ title: "Usunąć zadanie?", destructive: true }))) return;
+        // 105 (AC-15): to samo okno co w panelu szczegółów — z nazwą zadania i wzmianką o Koszu.
+        const usuwane = filteredForNav.find((z) => z.id === focusedTaskId);
+        if (!(await confirmDialog({
+          title: t("usunacZadanie"),
+          description: t("zadanieTrafiDoKosza", { tytul: usuwane?.title ?? "" }),
+          destructive: true,
+        }))) return;
         const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
         const next = filteredForNav[idx + 1] ?? filteredForNav[idx - 1];
         if (openTaskId === focusedTaskId) setOpenTaskId(null);
@@ -474,7 +497,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
       onFilterTab: (index: number) => setActiveFilter(statusFilters[index] ?? "ALL"),
       onCommandPalette: () => {},
       onEscape: () => {
-        if (selectionMode || selectedIds.size > 0) { finishSelection(null); return; }
+        if (selectionMode || selectedIds.size > 0) { zakonczZaznaczanie(); return; }
         if (aiSearchResults) { setAiSearchResults(null); setSearchQuery(""); return; }
         if (isSearchOpen) { setSearchQuery(""); setIsSearchOpen(false); return; }
         if (openTaskId) { setOpenTaskId(null); return; }
@@ -652,7 +675,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           {/* Bulkowa edycja: wejście w tryb zaznaczania (tylko widok listy) */}
           {layout === "list" && (
             <button
-              onClick={() => { if (selectionMode || selectedIds.size > 0) finishSelection(null); else setSelectionMode(true); }}
+              onClick={() => { if (selectionMode || selectedIds.size > 0) zakonczZaznaczanie(); else setSelectionMode(true); }}
               className="p-1.5 rounded focus:outline-none"
               style={{ color: selectionMode ? "var(--accent-blue)" : "var(--text-muted)" }}
               title="Zaznacz wiele (edycja zbiorcza)"
@@ -948,7 +971,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           allProjects={allProjects}
           allTags={allTags}
           onSelectAll={toggleSelectAllVisible}
-          onClear={() => finishSelection(null)}
+          onClear={() => wyczyscZaznaczenie(null)}
           onApply={applyBulk}
           onDelete={deleteBulk}
         />

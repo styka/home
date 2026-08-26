@@ -14,7 +14,7 @@ export default async function TasksIndexPage() {
   const userId = session.user.id;
   const { start: todayStart, end: todayEnd } = userDayBounds();
 
-  const [projects, todayCount, upcomingCount, overdueCount, todayTasks] = await Promise.all([
+  const [projects, todayCount, upcomingCount, overdueCount, todayTasks, ostatnieZadanie] = await Promise.all([
     getTaskProjects(),
     prisma.task.count({
       where: {
@@ -47,6 +47,20 @@ export default async function TasksIndexPage() {
       take: 5,
       include: { project: { select: { id: true, name: true, emoji: true } } },
     }),
+    /**
+     * 105 (AC-2): projekt, do którego widget szybkiego dodawania ma celować domyślnie.
+     *
+     * Świadomie NIE zapisujemy „ostatnio używanego projektu" nigdzie — baza już to wie. Osobna
+     * kolumna albo wpis w przeglądarce byłyby trzecim nośnikiem tego samego faktu i rozjechałyby
+     * się przy pierwszym zadaniu dodanym przez asystenta.
+     *
+     * `findFirst`, nie `findMany` — interesuje nas jeden rekord, więc nie ma czego stronicować.
+     */
+    prisma.task.findFirst({
+      where: { createdById: userId, projectId: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { projectId: true },
+    }),
   ]);
 
   const todayPreview = todayTasks.map((t) => ({
@@ -65,6 +79,7 @@ export default async function TasksIndexPage() {
       upcomingCount={upcomingCount}
       overdueCount={overdueCount}
       todayPreview={todayPreview}
+      ostatniProjektId={ostatnieZadanie?.projectId ?? null}
     />
   );
 }
