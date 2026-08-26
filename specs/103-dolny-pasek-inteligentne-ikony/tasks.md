@@ -1,7 +1,7 @@
 # Zadania: Dolny pasek — inteligentne ikony, gwiazdka, historia, drzewiasty wachlarz
 
 - **Plan:** ./plan.md (103-dolny-pasek-inteligentne-ikony)
-- **Status:** done
+- **Status:** in-progress
 - **Data:** 2026-08-26
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -183,6 +183,27 @@
       — po polsku, w formacie `## YYYY-MM-DD — tytuł` / `**Problem:**` / `**Rozwiązanie:**` /
       `**Lekcja:**`, zacommitowany razem ze zmianą.
 
+## Faza 6 — Nawrót z `/verify` (C-54)
+
+- [ ] **T-25** (AC-4, brak B-1) — **Kolejność kotwic pod kciukiem jest ODWROTNA do zgłoszenia.**
+      `pozycjePaska` zwraca `bliskie = [ulubione, historia]`, ale `PasekKciuka` renderuje stronę
+      kciuka przez `[...bliskie].reverse()`, więc w rogu ląduje ulubione zamiast historii. Przy ręce
+      lewej wypada dobrze — błąd jest jednostronny i tym łatwiej go przeoczyć.
+      **Wydziel lustrzenie z JSX do czystej funkcji** (`stronyPaska(dalekie, bliskie, reka)`
+      w `lib/modules.tsx`) i przetestuj **kolejność WYRENDEROWANĄ**, dla obu rąk. Dotychczasowy test
+      sprawdzał listę PRZED lustrzeniem i twierdził przy tym coś przeciwnego do tego, co widać —
+      taki test daje fałszywe pokrycie i jest częścią tej usterki, nie jej wykrywaczem.
+      *Gotowe, gdy:* przy ręce prawej ostatnia pozycja prawej strony to historia, przy lewej —
+      pierwsza pozycja lewej strony to historia; dom zostaje najdalej od kciuka w obu wariantach.
+
+- [ ] **T-26** (AC-8, brak B-2) — **Przytrzymanie gwiazdki przy zerze ulubionych otwiera pustą
+      warstwę.** `wlasne ?? [...]` przepuszcza pustą tablicę (`??` reaguje tylko na `null`/
+      `undefined`). Domknij to tak samo jak historię (AC-13): brak pozycji = brak uchwytów gestu
+      + wyszarzenie + komunikat; krótkie tapnięcie ma nadal zapisywać widok, bo to główna czynność
+      tej kotwicy.
+      *Gotowe, gdy:* konto bez zapisanych widoków nie może otworzyć pustego wachlarza z gwiazdki,
+      a zapis jednym tapnięciem działa bez zmian.
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadania |
@@ -190,11 +211,11 @@
 | AC-1 skład paska | T-3, T-12, T-13 |
 | AC-2 moduły w pozostałych miejscach | T-3, T-12 |
 | AC-3 360 px, cele ≥ 44 px | T-3, T-12, T-22 |
-| AC-4 lustrzenie, środek neutralny | T-3, T-12 |
+| AC-4 lustrzenie, środek neutralny | T-3, T-12, **T-25** |
 | AC-5 konto bez modułów | T-3, T-4, T-12 |
 | AC-6 tap zapisuje | T-8, T-12, T-18 |
 | AC-7 tap odwraca | T-8, T-12 |
-| AC-8 hold → wachlarz ulubionych | T-10, T-12 |
+| AC-8 hold → wachlarz ulubionych | T-10, T-12, **T-26** |
 | AC-9 błąd zapisu | T-8, T-18 |
 | AC-10 gwiazdka znika z górnego paska | T-13 |
 | AC-11 kolejność historii | T-5, T-6, T-12 |
