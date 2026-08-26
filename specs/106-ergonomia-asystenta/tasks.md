@@ -35,7 +35,7 @@
       `level`/`voiceKind` — wartość spoza unii jest **ignorowana**, nie zapisywana).
       **Gotowe, gdy:** `tsc --noEmit` czysto, odczyt zwraca `"window"` dla konta bez preferencji.
 
-- [ ] **T-4** — `src/actions/aiConversations.ts`: `listAiConversations()` zwraca
+- [x] **T-4** — `src/actions/aiConversations.ts`: `listAiConversations()` zwraca
       `{ zapisane, historia }` — dwa rozłączne zapytania (`saved: true` / `saved: false`),
       każde z jawnym `take: 50` i `orderBy: { updatedAt: "desc" }`; `ConversationMeta` zyskuje
       `saved: boolean`. Komentarz przy zapytaniach: **dlaczego dwa, a nie podział po stronie
@@ -44,12 +44,12 @@
       **Przed zmianą:** `grep -rn "listAiConversations" src/` i zaktualizuj wszystkich konsumentów.
       **Gotowe, gdy:** `tsc --noEmit` czysto, `npm run check:pagination` zielone.
 
-- [ ] **T-5** — Nowa akcja `setAiConversationSaved(id, saved)` w tym samym pliku, wzorzec
+- [x] **T-5** — Nowa akcja `setAiConversationSaved(id, saved)` w tym samym pliku, wzorzec
       jeden do jednego z `renameAiConversation`: `requireAuth()` → `updateMany({ where: { id,
       userId } })` → `revalidatePath("/")`. Filtr `userId` **jest** guardem własności (C-21).
       **Gotowe, gdy:** akcja istnieje i jest typowana; próba zapisu cudzej rozmowy nic nie zmienia.
 
-- [ ] **T-6** `[P]` — Wpis dla `setAiConversationSaved` w `src/lib/ai/action-coverage.json`:
+- [x] **T-6** `[P]` — Wpis dla `setAiConversationSaved` w `src/lib/ai/action-coverage.json`:
       ekspozycja `excluded` + powód („czynność człowieka w interfejsie — asystent nie zarządza
       własną historią"), `access: "self"`, guard = filtr `userId`. Wzorzec: sąsiednie wpisy
       `renameAiConversation` / `deleteAiConversation`.
@@ -57,12 +57,12 @@
 
 ## Faza 2 — UI: teksty i drobne części
 
-- [ ] **T-7** `[P]` — `useIsWideScreen()` (`min-width: 1024px`) obok `useIsNarrowScreen()`
+- [x] **T-7** `[P]` — `useIsWideScreen()` (`min-width: 1024px`) obok `useIsNarrowScreen()`
       w `src/hooks/useVisualViewport.ts` — ten sam wzorzec `matchMedia` + `addEventListener("change")`,
       start od `false` (SSR nie zna szerokości).
       **Gotowe, gdy:** hook eksportowany, `tsc` czysto.
 
-- [ ] **T-8** `[P]` — Nowe teksty do `messages/pl.json`, przestrzeń
+- [x] **T-8** `[P]` — Nowe teksty do `messages/pl.json`, przestrzeń
       `components.assistant.AICommandSheet`: „Więcej", „Zapisz rozmowę", „Usuń z zapisanych",
       „Zmień nazwę", „Usuń rozmowę", „Zapisane", „Historia", „Pokaż w obszarze treści",
       „Pokaż w oknie", stan pusty listy zapisanych, tytuł potwierdzenia usunięcia, etykiety

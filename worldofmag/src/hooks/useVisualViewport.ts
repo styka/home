@@ -31,6 +31,29 @@ export function useIsNarrowScreen(): boolean {
   return narrow;
 }
 
+/**
+ * 106: czy ekran jest SZEROKI (>= 1024 px, czyli Tailwindowe `lg`). Bliźniak `useIsNarrowScreen`,
+ * po ten sam wzorzec `matchMedia` + nasłuch zmiany.
+ *
+ * Start od `false` jest celowy: na serwerze nie ma czego zmierzyć, a fałszywy start znaczy
+ * „zachowaj się jak na wąskim ekranie" — czyli tak, jak aplikacja zachowywała się dotąd. Odwrotny
+ * domyślny pokazywałby na telefonie układ desktopowy przez jedną klatkę po hydratacji.
+ */
+export function useIsWideScreen(): boolean {
+  const [wide, setWide] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const read = () => setWide(mq.matches);
+    read();
+    mq.addEventListener("change", read);
+    return () => mq.removeEventListener("change", read);
+  }, []);
+
+  return wide;
+}
+
 /** Nazwy zmiennych CSS, przez które hook podaje geometrię. Wołający używa ich w swoim stylu. */
 export const VV_TOP_VAR = "--vv-top";
 export const VV_HEIGHT_VAR = "--vv-height";
