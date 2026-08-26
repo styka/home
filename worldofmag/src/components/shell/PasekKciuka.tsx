@@ -93,10 +93,9 @@ export function PasekKciuka({
    *  - strona bliższa trzyma MNIEJ pozycji (2 wobec 3), więc każda z nich jest szersza,
    *  - bliższe pozycje mają większą ikonę.
    * Minimum 44 × 44 px obowiązuje wszystkie (C-31) — różnica jest w nadmiarze, nigdy w niedomiarze.
-   */
-  /**
-   * Lustrzenie liczy `stronyPaska` w `lib/modules`, a nie ten komponent — i to jest poprawka po
-   * weryfikacji, nie porządkowanie. Gdy odwracanie tablic siedziało tutaj, w JSX, test sprawdzał
+   *
+   * **Samo lustrzenie liczy `stronyPaska` w `lib/modules`, nie ten komponent** — i to jest poprawka
+   * po weryfikacji, nie porządkowanie. Gdy odwracanie tablic siedziało tutaj, w JSX, test sprawdzał
    * `pozycjePaska`, czyli listę **przed** lustrzeniem: świecił na zielono, twierdził, że historia
    * stoi w rogu, a w rogu stała gwiazdka. Reguła wyrażona w czystej funkcji jest sprawdzalna
    * dokładnie w tej postaci, w jakiej działa.
