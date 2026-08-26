@@ -152,6 +152,13 @@ sama reguła co dla historii; krótkie tapnięcie nadal zapisuje widok, bo to on
    przeniesiony z updatera `setHistoria` do osobnego efektu. React wolno wywołać updater dwa razy
    dla jednej zmiany; tutaj było to nieszkodliwe, ale to wzorzec, który wraca tam, gdzie już szkodzi.
 
+### Przebieg kontrolny (końcowy)
+
+`ergonomia-nawigacji` + `dolny-pasek-kotwice` + `chrom-konta` + `rama-i-chrom` na poprawionym
+kodzie: **43 zdane, 1 niezdany, 1 pominięty**. Jedyny niezdany to `[085-AC4]` — ten sam, który
+pada na commicie bazowym (Wiadomości, brak sieci → puste kanały RSS). `[100-AC12/AC22]` z nową,
+poprawną tezą — **zdany**.
+
 ## 8. Werdykt końcowy
 
 **GOTOWE** — 27 / 27 kryteriów akceptacji spełnionych, wszystkie bramki zielone, `next build`
