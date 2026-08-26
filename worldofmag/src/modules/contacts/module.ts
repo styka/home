@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { Users, UserPlus } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 export default defineModule({
@@ -8,5 +8,8 @@ export default defineModule({
   permission: "module.contacts",
   color: "var(--accent-blue)",
   Icon: Users,
+  szybkieCele: [
+    { id: "nowy", etykieta: "Nowy kontakt", href: "/contacts?akcja=nowy-kontakt", Icon: UserPlus },
+  ],
   defaultEnabled: true,
 });

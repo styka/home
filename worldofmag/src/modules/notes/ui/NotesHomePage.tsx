@@ -57,7 +57,7 @@ export function NotesHomePage({
       subtitle={subtitle}
       headerAction={
         <Link
-          href="/notes/all?new=1"
+          href="/notes/all?akcja=nowa-notatka"
           style={{
             display: "flex",
             alignItems: "center",
@@ -129,7 +129,7 @@ export function NotesHomePage({
             icon={<FileText size={28} />}
             message="Brak notatek"
             hint="Zacznij od pierwszej notatki — może być krótka"
-            cta={{ label: "+ Nowa notatka", href: "/notes/all?new=1", color: "var(--accent-amber)" }}
+            cta={{ label: "+ Nowa notatka", href: "/notes/all?akcja=nowa-notatka", color: "var(--accent-amber)" }}
           />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>

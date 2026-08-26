@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   CheckSquare,
@@ -19,6 +19,7 @@ import {
 import { createTaskProject } from "../actions/taskProjects";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
+import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import type { TaskProject, TaskPriority } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
@@ -48,6 +49,24 @@ export function TasksHomePage({
 }: TasksHomePageProps) {
   const t = useTranslations("modules.tasks.TasksHomePage");
   const [isAdding, setIsAdding] = useState(false);
+  /**
+   * 103: gest w dolnym pasku umie prowadzić nie tylko do modułu, ale i do jego AKCJI — a akcję
+   * niesie adres (`/tasks?akcja=nowy-projekt`), nie kod wykonywany przez powłokę. Dzięki temu ten
+   * sam adres działa z wachlarza, z linku i z zapisanych ulubionych.
+   */
+  const akcjaNowyProjekt = useAkcjaZAdresu("nowy-projekt");
+  useEffect(() => {
+    if (akcjaNowyProjekt.aktywna) setIsAdding(true);
+  }, [akcjaNowyProjekt.aktywna]);
+
+  /**
+   * Zamknięcie formularza czyści parametr z adresu. Bez tego zapisany w ulubionych adres z akcją
+   * odtwarzałby formularz przy każdym wejściu, a adres mówiłby co innego niż to, co widać.
+   */
+  const zamknijDodawanie = () => {
+    setIsAdding(false);
+    akcjaNowyProjekt.zamknij();
+  };
   const [newName, setNewName] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -72,7 +91,7 @@ export function TasksHomePage({
     startTransition(async () => {
       await createTaskProject(name);
       setNewName("");
-      setIsAdding(false);
+      zamknijDodawanie();
     });
   }
 
@@ -86,7 +105,7 @@ export function TasksHomePage({
       subtitle={subtitle}
       headerAction={
         <button
-          onClick={() => setIsAdding((v) => !v)}
+          onClick={() => (isAdding ? zamknijDodawanie() : setIsAdding(true))}
           style={{
             display: "flex",
             alignItems: "center",
@@ -114,7 +133,7 @@ export function TasksHomePage({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleCreate();
-              if (e.key === "Escape") setIsAdding(false);
+              if (e.key === "Escape") zamknijDodawanie();
             }}
             placeholder="Nazwa projektu…"
             style={{
@@ -149,7 +168,7 @@ export function TasksHomePage({
             Utwórz
           </button>
           <button
-            onClick={() => setIsAdding(false)}
+            onClick={zamknijDodawanie}
             style={{
               padding: "8px 12px",
               borderRadius: 8,

@@ -112,6 +112,51 @@ for (const name of dirs) {
     );
   }
 
+  // 4c. SZYBKIE CELE (103, 9. kontrola) — drugi poziom wachlarza nawigacji.
+  //
+  // Dwie rzeczy naraz, obie niewidoczne w buildzie:
+  //   (a) moduł BEZ celów odbiera gestowi drugi poziom u konta, które nie zapisało ulubionych —
+  //       czyli reguła „gest działa od pierwszego dnia" przestaje być prawdą przy pierwszym nowym
+  //       module, a nikt tego nie zauważy, bo wachlarz nadal się otwiera;
+  //   (b) cel prowadzący POZA moduł to albo literówka w adresie, albo obejście granicy (C-36) —
+  //       w obu przypadkach użytkownik ląduje gdzie indziej niż mówi podpowiedź.
+  {
+    const blok = src.match(/szybkieCele\s*:\s*\[([\s\S]*?)\n\s*\]/);
+    if (!blok) {
+      errors.push(
+        `src/modules/${name}/module.ts: deklaracja nie ma pola „szybkieCele".\n` +
+          "    Bez nich drugi poziom wachlarza nawigacji istnieje wyłącznie u kont, które same\n" +
+          "    zapisały ulubione widoki — czyli połowa gestu jest niewidoczna do czasu, aż\n" +
+          "    użytkownik domyśli się, że musi coś zapisać.",
+      );
+    } else {
+      // Zakres modułu to `routes`, gdy je podał, w przeciwnym razie samo `href` (tak samo
+      // rozstrzyga to `defineModule`).
+      const routesMatch = src.match(/routes\s*:\s*\[([^\]]*)\]/);
+      const zakres = routesMatch
+        ? [...routesMatch[1].matchAll(/["'`]([^"'`]+)["'`]/g)].map((m2) => m2[1])
+        : (src.match(/\bhref\s*:\s*["'`]([^"'`]+)["'`]/) || [, null])[1] !== null
+          ? [src.match(/\bhref\s*:\s*["'`]([^"'`]+)["'`]/)[1]]
+          : [];
+
+      const cele = [...blok[1].matchAll(/href\s*:\s*["'`]([^"'`]+)["'`]/g)].map((m2) => m2[1]);
+      if (cele.length === 0) {
+        errors.push(`src/modules/${name}/module.ts: „szybkieCele" jest puste — to nie jest deklaracja, tylko jej brak.`);
+      }
+      for (const cel of cele) {
+        const sciezka = cel.split("?")[0].split("#")[0];
+        const wZakresie = zakres.some((r) => (r === "/" ? sciezka === "/" : sciezka === r || sciezka.startsWith(`${r}/`)));
+        if (!wZakresie) {
+          errors.push(
+            `src/modules/${name}/module.ts: szybki cel „${cel}" wychodzi poza trasy modułu (${zakres.join(", ")}).\n` +
+              "    Cel prowadzący poza moduł to albo literówka, albo obejście granicy modułów (C-36) —\n" +
+              "    w obu przypadkach podpowiedź w wachlarzu mówi co innego, niż robi.",
+          );
+        }
+      }
+    }
+  }
+
   // 4. Wpięcie w korzeń kompozycji. Szukamy importu deklaracji — to jedyne miejsce, w którym
   //    moduł faktycznie wchodzi do aplikacji.
   if (!composition.includes(`@/modules/${name}/module`)) {

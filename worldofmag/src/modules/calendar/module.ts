@@ -1,4 +1,4 @@
-import { Calendar } from "lucide-react";
+import { Calendar, CalendarDays } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 export default defineModule({
@@ -8,5 +8,8 @@ export default defineModule({
   permission: "module.calendar",
   color: "var(--accent-purple)",
   Icon: Calendar,
+  szybkieCele: [
+    { id: "dzis", etykieta: "Dziś", href: "/calendar", Icon: CalendarDays },
+  ],
   defaultEnabled: true,
 });

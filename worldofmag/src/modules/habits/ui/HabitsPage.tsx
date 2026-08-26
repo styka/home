@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect, useMemo, useTransition, useCallback } from "react";
+import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { useRouter } from "next/navigation";
 import { Flame, Plus, Check, Bell, BellOff, Pencil, Trash2, ChevronDown, Archive, CalendarRange, CheckSquare } from "lucide-react";
 import { StatTile, SectionHeading, EmptyState } from "@/components/ui/home";
@@ -38,6 +39,20 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
   const router = useRouter();
   const [habits, setHabits] = useState<HabitWithStats[]>(initial);
   const [modal, setModal] = useState<{ mode: "create" } | { mode: "edit"; habit: HabitWithStats } | null>(null);
+  /**
+   * 103: akcja z adresu — gest w dolnym pasku dochodzi do „Nowy nawyk" bez wchodzenia w moduł
+   * i szukania przycisku. Powłoka wyłącznie nawiguje; okno otwiera ten widok, czytając stan
+   * z adresu. `zamknijModal` czyści parametr, żeby adres zapisany w ulubionych nie otwierał
+   * okna przy każdym wejściu.
+   */
+  const akcjaNowyNawyk = useAkcjaZAdresu("nowy-nawyk");
+  useEffect(() => {
+    if (akcjaNowyNawyk.aktywna) setModal({ mode: "create" });
+  }, [akcjaNowyNawyk.aktywna]);
+  const zamknijModal = () => {
+    setModal(null);
+    akcjaNowyNawyk.zamknij();
+  };
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notifOn, setNotifOn] = useState(false);
   const [focused, setFocused] = useState<number>(-1);
@@ -133,7 +148,7 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
     } else {
       await createHabit(v);
     }
-    setModal(null);
+    zamknijModal();
     router.refresh();
   }
 
@@ -246,8 +261,39 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
           )}
         </>
       )}
+
+      {/**
+       * 103: okno dodawania/edycji nawyku BYŁO ZAIMPORTOWANE I NIGDY NIE RENDEROWANE.
+       *
+       * `setModal({ mode: "create" })` wisiało pod trzema przyciskami i pod skrótem `n`, ustawiało
+       * stan — i nic się nie działo, bo w drzewie nie było czego tym stanem otworzyć. `tsc` tego
+       * nie widzi (nieużyty import to najwyżej ostrzeżenie lintu), a `handleSave` obok wyglądał na
+       * dowód, że wszystko jest wpięte. Wyszło dopiero przy dokładaniu szybkiego celu „Nowy nawyk":
+       * cel prowadziłby pod adres, który otwiera okno, którego nie ma.
+       */}
+      {modal && (
+        <HabitFormModal
+          initial={modal.mode === "edit" ? habitDoFormularza(modal.habit) : emptyHabitForm()}
+          title={modal.mode === "edit" ? "Edytuj nawyk" : "Nowy nawyk"}
+          onSave={handleSave}
+          onClose={zamknijModal}
+        />
+      )}
     </ModuleView>
   );
+}
+
+/** Zamienia nawyk z bazy na wartości formularza — pola, których formularz nie zna, pomijamy. */
+function habitDoFormularza(h: HabitWithStats): HabitFormValue {
+  return {
+    name: h.name,
+    description: h.description ?? "",
+    icon: h.icon ?? "✅",
+    color: h.color ?? "var(--accent-orange)",
+    daysOfWeek: h.daysOfWeek ?? null,
+    weeklyGoal: h.weeklyGoal ?? null,
+    reminderTime: h.reminderTime ?? null,
+  };
 }
 
 const HEATMAP_PERIODS: { label: string; weeks: number }[] = [

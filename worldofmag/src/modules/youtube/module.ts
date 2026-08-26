@@ -1,4 +1,4 @@
-import { Youtube } from "lucide-react";
+import { Youtube, Rss } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 /**
@@ -15,5 +15,9 @@ export default defineModule({
   permission: "module.youtube",
   color: "var(--accent-red)",
   Icon: Youtube,
+  szybkieCele: [
+    { id: "filmy", etykieta: "Filmy", href: "/youtube", Icon: Youtube },
+    { id: "kanaly", etykieta: "Kanały", href: "/youtube/kanaly", Icon: Rss },
+  ],
   defaultEnabled: true,
 });

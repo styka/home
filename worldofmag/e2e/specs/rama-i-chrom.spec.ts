@@ -183,11 +183,18 @@ test("[087-AC19+AC20] uklad ikon w panelu bocznym", async ({ page }) => {
 });
 
 test("[087-AC21] telefon ma jedno wejscie do ulubionych", async ({ page }) => {
+  /**
+   * 103: reguła bez zmian — na telefonie ma być DOKŁADNIE JEDNO wejście do ulubionych. Zmieniło się
+   * miejsce (górny pasek → pasek kciuka) i przez to sama nazwa przycisku: od 103 `aria-label` mówi,
+   * co przycisk ZROBI („Zapisz ten widok w ulubionych"), a nie jak nazywa się zbiór. Wzorzec
+   * dopasowany do słowa „Ulubione" nie łapał już formy „ulubionych" i liczył zero — czyli test
+   * przestałby pilnować reguły, o którą mu chodzi, raportując przy tym fałszywy błąd.
+   */
   await otworz(page, "/pogoda", 390);
   const liczba = await page.evaluate(
     () =>
       Array.from(document.querySelectorAll("button")).filter(
-        (b) => /Ulubione/i.test(b.getAttribute("aria-label") ?? "") && b.getClientRects().length > 0,
+        (b) => /ulubion/i.test(b.getAttribute("aria-label") ?? "") && b.getClientRects().length > 0,
       ).length,
   );
   console.log(`[087-AC21] wejść do ulubionych na telefonie: ${liczba}`);

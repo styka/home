@@ -4,6 +4,42 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Test sprawdzający wejście funkcji, której wyjście jest gdzie indziej odwracane
+**Problem:** Dolny pasek ma kotwice ustawione „od środka na zewnątrz", a `PasekKciuka` odwracał
+tablicę w JSX, żeby zrobić układ lustrzany dla ręki. Test jednostkowy sprawdzał wynik
+`pozycjePaska` — czyli listę **przed** tym odwróceniem — i przechodził, twierdząc w komunikacie,
+że „historia stoi w SAMYM ROGU". W rogu stała gwiazdka. Wada była **jednostronna** (przy ręce lewej
+układ wypadał poprawnie), więc nawet spojrzenie na jeden wariant niczego by nie pokazało.
+
+**Rozwiązanie:** Lustrzenie wyjęte z JSX do czystej funkcji `stronyPaska(dalekie, bliskie, reka)`
+w `lib/modules.tsx`. Testy sprawdzają teraz **kolejność wyrenderowaną** dla obu rąk (róg = `lewa[0]`
+albo `prawa[ostatni]`) plus niezmiennik „przełączenie ręki ODBIJA układ". Doszedł klikacz mierzący
+środki przycisków w pikselach.
+
+**Lekcja:** Jeśli między funkcją a ekranem stoi jeszcze jedna transformacja, test funkcji **nie jest
+testem ekranu** — daje fałszywe pokrycie i potrafi twierdzić coś przeciwnego do prawdy. Albo
+przenieś tę transformację do testowanej funkcji, albo mierz wynik końcowy. Zielony test z pewnym
+siebie komunikatem jest gorszy niż brak testu: brak testu nikogo nie uspokaja.
+
+## 2026-08-26 — Okno zaimportowane i nigdy nierenderowane: przycisk, który „działa" i nic nie robi
+**Problem:** Przy dokładaniu szybkiego celu „Nowy nawyk" (drugi poziom wachlarza nawigacji) okazało
+się, że w Nawykach **nie da się dodać nawyku**. `HabitFormModal` był zaimportowany, `handleSave`
+napisany, a `setModal({ mode: "create" })` wisiało pod trzema przyciskami i pod skrótem `n` — tyle że
+w drzewie JSX nie było **niczego**, co ten stan otwiera. Klik ustawiał stan i kończył się ciszą.
+Ani `tsc`, ani bramki tego nie widzą: nieużyty import to najwyżej ostrzeżenie lintu, a sąsiedni
+`handleSave` wyglądał na dowód, że całość jest wpięta.
+
+**Rozwiązanie:** Dorysowanie `{modal && <HabitFormModal … />}` w `HabitsPage` wraz z funkcją
+`habitDoFormularza` (nawyk z bazy → wartości formularza). Przy okazji zamknięcie okna czyści
+parametr akcji z adresu, żeby `?akcja=nowy-nawyk` nie otwierał go ponownie po odświeżeniu.
+
+**Lekcja:** **„Zaimportowane" nie znaczy „renderowane".** Gdy stan ma sterować oknem, sprawdzenie
+zajmuje jedno `grep` po nazwie komponentu w tym samym pliku: jeśli występuje **tylko w imporcie**,
+funkcji nie ma. Ten rodzaj usterki nie objawia się błędem, tylko brakiem reakcji — czyli wygląda
+jak wolna aplikacja, a nie jak defekt, i dlatego potrafi przeżyć wiele przeglądów. Warto też czytać
+to w drugą stronę: kiedy nowa funkcja prowadzi do istniejącego miejsca w module, najpierw sprawdź,
+czy to miejsce w ogóle działa — inaczej dowieziesz skrót do czegoś, czego nie ma.
+
 ## 2026-08-26 — Kod odpowiedzi mówi, ŻE się nie udało; dlaczego — mówi treść
 **Problem:** Lektor uparcie twierdził, że dostawca mowy **odrzuca klucz API**. Właściciel wygenerował
 z tego powodu dwa nowe klucze — na darmo, bo klucz był poprawny. Skończyły się miesięczne kredyty.

@@ -1,4 +1,4 @@
-import { Truck } from "lucide-react";
+import { Truck, Route } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 /**
@@ -12,5 +12,8 @@ export default defineModule({
   permission: "module.truck",
   color: "var(--accent-blue)",
   Icon: Truck,
+  szybkieCele: [
+    { id: "trasa", etykieta: "Nowa trasa", href: "/truck", Icon: Route },
+  ],
   defaultEnabled: true,
 });

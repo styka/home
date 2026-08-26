@@ -82,12 +82,33 @@ interface UchwytyGestu {
   style: { touchAction: "none"; userSelect: "none"; WebkitUserSelect: "none" };
 }
 
+/**
+ * 103: ŹRÓDŁO wachlarza — czym jest jego pierwszy poziom i co robi krótkie tapnięcie.
+ *
+ * Do run 100 pierwszy poziom był zawsze tą samą listą modułów, bo wszystkie wyzwalacze gestu
+ * BYŁY modułami. Od 103 pasek ma także kotwice, które modułami nie są (gwiazdka, historia),
+ * i one potrzebują własnej treści.
+ *
+ * **Reguła z run 100 zostaje nienaruszona:** przytrzymanie pozycji MODUŁU nadal daje tę samą listę
+ * niezależnie od tego, którą pozycję przytrzymano. Źródło jest sposobem na dołożenie dwóch nowych
+ * rodzajów pozycji, a nie furtką do wachlarza zależnego od punktu startu — ten zmuszałby do
+ * pamiętania, co pod czym się kryje, czyli odtwarzałby wadę menu ⋮ naprawioną w Wiadomościach.
+ */
+export interface ZrodloWachlarza {
+  /** Poziom 1 dla tej pozycji. Bez tego pola: moduły (zachowanie domyślne). */
+  pozycje?: () => PozycjaWachlarza[];
+  /** Co robi KRÓTKIE tapnięcie. Bez tego pola: nawigacja pod `href`. */
+  naTap?: () => void;
+}
+
 interface KontekstWachlarza {
   /**
    * Dla elementu, który **sam nie nawiguje** (przycisk paska kciuka): krótkie tapnięcie kieruje
-   * pod `href` imperatywnie.
+   * pod `href` imperatywnie. Drugi argument pozwala pozycji podstawić własny poziom 1 i własne
+   * tapnięcie; jego BRAK to zachowanie sprzed 103, dlatego jest opcjonalny — wszystkie dzisiejsze
+   * wywołania zostają bez zmiany.
    */
-  uchwyty: (href: string) => UchwytyGestu;
+  uchwyty: (href: string, zrodlo?: ZrodloWachlarza) => UchwytyGestu;
   /**
    * Dla elementu, który **nawiguje sam** (`<Link>` w nawigacji bocznej): krótkie kliknięcie zostaje
    * odnośnikowi, a gest dokłada wyłącznie wachlarz. `onClick` blokuje kliknięcie, które przyszłoby
@@ -160,13 +181,27 @@ function rozlozNaLuku(
 export function WachlarzNawigacji({
   pozycje,
   glebiej,
+  ustawieniaPaska,
   reka,
   children,
 }: {
   /** Poziom 1 — moduły dostępne dla roli (przekazane parametrem: powłoka wie, wachlarz nie). */
   pozycje: PozycjaWachlarza[];
-  /** Poziom 2 — dla danego modułu: jego zapisane widoki. Pusta lista = pozycja jest liściem. */
+  /**
+   * Poziom 2 — dla danego modułu: jego szybkie cele scalone z zapisanymi widokami użytkownika
+   * (103; do 100 były to wyłącznie zapisane widoki, więc u konta, które nic nie zapisało, drugiego
+   * poziomu po prostu nie było). Pusta lista = pozycja jest liściem.
+   */
   glebiej: (idModulu: string) => PozycjaWachlarza[];
+  /**
+   * 103: STAŁA, OSTATNIA pozycja poziomu 1 — wejście do ustawień samego paska.
+   *
+   * Właściciel prosił o „ikonę do ustawień tego dolnego paska". Nie dostaje własnego miejsca
+   * w pasku świadomie: pasek ma pięć miejsc (arytmetyka 360 px w `lib/modules`), a rzecz otwierana
+   * raz na miesiąc nie może zabierać slotu rzeczy dotykanej kilkadziesiąt razy dziennie. Wejście
+   * istnieje i jest w tym samym geście, którego ta zmiana uczy.
+   */
+  ustawieniaPaska: PozycjaWachlarza;
   reka: Reka;
   children: ReactNode;
 }) {
@@ -176,6 +211,8 @@ export function WachlarzNawigacji({
   const [srodek, setSrodek] = useState({ x: 0, y: 0 });
   const [poziom2, setPoziom2] = useState<{ id: string; pozycje: PozycjaWachlarza[] } | null>(null);
   const [aktywna, setAktywna] = useState<string | null>(null);
+  /** Źródło pozycji, która otworzyła bieżący wachlarz — decyduje o treści poziomu 1. */
+  const [zrodloOtwarte, setZrodloOtwarte] = useState<ZrodloWachlarza | null>(null);
 
   const start = useRef<{ x: number; y: number; href: string } | null>(null);
   const licznikOtwarcia = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -202,6 +239,7 @@ export function WachlarzNawigacji({
     setOtwarty(false);
     setPoziom2(null);
     setAktywna(null);
+    setZrodloOtwarte(null);
   }, []);
 
   useEffect(() => {
@@ -219,9 +257,20 @@ export function WachlarzNawigacji({
 
   const widoczne = useMemo<Podpowiedz[]>(() => {
     if (!otwarty) return [];
-    const lista = poziom2 ? poziom2.pozycje : pozycje;
-    return rozlozNaLuku(lista, srodek.x, srodek.y, reka, (p) => !poziom2 && glebiej(p.id).length > 0);
-  }, [otwarty, poziom2, pozycje, srodek, reka, glebiej]);
+    if (poziom2) {
+      // Drugi poziom jest liściem — jego pozycje nie mają już nic głębiej.
+      return rozlozNaLuku(poziom2.pozycje, srodek.x, srodek.y, reka, () => false);
+    }
+    /**
+     * Poziom 1: albo własne pozycje kotwicy (ulubione, historia), albo moduły. „Ustawienia paska"
+     * doklejamy WYŁĄCZNIE do listy modułów — w wachlarzu ulubionych czy historii byłyby obcym
+     * ciałem, a wejście do ustawień ma jedno miejsce, nie trzy.
+     */
+    const wlasne = zrodloOtwarte?.pozycje?.();
+    const lista = wlasne ?? [...pozycje, ustawieniaPaska];
+    // Głębiej schodzą tylko pozycje modułowe; przy własnym źródle poziomu 2 nie ma.
+    return rozlozNaLuku(lista, srodek.x, srodek.y, reka, (p) => !wlasne && glebiej(p.id).length > 0);
+  }, [otwarty, poziom2, pozycje, ustawieniaPaska, zrodloOtwarte, srodek, reka, glebiej]);
 
   const najblizsza = useCallback(
     (x: number, y: number): Podpowiedz | null => {
@@ -244,7 +293,7 @@ export function WachlarzNawigacji({
    * przy przycisku (pasek kciuka) kierujemy sami, przy `<Link>` zostawiamy to odnośnikowi.
    */
   const zbudujUchwyty = useCallback(
-    (href: string, wlasnaNawigacja: boolean): UchwytyGestu => ({
+    (href: string, wlasnaNawigacja: boolean, zrodlo?: ZrodloWachlarza): UchwytyGestu => ({
       onPointerDown: (e: ReactPointerEvent) => {
         // Tylko przycisk główny / dotyk / pióro — prawy przycisk myszy ma swoje znaczenie.
         if (e.button !== 0) return;
@@ -262,6 +311,7 @@ export function WachlarzNawigacji({
             // Wskaźnik już nieaktywny — wachlarz i tak otwieramy, zamknie go `pointercancel`.
           }
           setSrodek({ x, y });
+          setZrodloOtwarte(zrodlo ?? null);
           setOtwarty(true);
         }, PROG_PRZYTRZYMANIA_MS);
       },
@@ -313,7 +363,11 @@ export function WachlarzNawigacji({
          * indziej niż palec, więc jedna ścieżka nawigacji dla obu wariantów gestu jest tańsza
          * niż dwie, które musiałyby się zgadzać co do piksela.
          */
-        if (wlasnaNawigacja) router.push(wlasnyHref);
+        if (!wlasnaNawigacja) return;
+        // 103: kotwica może mieć własną czynność krótkiego tapnięcia (gwiazdka zapisuje widok,
+        // historia cofa o krok). Bez niej — nawigacja, jak dotąd.
+        if (zrodlo?.naTap) zrodlo.naTap();
+        else router.push(wlasnyHref);
       },
 
       onPointerCancel: () => zamknij(),
@@ -326,7 +380,10 @@ export function WachlarzNawigacji({
     [otwarty, aktywna, najblizsza, glebiej, router, zamknij],
   );
 
-  const uchwyty = useCallback((href: string) => zbudujUchwyty(href, true), [zbudujUchwyty]);
+  const uchwyty = useCallback(
+    (href: string, zrodlo?: ZrodloWachlarza) => zbudujUchwyty(href, true, zrodlo),
+    [zbudujUchwyty],
+  );
 
   const uchwytyLinku = useCallback(
     () => ({

@@ -1,4 +1,4 @@
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, ClipboardCheck } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 /**
@@ -12,5 +12,8 @@ export default defineModule({
   permission: "module.qa",
   color: "var(--accent-red)",
   Icon: FlaskConical,
+  szybkieCele: [
+    { id: "scenariusze", etykieta: "Scenariusze", href: "/qa", Icon: ClipboardCheck },
+  ],
   defaultEnabled: false,
 });

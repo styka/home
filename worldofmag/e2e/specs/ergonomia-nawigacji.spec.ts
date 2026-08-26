@@ -219,7 +219,13 @@ test.describe("Pasek kciuka i dominująca ręka", () => {
     console.log(`[100-AC19] dolne wypełnienie obszaru głównego: ${zapas} px`);
   });
 
-  test("[100-AC12/AC22] gwiazdka ulubionych w górnym pasku idzie za ręką", async ({ page }) => {
+  test("[100-AC12/AC22] chrom konta w górnym pasku idzie za ręką", async ({ page }) => {
+    /**
+     * 103: do tej pory mierzyliśmy tu GWIAZDKĘ ulubionych, bo stała w górnym pasku telefonu.
+     * Zeszła do paska kciuka (jej lustrzenie sprawdza `dolny-pasek-kotwice.spec.ts`), więc
+     * przedmiotem pomiaru jest teraz DZWONEK — element chromu konta, który w górnym pasku został.
+     * Sprawdzana reguła się nie zmieniła: rząd chromu ma reagować na `html[data-reka]`.
+     */
     await otworz(page, "/tasks");
     await expect(page.getByRole("navigation", { name: /Nawigacja główna/i })).toBeVisible({ timeout: 20_000 });
 
@@ -228,27 +234,42 @@ test.describe("Pasek kciuka i dominująca ręka", () => {
     // czytający CSS przepuściłby ten błąd drugi raz.
     const zmierz = () =>
       page.evaluate(() => {
-        const gwiazdka = Array.from(document.querySelectorAll<HTMLElement>("button")).find((b) =>
-          /Ulubione/i.test(b.getAttribute("aria-label") ?? ""),
-        );
-        if (!gwiazdka) return null;
-        const r = gwiazdka.getBoundingClientRect();
+        const chrom = document.querySelector<HTMLElement>(".omnia-chrom-konta");
+        const dzwonek = chrom
+          ? Array.from(chrom.querySelectorAll<HTMLElement>("button")).find((b) =>
+              /Powiadomienia/i.test(b.getAttribute("aria-label") ?? ""),
+            )
+          : undefined;
+        if (!dzwonek) return null;
+        const r = dzwonek.getBoundingClientRect();
         return { srodek: Math.round(r.left + r.width / 2), szerokoscOkna: window.innerWidth };
       });
 
     const prawa = await zmierz();
-    expect(prawa, "gwiazdka ulubionych nie znaleziona w górnym pasku").not.toBeNull();
-    // Domyślnie ręka prawa — gwiazdka w prawej połowie ekranu.
+    expect(prawa, "dzwonek nie znaleziony w chromie konta górnego paska").not.toBeNull();
+    // Domyślnie ręka prawa — chrom konta przy prawej krawędzi.
     expect(prawa!.srodek).toBeGreaterThan(prawa!.szerokoscOkna / 2);
 
     await page.evaluate(() => document.documentElement.setAttribute("data-reka", "left"));
     const lewa = await zmierz();
-    // Po przełączeniu — w lewej połowie. Atrybut nakłada serwer w `layout.tsx`; tutaj sprawdzamy,
-    // że pasek NA NIEGO REAGUJE.
-    expect(lewa!.srodek).toBeLessThan(lewa!.szerokoscOkna / 2);
+    /**
+     * 103: sprawdzamy PRZESUNIĘCIE, a nie przekroczenie połowy ekranu — i to nie jest złagodzenie
+     * testu, tylko poprawienie jego tezy.
+     *
+     * Do 103 mierzyliśmy gwiazdkę, która stała jako pierwsza w grupie chromu, więc po odbiciu
+     * lądowała blisko lewej krawędzi. Gwiazdka zeszła do paska kciuka, a w górnym pasku zostały
+     * dzwonek i przełącznik trybu — i one **nigdy** nie dojdą do lewej połowy, bo po odbiciu grupa
+     * zatrzymuje się tuż obok nazwy modułu i hamburgera, które lustrzeniu nie podlegają (to nie
+     * są elementy chromu konta). Próg „mniej niż połowa okna" mierzył więc szerokość tytułu
+     * modułu, a nie działanie reguły.
+     *
+     * Teza, która obowiązuje niezmiennie od 100: **przełączenie ręki przesuwa chrom konta w stronę
+     * ręki dominującej**. Dokładnie to tu mierzymy.
+     */
+    expect(lewa!.srodek, "chrom konta ma się przesunąć w lewo po zmianie ręki").toBeLessThan(prawa!.srodek);
     await page.evaluate(() => document.documentElement.setAttribute("data-reka", "right"));
 
-    console.log(`[100-AC12] środek gwiazdki: prawa ${prawa!.srodek} px, lewa ${lewa!.srodek} px (okno ${prawa!.szerokoscOkna} px)`);
+    console.log(`[100-AC12] środek dzwonka: prawa ${prawa!.srodek} px, lewa ${lewa!.srodek} px (okno ${prawa!.szerokoscOkna} px)`);
   });
 
   test("[100-AC12] przy ręce lewej pływające przyciski idą na lewą krawędź", async ({ page }) => {

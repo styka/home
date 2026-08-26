@@ -56,12 +56,31 @@ export function declaredPermissionForPath(path: string): string | null | undefin
   return permissionForPathIn(DECLARED, path);
 }
 
-// Maksymalna liczba ikon w dolnym pasku (mobile) — przy większej liczbie robi się ciasno.
-export const MAX_TAB_BAR = 5;
+/**
+ * 103: ile MIEJSC MODUŁOWYCH zostaje w dolnym pasku po odjęciu kotwic.
+ *
+ * Ta liczba nie jest gustem, tylko wynikiem arytmetyki na najwęższym ekranie, który obsługujemy.
+ * Przy 360 px pasek ma 360 − 68 px (stały kontener magicznej ikony) = **292 px na pozycje**. Strony
+ * są dwoma pojemnikami `flex: 1` po 146 px, więc przy pięciu pozycjach strona dalsza mieści trzy po
+ * ~48,6 px, a bliższa dwie po 73 px — każda powyżej minimum 44 × 44 px (C-31). **Szósta pozycja
+ * zeszłaby do ~41 px i złamałaby tę regułę**, dlatego pięć jest sufitem, a kotwice zajmują z tego
+ * trzy: dom, ulubione i historia.
+ *
+ * Poprzednik tej stałej (`MAX_TAB_BAR = 5`) został USUNIĘTY, a nie zostawiony „na wszelki wypadek":
+ * po wprowadzeniu kotwic nie miał już ani jednego wywołania, a stała bez konsumenta w pliku
+ * wspólnym ogłasza limit, którego nikt nie egzekwuje — następna osoba przyjmie ją za obowiązującą
+ * i doda szóstą ikonę (C-35 czytane w drugą stronę).
+ */
+export const MAKS_MODULOW_W_PASKU = 2;
 
-// Domyślny dolny pasek (mobile) — niezależny od kolejności menu bocznego.
-// Wymaganie właściciela: Strona główna, Zadania, Zakupy.
-export const DEFAULT_TAB_BAR = ["home", "tasks", "shopping"];
+/**
+ * Domyślny dolny pasek (mobile) — niezależny od kolejności menu bocznego.
+ *
+ * 103: **bez `home`.** Strona główna jest od tego przebiegu KOTWICĄ paska (stałym miejscem), więc
+ * jej wpis w preferencjach dawałby dwie ikony domu w jednym pasku. Ten sam ruch, który 087 zrobiło
+ * z pozycją „Strona główna" w menu.
+ */
+export const DEFAULT_TAB_BAR = ["tasks", "shopping"];
 
 /**
  * 100: dominująca ręka. `String` + union zamiast enuma Prisma (C-12) — kolumna w bazie przyjmie
@@ -158,22 +177,107 @@ export function accessibleModulesInOrder(permissions: string[], prefs: MenuPrefs
 
 /**
  * Moduły dolnego paska (mobile) w kolejności wybranej przez użytkownika — niezależnej
- * od menu bocznego. Filtruje wg uprawnień, ucina do MAX_TAB_BAR. Gdy nic nie zostanie
+ * od menu bocznego. Filtruje wg uprawnień, ucina do `limit`. Gdy nic nie zostanie
  * (np. brak uprawnień do wybranych), wraca do pierwszych włączonych modułów menu.
  */
-export function resolveTabBar(permissions: string[], prefs: MenuPrefs): ModuleDef[] {
+export function resolveTabBar(permissions: string[], prefs: MenuPrefs, limit: number): ModuleDef[] {
   const byId = new Map(MODULES.map((m) => [m.id, m]));
   const seen = new Set<string>();
   const picked: ModuleDef[] = [];
   for (const id of prefs.tabBar) {
     if (seen.has(id)) continue;
+    // 103: `home` NIE jest pozycją modułową paska — jest jego kotwicą. Odsiewamy tutaj, a nie
+    // w powłoce, z tego samego powodu, dla którego `resolveMenu` odsiewa go od 087: tę samą listę
+    // czyta pasek, ekran ustawień i test, więc filtr w jednym z tych miejsc zostawiłby pozycję
+    // w dwóch pozostałych.
+    if (id === "home") continue;
     const m = byId.get(id);
     if (m && hasAccess(m, permissions)) {
       picked.push(m);
       seen.add(id);
     }
-    if (picked.length >= MAX_TAB_BAR) break;
+    if (picked.length >= limit) break;
   }
   if (picked.length > 0) return picked;
-  return resolveMenu(permissions, prefs).enabled.slice(0, 4);
+  return resolveMenu(permissions, prefs).enabled.slice(0, limit);
+}
+
+/**
+ * 103: jedna pozycja dolnego paska. Pasek przestał być listą modułów — są w nim cztery RODZAJE
+ * pozycji, a magiczna ikona asystenta stoi poza tą listą, bo ma stałe miejsce na środku (run 100).
+ */
+export type PozycjaPaska =
+  | { rodzaj: "modul"; modul: ModuleDef }
+  | { rodzaj: "dom" }
+  | { rodzaj: "ulubione" }
+  | { rodzaj: "historia" };
+
+/**
+ * 103: SKŁAD dolnego paska — czysta funkcja, świadomie tutaj, a nie w komponencie.
+ *
+ * Powód jest ten sam, dla którego mieszka tu `resolveTabBar`: ten sam skład czyta pasek, ekran
+ * ustawień (żeby wiedzieć, ile miejsc modułowych zostało) i test jednostkowy. Reguła „ile miejsc
+ * zostaje na moduły" policzona w komponencie musiałaby zostać powtórzona w edytorze menu — a dwie
+ * kopie tej samej arytmetyki rozjeżdżają się przy pierwszej zmianie kotwic.
+ *
+ * Zwracamy dwie grupy, nie jedną listę, bo tak wygląda pasek: dwa pojemniki po obu stronach
+ * magicznej ikony. `bliskie` to strona kciuka.
+ *
+ * Kolejność jest treścią zgłoszenia właściciela: **Dom | Sparkles | ulubione | historia**. Historia
+ * ląduje w samym rogu pod kciukiem, bo powrót jest najczęstszą czynnością nawigacyjną, a run 100
+ * ustalił, że róg należy do pozycji najważniejszej.
+ *
+ * `domDostepny` przychodzi PARAMETREM (a nie jest tu liczony z uprawnień), bo mapowanie ścieżka →
+ * uprawnienie mieszka w `@/lib/pathPermissions`, który importuje ten plik — policzenie go tutaj
+ * zamknęłoby cykl importów.
+ */
+export function pozycjePaska(
+  permissions: string[],
+  prefs: MenuPrefs,
+  domDostepny: boolean,
+): { dalekie: PozycjaPaska[]; bliskie: PozycjaPaska[] } {
+  // Gdy kotwica domu odpada (konto bez uprawnienia do Strony głównej), jej miejsce nie ma stać
+  // puste — przechodzi na moduły. Pasek ma zawsze tyle samo celów dotyku tej samej szerokości.
+  const miejscaModulowe = MAKS_MODULOW_W_PASKU + (domDostepny ? 0 : 1);
+  const moduly = resolveTabBar(permissions, prefs, miejscaModulowe).slice(0, miejscaModulowe);
+
+  const dalekie: PozycjaPaska[] = [
+    ...(domDostepny ? [{ rodzaj: "dom" } as const] : []),
+    ...moduly.map((modul) => ({ rodzaj: "modul" as const, modul })),
+  ];
+  // Kolejność w `bliskie` jest „od środka na zewnątrz": ostatnia pozycja ląduje w ROGU pod kciukiem.
+  // Historia jest tam celowo — powrót jest najczęstszą czynnością nawigacyjną, a właściciel wymienił
+  // skład dokładnie w tej kolejności: „Strona domowa | Sparkles | ulubione | historia".
+  const bliskie: PozycjaPaska[] = [{ rodzaj: "ulubione" }, { rodzaj: "historia" }];
+
+  return { dalekie, bliskie };
+}
+
+/**
+ * 103: LUSTRZENIE — zamienia dwie grupy na to, co faktycznie stoi po lewej i po prawej.
+ *
+ * Funkcja istnieje dlatego, że jej brak kosztował usterkę. Lustrzenie było wpisane wprost w JSX
+ * `PasekKciuka`, a test sprawdzał `pozycjePaska`, czyli listę **przed** lustrzeniem — więc twierdził,
+ * że historia stoi w rogu, podczas gdy w rogu stało co innego. Test sprawdzający wejście funkcji,
+ * której wyjście jest gdzie indziej odwracane, daje **fałszywe pokrycie**: świeci na zielono i nie
+ * pilnuje niczego.
+ *
+ * Obowiązują dwie reguły, po jednej na grupę. Pojemniki renderują swoje tablice **od lewej do
+ * prawej**, więc „róg" to pierwsza pozycja pojemnika lewego albo ostatnia pojemnika prawego:
+ *  - **róg po stronie kciuka należy do OSTATNIEJ pozycji `bliskie`** (historia),
+ *  - **przeciwległy narożnik należy do PIERWSZEJ pozycji `dalekie`** (Strona główna) — jest najdalej
+ *    od kciuka, więc trafia tam rzecz, po którą sięga się najrzadziej.
+ *
+ * Stąd asymetria odwróceń: przy ręce prawej `bliskie` idzie do prawego pojemnika bez zmian, a
+ * `dalekie` do lewego bez zmian; przy lewej oba są odwrócone. Wygląda to jak brak symetrii i nią
+ * nie jest — to ta sama reguła wyrażona w pojemniku, który liczy pozycje z drugiej strony.
+ */
+export function stronyPaska(
+  dalekie: PozycjaPaska[],
+  bliskie: PozycjaPaska[],
+  reka: Reka,
+): { lewa: PozycjaPaska[]; prawa: PozycjaPaska[] } {
+  return reka === "left"
+    ? { lewa: [...bliskie].reverse(), prawa: [...dalekie].reverse() }
+    : { lewa: [...dalekie], prawa: [...bliskie] };
 }

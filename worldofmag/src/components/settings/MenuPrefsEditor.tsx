@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, Eye, EyeOff, Loader2, X, Plus, Smartphone, Hand } from "lucide-react";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
-import { accessibleModulesInOrder, MAX_TAB_BAR, type MenuPrefs, type ModuleDef, type Reka } from "@/lib/modules";
+import { accessibleModulesInOrder, MAKS_MODULOW_W_PASKU, type MenuPrefs, type ModuleDef, type Reka } from "@/lib/modules";
 
 export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[]; prefs: MenuPrefs }) {
   const t = useTranslations("components.settings.MenuPrefsEditor");
@@ -63,7 +63,7 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
   }
 
   function addTab(id: string) {
-    if (tabBar.includes(id) || tabBar.length >= MAX_TAB_BAR) return;
+    if (tabBar.includes(id) || tabBar.length >= MAKS_MODULOW_W_PASKU) return;
     persistTabBar([...tabBar, id]);
   }
 
@@ -75,7 +75,9 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
     });
   }
 
-  const available = allAccessible.filter((m) => !tabBar.includes(m.id));
+  // 103: Strona główna jest KOTWICĄ paska, nie pozycją modułową — nie ma jej wśród możliwych
+  // do dodania, bo dodanie dałoby dwie ikony domu w jednym rzędzie.
+  const available = allAccessible.filter((m) => !tabBar.includes(m.id) && m.id !== "home");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -169,12 +171,17 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
       </div>
 
       {/* Dolny pasek (mobile) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div id="menu" style={{ display: "flex", flexDirection: "column", gap: 6, scrollMarginTop: 16 }}>
         <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <Smartphone size={13} /> Dolny pasek (telefon)
+          <Smartphone size={13} /> {t("dolnyPasekTytul")}
         </p>
         <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 4 }}>
-          Ikony i ich kolejność na dolnym pasku w telefonie — niezależne od menu bocznego (maks. {MAX_TAB_BAR}).
+          {t("dolnyPasekOpis", { maks: MAKS_MODULOW_W_PASKU })}
+        </p>
+        {/* 103: bez tego zdania limit „2" wygląda na usterkę. Użytkownik widzi w pasku pięć ikon
+            i nie ma powodu domyślać się, że trzy z nich są stałe. */}
+        <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 4 }}>
+          {t("dolnyPasekKotwice")}
         </p>
         {tabBar.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: 12, fontStyle: "italic" }}>{t("brakIkonDodajPonizej")}</p>
@@ -218,7 +225,7 @@ export function MenuPrefsEditor({ permissions, prefs }: { permissions: string[];
           })
         )}
 
-        {available.length > 0 && tabBar.length < MAX_TAB_BAR && (
+        {available.length > 0 && tabBar.length < MAKS_MODULOW_W_PASKU && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
             {available.map((m) => (
               <button

@@ -9,5 +9,8 @@ export default defineModule({
   color: "var(--accent-purple)",
   Icon: GraduationCap,
   sideNav: () => import("./ui/LanguagesSideNav").then((m) => ({ default: m.LanguagesSideNav })),
+  szybkieCele: [
+    { id: "talie", etykieta: "Talie", href: "/languages", Icon: GraduationCap },
+  ],
   defaultEnabled: true,
 });

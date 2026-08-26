@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { czytajReke, defaultMenuPrefs, MAX_TAB_BAR, MODULES, type MenuPrefs, type Reka } from "@/lib/modules";
+import { czytajReke, defaultMenuPrefs, MAKS_MODULOW_W_PASKU, MODULES, type MenuPrefs, type Reka } from "@/lib/modules";
 
 const VALID_IDS = new Set(MODULES.map((m) => m.id));
 
@@ -40,8 +40,18 @@ export async function updateMenuPrefs(patch: { order?: string[]; disabled?: stri
 
   const order = (patch.order ?? current.order).filter((id) => VALID_IDS.has(id));
   const disabled = (patch.disabled ?? current.disabled).filter((id) => VALID_IDS.has(id));
-  // dolny pasek: tylko prawidłowe id, bez duplikatów, ucięte do limitu
-  const tabBar = Array.from(new Set((patch.tabBar ?? current.tabBar).filter((id) => VALID_IDS.has(id)))).slice(0, MAX_TAB_BAR);
+  /**
+   * Dolny pasek: tylko prawidłowe id, bez duplikatów, ucięte do limitu MIEJSC MODUŁOWYCH.
+   *
+   * 103: `home` odpada, bo Strona główna jest od tego przebiegu **kotwicą** paska — jej wpis
+   * w preferencjach dawałby dwie ikony domu w jednym rzędzie. Limit spadł z pięciu do
+   * `MAKS_MODULOW_W_PASKU`, bo trzy z pięciu miejsc zajmują teraz kotwice (dom, ulubione,
+   * historia). Walidacja jest TUTAJ, a nie tylko w formularzu, bo kolumna jest JSON-em i przyjmie
+   * cokolwiek — również stan zapisany przez starszą wersję interfejsu.
+   */
+  const tabBar = Array.from(
+    new Set((patch.tabBar ?? current.tabBar).filter((id) => VALID_IDS.has(id) && id !== "home")),
+  ).slice(0, MAKS_MODULOW_W_PASKU);
   const favoritesCollapsed = patch.favoritesCollapsed ?? current.favoritesCollapsed;
   const handedness = czytajReke(patch.handedness ?? current.handedness);
 
