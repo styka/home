@@ -139,6 +139,39 @@ test.describe("Gwiazdka jako inteligentna ikona", () => {
   });
 });
 
+test.describe("Kolejność kotwic pod kciukiem", () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+
+  test("[103-AC4] historia stoi w rogu pod kciukiem, dom najdalej od niego", async ({ page }) => {
+    // Pomiar POZYCJI, nie kolejności w kodzie: nawrót z `/verify` wziął się właśnie stąd, że test
+    // sprawdzał listę przed lustrzeniem i przepuścił układ odwrócony do zgłoszenia.
+    await otworz(page, "/tasks");
+    await pasekWidoczny(page);
+
+    const pomiar = await page.evaluate(() => {
+      const nav = document.querySelector<HTMLElement>('nav[aria-label="Nawigacja główna"]');
+      if (!nav) return null;
+      const srodek = (b: Element) => b.getBoundingClientRect().left + b.getBoundingClientRect().width / 2;
+      const znajdz = (re: RegExp) =>
+        Array.from(nav.querySelectorAll<HTMLElement>("button")).find((b) => re.test(b.getAttribute("aria-label") ?? ""));
+      const historia = znajdz(/(poprzedniej strony|Historia jest pusta)/i);
+      const gwiazdka = znajdz(/ten widok (w|z) ulubionych/i);
+      const dom = znajdz(/Przejdź na stronę główną/i);
+      if (!historia || !gwiazdka || !dom) return null;
+      return { historia: srodek(historia), gwiazdka: srodek(gwiazdka), dom: srodek(dom), okno: window.innerWidth };
+    });
+
+    expect(pomiar).not.toBeNull();
+    // Ręka prawa (domyślna): historia najbardziej na prawo, przed nią gwiazdka, dom po lewej.
+    expect(pomiar!.historia, "historia ma stać w rogu pod kciukiem").toBeGreaterThan(pomiar!.gwiazdka);
+    expect(pomiar!.dom, "dom ma stać najdalej od kciuka").toBeLessThan(pomiar!.okno / 2);
+    console.log(
+      `[103-AC4] środki: dom ${Math.round(pomiar!.dom)} px, gwiazdka ${Math.round(pomiar!.gwiazdka)} px, ` +
+        `historia ${Math.round(pomiar!.historia)} px (okno ${pomiar!.okno} px)`,
+    );
+  });
+});
+
 test.describe("Historia odwiedzonych stron", () => {
   test.use({ viewport: { width: 390, height: 780 } });
 

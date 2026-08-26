@@ -45,6 +45,7 @@ export function PasekKciukaPolaczony({
 
   const modulBiezacy = MODULES.find((m) => (m.exact ? pathname === m.href : pathname.startsWith(m.href)));
   const { zapisany, przelacz } = useUlubioneBiezacego(favoriteViews, modulBiezacy?.label);
+  const ulubioneDostepne = filterAccessibleFavorites(favoriteViews, userPermissions, isPathLocked);
 
   const historia = useHistoriaNawigacji(favoriteViews);
   /**
@@ -67,12 +68,8 @@ export function PasekKciukaPolaczony({
       ulubione={{
         zapisany,
         przelacz,
-        pozycje: () =>
-          filterAccessibleFavorites(favoriteViews, userPermissions, isPathLocked).map((f) => ({
-            id: f.id,
-            etykieta: f.label,
-            href: f.path,
-          })),
+        pozycje: () => ulubioneDostepne.map((f) => ({ id: f.id, etykieta: f.label, href: f.path })),
+        pusta: ulubioneDostepne.length === 0,
       }}
       historia={{
         pozycje: () => dostepna.map((w) => ({ id: w.sciezka, etykieta: w.etykieta, href: w.sciezka })),

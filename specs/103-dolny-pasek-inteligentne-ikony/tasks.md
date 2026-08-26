@@ -1,7 +1,7 @@
 # Zadania: Dolny pasek — inteligentne ikony, gwiazdka, historia, drzewiasty wachlarz
 
 - **Plan:** ./plan.md (103-dolny-pasek-inteligentne-ikony)
-- **Status:** in-progress
+- **Status:** done
 - **Data:** 2026-08-26
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -185,7 +185,7 @@
 
 ## Faza 6 — Nawrót z `/verify` (C-54)
 
-- [ ] **T-25** (AC-4, brak B-1) — **Kolejność kotwic pod kciukiem jest ODWROTNA do zgłoszenia.**
+- [x] **T-25** (AC-4, brak B-1) — **Kolejność kotwic pod kciukiem jest ODWROTNA do zgłoszenia.**
       `pozycjePaska` zwraca `bliskie = [ulubione, historia]`, ale `PasekKciuka` renderuje stronę
       kciuka przez `[...bliskie].reverse()`, więc w rogu ląduje ulubione zamiast historii. Przy ręce
       lewej wypada dobrze — błąd jest jednostronny i tym łatwiej go przeoczyć.
@@ -196,7 +196,7 @@
       *Gotowe, gdy:* przy ręce prawej ostatnia pozycja prawej strony to historia, przy lewej —
       pierwsza pozycja lewej strony to historia; dom zostaje najdalej od kciuka w obu wariantach.
 
-- [ ] **T-26** (AC-8, brak B-2) — **Przytrzymanie gwiazdki przy zerze ulubionych otwiera pustą
+- [x] **T-26** (AC-8, brak B-2) — **Przytrzymanie gwiazdki przy zerze ulubionych otwiera pustą
       warstwę.** `wlasne ?? [...]` przepuszcza pustą tablicę (`??` reaguje tylko na `null`/
       `undefined`). Domknij to tak samo jak historię (AC-13): brak pozycji = brak uchwytów gestu
       + wyszarzenie + komunikat; krótkie tapnięcie ma nadal zapisywać widok, bo to główna czynność

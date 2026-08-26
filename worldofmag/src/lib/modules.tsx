@@ -245,7 +245,39 @@ export function pozycjePaska(
     ...(domDostepny ? [{ rodzaj: "dom" } as const] : []),
     ...moduly.map((modul) => ({ rodzaj: "modul" as const, modul })),
   ];
+  // Kolejność w `bliskie` jest „od środka na zewnątrz": ostatnia pozycja ląduje w ROGU pod kciukiem.
+  // Historia jest tam celowo — powrót jest najczęstszą czynnością nawigacyjną, a właściciel wymienił
+  // skład dokładnie w tej kolejności: „Strona domowa | Sparkles | ulubione | historia".
   const bliskie: PozycjaPaska[] = [{ rodzaj: "ulubione" }, { rodzaj: "historia" }];
 
   return { dalekie, bliskie };
+}
+
+/**
+ * 103: LUSTRZENIE — zamienia dwie grupy na to, co faktycznie stoi po lewej i po prawej.
+ *
+ * Funkcja istnieje dlatego, że jej brak kosztował usterkę. Lustrzenie było wpisane wprost w JSX
+ * `PasekKciuka`, a test sprawdzał `pozycjePaska`, czyli listę **przed** lustrzeniem — więc twierdził,
+ * że historia stoi w rogu, podczas gdy w rogu stało co innego. Test sprawdzający wejście funkcji,
+ * której wyjście jest gdzie indziej odwracane, daje **fałszywe pokrycie**: świeci na zielono i nie
+ * pilnuje niczego.
+ *
+ * Obowiązują dwie reguły, po jednej na grupę. Pojemniki renderują swoje tablice **od lewej do
+ * prawej**, więc „róg" to pierwsza pozycja pojemnika lewego albo ostatnia pojemnika prawego:
+ *  - **róg po stronie kciuka należy do OSTATNIEJ pozycji `bliskie`** (historia),
+ *  - **przeciwległy narożnik należy do PIERWSZEJ pozycji `dalekie`** (Strona główna) — jest najdalej
+ *    od kciuka, więc trafia tam rzecz, po którą sięga się najrzadziej.
+ *
+ * Stąd asymetria odwróceń: przy ręce prawej `bliskie` idzie do prawego pojemnika bez zmian, a
+ * `dalekie` do lewego bez zmian; przy lewej oba są odwrócone. Wygląda to jak brak symetrii i nią
+ * nie jest — to ta sama reguła wyrażona w pojemniku, który liczy pozycje z drugiej strony.
+ */
+export function stronyPaska(
+  dalekie: PozycjaPaska[],
+  bliskie: PozycjaPaska[],
+  reka: Reka,
+): { lewa: PozycjaPaska[]; prawa: PozycjaPaska[] } {
+  return reka === "left"
+    ? { lewa: [...bliskie].reverse(), prawa: [...dalekie].reverse() }
+    : { lewa: [...dalekie], prawa: [...bliskie] };
 }

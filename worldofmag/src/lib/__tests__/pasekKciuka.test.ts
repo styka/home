@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MODULES, defaultMenuPrefs, pozycjePaska, MAKS_MODULOW_W_PASKU, type MenuPrefs } from "@/lib/modules";
+import { MODULES, defaultMenuPrefs, pozycjePaska, stronyPaska, MAKS_MODULOW_W_PASKU, type MenuPrefs } from "@/lib/modules";
 
 /**
  * 103 — SKŁAD dolnego paska. Test pilnuje rzeczy, których kontrola typów nie złapie, a które
@@ -27,9 +27,52 @@ test("pełne uprawnienia: dom + moduły po stronie dalszej, ulubione i historia 
   assert.deepEqual(bliskie.map((p) => p.rodzaj), ["ulubione", "historia"]);
 });
 
-test("historia stoi w SAMYM ROGU pod kciukiem — powrót jest najczęstszą czynnością", () => {
-  const { bliskie } = pozycjePaska(WSZYSTKIE, prefs(), true);
-  assert.equal(bliskie[bliskie.length - 1]?.rodzaj, "historia");
+/**
+ * Testy lustrzenia sprawdzają **kolejność WYRENDEROWANĄ**, a nie listę wejściową. To jest poprawka
+ * po weryfikacji: poprzednia wersja sprawdzała wynik `pozycjePaska`, czyli stan PRZED odwróceniem
+ * tablic w komponencie — przechodziła, twierdząc, że historia stoi w rogu, podczas gdy w rogu
+ * stała gwiazdka. Test mierzący coś innego, niż widzi użytkownik, jest częścią usterki.
+ *
+ * Pojemniki renderują od lewej do prawej, więc róg ekranu to `lewa[0]` albo `prawa[ostatni]`.
+ */
+function rogi(reka: "left" | "right", domDostepny = true) {
+  const { dalekie, bliskie } = pozycjePaska(WSZYSTKIE, prefs(), domDostepny);
+  const { lewa, prawa } = stronyPaska(dalekie, bliskie, reka);
+  return {
+    lewa,
+    prawa,
+    rogKciuka: reka === "left" ? lewa[0] : prawa[prawa.length - 1],
+    rogPrzeciwny: reka === "left" ? prawa[prawa.length - 1] : lewa[0],
+  };
+}
+
+test("ręka prawa: historia w PRAWYM rogu, dom w lewym — tak jak wymienił właściciel", () => {
+  const { rogKciuka, rogPrzeciwny, prawa } = rogi("right");
+  assert.equal(rogKciuka?.rodzaj, "historia", "róg pod kciukiem należy do historii");
+  assert.equal(rogPrzeciwny?.rodzaj, "dom", "najdalej od kciuka stoi Strona główna");
+  // „ulubione | historia" — dokładnie w kolejności ze zgłoszenia, licząc od środka na zewnątrz.
+  assert.deepEqual(prawa.map((p) => p.rodzaj), ["ulubione", "historia"]);
+});
+
+test("ręka lewa: ten sam układ, odbity — historia w LEWYM rogu", () => {
+  const { rogKciuka, rogPrzeciwny, lewa } = rogi("left");
+  assert.equal(rogKciuka?.rodzaj, "historia");
+  assert.equal(rogPrzeciwny?.rodzaj, "dom");
+  assert.deepEqual(lewa.map((p) => p.rodzaj), ["historia", "ulubione"]);
+});
+
+test("obie ręce dają lustrzane odbicie tej samej listy", () => {
+  // Układ widziany na ekranie to lewy pojemnik, a po nim prawy (magiczna ikona stoi między nimi
+  // i jest neutralna względem ręki, więc w tym porównaniu nie bierze udziału).
+  const naEkranie = (r: "left" | "right") => {
+    const { lewa, prawa } = rogi(r);
+    return [...lewa, ...prawa].map((x) => x.rodzaj);
+  };
+  assert.deepEqual(
+    naEkranie("left"),
+    [...naEkranie("right")].reverse(),
+    "przełączenie ręki ma ODBIJAĆ układ, a nie układać go od nowa",
+  );
 });
 
 test("pasek ma pięć pozycji — sufit wyliczony z 360 px (C-31)", () => {

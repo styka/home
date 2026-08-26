@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Home, History, Sparkles, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { openAssistant } from "@/platform/ai/assistantBus";
-import type { ModuleDef, PozycjaPaska, Reka } from "@/lib/modules";
+import { stronyPaska, type ModuleDef, type PozycjaPaska, type Reka } from "@/lib/modules";
 import type { PozycjaWachlarza, ZrodloWachlarza } from "./WachlarzNawigacji";
 import { useWachlarz } from "./WachlarzNawigacji";
 
@@ -55,7 +55,13 @@ export function PasekKciuka({
   reka: Reka;
   pathname: string;
   /** Stan i czynność gwiazdki oraz jej wachlarz zapisanych widoków. */
-  ulubione: { zapisany: boolean; przelacz: () => void; pozycje: () => PozycjaWachlarza[] };
+  ulubione: {
+    zapisany: boolean;
+    przelacz: () => void;
+    pozycje: () => PozycjaWachlarza[];
+    /** Czy jest co pokazać po przytrzymaniu — brak zapisanych widoków to stan, nie błąd. */
+    pusta: boolean;
+  };
   /** Odwiedzone strony (najświeższa pierwsza), krok wstecz i komunikat przy pustej liście. */
   historia: { pozycje: () => PozycjaWachlarza[]; wstecz: () => void; pusta: boolean; naPustej: () => void };
 }) {
@@ -88,10 +94,14 @@ export function PasekKciuka({
    *  - bliższe pozycje mają większą ikonę.
    * Minimum 44 × 44 px obowiązuje wszystkie (C-31) — różnica jest w nadmiarze, nigdy w niedomiarze.
    */
-  // Wewnątrz połowy najważniejsza pozycja ma być najdalej od środka (w rogu pod kciukiem), a każda
-  // kolejna bliżej — stąd odwrócenie strony bliższej.
-  const lewa = reka === "left" ? [...bliskie].reverse() : [...dalekie];
-  const prawa = reka === "left" ? [...dalekie].reverse() : [...bliskie].reverse();
+  /**
+   * Lustrzenie liczy `stronyPaska` w `lib/modules`, a nie ten komponent — i to jest poprawka po
+   * weryfikacji, nie porządkowanie. Gdy odwracanie tablic siedziało tutaj, w JSX, test sprawdzał
+   * `pozycjePaska`, czyli listę **przed** lustrzeniem: świecił na zielono, twierdził, że historia
+   * stoi w rogu, a w rogu stała gwiazdka. Reguła wyrażona w czystej funkcji jest sprawdzalna
+   * dokładnie w tej postaci, w jakiej działa.
+   */
+  const { lewa, prawa } = stronyPaska(dalekie, bliskie, reka);
 
   const rysuj = (pozycja: PozycjaPaska, blisko: boolean) => {
     switch (pozycja.rodzaj) {
@@ -124,7 +134,20 @@ export function PasekKciuka({
             kolor={ulubione.zapisany ? "var(--accent-amber)" : undefined}
             wypelnienie={ulubione.zapisany}
             blisko={blisko}
-            gest={uchwyty("", { pozycje: ulubione.pozycje, naTap: ulubione.przelacz })}
+            /**
+             * Przy ZERZE zapisanych widoków gwiazdka nie dostaje uchwytów gestu — dokładnie tak jak
+             * historia (AC-13). `pozycje()` zwróciłoby pustą tablicę, a wachlarz otworzyłby wtedy
+             * ciemną warstwę bez jednej podpowiedzi: ekran, z którego jedynym wyjściem jest
+             * domyślenie się, że trzeba puścić palec obok. Krótkie tapnięcie zostaje przy `onClick`,
+             * bo zapis widoku jest GŁÓWNĄ czynnością tej kotwicy i musi działać od pierwszego razu —
+             * to on tę listę zapełnia. Skutek uboczny jest zamierzony: przy pustej liście długie
+             * przytrzymanie też zapisze widok, bo to jedyna sensowna czynność, jaka wtedy istnieje —
+             * i jest odwracalna następnym tapnięciem.
+             */
+            gest={
+              ulubione.pusta ? undefined : uchwyty("", { pozycje: ulubione.pozycje, naTap: ulubione.przelacz })
+            }
+            naKlik={ulubione.pusta ? ulubione.przelacz : undefined}
           />
         );
       case "historia":
