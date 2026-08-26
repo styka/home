@@ -1,7 +1,7 @@
 # Zadania: Ergonomia asystenta AI — chrom, sesje i tryb dokowania
 
 - **Plan:** ./plan.md (106-ergonomia-asystenta)
-- **Status:** todo
+- **Status:** w toku (T-15 — klikacze w biegu)
 - **Data:** 2026-08-26
 
 > Kolejność: od najłatwiejszego do najtrudniejszego i zgodnie z zależnościami
@@ -131,7 +131,7 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-14** — Komplet bramek lokalnie (plan §8), na **lokalnym** Postgresie (C-13):
+- [x] **T-14** — Komplet bramek lokalnie (plan §8), na **lokalnym** Postgresie (C-13):
       `check:migrations`, `check:schema-drift`, `check:pagination`, `check:i18n`,
       `check:ui-contract`, `check:owner-columns`, `check:client-safe`, `check:logs`,
       `check:ai-coverage`, `check:actions`, `tsc --noEmit -p tsconfig.test.json`,
@@ -139,13 +139,13 @@
       prod DB).
       **Gotowe, gdy:** wszystko zielone do `next build` włącznie.
 
-- [ ] **T-15** — Klikacze Playwright wg `docs/e2e/uruchamianie-e2e-claude.md`
+- [~] **T-15** — Klikacze Playwright wg `docs/e2e/uruchamianie-e2e-claude.md`
       (`nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`), **bez `networkidle`**
       (`check:e2e-waits`). Sprawdź, czy zmiana nie wywróciła istniejących scenariuszy asystenta
       i powłoki.
       **Gotowe, gdy:** brak nowych regresji względem stanu sprzed zmiany.
 
-- [ ] **T-16** — Aktualizacja dokumentacji: `worldofmag/CLAUDE.md` (opis asystenta — dwie listy
+- [x] **T-16** — Aktualizacja dokumentacji: `worldofmag/CLAUDE.md` (opis asystenta — dwie listy
       rozmów, tryb prezentacji, menu ⋮) oraz wpisy do `doświadczenia.md` (C-51, po polsku):
       `display: none` gubi pozycję przewijania; `inert` przez `ref`, nie prop (React 18);
       wspólne `take: 50` na jednej liście chowa rekordy wyróżnione.

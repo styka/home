@@ -1867,7 +1867,15 @@ export function AICommandSheet({
                 <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...headerBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
                 <button
                   ref={wiecejBtnRef}
-                  onClick={() => setShowWiecej((v) => !v)}
+                  onClick={() => {
+                    const otwieram = !showWiecej;
+                    setShowWiecej(otwieram);
+                    // Etykieta „Zapisz rozmowę" / „Usuń z zapisanych" czyta stan z list, a te
+                    // wczytują się dotąd dopiero przy otwarciu historii. Bez tego odczytu menu
+                    // pokazywałoby „Zapisz" dla rozmowy już zapisanej — czyli kłamałoby o stanie,
+                    // i to w miejscu, w którym stanu nie widać z niczego innego.
+                    if (otwieram) void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+                  }}
                   title={t("wiecej")}
                   aria-label={t("wiecejAkcji")}
                   aria-expanded={showWiecej}
@@ -1928,6 +1936,10 @@ export function AICommandSheet({
                     const biezaca = [...conversations.zapisane, ...conversations.historia].find((c) => c.id === conversationId);
                     setRenameText(biezaca?.title ?? "");
                     setRenamingId(conversationId);
+                    // Pole nazwy stoi w WIERSZU listy, więc trzeba pokazać tę listę, na której ta
+                    // rozmowa naprawdę jest. Inaczej „Zmień nazwę" otwierałoby historię z kursorem
+                    // w polu, którego nie widać — akcja bez skutku widocznego dla użytkownika.
+                    setListaRozmow(biezacaZapisana ? "zapisane" : "historia");
                     setHeaderPanel("history");
                     void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
                   }}
