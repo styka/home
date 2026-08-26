@@ -44,7 +44,7 @@ export async function updateMenuPrefs(patch: { order?: string[]; disabled?: stri
    * Dolny pasek: tylko prawidłowe id, bez duplikatów, ucięte do limitu MIEJSC MODUŁOWYCH.
    *
    * 103: `home` odpada, bo Strona główna jest od tego przebiegu **kotwicą** paska — jej wpis
-   * w preferencjach dawałby dwie ikony domu w jednym rzędzie. Limit spadł z `MAX_TAB_BAR` do
+   * w preferencjach dawałby dwie ikony domu w jednym rzędzie. Limit spadł z pięciu do
    * `MAKS_MODULOW_W_PASKU`, bo trzy z pięciu miejsc zajmują teraz kotwice (dom, ulubione,
    * historia). Walidacja jest TUTAJ, a nie tylko w formularzu, bo kolumna jest JSON-em i przyjmie
    * cokolwiek — również stan zapisany przez starszą wersję interfejsu.

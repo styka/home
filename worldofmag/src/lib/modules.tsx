@@ -66,14 +66,12 @@ export function declaredPermissionForPath(path: string): string | null | undefin
  * zeszłaby do ~41 px i złamałaby tę regułę**, dlatego pięć jest sufitem, a kotwice zajmują z tego
  * trzy: dom, ulubione i historia.
  *
- * `MAX_TAB_BAR` zostaje wyższe od tej liczby świadomie: preferencja użytkownika nie jest kasowana
- * przy zmianie układu, tylko przycinana przy renderowaniu — nadmiarowe identyfikatory wrócą, gdyby
- * limit kiedyś urósł.
+ * Poprzednik tej stałej (`MAX_TAB_BAR = 5`) został USUNIĘTY, a nie zostawiony „na wszelki wypadek":
+ * po wprowadzeniu kotwic nie miał już ani jednego wywołania, a stała bez konsumenta w pliku
+ * wspólnym ogłasza limit, którego nikt nie egzekwuje — następna osoba przyjmie ją za obowiązującą
+ * i doda szóstą ikonę (C-35 czytane w drugą stronę).
  */
 export const MAKS_MODULOW_W_PASKU = 2;
-
-// Maksymalna liczba ikon w dolnym pasku (mobile) — przy większej liczbie robi się ciasno.
-export const MAX_TAB_BAR = 5;
 
 /**
  * Domyślny dolny pasek (mobile) — niezależny od kolejności menu bocznego.
@@ -179,10 +177,10 @@ export function accessibleModulesInOrder(permissions: string[], prefs: MenuPrefs
 
 /**
  * Moduły dolnego paska (mobile) w kolejności wybranej przez użytkownika — niezależnej
- * od menu bocznego. Filtruje wg uprawnień, ucina do MAX_TAB_BAR. Gdy nic nie zostanie
+ * od menu bocznego. Filtruje wg uprawnień, ucina do `limit`. Gdy nic nie zostanie
  * (np. brak uprawnień do wybranych), wraca do pierwszych włączonych modułów menu.
  */
-export function resolveTabBar(permissions: string[], prefs: MenuPrefs, limit: number = MAX_TAB_BAR): ModuleDef[] {
+export function resolveTabBar(permissions: string[], prefs: MenuPrefs, limit: number): ModuleDef[] {
   const byId = new Map(MODULES.map((m) => [m.id, m]));
   const seen = new Set<string>();
   const picked: ModuleDef[] = [];

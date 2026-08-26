@@ -77,8 +77,13 @@ w pełnym, równoległym przebiegu, a nie skutkiem tej zmiany — przechodzi na 
 **C. Niepowodzenia ZASTANE, niezwiązane z tą zmianą (12 testów).** Wszystkie w Wiadomościach
 i lektorze (`084-*`, `086-AC20`, `087-AC2/AC9/AC10/AC11/AC15`, `085-AC4`, `099-AC17`,
 `news-stream-scroll`, `news-observer-remount`). W tym środowisku nie ma sieci, więc kanały RSS są
-puste, a te testy stoją na treści artykułów. Sprawdzone porównawczo na commicie bazowym
-(`a2b3e3e`, przed tą zmianą) w osobnym drzewie roboczym.
+puste, a te testy stoją na treści artykułów.
+
+**Sprawdzone porównawczo, nie założone:** te same pliki uruchomione na commicie **bazowym**
+`a2b3e3e` (w osobnym drzewie roboczym `git worktree`, przed jakąkolwiek zmianą z tego przebiegu)
+dały **12 niezdanych — dokładnie tę samą listę**, co do pozycji. Wynik bazowy: `12 failed,
+20 passed`. Żadne z tych niepowodzeń nie wynika więc z tej zmiany i żadne nie zostało nią
+pogłębione.
 
 ## Znalezione i naprawione po drodze
 
