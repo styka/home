@@ -33,6 +33,13 @@ const GWIAZDKA = /ten widok (w|z) ulubionych/i;
 /** Szósta kotwica (104) — otwiera panel szybkiej nawigacji. */
 const NAWIGACJA = /Szybka nawigacja/i;
 
+/**
+ * „Wstecz" — nazwa dostępna ZMIENIA SIĘ ze stanem: przy pustej historii mówi, że nie ma dokąd
+ * wracać. Stała, bo wzorzec dopasowany tylko do jednego wariantu gubi przycisk dokładnie w tym
+ * stanie, który test sprawdza — i tak właśnie ten spec padł po zmianie komunikatu w 104.
+ */
+const WSTECZ = /(poprzedniej strony|Nie ma jeszcze dokąd wracać)/i;
+
 const pasekWidoczny = async (page: import("@playwright/test").Page) => {
   const pasek = page.getByRole("navigation", { name: /Nawigacja główna/i });
   await expect(pasek).toBeVisible({ timeout: 20_000 });
@@ -53,7 +60,7 @@ test.describe("Skład dolnego paska", () => {
       await expect(page.getByRole("button", { name: /^Asystent AI$/ })).toHaveCount(1);
       await expect(pasek.getByRole("button", { name: GWIAZDKA })).toHaveCount(1);
       await expect(pasek.getByRole("button", { name: NAWIGACJA })).toHaveCount(1);
-      await expect(pasek.getByRole("button", { name: /(poprzedniej strony|Nie ma jeszcze dokąd wracać)/i })).toHaveCount(1);
+      await expect(pasek.getByRole("button", { name: WSTECZ })).toHaveCount(1);
     }
   });
 
@@ -155,7 +162,7 @@ test.describe("Gwiazdka jako inteligentna ikona", () => {
 test.describe("Kolejność kotwic pod kciukiem", () => {
   test.use({ viewport: { width: 390, height: 780 } });
 
-  test("[103-AC4] historia stoi w rogu pod kciukiem, dom najdalej od niego", async ({ page }) => {
+  test("[104-AC7] historia stoi w rogu pod kciukiem, dom najdalej od niego", async ({ page }) => {
     // Pomiar POZYCJI, nie kolejności w kodzie: nawrót z `/verify` wziął się właśnie stąd, że test
     // sprawdzał listę przed lustrzeniem i przepuścił układ odwrócony do zgłoszenia.
     await otworz(page, "/tasks");
@@ -167,7 +174,7 @@ test.describe("Kolejność kotwic pod kciukiem", () => {
       const srodek = (b: Element) => b.getBoundingClientRect().left + b.getBoundingClientRect().width / 2;
       const znajdz = (re: RegExp) =>
         Array.from(nav.querySelectorAll<HTMLElement>("button")).find((b) => re.test(b.getAttribute("aria-label") ?? ""));
-      const historia = znajdz(/(poprzedniej strony|Historia jest pusta)/i);
+      const historia = znajdz(WSTECZ);
       const gwiazdka = znajdz(/ten widok (w|z) ulubionych/i);
       const dom = znajdz(/Przejdź na stronę główną/i);
       if (!historia || !gwiazdka || !dom) return null;
@@ -175,7 +182,9 @@ test.describe("Kolejność kotwic pod kciukiem", () => {
     });
 
     expect(pomiar).not.toBeNull();
-    // Ręka prawa (domyślna): historia najbardziej na prawo, przed nią gwiazdka, dom po lewej.
+    // Ręka prawa (domyślna): historia najbardziej na prawo, przed nią nawigacja i gwiazdka,
+    // dom po lewej. 104 wsunęło szybką nawigację MIĘDZY gwiazdkę a „wstecz", więc relacja
+    // gwiazdka < historia obowiązuje dalej — tyle że nie sąsiadują już ze sobą.
     expect(pomiar!.historia, "historia ma stać w rogu pod kciukiem").toBeGreaterThan(pomiar!.gwiazdka);
     expect(pomiar!.dom, "dom ma stać najdalej od kciuka").toBeLessThan(pomiar!.okno / 2);
     console.log(

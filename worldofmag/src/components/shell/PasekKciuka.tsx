@@ -109,7 +109,7 @@ export function PasekKciuka({
         return (
           <PozycjaProsta
             key="nawigacja"
-            ref={nawigacja.kotwicaRef}
+            kotwicaRef={nawigacja.kotwicaRef}
             Icon={Compass}
             etykieta={t("nawigacja")}
             opis={t("nawigacjaOpis")}
@@ -266,7 +266,7 @@ const PozycjaProsta = function PozycjaProsta({
   wypelnienie,
   blisko,
   naKlik,
-  ref,
+  kotwicaRef,
 }: {
   Icon: LucideIcon;
   etykieta: string;
@@ -280,12 +280,19 @@ const PozycjaProsta = function PozycjaProsta({
   wypelnienie?: boolean;
   blisko: boolean;
   naKlik: () => void;
-  ref?: React.RefObject<HTMLButtonElement>;
+  /**
+   * Uchwyt do elementu — **celowo NIE nazywa się `ref`**. W Reakcie 18 `ref` przekazany do
+   * komponentu funkcyjnego jest prop-em SPECJALNYM: React go przechwytuje i nie oddaje dalej,
+   * więc `kotwicaRef.current` zostawało `null`, a panel nie miał się gdzie zakotwiczyć i po prostu
+   * się nie otwierał. `tsc` tego nie łapie, bo typ jest poprawny — to jest błąd czasu wykonania
+   * przy zielonej kompilacji. Zwykła nazwa omija całą tę pułapkę (i różnicę semantyki w R19).
+   */
+  kotwicaRef?: React.RefObject<HTMLButtonElement>;
 }) {
   const rozmiar = blisko ? 22 : 20;
   return (
     <button
-      ref={ref}
+      ref={kotwicaRef}
       type="button"
       aria-current={aktywna ? "page" : undefined}
       aria-pressed={rozwijana ? undefined : wcisnieta}
