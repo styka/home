@@ -53,6 +53,33 @@ Rodzaje dowodów: **T** = test jednostkowy, **K** = klikacz (Playwright), **B** 
 | `next build` | ✓ exit 0 |
 | `check:perf` | ✓ w paśmie ±5 % — **próg bez zmian** |
 
+## Klikacze (e2e) — wynik i rozróżnienie niepowodzeń
+
+Pełny przebieg `desktop`: **202 zdane, 214 pominiętych, 18 niezdanych**. Niepowodzenia rozpadły się
+na trzy grupy — i to rozróżnienie jest częścią wyniku, nie jego pominięciem:
+
+**A. Wywołane tą zmianą — ŚWIADOMIE, bo zmieniła się reguła (3 testy zastane).**
+Wszystkie trzy pilnowały, że gwiazdka stoi w GÓRNYM pasku telefonu. Właściciel poprosił o coś
+przeciwnego, więc poprawiono TESTY, nie kod:
+- `[085-AC1]` — na telefonie gwiazdka ma być w pasku kciuka; część komputerowa nietknięta,
+- `[100-AC12/AC22]` — lustrzenie chromu konta mierzone teraz na DZWONKU (gwiazdka zeszła niżej),
+- `[087-AC21]` — „jedno wejście do ulubionych" bez zmian, ale wzorzec musiał złapać nową nazwę
+  (`aria-label` mówi, CO przycisk zrobi, a nie jak nazywa się zbiór).
+
+**B. Błąd w moich NOWYCH testach (2 testy).** Lokator gwiazdki łapał tylko wariant „…**w**
+ulubionych", a po przełączeniu nazwa brzmi „…**z** ulubionych" — czyli test gubił przycisk dokładnie
+w chwili, którą sprawdzał. Poprawione na wzorzec obejmujący oba stany.
+
+**Po poprawkach A i B przebieg kontrolny na tych samych plikach: `085-AC1`, `100-AC12/AC22`,
+`087-AC21`, `[vs-AC4]` oraz oba testy `103` — ZDANE.** (`[vs-AC4]` okazał się niestabilny
+w pełnym, równoległym przebiegu, a nie skutkiem tej zmiany — przechodzi na tym samym kodzie.)
+
+**C. Niepowodzenia ZASTANE, niezwiązane z tą zmianą (12 testów).** Wszystkie w Wiadomościach
+i lektorze (`084-*`, `086-AC20`, `087-AC2/AC9/AC10/AC11/AC15`, `085-AC4`, `099-AC17`,
+`news-stream-scroll`, `news-observer-remount`). W tym środowisku nie ma sieci, więc kanały RSS są
+puste, a te testy stoją na treści artykułów. Sprawdzone porównawczo na commicie bazowym
+(`a2b3e3e`, przed tą zmianą) w osobnym drzewie roboczym.
+
 ## Znalezione i naprawione po drodze
 
 1. **`HabitFormModal` zaimportowany i nigdy nierenderowany** — w Nawykach nie dało się dodać nawyku

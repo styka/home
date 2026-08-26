@@ -170,12 +170,12 @@
       67 465 kB, wszystko w paśmie ±5 %. Kod powłoki dołożył mniej, niż wynosi tolerancja szumu
       aktualizacji zależności, więc podnoszenie progu byłoby zapisaniem nieistniejącego kosztu.
 
-- [~] **T-22** — **Klikacze (e2e).** `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`.
+- [x] **T-22** — **Klikacze (e2e).** `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`.
       Nowe/rozszerzone scenariusze dla gestu i paska; **nigdy `networkidle`** (aplikacja trzyma
       otwarty strumień zdarzeń — `check:e2e-waits`).
       *Gotowe, gdy:* zestaw przechodzi, a nowe scenariusze pokrywają AC z tabeli w T-23.
 
-- [ ] **T-23** — **Mapowanie AC → wynik** (wejście dla `/verify`): dla każdego z 27 kryteriów ze
+- [x] **T-23** — **Mapowanie AC → wynik** (wejście dla `/verify`): dla każdego z 27 kryteriów ze
       speca zapisz, **czym** zostało sprawdzone (test jednostkowy / klikacz / bramka / przegląd)
       i z jakim wynikiem. AC bez pokrycia = zadanie wraca do implementacji (C-54).
 
