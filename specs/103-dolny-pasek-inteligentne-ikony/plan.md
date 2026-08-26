@@ -1,7 +1,7 @@
 # Plan techniczny: Dolny pasek — inteligentne ikony, gwiazdka, historia, drzewiasty wachlarz
 
 - **Spec:** ./spec.md (103-dolny-pasek-inteligentne-ikony)
-- **Status:** draft
+- **Status:** done
 - **Data:** 2026-08-26
 
 ## 1. Podejście

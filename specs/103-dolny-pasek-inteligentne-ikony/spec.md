@@ -1,7 +1,7 @@
 # Spec: Dolny pasek na telefonie — inteligentne ikony, gwiazdka, historia, drzewiasty wachlarz
 
 - **ID:** 103-dolny-pasek-inteligentne-ikony
-- **Status:** draft
+- **Status:** verified
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-26
 - **Moduł(y):** powłoka (nawigacja mobilna) + deklaracje wszystkich modułów (szybkie cele)

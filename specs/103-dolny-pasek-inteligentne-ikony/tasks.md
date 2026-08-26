@@ -1,7 +1,7 @@
 # Zadania: Dolny pasek — inteligentne ikony, gwiazdka, historia, drzewiasty wachlarz
 
 - **Plan:** ./plan.md (103-dolny-pasek-inteligentne-ikony)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-26
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
