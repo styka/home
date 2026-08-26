@@ -147,7 +147,7 @@ i to jest świadome, nie przeoczone.
 - [ ] **T-16** — **Mapowanie AC → wynik** (wejście do `/verify`): dla każdego z 21 kryteriów
   (AC-1..AC-20 + AC-12a) zapisz, czym zostało potwierdzone (klikacz / oględziny / kod).
 
-- [ ] **T-17** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł`):
+- [x] **T-17** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł`):
   (a) puste okno potwierdzenia — ciało modalu renderowane bezwarunkowo z `flex-1` i wypełnieniem,
   więc brak `description` daje rozciągniętą lukę; (b) `finishSelection` robiło dwie rzeczy naraz
   i było wołane w sześciu miejscach, więc „wyczyść zaznaczenie" zawsze znaczyło też „wyjdź z trybu".

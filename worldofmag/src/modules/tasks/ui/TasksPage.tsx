@@ -127,7 +127,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
    * pułapka co w `doświadczenia.md`, 2026-08-02).
    */
   const [uklad, setUklad] = useState(UKLAD_DOMYSLNY);
-  useEffect(() => { setUklad(odczytajUklad()); }, []);
+  useEffect(() => {
+    const zapisany = odczytajUklad();
+    setUklad({ ...zapisany, szerokosc: ograniczSzerokosc(zapisany.szerokosc, window.innerWidth) });
+  }, []);
   const zapiszIUstawUklad = useCallback((zmiana: Partial<typeof UKLAD_DOMYSLNY>) => {
     setUklad((poprzedni) => { const nowy = { ...poprzedni, ...zmiana }; zapiszUklad(nowy); return nowy; });
   }, []);
@@ -979,6 +982,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                   if (!przeciaganieRef.current) return;
                   e.currentTarget.releasePointerCapture(e.pointerId);
                   przeciaganieRef.current = null;
+                  // Pusta zmiana = „zapisz to, co już jest w stanie". Podczas przeciągania
+                  // aktualizujemy wyłącznie stan; do pamięci trafia dopiero wynik.
                   zapiszIUstawUklad({});
                 }}
                 onKeyDown={(e) => {
@@ -994,7 +999,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <div
               data-omnia-panel="zadanie"
               className={`hidden md:flex flex-col ${uklad.pelny ? "flex-1 min-w-0" : "flex-shrink-0"}`}
-              style={uklad.pelny ? undefined : { width: ograniczSzerokosc(uklad.szerokosc, typeof window === "undefined" ? 1440 : window.innerWidth) }}
+              /* Szerokość idzie tu SUROWA, bez ograniczania: `ograniczSzerokosc` potrzebuje
+                 `window.innerWidth`, którego serwer nie zna, więc liczenie jej w renderze dałoby
+                 inną wartość w HTML-u serwera niż po hydratacji. Granice pilnujemy tam, gdzie
+                 wartość POWSTAJE — przy odczycie preferencji i przy przeciąganiu. */
+              style={uklad.pelny ? undefined : { width: uklad.szerokosc }}
             >
               <TaskDetail
                 task={openTask}

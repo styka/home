@@ -4,6 +4,58 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Puste okno potwierdzenia: ciało modalu rysowane bezwarunkowo
+**Problem:** Właściciel zgłosił, że okno „Usunąć zadanie?" jest „takie jakieś puste, jakby czegoś
+brakowało". Brakowało — i to dosłownie: `Modal` renderował ciało zawsze, jako `flex-1` z
+wypełnieniem `px-5 py-4`. `ConfirmDialog` wstawia tam `description`, a **żadne** z ~54 wywołań
+`confirmDialog` w aplikacji opisu nie przekazywało, więc każde potwierdzenie w Omnii miało
+rozciągniętą, pustą lukę między nagłówkiem a przyciskami. Objaw wyglądał na usterkę jednego okna
+w Zadaniach, a był wspólny dla całej aplikacji.
+
+**Rozwiązanie:** Ciało renderujemy tylko wtedy, gdy `children` niesie treść — i sprawdzamy `false`
+osobno od `null`/`undefined`, bo wołający pisze `{warunek && <p/>}`, co przy fałszywym warunku daje
+właśnie `false`. Przy okazji usuwanie zadania dostało opis mówiący, co znika i że trafia do Kosza.
+
+**Lekcja:** Kontener z `flex-1` i wypełnieniem **zajmuje miejsce także wtedy, gdy jest pusty** —
+`{children}` nie jest warunkiem renderowania opakowania. Gdy zgłoszenie dotyczy „pustego miejsca"
+w komponencie WSPÓLNYM, szukaj przyczyny w nim, a nie w module, z którego przyszło zgłoszenie:
+poprawka w jednym pliku naprawia kilkadziesiąt okien, obejście w module zostawia je wszystkie.
+
+## 2026-08-26 — Jedna funkcja na dwie różne rzeczy: tryb zaznaczania gasł po każdej akcji masowej
+**Problem:** Właściciel: „za każdym razem po wykonaniu bulk akcji widok z checkboxami się wyłącza,
+a ja chciałbym dalej zaznaczać". W `TasksPage` stała funkcja `finishSelection(msg)`, która robiła
+**dwie rzeczy naraz**: czyściła zaznaczenie ORAZ gasiła tryb. Wołana była w sześciu miejscach —
+i tylko w trzech z nich „zgaś tryb" było tym, o co chodziło. W pozostałych trzech (po zmianie
+zbiorczej, po usunięciu zbiorczym, po kliknięciu „X" w pasku akcji) użytkownik chciał wyłącznie
+wyczyścić zaznaczenie. Nikt tego nie widział, bo obie rzeczy siedziały w jednym ciele, a nazwa
+(„zakończ") pasowała do połowy wywołań.
+
+**Rozwiązanie:** Rozdzielenie na `wyczyscZaznaczenie(msg)` (tryb zostaje) i `zakonczZaznaczanie()`
+(jawne wyjście: przycisk trybu, `Esc`, opuszczenie widoku listy). Podmiana w sześciu wywołaniach,
+każde rozstrzygnięte osobno.
+
+**Lekcja:** Funkcja, która robi dwie rzeczy, i jest wołana w kilku miejscach, **prędzej czy później
+zrobi jedną z nich niepotrzebnie** — a błąd będzie niewidoczny w kodzie, bo każde wywołanie wygląda
+poprawnie. Sygnałem ostrzegawczym jest nazwa pasująca do części wywołań. Rozdzielaj, zanim dołożysz
+siódme wywołanie; dopóki obie rzeczy są jedną funkcją, każde nowe wywołanie znowu wybierze
+przypadkiem oba zachowania.
+
+## 2026-08-26 — Zmiana `input` na `textarea` psuje `Enter` i cudzy test
+**Problem:** Pole szybkiego dodawania zadania zmieniło się z `input` na `textarea` (żeby rosło
+z tekstem). Dwie rzeczy zepsuły się po cichu. (1) `textarea` domyślnie **wstawia nową linię**
+zamiast wysyłać formularz, czyli najczęstszy sposób użycia tego pola — „wpisz i Enter" — przestałby
+działać, a `tsc` o tym nie powie. (2) Istniejący klikacz `[ux-AC23]` szukał opisu zadania przez
+`page.locator("textarea").first()`; nowe pole stoi WYŻEJ w drzewie, więc test zaczął mierzyć
+zupełnie inny element i przestał sprawdzać to, o czym mówi jego nazwa.
+
+**Rozwiązanie:** Jawny `onKeyDown` (Enter bez modyfikatora → zapis + `preventDefault`,
+`Shift+Enter` → nowa linia) oraz zawężenie locatora w teście do zastępnika tekstu opisu.
+
+**Lekcja:** Podmiana typu pola formularza to **zmiana zachowania klawiatury**, nie zmiana wyglądu.
+Przy okazji: locator `.first()` po nazwie znacznika jest testem na kolejność w DOM, a nie na
+tożsamość elementu — pierwszy nowy element tego samego typu cicho przejmuje asercję. W klikaczach
+celuj w rolę, etykietę albo zastępnik tekstu, nie w „pierwszy taki znacznik".
+
 ## 2026-08-26 — Stała ze specu Playwrighta nie istnieje wewnątrz `page.evaluate`
 **Problem:** Test układu paska padał z `ReferenceError: WSTECZ is not defined` — w miejscu, które
 wygląda na pomiar pikseli, a nie na literówkę. `WSTECZ` to zwykła stała na górze pliku spec-a,
