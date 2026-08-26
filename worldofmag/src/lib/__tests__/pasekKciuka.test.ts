@@ -15,7 +15,7 @@ function prefs(patch: Partial<MenuPrefs> = {}): MenuPrefs {
   return { ...defaultMenuPrefs(), ...patch };
 }
 
-test("pełne uprawnienia: dom + moduły po stronie dalszej, ulubione i historia pod kciukiem", () => {
+test("pełne uprawnienia: dom + moduły po stronie dalszej, trzy kotwice pod kciukiem", () => {
   const { dalekie, bliskie } = pozycjePaska(WSZYSTKIE, prefs(), true);
 
   assert.equal(dalekie[0]?.rodzaj, "dom", "dom jest kotwicą najdalszą od kciuka");
@@ -24,7 +24,7 @@ test("pełne uprawnienia: dom + moduły po stronie dalszej, ulubione i historia 
     ["modul", "modul"],
     "po domu idą wyłącznie moduły",
   );
-  assert.deepEqual(bliskie.map((p) => p.rodzaj), ["ulubione", "historia"]);
+  assert.deepEqual(bliskie.map((p) => p.rodzaj), ["ulubione", "nawigacja", "historia"]);
 });
 
 /**
@@ -50,15 +50,16 @@ test("ręka prawa: historia w PRAWYM rogu, dom w lewym — tak jak wymienił wł
   const { rogKciuka, rogPrzeciwny, prawa } = rogi("right");
   assert.equal(rogKciuka?.rodzaj, "historia", "róg pod kciukiem należy do historii");
   assert.equal(rogPrzeciwny?.rodzaj, "dom", "najdalej od kciuka stoi Strona główna");
-  // „ulubione | historia" — dokładnie w kolejności ze zgłoszenia, licząc od środka na zewnątrz.
-  assert.deepEqual(prawa.map((p) => p.rodzaj), ["ulubione", "historia"]);
+  // „ulubione | nawigacja | historia" — dokładnie w kolejności ze zgłoszenia, licząc od środka
+  // na zewnątrz: nowa ikona szybkiej nawigacji stoi MIĘDZY gwiazdką a „wstecz".
+  assert.deepEqual(prawa.map((p) => p.rodzaj), ["ulubione", "nawigacja", "historia"]);
 });
 
 test("ręka lewa: ten sam układ, odbity — historia w LEWYM rogu", () => {
   const { rogKciuka, rogPrzeciwny, lewa } = rogi("left");
   assert.equal(rogKciuka?.rodzaj, "historia");
   assert.equal(rogPrzeciwny?.rodzaj, "dom");
-  assert.deepEqual(lewa.map((p) => p.rodzaj), ["historia", "ulubione"]);
+  assert.deepEqual(lewa.map((p) => p.rodzaj), ["historia", "nawigacja", "ulubione"]);
 });
 
 test("obie ręce dają lustrzane odbicie tej samej listy", () => {
@@ -75,9 +76,12 @@ test("obie ręce dają lustrzane odbicie tej samej listy", () => {
   );
 });
 
-test("pasek ma pięć pozycji — sufit wyliczony z 360 px (C-31)", () => {
+test("pasek ma sześć pozycji — 292 px / 6 = 48,7 px, czyli ponad minimum 44 px (C-31)", () => {
+  // 104: run 103 twierdził, że sufitem jest PIĘĆ pozycji („szósta zeszłaby do ~41 px"). To była
+  // pomyłka o jeden — 41,7 px wypada dopiero przy siedmiu. Test pilnuje liczby, którą naprawdę
+  // rysujemy, bo to ona decyduje o szerokości celu dotyku.
   const { dalekie, bliskie } = pozycjePaska(WSZYSTKIE, prefs(), true);
-  assert.equal(dalekie.length + bliskie.length, 5);
+  assert.equal(dalekie.length + bliskie.length, 6);
 });
 
 test("moduły nie wypchną kotwic, choćby użytkownik wybrał ich pięć", () => {
@@ -88,7 +92,7 @@ test("moduły nie wypchną kotwic, choćby użytkownik wybrał ich pięć", () =
   );
   const moduly = dalekie.filter((p) => p.rodzaj === "modul");
   assert.equal(moduly.length, MAKS_MODULOW_W_PASKU, "nadmiar preferencji jest PRZYCINANY, nie renderowany");
-  assert.equal(dalekie.length + bliskie.length, 5);
+  assert.equal(dalekie.length + bliskie.length, 6);
 });
 
 test("zamknięta Strona główna: kotwica domu znika, a jej miejsce przechodzi na moduł", () => {
@@ -99,14 +103,14 @@ test("zamknięta Strona główna: kotwica domu znika, a jej miejsce przechodzi n
   );
   assert.ok(!dalekie.some((p) => p.rodzaj === "dom"), "domu nie pokazujemy, gdy jest zamknięty");
   assert.equal(dalekie.filter((p) => p.rodzaj === "modul").length, MAKS_MODULOW_W_PASKU + 1);
-  assert.equal(dalekie.length + bliskie.length, 5, "pasek nie traci celu dotyku — miejsce przechodzi dalej");
+  assert.equal(dalekie.length + bliskie.length, 6, "pasek nie traci celu dotyku — miejsce przechodzi dalej");
 });
 
 test("konto BEZ uprawnień modułowych: kotwice zostają, a modułem może być tylko taki bez sluga (AC-5)", () => {
   const { dalekie, bliskie } = pozycjePaska([], prefs(), true);
 
   assert.equal(dalekie[0]?.rodzaj, "dom");
-  assert.deepEqual(bliskie.map((p) => p.rodzaj), ["ulubione", "historia"]);
+  assert.deepEqual(bliskie.map((p) => p.rodzaj), ["ulubione", "nawigacja", "historia"]);
   // Pusta lista uprawnień NIE znaczy „zero modułów": Raporty mają `permission: null` (dostępne
   // każdemu zalogowanemu), więc awaryjne uzupełnienie paska słusznie po nie sięga. Testujemy
   // regułę, a nie liczbę: w pasku nie może stanąć moduł, do którego konto nie ma dostępu.
