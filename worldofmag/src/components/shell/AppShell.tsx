@@ -23,10 +23,8 @@ import { ShortcutsProvider } from "./ShortcutsProvider";
 import { ShortcutsCheatSheet } from "@/components/shortcuts/ShortcutsCheatSheet";
 import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, pozycjePaska, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
-import { WachlarzNawigacji, type PozycjaWachlarza } from "./WachlarzNawigacji";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { PasekKciukaPolaczony } from "./PasekKciukaPolaczony";
-import { celeGlebiej } from "@/lib/nawigacja/celeModulu";
 import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
@@ -111,37 +109,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
   const { dalekie, bliskie } = pozycjePaska(userPermissions, menuPrefs, domDostepny);
 
 
-  /**
-   * 100: dane dla gestu nawigacji. Poziom 1 to `enabled` z `resolveMenu` — lista już przefiltrowana
-   * po uprawnieniach, więc wachlarz nie robi własnej kontroli dostępu i nie może się z nią rozjechać.
-   * Poziom 2 to zapisane widoki danego modułu, przepuszczone przez `filterAccessibleFavorites`
-   * (tę samą funkcję, której używa reszta powłoki).
-   */
   const reka = menuPrefs.handedness;
-  const pozycjeWachlarza: PozycjaWachlarza[] = enabled.map((m) => ({
-    id: m.id,
-    etykieta: m.label,
-    href: m.href,
-    Icon: m.Icon,
-    color: m.color,
-  }));
-  /**
-   * 103: drugi poziom wachlarza to szybkie cele MODUŁU scalone z zapisanymi widokami użytkownika
-   * (do 100 były to wyłącznie ulubione, więc u konta, które nic nie zapisało, drugiego poziomu nie
-   * było wcale). Scalanie i filtr uprawnień siedzą w `celeGlebiej` — czystej, testowalnej funkcji;
-   * tam też została zamknięta pułapka „moduł o adresie / jest prefiksem każdej ścieżki".
-   */
-  const widokiModulu = (idModulu: string): PozycjaWachlarza[] =>
-    celeGlebiej(MODULES.find((x) => x.id === idModulu), favoriteViews, userPermissions, isPathLocked);
-
-  /** 103: stała, ostatnia pozycja poziomu 1 — wejście do ustawień samego paska (nie zajmuje slotu). */
-  const ustawieniaPaska: PozycjaWachlarza = {
-    id: "ustawienia-paska",
-    etykieta: t("ustawieniaPaska"),
-    href: "/settings#menu",
-    Icon: Settings,
-  };
-
 
   return (
     /* 085: dostawca trybu administratora obejmuje CAŁĄ powłokę — wskaźniki kosztu siedzą
@@ -155,10 +123,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         Musi opakowywać `children`, bo to strony modułów rejestrują swoje skróty (i mają
         pierwszeństwo przed globalnymi). */}
     <ShortcutsProvider>
-    {/* 100: dostawca gestu obejmuje CAŁĄ powłokę, bo wyzwalacze są w dwóch miejscach —
-        w dolnym pasku (telefon) i w nawigacji bocznej (komputer) — a wachlarz ma być jeden.
-        Ten sam powód, dla którego przełącznik ulubionych i skróty są montowane raz (042). */}
-    <WachlarzNawigacji pozycje={pozycjeWachlarza} glebiej={widokiModulu} ustawieniaPaska={ustawieniaPaska} reka={reka}>
     <DataFreshness />
     {/* 083: ulotne powiadomienia o koszcie AI — montowane RAZ, nad wszystkim (patrz komponent).
         085 (AC-8): same decydują, czy się rysować — czytają tryb administratora z kontekstu. */}
@@ -348,6 +312,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         pathname={pathname}
         favoriteViews={favoriteViews}
         userPermissions={userPermissions}
+        moduly={enabled}
       />
 
       <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
@@ -363,7 +328,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           komponent: powłoka montuje się przy każdym pełnym wejściu na stronę. */}
       {isAdmin && <PromptWznowieniaDialog />}
     </div>
-    </WachlarzNawigacji>
     </ShortcutsProvider>
     </ConflictProvider>
     </ConfirmProvider>

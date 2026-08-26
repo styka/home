@@ -51,7 +51,7 @@
 
 ## Faza 2 — Powłoka: koniec gestu, nowa kotwica, panel
 
-- [ ] **T-6** — **Odebranie gestu ikonom modułów i domu.** `src/components/shell/PasekKciuka.tsx`:
+- [x] **T-6** — **Odebranie gestu ikonom modułów i domu.** `src/components/shell/PasekKciuka.tsx`:
       `PozycjaModulu` i kotwica „dom" to zwykłe przyciski z `onClick` → `router.push`. Usuń stamtąd
       `uchwyty(...)`, `touchAction: "none"` i `onContextMenu`.
       **`touch-action` jest częścią zadania, nie kosmetyką:** zostawiony po skasowanym geście nadal
@@ -60,40 +60,40 @@
       zawinęły się do drugiego wiersza i nie rozepchnęły paska (AC-8).
       *Gotowe, gdy:* długie przytrzymanie ikony modułu kończy się przejściem do modułu i niczym więcej.
 
-- [ ] **T-7** — **Panel szybkiej nawigacji.** `src/components/shell/PanelNawigacji.tsx` na
+- [x] **T-7** — **Panel szybkiej nawigacji.** `src/components/shell/PanelNawigacji.tsx` na
       `AnchoredLayer` (`side="gora"`, `align="srodek"`, `role="dialog"`): pole wyszukiwania
-      (autofocus) → sekcja „Ostatnie" (do 5 pozycji, gdy niepusta) → lista modułów rozwijana
+      (autofocus) → sekcja „Ostatnie" (do 5 pozycji) → sekcja „Ulubione" → lista modułów rozwijana
       **w miejscu** (`aria-expanded`) → stopka z „Ustawienia paska".
       Wysokość ogranicza `AnchoredLayer` (`maxHeight`), lista dostaje własne `overflowY: auto`
       (AC-17). Wybór pozycji: zamknij panel i nawiguj. Rozwinięcie modułu to stan lokalny,
       **kasowany przy zamknięciu** — panel ma się otwierać zawsze tak samo.
       *Gotowe, gdy:* wszystkie trzy źródła (moduły, cele, historia) przechodzą przez filtr uprawnień.
 
-- [ ] **T-8** — **Nowa kotwica w pasku + wpięcie panelu.** `PasekKciuka` rysuje pozycję `nawigacja`
+- [x] **T-8** — **Nowa kotwica w pasku + wpięcie panelu.** `PasekKciuka` rysuje pozycję `nawigacja`
       (`aria-haspopup="dialog"`, `aria-expanded`), `PasekKciukaPolaczony` trzyma stan otwarcia
       i podaje panelowi dane (moduły z `resolveMenu`, cele przez `celeGlebiej`, historia).
       „Wstecz" traci gest: tapnięcie = `router.back()`, pusta historia = komunikat (AC-18..AC-20).
       *Gotowe, gdy:* przytrzymanie „wstecz" nie otwiera żadnej warstwy.
 
-- [ ] **T-9** — **Usunięcie łukowego wachlarza z całej aplikacji.** Skasuj
+- [x] **T-9** — **Usunięcie łukowego wachlarza z całej aplikacji.** Skasuj
       `src/components/shell/WachlarzNawigacji.tsx`; wypnij go z `AppShell` (opakowanie + propsy);
       w `ModuleSidebar` usuń `uchwytyLinku()` — pozycje wracają do bycia zwykłymi `<Link>` (AC-22).
       *Gotowe, gdy:* `grep -r "WachlarzNawigacji" src/ e2e/` nie zwraca nic, a `tsc` jest czysty.
 
 ## Faza 3 — Ustawienia i teksty
 
-- [ ] **T-10** — **Ekran ustawień.** `MenuPrefsEditor`: zdanie o kotwicach wymienia teraz pięć
+- [x] **T-10** — **Ekran ustawień.** `MenuPrefsEditor`: zdanie o kotwicach wymienia teraz pięć
       pozycji (dom, asystent, ulubione, nawigacja, wstecz); liczba miejsc modułowych bez zmian (AC-23).
       *Gotowe, gdy:* opis zgadza się z tym, co widać w pasku.
 
-- [ ] **T-11** — **Teksty w `messages/pl.json`** (C-32): nazwa i opis nowej kotwicy, wszystkie napisy
+- [x] **T-11** — **Teksty w `messages/pl.json`** (C-32): nazwa i opis nowej kotwicy, wszystkie napisy
       panelu (pole wyszukiwania, „Ostatnie", brak wyników, „Ustawienia paska"), komunikat pustej
       historii.
       *Gotowe, gdy:* `npm run check:i18n` zielony i każde `t("klucz")` ma wpis.
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-12** — **Bramki, kolejno:** `check:module-registry` → `check:boundaries` → `check:i18n` →
+- [x] **T-12** — **Bramki, kolejno:** `check:module-registry` → `check:boundaries` → `check:i18n` →
       `check:logs` → `check:ui-contract` → `check:client-safe` → `check:test-types` → `test:unit` →
       `next lint`.
       *Gotowe, gdy:* wszystkie zielone, bez tłumienia wyjątkiem w manifeście.
@@ -142,6 +142,7 @@
 | AC-12 wybór celu nawiguje | T-7, T-15 |
 | AC-13 wyszukiwarka po modułach i celach | T-4, T-5, T-7, T-15 |
 | AC-14 sekcja „Ostatnie" | T-7, T-8, T-15 |
+| AC-14a/AC-14b sekcja „Ulubione", puste pomijane | T-7, T-8, T-15 |
 | AC-15 Esc i klik poza zamykają | T-7, T-15 |
 | AC-16 uprawnienia w panelu | T-7 |
 | AC-17 wysokość i przewijanie panelu | T-7, T-15 |

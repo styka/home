@@ -744,7 +744,7 @@
         "rekaLewa": "Lewa",
         "dolnyPasekTytul": "Dolny pasek (telefon)",
         "dolnyPasekOpis": "Moduły na dolnym pasku w telefonie — niezależne od menu bocznego (maks. {maks}).",
-        "dolnyPasekKotwice": "Pozostałe miejsca zajmują stałe ikony: dom, asystent, ulubione i wstecz. Ich nie da się usunąć — są jedynym wejściem do tego, co robią."
+        "dolnyPasekKotwice": "Pozostałe miejsca zajmują stałe ikony: dom, asystent, ulubione, szybka nawigacja i wstecz. Ich nie da się usunąć — są jedynym wejściem do tego, co robią."
       },
       "PrivacySettings": {
         "kompletTwoichDanychZe": "Komplet Twoich danych ze wszystkich modułów w formacie JSON (RODO art. 15/20).",
@@ -786,8 +786,7 @@
         "otworzMenu": "Otwórz menu",
         "wiecej": "Więcej…",
         "mapySklepow": "Mapy sklepów",
-        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
-        "ustawieniaPaska": "Ustawienia paska"
+        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli"
       },
       "FeedbackInspector": {
         "zglosBladSugestieWskaz": "Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B",
@@ -821,9 +820,11 @@
         "ulubioneZapisz": "Zapisz ten widok w ulubionych",
         "ulubioneUsun": "Usuń ten widok z ulubionych",
         "historia": "Wstecz",
-        "historiaOpis": "Wróć do poprzedniej strony (przytrzymaj, żeby wybrać z listy)",
-        "historiaPustaOpis": "Historia jest pusta",
-        "historiaPusta": "Nie ma jeszcze dokąd wracać — historia zapełni się, gdy odwiedzisz kilka stron."
+        "historiaOpis": "Wróć do poprzedniej strony",
+        "historiaPustaOpis": "Nie ma jeszcze dokąd wracać",
+        "historiaPusta": "Nie ma jeszcze dokąd wracać — historia zapełni się, gdy odwiedzisz kilka stron.",
+        "nawigacja": "Nawigacja",
+        "nawigacjaOpis": "Szybka nawigacja — moduły, ich strony i ostatnio odwiedzone"
       },
       "WachlarzNawigacji": {
         "nawigacjaGestem": "Nawigacja gestem"
@@ -835,6 +836,17 @@
         "bladKopiowania": "Nie udało się skopiować",
         "etykietaPromptu": "Prompt do wklejenia w Claude Code (nowa sesja):",
         "stopka": "To okno pokaże się najwyżej raz dziennie. Treść promptu zmienia się razem z postępem prac."
+      },
+      "PanelNawigacji": {
+        "tytul": "Szybka nawigacja",
+        "szukaj": "Szukaj modułu lub miejsca…",
+        "brakWynikow": "Nic nie pasuje do tej frazy.",
+        "ostatnie": "Ostatnie",
+        "ulubione": "Ulubione",
+        "moduly": "Moduły",
+        "rozwin": "Pokaż miejsca w module {modul}",
+        "zwin": "Ukryj miejsca w module {modul}",
+        "ustawieniaPaska": "Ustawienia paska"
       }
     },
     "shortcuts": {

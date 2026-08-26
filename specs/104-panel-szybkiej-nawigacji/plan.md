@@ -101,8 +101,11 @@ na trzeci moduł (decyzja odnotowana w specu §8).
   a lista dostaje `overflowY: auto` — razem daje to AC-17 bez liczenia czegokolwiek ręcznie.
 - **Zawartość, w kolejności:**
   1. **pole wyszukiwania** (autofocus), 
-  2. **„Ostatnie"** — do 5 pozycji historii, gdy niepusta,
-  3. **lista modułów** — wiersz na moduł: ikona w kolorze modułu + nazwa + strzałka rozwinięcia
+  2. **„Ostatnie"** — do 5 pozycji historii, **pomijane gdy puste**,
+  3. **„Ulubione"** — zapisane widoki użytkownika, **pomijane gdy puste**. Sekcja jest tu, bo
+     skasowanie wachlarza zabrało gwiazdce jej listę (run 103 AC-8), a lista musi mieć wejście;
+     gwiazdka zachowuje swoją czynność (tap = zapisz/odpisz bieżący widok), więc traci tylko gest.
+  4. **lista modułów** — wiersz na moduł: ikona w kolorze modułu + nazwa + strzałka rozwinięcia
      (`aria-expanded`); tapnięcie **rozwija cele pod spodem** (AC-11), tapnięcie w nazwę modułu
      w wierszu nagłówka przechodzi do modułu.
 - **Wyszukiwanie** filtruje **moduły i cele naraz** (AC-13): przy niepustej frazie lista spłaszcza
@@ -182,6 +185,7 @@ istnieje po to, żeby postęp został zapisany).
 | AC-9..AC-12 | klikacz: tap kotwicy → panel; rozwinięcie modułu; wybór celu → adres |
 | AC-13 | test jednostkowy `szukajCelow` + klikacz wpisujący frazę bez ogonków |
 | AC-14 | klikacz: po odwiedzeniu dwóch stron sekcja „Ostatnie" zawiera poprzednią |
+| AC-14a/AC-14b | klikacz: zapisany widok widoczny w sekcji „Ulubione"; przy pustych źródłach brak nagłówków |
 | AC-15 | klikacz: `Esc` i klik poza panelem zamykają bez nawigacji |
 | AC-16 | test jednostkowy filtra + przegląd trzech powierzchni |
 | AC-17 | klikacz: wysokość panelu ≤ wysokość okna, lista ma własne przewijanie |

@@ -94,6 +94,12 @@ otwierający łukowy wachlarz. Właściciel zobaczył to na żywo i zgłosił tr
       **po modułach i po ich celach naraz**, a wyniki pokazują, do którego modułu należą.
 - [ ] **AC-14** — Given panel, when szukam ostatnio odwiedzonych stron, then znajduję je w tym samym
       panelu jako osobną sekcję („Ostatnie"), uporządkowaną od najświeższej.
+- [ ] **AC-14a** — Given zapisane ulubione widoki, when otwieram panel, then znajduję je jako osobną
+      sekcję („Ulubione") — bo skasowanie łukowego wachlarza zabrało gwiazdce jej dotychczasową
+      listę, a lista musi mieć wejście. Gwiazdka zachowuje swoją czynność: tapnięcie zapisuje albo
+      odpisuje bieżący widok.
+- [ ] **AC-14b** — Given konto bez zapisanych widoków i bez historii, when otwieram panel, then obie
+      sekcje są **pominięte** (nie puste nagłówki), a panel od razu pokazuje listę modułów.
 - [ ] **AC-15** — Given otwarty panel, when tapnę poza nim albo wcisnę `Esc`, then panel się zamyka
       i nic nie nawiguje.
 - [ ] **AC-16** — Given moduł, do którego nie mam uprawnienia, when otwieram panel, then nie ma go
@@ -136,6 +142,8 @@ otwierający łukowy wachlarz. Właściciel zobaczył to na żywo i zgłosił tr
 - **Panel szybkiej nawigacji** zamiast łukowego wachlarza: lista modułów rozwijana w miejscu,
   wyszukiwarka obejmująca moduły i cele, sekcja „Ostatnie".
 - „Wstecz": tapnięcie = krok wstecz; pełna historia przeniesiona do panelu.
+- **Lista ulubionych widoków przeniesiona do panelu** (sekcja „Ulubione") — razem z historią, bo
+  obie straciły swoje wejście wraz z wachlarzem.
 - **Usunięcie łukowego wachlarza z całej aplikacji**, łącznie z nawigacją boczną na komputerze.
 - Poprawka błędu o jeden w wyliczeniu sufitu pozycji paska (sześć mieści się, nie pięć).
 - Ekran ustawień: opis kotwic zaktualizowany o nową pozycję.
@@ -187,6 +195,8 @@ warianty zalecane:
       (ulubione, nawigacja, wstecz), więc podpis jest jedyną rzeczą, która mówi, co robią.
 
 Założenia przyjęte samodzielnie (odnotowane, nie wymagają decyzji):
+- **Sekcje „Ostatnie" i „Ulubione" znikają, gdy są puste.** Nagłówek nad pustką to informacja o
+  niczym; panel ma wtedy od razu pokazać moduły.
 - **Panel otwiera się tapnięciem, nie przytrzymaniem.** Skoro gest znika z ikon modułów, zostawienie
   go akurat tutaj oznaczałoby, że jedna ikona w pasku nadal wymaga nauki.
 - **Sekcja „Ostatnie" jest w panelu pierwsza**, gdy historia nie jest pusta — to najczęstszy powód

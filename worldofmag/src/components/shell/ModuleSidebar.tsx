@@ -17,7 +17,6 @@ import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
-import { useWachlarz } from "./WachlarzNawigacji";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 
 interface ModuleSidebarProps {
@@ -131,11 +130,10 @@ function NavItem({
   children?: React.ReactNode;
 }) {
   const t = useTranslations("components.shell.ModuleSidebar");
-  // 100 (AC-21): TA SAMA czynność co na telefonie — przytrzymanie pozycji nawigacji otwiera
-  // wachlarz. Odnośnik zostaje odnośnikiem (krótkie kliknięcie, środkowy przycisk, „otwórz w nowej
-  // karcie" działają jak dotąd); gest tylko go uzupełnia.
-  const { uchwytyLinku } = useWachlarz();
-  const gest = uchwytyLinku();
+  // 104: pozycja panelu bocznego jest znowu ZWYKŁYM odnośnikiem. Gest przytrzymania (100, AC-21)
+  // zniknął razem z łukowym wachlarzem — na komputerze i tak stoi obok pełna lista modułów, więc
+  // wachlarz niewiele tu wnosił, a utrzymywanie dwóch różnych mechanizmów szybkiej nawigacji
+  // znaczyłoby dwa miejsca do poprawiania przy każdej zmianie.
   const isActive = exact ? pathname === href : pathname.startsWith(href);
   const activeColor = accentColor ?? "var(--text-primary)";
 
@@ -156,10 +154,8 @@ function NavItem({
   return (
     <Link
       href={href}
-      {...gest}
       className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
       style={{
-        ...gest.style,
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
         color: isActive ? activeColor : "var(--text-secondary)",
       }}
