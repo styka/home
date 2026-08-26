@@ -188,7 +188,7 @@ test.describe("Kolejność kotwic pod kciukiem", () => {
 test.describe("Historia odwiedzonych stron", () => {
   test.use({ viewport: { width: 390, height: 780 } });
 
-  test("[104-AC18] tapnięcie „wstecz" cofa o jeden krok", async ({ page }) => {
+  test("[104-AC18] tapnięcie „wstecz” cofa o jeden krok", async ({ page }) => {
     await otworz(page, "/tasks");
     await pasekWidoczny(page);
     await otworz(page, "/shopping");

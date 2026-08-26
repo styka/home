@@ -107,8 +107,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
    */
   const domDostepny = !isLocked("/");
   const { dalekie, bliskie } = pozycjePaska(userPermissions, menuPrefs, domDostepny);
-
-
   const reka = menuPrefs.handedness;
 
   return (
