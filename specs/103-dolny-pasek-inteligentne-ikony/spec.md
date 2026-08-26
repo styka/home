@@ -71,6 +71,10 @@ zmienić bez wiedzy, że taki ekran istnieje w `/settings`.
       się obok kotwic.
 - [ ] **AC-3** — Given ekran szerokości **360 px**, when pasek jest wyrenderowany, then każdy jego
       cel dotyku ma co najmniej **44 × 44 px**, nic się nie zawija i nic nie wychodzi poza ekran.
+      > **Zastąpione przez AC-6 z run 104.** Uzasadnienie tego kryterium opierało się na rachunku,
+      > że sufitem paska jest **pięć** pozycji („szósta zeszłaby do ~41 px"). To była pomyłka o
+      > jeden: 292 px / 6 = 48,7 px, a 41,7 px wypada dopiero przy **siedmiu**. Sam wymóg 44 × 44 px
+      > obowiązuje niezmiennie — zmieniła się liczba pozycji, które się w nim mieszczą (dziś sześć).
 - [ ] **AC-4** — Given ustawienie ręki `left`, when patrzę na pasek, then kolejność pozycji jest
       lustrzana, a **magiczna ikona nadal stoi na geometrycznym środku** (reguła z run 100).
 - [ ] **AC-5** — Given konto bez dostępu do jakiegokolwiek modułu, when otwieram aplikację na

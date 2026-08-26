@@ -1,7 +1,13 @@
 import { test, expect } from "../fixtures/test";
 
 /**
- * 103 — DOLNY PASEK: kotwice, gwiazdka, historia, drzewiasty wachlarz.
+ * 103/104 — DOLNY PASEK: kotwice, gwiazdka, historia, panel szybkiej nawigacji.
+ *
+ * **104 zmieniło dwie rzeczy w tezach 103**, po tym jak właściciel zobaczył pasek na żywo:
+ * ikony modułów i domu **nie mają już gestu** (tapnięcie prowadzi wprost do modułu), a łukowy
+ * wachlarz zastąpił **panel** otwierany szóstą kotwicą. Testy gestu zostały więc przepisane na
+ * testy panelu — nie skasowane, bo sprawdzana rzecz (dojście do podstron i akcji) istnieje dalej,
+ * zmieniła się tylko jej forma.
  *
  * Zgłoszenie właściciela wymieniało skład paska wprost: „Strona domowa | magiczna ikona asystenta |
  * ulubione (gwiazdka) | nawigacja po przebytych stronach". Te testy są **pomiarowe i stanowe**, nie
@@ -24,6 +30,9 @@ async function otworz(page: import("@playwright/test").Page, adres: string) {
  */
 const GWIAZDKA = /ten widok (w|z) ulubionych/i;
 
+/** Szósta kotwica (104) — otwiera panel szybkiej nawigacji. */
+const NAWIGACJA = /Szybka nawigacja/i;
+
 const pasekWidoczny = async (page: import("@playwright/test").Page) => {
   const pasek = page.getByRole("navigation", { name: /Nawigacja główna/i });
   await expect(pasek).toBeVisible({ timeout: 20_000 });
@@ -33,20 +42,22 @@ const pasekWidoczny = async (page: import("@playwright/test").Page) => {
 test.describe("Skład dolnego paska", () => {
   test.use({ viewport: { width: 360, height: 740 } });
 
-  test("[103-AC1] cztery stałe kotwice stoją w pasku na każdej stronie", async ({ page }) => {
+  test("[104-AC5] pięć stałych kotwic stoi w pasku na każdej stronie", async ({ page }) => {
     for (const adres of ["/tasks", "/shopping"]) {
       await otworz(page, adres);
       const pasek = await pasekWidoczny(page);
 
-      // Dom, asystent, ulubione i historia — nazwy dostępne mówią, CO przycisk robi (AC-27).
+      // Dom, asystent, ulubione, szybka nawigacja i „wstecz" — nazwy dostępne mówią, CO przycisk
+      // robi, a nie jak nazywa się zbiór (AC-24).
       await expect(pasek.getByRole("button", { name: /Przejdź na stronę główną/i })).toHaveCount(1);
       await expect(page.getByRole("button", { name: /^Asystent AI$/ })).toHaveCount(1);
       await expect(pasek.getByRole("button", { name: GWIAZDKA })).toHaveCount(1);
-      await expect(pasek.getByRole("button", { name: /(poprzedniej strony|Historia jest pusta)/i })).toHaveCount(1);
+      await expect(pasek.getByRole("button", { name: NAWIGACJA })).toHaveCount(1);
+      await expect(pasek.getByRole("button", { name: /(poprzedniej strony|Nie ma jeszcze dokąd wracać)/i })).toHaveCount(1);
     }
   });
 
-  test("[103-AC3] przy 360 px każdy cel dotyku trzyma 44 × 44 px i nic nie wychodzi poza ekran", async ({ page }) => {
+  test("[104-AC6] przy 360 px SZEŚĆ pozycji trzyma 44 × 44 px i nic nie wychodzi poza ekran", async ({ page }) => {
     await otworz(page, "/tasks");
     await pasekWidoczny(page);
 
@@ -70,8 +81,10 @@ test.describe("Skład dolnego paska", () => {
     });
 
     expect(pomiar).not.toBeNull();
-    // Pięć pozycji + magiczna ikona — sufit wyliczony w `MAKS_MODULOW_W_PASKU`.
-    expect(pomiar!.pozycje.length).toBeGreaterThanOrEqual(4);
+    // 104: sześć pozycji + magiczna ikona. Run 103 twierdził, że sufitem jest pięć („szósta
+    // zeszłaby do ~41 px") — to była pomyłka o jeden: 292 / 6 = 48,7 px, a 41,7 px wypada dopiero
+    // przy siedmiu. Ten test mierzy realne szerokości, więc pilnuje tego rachunku, a nie komentarza.
+    expect(pomiar!.pozycje.length).toBeGreaterThanOrEqual(5);
     for (const p of pomiar!.pozycje) {
       expect(p.w, `szerokość „${p.etykieta}”`).toBeGreaterThanOrEqual(44);
       expect(p.h, `wysokość „${p.etykieta}”`).toBeGreaterThanOrEqual(44);
@@ -175,7 +188,7 @@ test.describe("Kolejność kotwic pod kciukiem", () => {
 test.describe("Historia odwiedzonych stron", () => {
   test.use({ viewport: { width: 390, height: 780 } });
 
-  test("[103-AC14] krótkie tapnięcie cofa o jeden krok", async ({ page }) => {
+  test("[104-AC18] tapnięcie „wstecz" cofa o jeden krok", async ({ page }) => {
     await otworz(page, "/tasks");
     await pasekWidoczny(page);
     await otworz(page, "/shopping");
@@ -185,54 +198,179 @@ test.describe("Historia odwiedzonych stron", () => {
     await expect(page).toHaveURL(/\/tasks/, { timeout: 15_000 });
   });
 
-  test("[103-AC13] pusta historia mówi to wprost, zamiast otwierać pustą warstwę", async ({ page }) => {
+  test("[104-AC19] pusta historia mówi to wprost, zamiast otwierać pustą warstwę", async ({ page }) => {
     await otworz(page, "/tasks");
     const pasek = await pasekWidoczny(page);
 
     // Świeże wejście: bieżąca strona nie jest pozycją historii, więc lista jest pusta.
-    const przycisk = pasek.getByRole("button", { name: /Historia jest pusta/i });
+    const przycisk = pasek.getByRole("button", { name: /Nie ma jeszcze dokąd wracać/i });
     if ((await przycisk.count()) === 0) {
       test.skip(true, "konto weszło z historią w pamięci sesji — ten stan sprawdzamy tylko na czystym");
     }
     await przycisk.click();
-    // Komunikat zamiast warstwy: warstwa bez jednej podpowiedzi nie ma wyjścia poza domysłem.
-    await expect(page.getByRole("dialog", { name: /Nawigacja gestem/i })).toHaveCount(0);
+    // Komunikat zamiast warstwy — i żadnego panelu: pełna historia mieszka w panelu szybkiej
+    // nawigacji, a nie pod tą ikoną (104, AC-20).
+    await expect(page.getByRole("dialog", { name: /Szybka nawigacja/i })).toHaveCount(0);
   });
 });
 
-test.describe("Wachlarz: ustawienia paska i akcje z adresu", () => {
+test.describe("Ikony modułów prowadzą wprost (104)", () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+
+  test("[104-AC1/AC2] przytrzymanie ikony modułu prowadzi do modułu i NIE otwiera warstwy", async ({ page }) => {
+    /**
+     * To jest sedno zgłoszenia właściciela: „te pierwsze 3 ikony […] mają możliwość rozwijania
+     * wachlarzy a one nie mają mieć wachlarzy". Do 103 ta sama ikona robiła dwie różne rzeczy
+     * zależnie od czasu przytrzymania, więc każde dotknięcie paska było ryzykiem. Test celowo
+     * przytrzymuje palec DŁUGO — dawniej otwierało to warstwę zamiast nawigować.
+     */
+    await otworz(page, "/shopping");
+    const pasek = await pasekWidoczny(page);
+
+    const modul = pasek.getByRole("button", { name: /^Zadania$/ });
+    const pudlo = await modul.boundingBox();
+    expect(pudlo).not.toBeNull();
+    const x = pudlo!.x + pudlo!.width / 2;
+    const y = pudlo!.y + pudlo!.height / 2;
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.waitForTimeout(700);
+    await page.mouse.up();
+
+    await expect(page).toHaveURL(/\/tasks/, { timeout: 15_000 });
+    await expect(page.getByRole("dialog", { name: /Szybka nawigacja/i })).toHaveCount(0);
+  });
+
+  test("[104-AC4] pozycje paska nie odbierają przeglądarce przewijania", async ({ page }) => {
+    // `touch-action: none` przyszło z gestem. Zostawione po nim zjadałoby przewijanie zaczęte
+    // palcem na ikonie — czyli pasek „zacinałby się" w sposób niepowiązany ze skasowaną funkcją.
+    await otworz(page, "/tasks");
+    await pasekWidoczny(page);
+
+    const zaburzone = await page.evaluate(() => {
+      const nav = document.querySelector<HTMLElement>('nav[aria-label="Nawigacja główna"]');
+      if (!nav) return -1;
+      return Array.from(nav.querySelectorAll<HTMLElement>("button")).filter(
+        (b) => getComputedStyle(b).touchAction === "none",
+      ).length;
+    });
+    expect(zaburzone).toBe(0);
+  });
+
+  test("[104-AC21] łukowy wachlarz zniknął z aplikacji", async ({ page }) => {
+    await otworz(page, "/tasks");
+    const pasek = await pasekWidoczny(page);
+
+    for (const nazwa of [/Przejdź na stronę główną/i, /^Zakupy$/]) {
+      const pozycja = pasek.getByRole("button", { name: nazwa });
+      if ((await pozycja.count()) === 0) continue;
+      const pudlo = await pozycja.first().boundingBox();
+      if (!pudlo) continue;
+      await page.mouse.move(pudlo.x + pudlo.width / 2, pudlo.y + pudlo.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(600);
+      await page.mouse.up();
+      await expect(page.getByRole("dialog", { name: /Nawigacja gestem/i })).toHaveCount(0);
+    }
+  });
+});
+
+test.describe("Panel szybkiej nawigacji (104)", () => {
+  test.use({ viewport: { width: 390, height: 780 } });
+
+  async function otworzPanel(page: import("@playwright/test").Page) {
+    const pasek = await pasekWidoczny(page);
+    await pasek.getByRole("button", { name: NAWIGACJA }).click();
+    const panel = page.getByRole("dialog", { name: /Szybka nawigacja/i });
+    await expect(panel).toBeVisible({ timeout: 10_000 });
+    return panel;
+  }
+
+  test("[104-AC9/AC10] tapnięcie kotwicy otwiera panel z listą modułów", async ({ page }) => {
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+    await expect(panel.getByRole("button", { name: /^Zakupy$/ })).toBeVisible();
+  });
+
+  test("[104-AC11/AC12] moduł rozwija się w miejscu, a cel nawiguje", async ({ page }) => {
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+
+    const rozwin = panel.getByRole("button", { name: /Pokaż miejsca w module Zakupy/i });
+    await expect(rozwin).toHaveAttribute("aria-expanded", "false");
+    await rozwin.click();
+    await expect(panel.getByRole("button", { name: /Ukryj miejsca w module Zakupy/i })).toBeVisible();
+
+    await panel.getByRole("button", { name: /Mapy sklepów/i }).click();
+    await expect(page).toHaveURL(/\/shopping\/stores/, { timeout: 15_000 });
+  });
+
+  test("[104-AC13] wyszukiwarka znajduje cel wpisany BEZ ogonków", async ({ page }) => {
+    // „zalegle" ma znaleźć „Zaległe" — na klawiaturze telefonu ogonki pisze się dłuższym
+    // przytrzymaniem klawisza, więc szukający szybko wpisze wersję bez nich.
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+
+    await panel.getByPlaceholder(/Szukaj modułu lub miejsca/i).fill("zalegle");
+    await expect(panel.getByRole("button", { name: /Zaległe/i }).first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("[104-AC14] ostatnio odwiedzone strony są w panelu", async ({ page }) => {
+    await otworz(page, "/shopping");
+    await pasekWidoczny(page);
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+
+    await expect(panel.getByText(/Ostatnie/i).first()).toBeVisible();
+  });
+
+  test("[104-AC15] Esc zamyka panel i nic nie nawiguje", async ({ page }) => {
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden({ timeout: 10_000 });
+    await expect(page).toHaveURL(/\/tasks/);
+  });
+
+  test("[104-AC17] panel mieści się na ekranie i przewija w środku", async ({ page }) => {
+    await otworz(page, "/tasks");
+    await otworzPanel(page);
+
+    const pomiar = await page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>('[role="dialog"][aria-label*="Szybka nawigacja"]');
+      if (!panel) return null;
+      const r = panel.getBoundingClientRect();
+      const przewijalny = Array.from(panel.querySelectorAll<HTMLElement>("*")).some(
+        (el) => getComputedStyle(el).overflowY === "auto",
+      );
+      return { wysokosc: Math.round(r.height), okno: window.innerHeight, gora: Math.round(r.top), przewijalny };
+    });
+
+    expect(pomiar).not.toBeNull();
+    expect(pomiar!.wysokosc).toBeLessThanOrEqual(pomiar!.okno);
+    expect(pomiar!.gora).toBeGreaterThanOrEqual(0);
+    expect(pomiar!.przewijalny, "lista ma własne przewijanie, panel nie rośnie w nieskończoność").toBe(true);
+  });
+
+  test("[104-AC23] ustawienia paska są w stopce panelu", async ({ page }) => {
+    // Przeniesione tu z wachlarza — to było ich jedyne wejście z paska, więc kasując wachlarz
+    // bez tego odcięlibyśmy je bez zapowiedzi.
+    await otworz(page, "/tasks");
+    const panel = await otworzPanel(page);
+    await expect(panel.getByRole("button", { name: /Ustawienia paska/i })).toBeVisible();
+  });
+});
+
+test.describe("Akcje z adresu", () => {
   test.use({ viewport: { width: 390, height: 780 } });
 
   test("[103-AC20] akcja wyrażona adresem działa też WPROST z linku", async ({ page }) => {
-    // To jest sedno wyboru właściciela: akcję niesie adres, więc ten sam adres działa z gestu,
-    // z linku i z zapisanych ulubionych. Gdyby akcja była kodem wykonywanym przez powłokę,
-    // ten test nie miałby czego sprawdzić.
+    // Akcję niesie adres, więc ten sam adres działa z panelu, z linku i z zapisanych ulubionych.
     await otworz(page, "/tasks?akcja=nowy-projekt");
     await pasekWidoczny(page);
 
     const pole = page.getByPlaceholder(/nazwa projektu/i);
     await expect(pole).toBeVisible({ timeout: 20_000 });
-  });
-
-  test("[103-AC23] ostatnią pozycją wachlarza są ustawienia paska", async ({ page }) => {
-    await otworz(page, "/tasks");
-    const pasek = await pasekWidoczny(page);
-
-    const dom = pasek.getByRole("button", { name: /Przejdź na stronę główną/i });
-    const pudlo = await dom.boundingBox();
-    expect(pudlo).not.toBeNull();
-    const x = pudlo!.x + pudlo!.width / 2;
-    const y = pudlo!.y + pudlo!.height / 2;
-
-    // Gest: przytrzymanie ~350 ms otwiera wachlarz. Wskaźnik przechwytywany jest dopiero przy
-    // otwarciu, więc do tej chwili nie wolno ruszać palcem powyżej progu 12 px.
-    await page.mouse.move(x, y);
-    await page.mouse.down();
-    await page.waitForTimeout(600);
-
-    await expect(page.getByRole("dialog", { name: /Nawigacja gestem/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Ustawienia paska/i).first()).toBeVisible();
-
-    await page.mouse.up();
   });
 });

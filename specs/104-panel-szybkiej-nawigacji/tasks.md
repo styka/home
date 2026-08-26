@@ -98,17 +98,17 @@
       `next lint`.
       *Gotowe, gdy:* wszystkie zielone, bez tłumienia wyjątkiem w manifeście.
 
-- [ ] **T-13** — **`next build` na lokalnym Postgresie** (C-13 — **nigdy** prod `DATABASE_URL`;
+- [x] **T-13** — **`next build` na lokalnym Postgresie** (C-13 — **nigdy** prod `DATABASE_URL`;
       zatrzymujemy się **przed** `scripts/migrate.js`).
       *Gotowe, gdy:* build przechodzi do końca `next build`.
 
-- [ ] **T-14** — **Budżet wydajnościowy.** `npm run check:perf`. Kasujemy 425 linii wachlarza
+- [x] **T-14** — **Budżet wydajnościowy.** `npm run check:perf`. Kasujemy 425 linii wachlarza
       i dokładamy panel — bilans może wyjść **na minus**, a pasmo ±5 % działa **w obie strony**,
       więc spadek też wywala bramkę. Wtedy **obniż próg** w `src/lib/ui/perf-baseline.json`
       i zapisz powód: zapadka istnieje po to, żeby postęp został zapisany.
       *Gotowe, gdy:* bramka zielona, a każda zmiana progu ma uzasadnienie.
 
-- [ ] **T-15** — **Klikacze.** Rozszerz `e2e/specs/dolny-pasek-kotwice.spec.ts` o AC-1..AC-4
+- [x] **T-15** — **Klikacze.** Rozszerz `e2e/specs/dolny-pasek-kotwice.spec.ts` o AC-1..AC-4
       (nawigacja wprost, brak warstwy, brak `touch-action`), AC-5/AC-6 (sześć pozycji przy 360 px),
       AC-9..AC-15 (panel), AC-20/AC-21 (koniec wachlarza). Z `ergonomia-nawigacji.spec.ts` usuń
       testy dotyczące łukowego wachlarza — znikają **razem z mechanizmem**, a nie zostają jako
@@ -118,7 +118,7 @@
 - [ ] **T-16** — **Mapowanie AC → wynik** (wejście dla `/verify`): dla każdego z 25 kryteriów zapisz,
       czym zostało sprawdzone i z jakim wynikiem. AC bez pokrycia wraca do implementacji (C-54).
 
-- [ ] **T-17** — **Przypis w specu run 103** (C-54): jego AC-3 mówił o pięciu pozycjach jako suficie;
+- [x] **T-17** — **Przypis w specu run 103** (C-54): jego AC-3 mówił o pięciu pozycjach jako suficie;
       dopisz jedno zdanie, że zastąpiło je AC-6 z run 104 (sześć pozycji, 48,7 px). Artefakty mają
       się nie rozjeżdżać.
 
