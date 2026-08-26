@@ -808,6 +808,14 @@
       },
       "WachlarzNawigacji": {
         "nawigacjaGestem": "Nawigacja gestem"
+      },
+      "PromptWznowieniaDialog": {
+        "zamknij": "Zamknij",
+        "kopiuj": "Kopiuj prompt",
+        "skopiowano": "Skopiowano",
+        "bladKopiowania": "Nie udało się skopiować",
+        "etykietaPromptu": "Prompt do wklejenia w Claude Code (nowa sesja):",
+        "stopka": "To okno pokaże się najwyżej raz dziennie. Treść promptu zmienia się razem z postępem prac."
       }
     },
     "shortcuts": {
