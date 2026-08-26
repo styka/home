@@ -72,7 +72,7 @@
 
 ## Faza 3 — UI: asystent
 
-- [ ] **T-9** — **Menu poziomu pracy na `AnchoredLayer`** (plan §5.2, AC-5…AC-7).
+- [x] **T-9** — **Menu poziomu pracy na `AnchoredLayer`** (plan §5.2, AC-5…AC-7).
       Podmiana pojemnika: `position: absolute; bottom: calc(100% + 6px)` → `AnchoredLayer`
       (`role="menu"`, `side="gora"`, `align="end"`, kotwica = przycisk poziomu, `open` =
       `showLevelMenu`). **Treść przenoszona bez zmian** — te same poziomy, `changeLevel`,
@@ -81,7 +81,7 @@
       **Gotowe, gdy:** menu widoczne w całości przy oknie 1280×600, `Esc` zamyka je, a arkusz
       zostaje otwarty; wybór poziomu działa jak dotąd.
 
-- [ ] **T-10** — **Przebudowa górnego paska** (plan §5.1, AC-1…AC-4).
+- [x] **T-10** — **Przebudowa górnego paska** (plan §5.1, AC-1…AC-4).
       Lewa strefa: Sparkles + nazwa (`minWidth: 0` + ellipsis) + znacznik `auto` z tekstem
       `hidden sm:inline` (poniżej `sm` sama ikona; `title`/`aria-label` niosą pełną treść).
       Prawa strefa: Nowa rozmowa · Historia · ⋮ · [dokowanie, `hidden lg:flex`] · Zamknij,
@@ -94,7 +94,7 @@
       **Gotowe, gdy:** przy 360 px żadne dwa prostokąty paska się nie przecinają, pasek nie
       przewija się w poziomie, a każda dzisiejsza funkcja ma dokładnie jedno miejsce.
 
-- [ ] **T-11** — **Zapisane / Historia** (plan §5.3, AC-8…AC-13).
+- [x] **T-11** — **Zapisane / Historia** (plan §5.3, AC-8…AC-13).
       Nad listą w szufladzie historii `PrzelacznikSegmentowy` z segmentami `zapisane`/`historia`,
       **oba z `wylaczona: false` jawnie** (pusta lista zapisanych musi dać się otworzyć, bo tam
       stoi wyjaśnienie, jak coś na nią trafia). Domyślnie wybrana `historia` (stan `useState`,
@@ -105,7 +105,7 @@
       **Gotowe, gdy:** zapisanie i odznaczenie przenosi rozmowę między listami, liczniki się
       zgadzają, przeżywa przeładowanie, usuwanie pyta skórkowanym oknem.
 
-- [ ] **T-12** — **Tryb pracy w obszarze treści — powłoka** (plan §5.4, AC-14, AC-20).
+- [x] **T-12** — **Tryb pracy w obszarze treści — powłoka** (plan §5.4, AC-14, AC-20).
       W `AppShell`: opakowanie `<div className="relative flex flex-1 min-w-0">` obejmujące
       `<main>` (bez `flex-1 min-w-0` — przechodzą na opakowanie) i `<AICommandSheet>` przeniesiony
       do środka. Opakowanie **nie dostaje** `transform`/`filter`/`contain` (zepsułyby układ
@@ -116,7 +116,7 @@
       **Gotowe, gdy:** szerokość `<main>` przed i po zmianie identyczna na szerokim i wąskim
       ekranie; nawigacja modułów działa przy otwartym asystencie.
 
-- [ ] **T-13** — **Tryb pracy w obszarze treści — asystent** (plan §5.4, AC-15…AC-19).
+- [x] **T-13** — **Tryb pracy w obszarze treści — asystent** (plan §5.4, AC-15…AC-19).
       Warunek `presentation === "content" && useIsWideScreen() && isOpen` → panel renderuje się
       jako `position: absolute; inset: 0` w opakowaniu (bez przyciemnionego tła, bez zamykania
       kliknięciem w tło, `borderRadius: 0`, `role="region"` + `aria-label` zamiast

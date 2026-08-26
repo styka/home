@@ -676,7 +676,8 @@
         "usunRozmoweOpis": "Rozmowa zniknie razem z całą swoją treścią. Tej operacji nie da się cofnąć.",
         "pokazWObszarzeTresci": "Pokaż asystenta w obszarze treści",
         "pokazWOknie": "Pokaż asystenta w oknie",
-        "asystentWObszarzeTresci": "Asystent AI — obszar treści"
+        "asystentWObszarzeTresci": "Asystent AI — obszar treści",
+        "poziomPracyAsystenta": "Poziom pracy asystenta"
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",

@@ -4,6 +4,70 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — `export A=... B="$A"` w jednej instrukcji: druga zmienna jest pusta
+**Problem:** Do lokalnej weryfikacji migracji ustawiałem połączenie jednym poleceniem:
+`export DATABASE_URL='postgresql://…' DIRECT_URL="$DATABASE_URL"`. `prisma migrate deploy` odbijał
+się komunikatem `P1012: You must provide a nonempty direct URL. The environment variable DIRECT_URL
+resolved to an empty string` — mimo że w tej samej linii ta zmienna „była ustawiona".
+
+**Rozwiązanie:** Powłoka rozwija WSZYSTKIE argumenty `export` zanim przypisze pierwszy z nich, więc
+`$DATABASE_URL` w drugim argumencie ma jeszcze starą (pustą) wartość. Dwie instrukcje:
+`export DATABASE_URL='…'; export DIRECT_URL="$DATABASE_URL"`.
+
+**Lekcja:** Zmienna zdefiniowana w tej samej instrukcji `export`/`env` nie jest jeszcze widoczna dla
+kolejnych argumentów. Gdy narzędzie mówi „zmienna rozwinęła się do pustego łańcucha", to zwykle nie
+jest błąd narzędzia ani literówka w nazwie — to kolejność rozwijania. Sprawdza się to jednym
+`echo "$DIRECT_URL"` szybciej niż czytaniem dokumentacji Prismy.
+
+## 2026-08-26 — Dwie równoległe instalacje npm zostawiają połamane `node_modules`
+**Problem:** Pierwsza `npm install` szła w tle; uznałem ją za skończoną (zakończyła się kodem 0, ale
+bez linii `added N packages`) i odpaliłem drugą. Druga padła na `ENOTEMPTY: directory not empty,
+rmdir '…/node_modules/next/dist/api'`, a w `node_modules` zostało 403 katalogi i **żadnego `.bin`** —
+czyli drzewo, które wygląda na zainstalowane i nie ma czym uruchomić niczego.
+
+**Rozwiązanie:** `rm -rf node_modules && npm install` raz, do końca. Sprawdzian, że instalacja
+faktycznie doszła: istnienie `node_modules/.bin/<narzędzie>`, nie sam kod wyjścia.
+
+**Lekcja:** Kod wyjścia 0 nie znaczy, że npm skończył pracę — przerwany install potrafi tak wyjść.
+Zanim uruchomisz drugą instalację, sprawdź, czy pierwsza nie żyje (`pgrep -f "npm install"`, bez
+`\|` — dla `pgrep` to ERE, nie naprzemienność BRE), a jej wynik oceniaj po artefakcie (`.bin/`),
+nie po statusie.
+
+## 2026-08-26 — `display: none` gubi przewinięcie; `inert` nie przechodzi propem w React 18
+**Problem:** Asystent AI miał dać się pokazać w obszarze treści zamiast w pływającym oknie, przy
+warunku właściciela: „główna treść ma zostać tylko ukryta, więc nie zmieniamy URL". Dwa oczywiste
+sposoby są pułapkami. (1) `display: none` na kontenerze treści **niszczy pudełko układu**, a razem
+z nim `scrollTop` — moduł wraca przewinięty na samą górę, czego nie widać w kodzie i co objawia się
+dopiero na długiej liście. (2) Sama zasłona wizualna nie odcina treści: `Tab` wchodzi pod spód,
+czytnik ekranu czyta obie warstwy, a skróty klawiszowe modułu łapią klawisze pisane do asystenta.
+
+**Rozwiązanie:** Treść zostaje w układzie i jest **przykryta** warstwą `position: absolute; inset: 0`
+w opakowaniu obszaru treści — `scrollTop`, otwarte panele i wpisany tekst zostają nietknięte.
+Niedostępność daje `inert` + `aria-hidden` ustawiane **przez `ref` w efekcie**, nie propem JSX:
+React 18 nie zna propa `inert` i pominąłby go bez słowa. Opakowanie nie może dostać `transform`,
+`filter` ani `contain` — każde z nich robi z niego układ odniesienia dla `position: fixed`, na
+którym stoi tryb okna i arkusz na telefonie.
+
+**Lekcja:** „Ukryj, ale zachowaj stan" to nie `display: none`, tylko przykrycie. A gdy chowasz coś
+przed użytkownikiem, chowaj to również przed **fokusem i czytnikiem ekranu** — inaczej ukrywasz
+tylko dla oczu. Atrybuty, których React danej wersji nie zna, ustawia się przez `ref`.
+
+## 2026-08-26 — Wspólny limit „50 najnowszych" chowa dokładnie te rekordy, które wyróżniasz
+**Problem:** Zgłoszenie właściciela: rozmowy w asystencie giną w historii, potrzebna jest lista
+zapisanych. Naturalny odruch — dodać flagę i przefiltrować listę po stronie klienta — odtworzyłby
+usterkę co do joty: `listAiConversations` czytało `take: 50` z **całego** zbioru, więc rozmowa
+zapisana pół roku temu nie było w tym, co przychodzi na klienta. Filtr na kliencie filtruje zbiór,
+w którym tego rekordu już nie ma.
+
+**Rozwiązanie:** Dwa rozłączne zapytania (`saved: true` / `saved: false`), każde z własnym limitem,
+plus indeks `(userId, saved, updatedAt)`. Przy okazji: `take` musi stać **przy wywołaniu**, a nie we
+wspólnym obiekcie rozsypywanym spreadem — `check:pagination` czyta granicę w miejscu zapytania
+i słusznie nie ufa temu, co przyszło zmienną.
+
+**Lekcja:** Gdy dokładasz „wyróżnienie", żeby coś nie ginęło, sprawdź najpierw, czy odczyt w ogóle
+sięga po stare rekordy. Limit na wspólnej liście jest niewidoczny dopóty, dopóki wszystkie rekordy
+są świeże — i uderza dokładnie w te, które wyróżniono, bo to zwykle te najstarsze.
+
 ## 2026-08-26 — Tagi wydania nie przechodzą przez proxy sesji zdalnej
 **Problem:** Domknięcie pipeline'u (C-52a) każe oznaczyć wydanie **adnotowanym tagiem**
 `prod-<NNN>-<slug>` wypchniętym razem z `master`. Push gałęzi przechodzi bez problemu, ale

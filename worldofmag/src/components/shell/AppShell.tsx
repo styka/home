@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, Calendar, Settings, Mail, Shield, Map, Image as ImageIcon, Lock, MoreHorizontal, Plus } from "lucide-react";
@@ -57,6 +57,39 @@ const BOTTOM_ITEMS: BottomItem[] = [
 export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], trybAdminaDostepny = false }: AppShellProps) {
   const t = useTranslations("components.shell.AppShell");
   const [menuOpen, setMenuOpen] = useState(false);
+  /**
+   * 106: czy asystent przykrywa właśnie obszar treści (tryb „w obszarze treści", tylko komputer).
+   *
+   * Treść jest PRZYKRYTA, nigdy `display: none` ani odmontowana. Odmontowanie kasuje stan modułu,
+   * a `display: none` niszczy pudełko układu — razem z nim znika pozycja przewijania kontenera,
+   * więc moduł wracałby przewinięty na górę. Przykrycie zostawia jedno i drugie nietknięte.
+   */
+  const [trescPrzykryta, setTrescPrzykryta] = useState(false);
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  /**
+   * Przykryta treść musi być NIEDOSTĘPNA, nie tylko niewidoczna: inaczej Tab wchodzi pod spód,
+   * czytnik ekranu czyta obie warstwy naraz, a skróty modułu łapią klawisze pisane do asystenta.
+   *
+   * Atrybuty ustawiamy przez `ref`, a nie propem JSX — React 18 nie zna propa `inert` i po cichu
+   * by go pominął. `aria-hidden` zostaje jako drugie zabezpieczenie na wypadek przeglądarki bez
+   * `inert`: wtedy fokus wprawdzie wejdzie, ale czytnik ekranu i tak nie przeczyta.
+   */
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    if (trescPrzykryta) {
+      el.setAttribute("inert", "");
+      el.setAttribute("aria-hidden", "true");
+    } else {
+      el.removeAttribute("inert");
+      el.removeAttribute("aria-hidden");
+    }
+    return () => {
+      el.removeAttribute("inert");
+      el.removeAttribute("aria-hidden");
+    };
+  }, [trescPrzykryta]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [, startTransition] = useTransition();
   const pathname = usePathname();
@@ -297,9 +330,21 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
        */}
       {/* 100: `pb-16`, nie `pb-14` — magiczna ikona wystaje 14 px ponad krawędź paska, więc bez
           tego zjadałaby ostatni wiersz każdej długiej listy (AC-19). */}
-      <main className="flex-1 overflow-hidden flex flex-col min-w-0 pb-16 md:pb-0">
-        {children}
-      </main>
+      {/* 106: obszar treści dostaje OPAKOWANIE — po to, żeby asystent mógł się w nim rozłożyć
+          (`position: absolute`) zamiast przykrywać całą stronę pływającym oknem. Opakowanie
+          przejmuje `flex-1 min-w-0` od `<main>`, więc układ „nawigacja | treść" jest ten sam.
+
+          Opakowanie NIE MOŻE dostać `transform`, `filter` ani `contain`: każde z nich robi z niego
+          układ odniesienia dla `position: fixed`, a na tym stoi tryb okna i arkusz na telefonie. */}
+      <div className="relative flex flex-1 min-w-0">
+        <main ref={mainRef} className="flex-1 overflow-hidden flex flex-col min-w-0 pb-16 md:pb-0">
+          {children}
+        </main>
+        {/* 106: asystent mieszka TU, obok treści, a nie na końcu powłoki. W trybie okna nadal
+            renderuje się jako `fixed` nad stroną — element `fixed` nie zależy od tego, gdzie
+            w drzewie stoi (o ile żaden przodek nie zmienia układu odniesienia, patrz wyżej). */}
+        <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} onPrzykrycie={setTrescPrzykryta} />
+      </div>
 
       {/* 100: dolny pasek to teraz PASEK KCIUKA — układ lustrzany wg ręki, magiczna ikona na
           stałe na środku, a przytrzymanie dowolnej pozycji otwiera wachlarz nawigacji. */}
@@ -315,7 +360,6 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
 
       <FavoritesOverlay favorites={favoriteViews} userPermissions={userPermissions} />
       <ShortcutsCheatSheet />
-      <AICommandSheet isAdmin={isAdmin} usdPlnRate={usdPlnRate} />
       <ConsentBanner />
       {/* 085 (AC-8): pływający przycisk zgłaszania i tryb wskazywania to NARZĘDZIE administratora —
           przy wyłączonym trybie znika razem z resztą dodatków. Sam komponent pilnuje też skrótu

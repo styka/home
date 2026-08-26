@@ -501,6 +501,34 @@ proactive **follow-up suggestion chips**; the agent can also propose a **report*
 (full markdown with summary + facts) saved to `/reports` via `createUserReport`
 (per-user, no admin needed). Chat UX: live "thinking", Stop/Copy/Regenerate/Retry,
 Esc-to-close, autofocus, a11y (`role=dialog`/`aria-live`).
+**106 — the assistant's shell: chrome, two conversation lists, and a docked mode.** Four owner
+reports, all about the frame rather than what the assistant can do. (1) **The header splits into two
+planes**: always visible are the name, the `auto` marker, new conversation, history, a **⋮ menu**, a
+desktop-only dock toggle and close; under ⋮ go the current conversation's actions (save / rename /
+delete), assistant settings, problem report and the admin-mode switch. The dividing rule comes
+straight from 100, where a segmented switch *replaced* a ⋮: a menu says neither what is available nor
+what is selected, so **only actions live under it — never a state indicator and never an exit**.
+Header buttons are 44 × 44 (C-31); the `auto` chip drops to its icon below `sm` with the full text in
+`title`/`aria-label`. (2) The **work-level menu moved onto `AnchoredLayer`** (080) — its hard-coded
+`bottom: calc(100% + 6px)` meant "always upwards, without asking whether there is room", and
+`position: absolute` was clipped by the sheet's own `overflow: hidden`; the portal + side flip +
+window-derived `maxHeight` kill both causes at once. Menu contents moved unchanged. (3) **Two
+conversation lists** — „Zapisane | Historia" as a `PrzelacznikSegmentowy` over the history drawer,
+backed by one field (`AiConversation.saved`), so a conversation cannot land on both or vanish from
+both. `listAiConversations` now issues **two disjoint queries**: the old single `take: 50` read "the
+50 newest overall", so a conversation saved months ago was never in what reached the client —
+filtering it there would have reproduced the exact fault the list exists to fix. Both segments pass
+`wylaczona: false` explicitly, because the empty saved list holds the only explanation of how
+something gets onto it. Deleting a conversation now goes through `confirmDialog({ destructive: true })`
+(it used to delete silently — C-34). (4) **Docked mode on desktop** (`AssistantPref.presentation`,
+`"window" | "content"`, `lg:` and up): the assistant fills the content area while the module
+underneath is **covered, never `display: none` and never unmounted** — unmounting drops the module's
+state, and `display: none` destroys the layout box and with it `scrollTop`. `AppShell` wraps `<main>`
+in a `relative` container (which must never get `transform`/`filter`/`contain`, or `position: fixed`
+would break for the window mode and the phone sheet) and marks the covered `<main>` `inert` +
+`aria-hidden` **via a ref**, since React 18 does not know an `inert` prop. The URL never changes, so
+the page context the assistant reads is available exactly as in window mode.
+
 **Conversation lifecycle**: closing the sheet ends a conversation that has at least one
 turn — reopening starts a fresh thread and the previous one is one tap away via a
 "return to last conversation" button in the header (labelled with its first message);
@@ -559,7 +587,7 @@ Team, TeamMember, TeamInvitation              — Collaboration
 Skin, UserSkinPref                            — Skins/themes (system/user/team; tokens=JSON CSS-var map; isPublic to share; UserSkinPref = per-user choice)
 UserMenuPref                                  — Per-user sidebar/menu customization (order/disabled/tabBar = JSON string[] of module ids)
 DashboardPref                                 — Per-user Home dashboard personalization (section order/visibility = JSON string[])
-AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy|max, reader voice browser|server + voiceId, **`autoApprove`** = 041 auto-run of SAFE assistant actions; destructive ones always ask)
+AssistantPref                                 — Per-user AI assistant settings (standing instructions, work level standard|economy|max, reader voice browser|server + voiceId, **`autoApprove`** = 041 auto-run of SAFE assistant actions; destructive ones always ask; **`presentation`** = 106 desktop presentation `window`|`content`, String+union — on a phone it is ignored, because a narrow screen has no content area to hand over)
 Notification                                  — Notification engine (per-user; bell in chrome; reminders synced from agenda/deadlines)
 AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
@@ -614,7 +642,7 @@ ServiceStaff, ServiceFavorite, ServicePromoCode — Usługi marketplace (multi-w
 QaEpic, QaUserStory, QaTestScenario           — QA module
 LlmProvider, LlmAssignment                    — LLM config (admin; LlmAssignment PK = operationType+level)
 UserLlmPref, LlmModelPrice                    — Per-user "custom" assistant level (model/effort/temperature per operation type, no maxTokens) + admin-editable model price list
-AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results; `AiConversation.draft` = unsent composer text, per conversation, so it returns on any device)
+AiConversation, AiMessage                     — AI assistant chat memory (per-user; message kind: text/plan/report/navigate/clarify/results; `AiConversation.draft` = unsent composer text, per conversation, so it returns on any device; **`saved`** = 106, the conversation sits on the „Zapisane" list instead of history — one field is the whole split, read by two disjoint queries)
 Config, UserActivity, Report                  — System
 ```
 
