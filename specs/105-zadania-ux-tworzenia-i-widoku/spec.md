@@ -88,9 +88,12 @@ najintensywniej używany moduł jest najbardziej męczący.
 - [ ] **AC-11** — Given panel szczegółów jest otwarty, when używam przełącznika „rozwiń",
       then zadanie zajmuje **całą przestrzeń roboczą modułu** (lista ustępuje miejsca), a treść
       rozkłada się na tej szerokości zamiast pozostawać wąską kolumną.
-- [ ] **AC-12** — Given zadanie jest w trybie pełnym, when używam przełącznika ponownie, naciskam
-      Esc lub zamykam zadanie, then wracam do widoku listy z panelem, a wybrany tryb **jest
-      zapamiętany** na kolejne otwarcia.
+- [ ] **AC-12** — Given zadanie jest w trybie pełnym, when używam przełącznika ponownie albo
+      naciskam Esc, then tryb pełny się wyłącza i wracam do widoku listy z panelem (zadanie
+      pozostaje otwarte).
+- [ ] **AC-12a** — Given zadanie jest w trybie pełnym, when zamykam zadanie (bez wyłączania trybu),
+      then tryb pełny **pozostaje wybrany** i kolejne otwarte zadanie znów pokazuje się na całej
+      przestrzeni — wybór trybu przeżywa zamknięcie zadania i przeładowanie strony.
 - [ ] **AC-13** — Given jestem na telefonie, when otwieram zadanie, then nadal dostaję dotychczasowy
       widok pełnoekranowy — zmiana nie pogarsza układu mobilnego i **nie pokazuje dwóch paneli obok
       siebie**.
