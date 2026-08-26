@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Tagi wydania nie przechodzą przez proxy sesji zdalnej
+**Problem:** Domknięcie pipeline'u (C-52a) każe oznaczyć wydanie **adnotowanym tagiem**
+`prod-<NNN>-<slug>` wypchniętym razem z `master`. Push gałęzi przechodzi bez problemu, ale
+`git push origin <tag>` odbija się za każdym razem: `send-pack: unexpected disconnect while reading
+sideband packet` / `fatal: the remote end hung up unexpectedly`. Cztery próby z backoffem — ten sam
+wynik.
+
+**Rozwiązanie:** Sprawdzenie, czy to w ogóle problem tego przebiegu:
+`git ls-remote --tags origin | wc -l` → **0**. Na zdalnym repozytorium **nie ma ani jednego tagu**,
+mimo że reguła obowiązuje od przebiegu 068 i lokalnie tagi `prod-*` powstawały. Czyli push tagów
+nigdy z tego środowiska nie działał — to ograniczenie proxy/uprawnień aplikacji GitHuba, a nie
+usterka wprowadzona teraz. Promocja jest domknięta poprawnie: `master` wskazuje dokładnie ten commit,
+co `develop` (fast-forward), tag zostaje lokalnie.
+
+**Lekcja:** Zanim zaczniesz ponawiać odbity push z backoffem, **sprawdź, czy operacja kiedykolwiek
+działała** — jeden `git ls-remote` odpowiada na to w sekundę i oszczędza cztery próby. I nie melduj
+„wydanie otagowane", gdy tag nie doszedł: brak tagu na zdalnym to nie jest nieudana promocja
+(`master` jest wypchnięty), ale jest to brakujący ślad wydania i trzeba go zgłosić wprost.
+
 ## 2026-08-26 — Dwa przebiegi klikaczy naraz: wyniki obu do wyrzucenia
 **Problem:** Sprawdzałem, czy suite klikaczy jeszcze żyje, przez
 `pgrep -f "playwright\|e2e-web"` — dostałem „nic nie działa", więc uruchomiłem przebieg drugi.
