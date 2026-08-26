@@ -32,6 +32,19 @@ async function seedTask(title: string, description?: string) {
   }
 }
 
+/** Dokłada zadanie do istniejącego projektu (gdy test potrzebuje więcej niż jednego wiersza). */
+async function seedTaskWProjekcie(projectId: string, title: string) {
+  const { PrismaClient } = await import("@prisma/client");
+  const { E2E_ADMIN } = await import("../fixtures/users");
+  const prisma = new PrismaClient();
+  try {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: E2E_ADMIN.email } });
+    await prisma.task.create({ data: { title, projectId, createdById: user.id } });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 test.describe("042 — usterki w Zadaniach", () => {
   test("[080-AC1] kolumna zaznaczeń pojawia się i ZNIKA razem z trybem zaznaczania", async ({ page }) => {
     /**
@@ -114,35 +127,42 @@ test.describe("105 — UX tworzenia i przeglądania zadań", () => {
      *
      * Asercja idzie na OBECNOŚĆ kolumny w drzewie, tak samo jak [080-AC1], bo to ta sama reguła
      * widziana z drugiej strony: tryb ma znikać wyłącznie wtedy, gdy ktoś go jawnie wyłączy.
+     *
+     * DWA zadania, nie jedno: zaznaczony wiersz zmienia etykietę na „Odznacz zadanie", więc przy
+     * jednym zadaniu licznik „Zaznacz zadanie" spadłby do zera z powodu zaznaczenia, a nie z powodu
+     * wyłączenia trybu — test mierzyłby coś innego, niż mówi jego nazwa.
      */
     const { projectId } = await seedTask("Zadanie masowe A");
+    await seedTaskWProjekcie(projectId, "Zadanie masowe B");
 
     await page.goto(`/tasks/${projectId}`);
     await page.waitForLoadState("load").catch(() => {});
     await expect(page.getByText("Zadanie masowe A").first()).toBeVisible({ timeout: 15_000 });
 
-    const checkboxy = page.locator('button[aria-label="Zaznacz zadanie"]');
+    const doZaznaczenia = page.locator('button[aria-label="Zaznacz zadanie"]');
     const przelacznik = page.getByRole("button", { name: /zaznacz wiele/i }).first();
 
     await przelacznik.click();
-    await expect(checkboxy.first()).toBeVisible({ timeout: 10_000 });
+    await expect(doZaznaczenia.first()).toBeVisible({ timeout: 10_000 });
+    expect(await doZaznaczenia.count()).toBe(2);
 
-    // Zaznaczamy zadanie i wykonujemy akcję masową (zmiana priorytetu z paska akcji zbiorczych).
-    await checkboxy.first().click();
-    const pasek = page.getByRole("button", { name: /priorytet/i }).first();
-    if (await pasek.isVisible().catch(() => false)) {
-      await pasek.click();
-      const opcja = page.getByRole("button", { name: /wysoki/i }).first();
-      if (await opcja.isVisible().catch(() => false)) await opcja.click();
-    }
+    // Zaznaczamy jedno zadanie i wykonujemy na nim akcję masową z paska akcji zbiorczych.
+    // `exact` jest tu konieczne: formularz dodawania ma własny przycisk „Priorytet (kliknij by
+    // zmienić)", który stoi WYŻEJ w drzewie i bez tego przejąłby kliknięcie.
+    await doZaznaczenia.first().click();
+    const priorytetZbiorczy = page.getByRole("button", { name: "Priorytet", exact: true });
+    await expect(priorytetZbiorczy).toBeVisible({ timeout: 10_000 });
+    await priorytetZbiorczy.click();
+    await page.getByRole("button", { name: /Wysoki/ }).first().click();
 
-    // Sedno: po akcji kolumna zaznaczeń JEST NADAL w drzewie — da się od razu zaznaczać dalej.
-    await expect(checkboxy.first()).toBeVisible({ timeout: 10_000 });
+    // Sedno: po akcji kolumna zaznaczeń JEST NADAL w drzewie, przy OBU zadaniach — zaznaczenie
+    // zostało wyczyszczone (te zadania są już zmienione), ale tryb trwa i można zaznaczać dalej.
+    await expect(doZaznaczenia.first()).toBeVisible({ timeout: 10_000 });
+    await expect(doZaznaczenia).toHaveCount(2, { timeout: 10_000 });
 
     // A jawne wyjście (Esc) dalej ją chowa — tryb nie stał się nieusuwalny.
     await page.keyboard.press("Escape");
-    await page.waitForTimeout(300);
-    expect(await checkboxy.count()).toBe(0);
+    await expect(doZaznaczenia).toHaveCount(0, { timeout: 10_000 });
   });
 
   test("[105-AC5] pole dodawania zadania rośnie z tekstem", async ({ page }) => {
