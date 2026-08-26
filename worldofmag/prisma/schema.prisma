@@ -1041,12 +1041,18 @@ model AiConversation {
   // 032: niewysłany tekst z pola wiadomości tej rozmowy (brudnopis). Trzymany na koncie, więc
   // wraca też na innym urządzeniu. NULL/"" = brak brudnopisu.
   draft     String?
+  // 106: rozmowa na liście „Zapisane". Właściciel chciał, żeby wątek, do którego wraca, nie ginął
+  // między codziennymi pytaniami — a wspólna lista z limitem 50 najnowszych chowała go tym pewniej,
+  // im dłużej z niej korzystał. `false` = rozmowa historyczna, czyli dotychczasowe zachowanie.
+  saved     Boolean     @default(false)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @default(now()) @updatedAt
   user      User        @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
   messages  AiMessage[]
 
   @@index([userId, updatedAt])
+  // 106: obie listy (zapisane / historyczne) czyta OSOBNE zapytanie po tych trzech kolumnach.
+  @@index([userId, saved, updatedAt])
 }
 
 model AiMessage {
@@ -1956,6 +1962,11 @@ model AssistantPref {
   // 041: auto-zatwierdzanie BEZPIECZNYCH akcji asystenta. Akcje niszczące pytają zawsze —
   // klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, nie z osobnej listy.
   autoApprove  Boolean  @default(false)
+  // 106: sposób prezentacji asystenta na KOMPUTERZE — AssistantPresentation:
+  // "window" (pływające okno) | "content" (w obszarze treści modułu). String + zawężający typ
+  // TypeScript, nigdy enum Prisma (C-12). Domyślne "window" odtwarza dotychczasowe zachowanie,
+  // a na telefonie pole nie ma znaczenia: tam asystent zawsze jest arkuszem.
+  presentation String   @default("window")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
