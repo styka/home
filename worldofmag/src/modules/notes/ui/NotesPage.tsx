@@ -6,6 +6,7 @@ import { FileText, MessageCircle, X, Search, ChevronLeft, LayoutGrid, List, Arch
 import Link from "next/link";
 import { NoteList } from "./NoteList";
 import { QuickNoteBar, type QuickNoteBarHandle } from "./QuickNoteBar";
+import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { NotesQA } from "./NotesQA";
 import { TagChip } from "./TagChip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -41,7 +42,15 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
   };
   const initialPinnedOnly = param("pinned") === "1";
   const focusFromQuery = param("focus") ?? null;
-  const openNewFromQuery = param("new") === "1";
+  /**
+   * 103: „nowa notatka" z adresu przeszło na WSPÓLNĄ konwencję `?akcja=…` — tę samą, którą niesie
+   * szybki cel modułu w wachlarzu nawigacji. Wcześniej był tu prywatny `?new=1`, znany wyłącznie
+   * temu modułowi; dwie konwencje na to samo znaczyłyby, że autor szybkiego celu musi zgadnąć,
+   * którą akurat rozumie dany moduł. Oba wewnętrzne odnośniki (`NotesHomePage`) przeszły razem
+   * z nim — stary parametr nie ma już nadawcy.
+   */
+  const akcjaNowaNotatka = useAkcjaZAdresu("nowa-notatka");
+  const openNewFromQuery = akcjaNowaNotatka.aktywna;
 
   // 043: filtr, folder, tagi i tryb widoku żyją w ADRESIE (AC-7).
   // Domyślną filtra jest „PINNED", gdy w adresie stoi `pinned=1` — a że ten parametr zostaje
@@ -141,7 +150,12 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
   // Handle deep-link from home page: open QuickNoteBar for new note, scroll to focused note
   useEffect(() => {
     if (openNewFromQuery) {
-      setTimeout(() => quickNoteRef.current?.focus(), 50);
+      setTimeout(() => {
+        quickNoteRef.current?.focus();
+        // Parametr sprzątamy po zużyciu: adres ma opisywać stan widoku, a po ustawieniu kursora
+        // w polu nie ma już akcji do wykonania — przy odświeżeniu wykonałaby się drugi raz.
+        akcjaNowaNotatka.zamknij();
+      }, 50);
     }
     if (focusFromQuery) {
       setTimeout(() => {

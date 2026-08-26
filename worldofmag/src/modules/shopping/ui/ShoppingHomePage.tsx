@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
+import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingCart, Plus, ChevronRight, Loader2, Package, Ruler, Tag, Map, Image as ImageIcon, Archive, RotateCcw, Users, Clock } from "lucide-react";
 import { createList, unarchiveList } from "../actions/lists";
@@ -63,6 +64,20 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
   const t = useTranslations("modules.shopping.ShoppingHomePage");
   const confirmDialog = useConfirm();
   const [isAdding, setIsAdding] = useState(false);
+  /**
+   * 103: akcja z adresu — ten sam mechanizm, którym gest w dolnym pasku dochodzi do „Nowa lista"
+   * bez wchodzenia w moduł i szukania przycisku. Powłoka wyłącznie nawiguje; stan otwartego
+   * formularza czyta z adresu ten widok. `zamknijDodawanie` czyści parametr, żeby adres zapisany
+   * w ulubionych nie odtwarzał formularza przy każdym wejściu.
+   */
+  const akcjaNowaLista = useAkcjaZAdresu("nowa-lista");
+  useEffect(() => {
+    if (akcjaNowaLista.aktywna) setIsAdding(true);
+  }, [akcjaNowaLista.aktywna]);
+  const zamknijDodawanie = () => {
+    setIsAdding(false);
+    akcjaNowaLista.zamknij();
+  };
   const [newName, setNewName] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -82,7 +97,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
     startTransition(async () => {
       await createList(name);
       setNewName("");
-      setIsAdding(false);
+      zamknijDodawanie();
       showToast("Lista utworzona", "success");
     });
   }
@@ -97,7 +112,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
       subtitle={subtitle}
       headerAction={
         <button
-          onClick={() => setIsAdding((v) => !v)}
+          onClick={() => (isAdding ? zamknijDodawanie() : setIsAdding(true))}
           style={{
             display: "flex",
             alignItems: "center",
@@ -125,7 +140,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleCreate();
-              if (e.key === "Escape") setIsAdding(false);
+              if (e.key === "Escape") zamknijDodawanie();
             }}
             placeholder="Nazwa listy…"
             style={{
@@ -160,7 +175,7 @@ export function ShoppingHomePage({ lists, archivedLists = [], totalPending, rece
             Utwórz
           </button>
           <button
-            onClick={() => setIsAdding(false)}
+            onClick={zamknijDodawanie}
             style={{
               padding: "8px 12px",
               borderRadius: 8,

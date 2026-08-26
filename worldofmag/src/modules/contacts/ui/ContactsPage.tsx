@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition, useMemo, useRef, useLayoutEffect, useCallback } from "react";
+import { useState, useTransition, useMemo, useRef, useLayoutEffect, useCallback, useEffect } from "react";
+import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -31,6 +32,20 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   const query = view.q;
   const setQuery = useCallback((value: string) => setView({ q: value }, { replace: true }), [setView]);
   const [adding, setAdding] = useState(false);
+  /**
+   * 103: akcja z adresu — ten sam mechanizm, którym gest w dolnym pasku dochodzi do „Nowy kontakt"
+   * bez wchodzenia w moduł i szukania przycisku. Powłoka wyłącznie nawiguje; stan otwartego
+   * formularza czyta z adresu ten widok. `zamknijDodawanie` czyści parametr, żeby adres zapisany
+   * w ulubionych nie odtwarzał formularza przy każdym wejściu.
+   */
+  const akcjaNowyKontakt = useAkcjaZAdresu("nowy-kontakt");
+  useEffect(() => {
+    if (akcjaNowyKontakt.aktywna) { setAdding(true); setEditId(null); }
+  }, [akcjaNowyKontakt.aktywna]);
+  const zamknijDodawanie = () => {
+    setAdding(false);
+    akcjaNowyKontakt.zamknij();
+  };
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -109,7 +124,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
       onSearch: () => searchRef.current?.focus(),
       onEscape: () => {
         if (editId) { setEditId(null); return; }
-        if (adding) { setAdding(false); return; }
+        if (adding) { zamknijDodawanie(); return; }
         setSelectedId(null);
       },
     };
@@ -133,7 +148,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
         action: { label: "Nowy kontakt", onClick: () => setAdding(true) },
       }}
       headerAction={
-        <button onClick={() => { setAdding((v) => !v); setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <button onClick={() => { if (adding) { zamknijDodawanie(); } else { setAdding(true); } setEditId(null); }} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", gap: 6 }}>
           <Plus size={15} /> Nowy kontakt
         </button>
       }
@@ -150,8 +165,8 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {adding && (
           <ContactForm
-            onDone={() => { setAdding(false); reload(); }}
-            onCancel={() => setAdding(false)}
+            onDone={() => { zamknijDodawanie(); reload(); }}
+            onCancel={zamknijDodawanie}
           />
         )}
 

@@ -9,5 +9,8 @@ export default defineModule({
   color: "var(--accent-blue)",
   Icon: Car,
   sideNav: () => import("./ui/FlotaSideNav").then((m) => ({ default: m.FlotaSideNav })),
+  szybkieCele: [
+    { id: "pojazdy", etykieta: "Pojazdy", href: "/flota", Icon: Car },
+  ],
   defaultEnabled: true,
 });

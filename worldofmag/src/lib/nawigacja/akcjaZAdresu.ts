@@ -21,13 +21,17 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
  * mówi co innego niż to, co widać. Stan widoku w adresie ma być prawdziwy — ta sama reguła, którą
  * 084/087 wprowadziły w Wiadomościach.
  *
+ * Nazwa zaczyna się od `use` mimo polskiego nazewnictwa reszty — to nie jest niekonsekwencja,
+ * tylko wymóg reguły `react-hooks/rules-of-hooks`, która rozpoznaje hooki wyłącznie po tym
+ * przedrostku. Ten sam kompromis noszą `useHistoriaNawigacji` i `useUlubioneBiezacego`.
+ *
  * `router.replace`, nie `push`: sprzątanie adresu nie jest krokiem nawigacji i nie ma prawa
  * dokładać wpisu do historii przeglądarki (ani do wachlarza historii — zobaczyłoby się tam dwa
  * wpisy na tę samą stronę, różniące się wyłącznie parametrem).
  */
 export const PARAM_AKCJI = "akcja";
 
-export function uzyjAkcjiZAdresu(nazwa: string): { aktywna: boolean; zamknij: () => void } {
+export function useAkcjaZAdresu(nazwa: string): { aktywna: boolean; zamknij: () => void } {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

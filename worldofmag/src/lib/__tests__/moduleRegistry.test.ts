@@ -11,13 +11,13 @@ import { Home } from "lucide-react";
 // wyłącznie jego zniknięciem z paska bocznego — czyli w miejscu, w którym nikt nie szuka błędu
 // scalania.
 
-test("rejestr ma dokładnie 21 modułów i unikalne identyfikatory", () => {
-  assert.equal(MODULES.length, 21, "moduł zginął albo doszedł niezauważony");
+test("rejestr ma dokładnie 22 moduły i unikalne identyfikatory", () => {
+  assert.equal(MODULES.length, 22, "moduł zginął albo doszedł niezauważony");
   const ids = MODULES.map((m) => m.id);
   assert.equal(new Set(ids).size, ids.length, "zduplikowany identyfikator modułu");
 });
 
-test("wszystkie 21 modułów jest zadeklarowanych — lista przejściowa nie istnieje", () => {
+test("wszystkie 22 moduły są zadeklarowane — lista przejściowa nie istnieje", () => {
   for (const id of ["truck", "contacts", "reports", "qa", "habits", "tasks", "shopping", "calendar", "home"]) {
     const found = MODULES.filter((m) => m.id === id);
     assert.equal(found.length, 1, `moduł ${id} musi wystąpić dokładnie raz`);

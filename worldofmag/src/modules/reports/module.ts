@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, FileText } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 /**
@@ -13,5 +13,8 @@ export default defineModule({
   permission: null,
   color: "var(--accent-purple)",
   Icon: BookOpen,
+  szybkieCele: [
+    { id: "raporty", etykieta: "Raporty", href: "/reports", Icon: FileText },
+  ],
   defaultEnabled: true,
 });

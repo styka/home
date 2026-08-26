@@ -699,6 +699,12 @@
       "FavoriteViewForm": {
         "usunBiezacyWidok": "Usuń bieżący widok z ulubionych",
         "dodajBiezacyWidok": "Dodaj bieżący widok do ulubionych"
+      },
+      "useUlubioneBiezacego": {
+        "zapisano": "Zapisano w ulubionych: {nazwa}",
+        "usunieto": "Usunięto z ulubionych: {nazwa}",
+        "adresNieDoZapisania": "Tego widoku nie da się zapisać w ulubionych.",
+        "nieUdaloSie": "Nie udało się zmienić ulubionych."
       }
     },
     "legal": {
@@ -735,7 +741,10 @@
         "dominujacaReka": "Dominująca ręka",
         "dominujacaRekaOpis": "Po tej stronie ekranu staną: pozycje dolnego paska bliżej kciuka, gwiazdka ulubionych, magiczna ikona asystenta na komputerze i ikona zgłaszania. Magiczna ikona na telefonie zostaje na środku paska — po to, żeby nigdy nie trzeba jej było szukać.",
         "rekaPrawa": "Prawa",
-        "rekaLewa": "Lewa"
+        "rekaLewa": "Lewa",
+        "dolnyPasekTytul": "Dolny pasek (telefon)",
+        "dolnyPasekOpis": "Moduły na dolnym pasku w telefonie — niezależne od menu bocznego (maks. {maks}).",
+        "dolnyPasekKotwice": "Pozostałe miejsca zajmują stałe ikony: dom, asystent, ulubione i wstecz. Ich nie da się usunąć — są jedynym wejściem do tego, co robią."
       },
       "PrivacySettings": {
         "kompletTwoichDanychZe": "Komplet Twoich danych ze wszystkich modułów w formacie JSON (RODO art. 15/20).",
@@ -777,7 +786,8 @@
         "otworzMenu": "Otwórz menu",
         "wiecej": "Więcej…",
         "mapySklepow": "Mapy sklepów",
-        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli"
+        "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
+        "ustawieniaPaska": "Ustawienia paska"
       },
       "FeedbackInspector": {
         "zglosBladSugestieWskaz": "Zgłoś błąd / sugestię (wskaż element) — Ctrl+Shift+B",
@@ -804,7 +814,16 @@
       },
       "PasekKciuka": {
         "nawigacjaGlowna": "Nawigacja główna",
-        "asystentAi": "Asystent AI"
+        "asystentAi": "Asystent AI",
+        "stronaGlowna": "Dom",
+        "stronaGlownaOpis": "Przejdź na stronę główną",
+        "ulubione": "Ulubione",
+        "ulubioneZapisz": "Zapisz ten widok w ulubionych",
+        "ulubioneUsun": "Usuń ten widok z ulubionych",
+        "historia": "Wstecz",
+        "historiaOpis": "Wróć do poprzedniej strony (przytrzymaj, żeby wybrać z listy)",
+        "historiaPustaOpis": "Historia jest pusta",
+        "historiaPusta": "Nie ma jeszcze dokąd wracać — historia zapełni się, gdy odwiedzisz kilka stron."
       },
       "WachlarzNawigacji": {
         "nawigacjaGestem": "Nawigacja gestem"

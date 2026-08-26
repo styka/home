@@ -1,4 +1,4 @@
-import { Home } from "lucide-react";
+import { Home, LayoutDashboard } from "lucide-react";
 import { defineModule } from "@/platform/registry";
 
 export default defineModule({
@@ -9,5 +9,8 @@ export default defineModule({
   permission: "module.home",
   color: "var(--text-secondary)",
   Icon: Home,
+  szybkieCele: [
+    { id: "pulpit", etykieta: "Pulpit", href: "/", Icon: LayoutDashboard },
+  ],
   defaultEnabled: true,
 });
