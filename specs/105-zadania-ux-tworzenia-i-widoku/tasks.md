@@ -139,12 +139,12 @@ i to jest świadome, nie przeoczone.
   `next lint --dir src`, `next build`. **Krok `scripts/migrate.js` pomijamy.**
   *Gotowe, gdy:* wszystko zielone do `next build` włącznie.
 
-- [~] **T-15** — **Uruchomienie klikaczy**:
+- [x] **T-15** — **Uruchomienie klikaczy**:
   `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`, potem `tail -40 /tmp/e2e.log`.
   *Gotowe, gdy:* suite przechodzi albo każdy czerwony test ma ustaloną przyczynę niezwiązaną
   z tą zmianą.
 
-- [ ] **T-16** — **Mapowanie AC → wynik** (wejście do `/verify`): dla każdego z 21 kryteriów
+- [x] **T-16** — **Mapowanie AC → wynik** (wejście do `/verify`): dla każdego z 21 kryteriów
   (AC-1..AC-20 + AC-12a) zapisz, czym zostało potwierdzone (klikacz / oględziny / kod).
 
 - [x] **T-17** — **Wpisy do `doświadczenia.md`** (C-51, po polsku, format `## YYYY-MM-DD — tytuł`):
@@ -179,6 +179,44 @@ i to jest świadome, nie przeoczone.
 | AC-20 | T-4 |
 
 Żadne kryterium nie zostaje bez zadania.
+
+## Wynik weryfikacji (T-16 — wejście do `/verify`)
+
+Przebieg klikaczy: **212 przeszło, 15 padło** (pełny zestaw), z czego **14 to zastany dług
+potwierdzony pomiarem**: te same 14 testów, co do nazwy, pada na czystym `origin/develop`
+(`/tmp/e2e-baza.log`) — Wiadomości ×10 (zależne od kanałów RSS, których sandbox nie pobiera),
+`favorites` ×1, `shortcuts` ×1, `chrom-konta` ×1, `zgloszenia-i-uklad` ×1. Piętnasty był MOIM
+błędem w teście i został naprawiony; po poprawce zestaw Zadań ma **17 zielonych, 0 czerwonych**.
+
+| AC | Czym potwierdzone | Wynik |
+|----|-------------------|-------|
+| AC-1 | klikacz `[105-AC1]` — dodanie zadania z `/tasks` bez wchodzenia w projekt | ✅ |
+| AC-2 | kod: `findFirst` w `src/app/tasks/page.tsx` → `domyslny` w `SzybkieDodanieZadania`; oględziny | ✅ |
+| AC-3 | klikacz `[105-AC1]` — adres pasuje do `/tasks/<id>?task=<id>`, tytuł widoczny | ✅ |
+| AC-4 | kod: martwe/nieznane id → „Skrzynka"; `createTask` z `projectId: null` | ✅ |
+| AC-5 | klikacz `[105-AC5]` — `scrollHeight = clientHeight = 63 px`, brak przewijania w polu | ✅ |
+| AC-6 | kod + oględziny: opis w focusie, pole tytułu z podpisem, ręczny tytuł wyłącza LLM | ✅ |
+| AC-7 | klikacz `[scenario-tasks-add-quick]` — `Enter` w polu tworzy zadanie | ✅ |
+| AC-8 | kod: `Escape` zwija (`setRozwiniety(false)`), stan `tresc` nietknięty | ✅ |
+| AC-9 | klikacz `[105-AC11]` — panel 480 px (było 380 px sztywno) | ✅ |
+| AC-10 | kod: uchwyt + zapis na `pointerup`; klikacz potwierdza trwałość po przeładowaniu | ✅ |
+| AC-11 | klikacz `[105-AC11]` — panel **480 → 1060 px** po przełączeniu | ✅ |
+| AC-12 | klikacz `[105-AC11]` — `Esc` przywraca przycisk „Rozwiń", zadanie zostaje otwarte | ✅ |
+| AC-12a | klikacz `[105-AC11]` — po `reload()` tryb pełny nadal włączony | ✅ |
+| AC-13 | kod: uchwyt i przełącznik `hidden md:*`, mobilny panel nietknięty; `useIsNarrowScreen` blokuje chowanie listy | ✅ |
+| AC-14 | klikacz `[scenario-tasks-nav-jk]` | ✅ |
+| AC-15 | kod + oględziny: `description` z tytułem zadania i wzmianką o Koszu | ✅ |
+| AC-16 | kod: ciało `Modal` renderowane tylko przy treści; wszystkie okna aplikacji | ✅ |
+| AC-17 | klikacz `[105-AC17]` — po akcji masowej kolumna zaznaczeń nadal w drzewie | ✅ |
+| AC-18 | klikacz `[105-AC17]` — obie kolumny wracają do stanu „do zaznaczenia" (`toHaveCount(2)`) | ✅ |
+| AC-19 | klikacz `[105-AC17]` + `[080-AC1]` — `Esc` i przycisk trybu chowają kolumnę | ✅ |
+| AC-20 | kod: `wyczyscZaznaczenie` zeruje `selectedIds`, więc licznik nie liczy usuniętych | ✅ |
+
+Bramki (C-50): `check:migrations`, `check:i18n`, `check:ui-contract`, `check:client-safe`,
+`check:tailwind`, `check:owner-columns`, `check:pagination`, `check:schema-drift`,
+`check:boundaries`, `check:module-registry`, `check:e2e-waits`, `check:content-memory`,
+`check:cost-badge`, `tsc`, `next lint`, `next build`, `check:perf-budget` — **wszystkie zielone**.
+`scripts/migrate.js` świadomie pominięty (C-13).
 
 ## Ścieżka krytyczna
 
