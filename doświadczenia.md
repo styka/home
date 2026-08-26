@@ -4,6 +4,26 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Dwa przebiegi klikaczy naraz: wyniki obu do wyrzucenia
+**Problem:** Sprawdzałem, czy suite klikaczy jeszcze żyje, przez
+`pgrep -f "playwright\|e2e-web"` — dostałem „nic nie działa", więc uruchomiłem przebieg drugi.
+W rzeczywistości pierwszy **cały czas trwał**: wzorzec z `\|` nie jest naprzemiennością dla
+`pgrep` (to ERE, nie BRE), więc szukał literalnego ciągu i nigdy nic nie znalazł. Skutek: dwa
+przebiegi Playwrighta uderzały w **jeden serwer na porcie 3000 i jedną bazę**. Testy zaczęły padać
+seriami w miejscach niezwiązanych ze zmianą — a część tych samych testów w przebiegu pierwszym była
+zielona, więc wyglądało to na regresję wprowadzoną przez ostatnie poprawki. Wyniki obu przebiegów
+nadawały się wyłącznie do wyrzucenia.
+
+**Rozwiązanie:** Ubicie obu przebiegów i osieroconego `next-server`, sprawdzenie przez
+`ps aux | grep`, że nic nie zostało, i jeden czysty przebieg od nowa.
+
+**Lekcja:** Suite klikaczy **nie jest odporny na równoległość** — dzieli port i bazę, więc drugi
+przebieg psuje pierwszy i odwrotnie. Zanim uruchomisz go ponownie, **udowodnij, że poprzedni nie
+żyje** (`ps aux | grep`, nie `pgrep` z podejrzanym wzorcem), i ubij osierocony `next-server`, bo
+przeżywa on Playwrighta. Sygnał ostrzegawczy, który powinien zapalić lampkę od razu: test zielony
+w poprzednim przebiegu nagle pada w miejscu niezwiązanym ze zmianą. To prawie nigdy nie jest
+regresja — to zwykle skażone środowisko.
+
 ## 2026-08-26 — Puste okno potwierdzenia: ciało modalu rysowane bezwarunkowo
 **Problem:** Właściciel zgłosił, że okno „Usunąć zadanie?" jest „takie jakieś puste, jakby czegoś
 brakowało". Brakowało — i to dosłownie: `Modal` renderował ciało zawsze, jako `flex-1` z
