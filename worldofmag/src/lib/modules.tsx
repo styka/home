@@ -60,16 +60,21 @@ export function declaredPermissionForPath(path: string): string | null | undefin
  * 103: ile MIEJSC MODUŁOWYCH zostaje w dolnym pasku po odjęciu kotwic.
  *
  * Ta liczba nie jest gustem, tylko wynikiem arytmetyki na najwęższym ekranie, który obsługujemy.
- * Przy 360 px pasek ma 360 − 68 px (stały kontener magicznej ikony) = **292 px na pozycje**. Strony
- * są dwoma pojemnikami `flex: 1` po 146 px, więc przy pięciu pozycjach strona dalsza mieści trzy po
- * ~48,6 px, a bliższa dwie po 73 px — każda powyżej minimum 44 × 44 px (C-31). **Szósta pozycja
- * zeszłaby do ~41 px i złamałaby tę regułę**, dlatego pięć jest sufitem, a kotwice zajmują z tego
- * trzy: dom, ulubione i historia.
+ * Przy 360 px pasek ma 360 − 68 px (stały kontener magicznej ikony) = **292 px na pozycje**.
+ *
+ * **104 — poprawka pomyłki o jeden z run 103.** Poprzedni komentarz twierdził, że sufitem jest PIĘĆ
+ * pozycji, bo „szósta zeszłaby do ~41 px". To był błąd rachunkowy: 292 / 6 = **48,7 px**, czyli
+ * szósta mieści się z zapasem ponad minimum 44 × 44 px (C-31); dopiero **siódma** schodzi do
+ * 41,7 px i regułę łamie. Pasek ma więc dziś sześć pozycji: trzy dalsze (dom + dwa moduły) po
+ * ~48,7 px i trzy bliższe (ulubione, nawigacja, wstecz) po tyle samo.
+ *
+ * **Szóste miejsce poszło na KOTWICĘ, nie na trzeci moduł** — i to jest decyzja produktowa, nie
+ * skutek arytmetyki: pasek ma dawać jedną drogę do wszystkiego, a nie mieścić więcej skrótów.
+ * Dlatego ta stała zostaje na 2.
  *
  * Poprzednik tej stałej (`MAX_TAB_BAR = 5`) został USUNIĘTY, a nie zostawiony „na wszelki wypadek":
  * po wprowadzeniu kotwic nie miał już ani jednego wywołania, a stała bez konsumenta w pliku
- * wspólnym ogłasza limit, którego nikt nie egzekwuje — następna osoba przyjmie ją za obowiązującą
- * i doda szóstą ikonę (C-35 czytane w drugą stronę).
+ * wspólnym ogłasza limit, którego nikt nie egzekwuje (C-35 czytane w drugą stronę).
  */
 export const MAKS_MODULOW_W_PASKU = 2;
 
@@ -210,6 +215,8 @@ export type PozycjaPaska =
   | { rodzaj: "modul"; modul: ModuleDef }
   | { rodzaj: "dom" }
   | { rodzaj: "ulubione" }
+  /** 104: szybka nawigacja — otwiera panel z modułami, ich celami i ostatnio odwiedzonymi stronami. */
+  | { rodzaj: "nawigacja" }
   | { rodzaj: "historia" };
 
 /**
@@ -246,9 +253,10 @@ export function pozycjePaska(
     ...moduly.map((modul) => ({ rodzaj: "modul" as const, modul })),
   ];
   // Kolejność w `bliskie` jest „od środka na zewnątrz": ostatnia pozycja ląduje w ROGU pod kciukiem.
-  // Historia jest tam celowo — powrót jest najczęstszą czynnością nawigacyjną, a właściciel wymienił
-  // skład dokładnie w tej kolejności: „Strona domowa | Sparkles | ulubione | historia".
-  const bliskie: PozycjaPaska[] = [{ rodzaj: "ulubione" }, { rodzaj: "historia" }];
+  // Historia jest tam celowo — powrót jest najczęstszą czynnością nawigacyjną. Szybka nawigacja
+  // stoi między gwiazdką a historią, dokładnie tak, jak poprosił właściciel po zobaczeniu paska
+  // na żywo: „między gwiazdką (ulubione) a ikoną »wstecz« dodaj nową ikonę".
+  const bliskie: PozycjaPaska[] = [{ rodzaj: "ulubione" }, { rodzaj: "nawigacja" }, { rodzaj: "historia" }];
 
   return { dalekie, bliskie };
 }

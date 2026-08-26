@@ -4,6 +4,38 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-26 — Stała ze specu Playwrighta nie istnieje wewnątrz `page.evaluate`
+**Problem:** Test układu paska padał z `ReferenceError: WSTECZ is not defined` — w miejscu, które
+wygląda na pomiar pikseli, a nie na literówkę. `WSTECZ` to zwykła stała na górze pliku spec-a,
+używana w kilku innych testach bez problemu. Różnica: tutaj weszła **do środka `page.evaluate()`**.
+
+**Rozwiązanie:** Wzorzec wpisany wprost w ciele funkcji wykonywanej w przeglądarce.
+
+**Lekcja:** `page.evaluate` serializuje funkcję i wykonuje ją **w kontekście strony** — domknięcia
+nad zmiennymi z procesu Node nie przechodzą przez tę granicę, choć edytor i `tsc` widzą je jako
+poprawne (typy się zgadzają, bo to ten sam plik). Wyrażeń regularnych nie da się też przekazać
+argumentem, bo nie przechodzą serializacji. Reguła: **wewnątrz `evaluate` używaj wyłącznie tego, co
+tam wpisałeś albo przekazałeś argumentem prostego typu.** Objaw jest mylący, bo błąd wskazuje test,
+a nie granicę, którą przekroczył.
+
+## 2026-08-26 — Polski cudzysłów zamykający „ASCII" zamyka literał w kodzie
+**Problem:** Dwa razy w jednym przebiegu wywrócił się transpilator na nazwie testu w rodzaju
+`test("[104-AC18] tapnięcie „wstecz" cofa o jeden krok", …)`. Otwierający „ jest zwykłym znakiem,
+ale zamykający wpisałem jako ASCII-owy `"` — który **kończy literał** w połowie zdania. Objaw jest
+mylący: `esbuild` pokazuje `Unexpected token, expected ","` i wskazuje **następną** linię, więc
+szuka się błędu w kodzie testu, a nie w jego nazwie. Za pierwszym razem kosztowało to jeden
+przebieg klikaczy (~4 min budowania), za drugim — drugi.
+
+**Rozwiązanie:** W tekstach polskich w kodzie zamykamy cudzysłów znakiem ” (U+201D), nie `"`.
+Przy poprawianiu **nie** puszczaj regexa po całym drzewie: moja pierwsza próba „naprawiła" też
+plik, który był poprawny (miał prawidłowo zaescapowane `\"`) i zamieniła escape w ” — czyli
+zepsuła działający kod, żeby naprawić mój własny. Cofnięte, poprawiony wyłącznie plik sprawcy.
+
+**Lekcja:** Para „ … ” to **dwa różne znaki** i tylko drugi z nich jest bezpieczny wewnątrz
+literału ograniczonego `"`. A szerzej: automatyczna poprawka puszczona po całym repozytorium musi
+mieć zawężenie do plików, których dotyczy problem — inaczej naprawia jeden błąd i wprowadza drugi
+tam, gdzie nikt go nie szuka, bo „przecież ten plik działał".
+
 ## 2026-08-26 — Test sprawdzający wejście funkcji, której wyjście jest gdzie indziej odwracane
 **Problem:** Dolny pasek ma kotwice ustawione „od środka na zewnątrz", a `PasekKciuka` odwracał
 tablicę w JSX, żeby zrobić układ lustrzany dla ręki. Test jednostkowy sprawdzał wynik
