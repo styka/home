@@ -2202,6 +2202,24 @@
         "szukajEtykiety": "Szukaj etykiety…",
         "wszystkieEtykiety": "Wszystkie etykiety",
         "nicNiePasuje": "Nic nie pasuje"
+      },
+      "FormularzZadania": {
+        "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
+        "dodajZadanie": "Dodaj zadanie — opisz je, tytuł powstanie sam (a / n)",
+        "dodajZadanieAkcja": "Dodaj zadanie",
+        "wiecej": "Więcej pól",
+        "zwin": "Zwiń",
+        "tytulPlaceholder": "Tytuł (opcjonalny)",
+        "tytulZadania": "Tytuł zadania",
+        "tytulPowstanieZOpisu": "Tytuł zostanie wygenerowany z opisu — możesz go tu nadpisać.",
+        "tytulWlasny": "Używamy Twojego tytułu — pole na opis zostaje opisem.",
+        "projekt": "Projekt",
+        "skrzynka": "Skrzynka",
+        "termin": "Termin",
+        "nieUdaloSieDodac": "Nie udało się dodać zadania"
+      },
+      "SzybkieDodanieZadania": {
+        "noweZadanie": "Nowe zadanie"
       }
     },
     "truck": {

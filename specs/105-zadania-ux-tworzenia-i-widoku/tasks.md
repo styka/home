@@ -31,7 +31,7 @@ i to jest świadome, nie przeoczone.
   (`messages/pl.json`). `destructive: true` zostaje.
   *Gotowe, gdy:* okno mówi, KTÓRE zadanie usuwam i gdzie trafi. **[AC-15]**
 
-- [~] **T-3** `[P]` — **Odczyt ostatnio używanego projektu** (`src/app/tasks/page.tsx`).
+- [x] **T-3** `[P]` — **Odczyt ostatnio używanego projektu** (`src/app/tasks/page.tsx`).
   `prisma.task.findFirst({ where: { createdById: userId, projectId: { not: null } }, orderBy:
   { createdAt: "desc" }, select: { projectId: true } })` dołożone do istniejącego `Promise.all`;
   wynik jako prop `ostatniProjektId` do `TasksHomePage`. Bez `ownerId`/`workspaceId`
@@ -51,7 +51,7 @@ i to jest świadome, nie przeoczone.
 
 ## Faza 3 — Formularz dodawania zadania
 
-- [ ] **T-5** — **`FormularzZadania`** (nowy `src/modules/tasks/ui/FormularzZadania.tsx`).
+- [x] **T-5** — **`FormularzZadania`** (nowy `src/modules/tasks/ui/FormularzZadania.tsx`).
   Stan zwinięty = dzisiejszy rząd `[priorytet][pole][+]`, ale pole to `textarea rows={1}`
   z auto-dopasowaniem wysokości (ref-callback, synchronicznie po zamontowaniu — wzorzec
   z `TaskDetail`). `Enter` bez modyfikatora = zapis (`preventDefault`), `Shift+Enter` = nowa linia.
@@ -64,12 +64,12 @@ i to jest świadome, nie przeoczone.
   `forwardRef` z `focus()`.
   *Gotowe, gdy:* komponent kompiluje się i realizuje AC-5..AC-8 w izolacji. **[AC-5, AC-6, AC-7, AC-8]**
 
-- [ ] **T-6** — **`QuickAddTask` jako cienka nakładka** (`src/modules/tasks/ui/QuickAddTask.tsx`).
+- [x] **T-6** — **`QuickAddTask` jako cienka nakładka** (`src/modules/tasks/ui/QuickAddTask.tsx`).
   Zachowuje nazwę pliku, eksport i typ `QuickAddTaskHandle`; w środku renderuje `FormularzZadania`.
   *Gotowe, gdy:* `TasksPage` **nie zmienia się w tym miejscu ani o linię**, skrót `a`/`n` nadal
   ustawia focus, a dodawanie w projekcie działa jak przed zmianą (plus rosnące pole). **[AC-5, AC-7]**
 
-- [ ] **T-7** — **Widget na stronie modułu** (nowy `src/modules/tasks/ui/SzybkieDodanieZadania.tsx`
+- [x] **T-7** — **Widget na stronie modułu** (nowy `src/modules/tasks/ui/SzybkieDodanieZadania.tsx`
   + edycja `TasksHomePage.tsx`). Karta **nad kaflami** Dziś/Zaległe/Nadchodzące z `FormularzZadania`
   i `pokazWyborProjektu`; domyślny projekt = `ostatniProjektId`, a gdy `null` albo poza listą
   dostępnych — „Skrzynka". Po `onCreated`: `router.push('/tasks/<projectId>?task=<id>')`

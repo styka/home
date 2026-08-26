@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { createTaskProject } from "../actions/taskProjects";
+import { SzybkieDodanieZadania } from "./SzybkieDodanieZadania";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
@@ -38,6 +39,8 @@ interface TasksHomePageProps {
   upcomingCount: number;
   overdueCount: number;
   todayPreview: TodayPreviewItem[];
+  /** 105: projekt ostatnio utworzonego zadania — domyślny cel widgetu szybkiego dodawania. */
+  ostatniProjektId?: string | null;
 }
 
 export function TasksHomePage({
@@ -46,6 +49,7 @@ export function TasksHomePage({
   upcomingCount,
   overdueCount,
   todayPreview,
+  ostatniProjektId,
 }: TasksHomePageProps) {
   const t = useTranslations("modules.tasks.TasksHomePage");
   const [isAdding, setIsAdding] = useState(false);
@@ -124,6 +128,10 @@ export function TasksHomePage({
         </button>
       }
     >
+
+      {/* 105 (AC-1): szybkie dodanie zadania jako PIERWSZA rzecz na stronie modułu —
+          nad kaflami i nad formularzem nowego projektu. */}
+      <SzybkieDodanieZadania projekty={projects} ostatniProjektId={ostatniProjektId ?? null} />
 
       {isAdding && (
         <div style={{ display: "flex", gap: 8 }}>
