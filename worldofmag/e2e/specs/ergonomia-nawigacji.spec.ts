@@ -247,14 +247,26 @@ test.describe("Pasek kciuka i dominująca ręka", () => {
 
     const prawa = await zmierz();
     expect(prawa, "dzwonek nie znaleziony w chromie konta górnego paska").not.toBeNull();
-    // Domyślnie ręka prawa — gwiazdka w prawej połowie ekranu.
+    // Domyślnie ręka prawa — chrom konta przy prawej krawędzi.
     expect(prawa!.srodek).toBeGreaterThan(prawa!.szerokoscOkna / 2);
 
     await page.evaluate(() => document.documentElement.setAttribute("data-reka", "left"));
     const lewa = await zmierz();
-    // Po przełączeniu — w lewej połowie. Atrybut nakłada serwer w `layout.tsx`; tutaj sprawdzamy,
-    // że pasek NA NIEGO REAGUJE.
-    expect(lewa!.srodek).toBeLessThan(lewa!.szerokoscOkna / 2);
+    /**
+     * 103: sprawdzamy PRZESUNIĘCIE, a nie przekroczenie połowy ekranu — i to nie jest złagodzenie
+     * testu, tylko poprawienie jego tezy.
+     *
+     * Do 103 mierzyliśmy gwiazdkę, która stała jako pierwsza w grupie chromu, więc po odbiciu
+     * lądowała blisko lewej krawędzi. Gwiazdka zeszła do paska kciuka, a w górnym pasku zostały
+     * dzwonek i przełącznik trybu — i one **nigdy** nie dojdą do lewej połowy, bo po odbiciu grupa
+     * zatrzymuje się tuż obok nazwy modułu i hamburgera, które lustrzeniu nie podlegają (to nie
+     * są elementy chromu konta). Próg „mniej niż połowa okna" mierzył więc szerokość tytułu
+     * modułu, a nie działanie reguły.
+     *
+     * Teza, która obowiązuje niezmiennie od 100: **przełączenie ręki przesuwa chrom konta w stronę
+     * ręki dominującej**. Dokładnie to tu mierzymy.
+     */
+    expect(lewa!.srodek, "chrom konta ma się przesunąć w lewo po zmianie ręki").toBeLessThan(prawa!.srodek);
     await page.evaluate(() => document.documentElement.setAttribute("data-reka", "right"));
 
     console.log(`[100-AC12] środek dzwonka: prawa ${prawa!.srodek} px, lewa ${lewa!.srodek} px (okno ${prawa!.szerokoscOkna} px)`);
