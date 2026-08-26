@@ -45,7 +45,7 @@ function tytulZTresci(text: string): string {
 /** Wirtualne widoki nie są projektami — `createTask` i tak je zeruje, ale wybór projektu ich nie pokazuje. */
 const WIDOKI_WIRTUALNE = ["today", "upcoming", "overdue", "all"];
 
-export const PRIORYTETY: { value: TaskPriority; label: string; color: string }[] = [
+const PRIORYTETY: { value: TaskPriority; label: string; color: string }[] = [
   { value: "NONE", label: "—", color: "var(--text-muted)" },
   { value: "LOW", label: "↓", color: "var(--accent-blue)" },
   { value: "MEDIUM", label: "◆", color: "var(--accent-amber)" },
