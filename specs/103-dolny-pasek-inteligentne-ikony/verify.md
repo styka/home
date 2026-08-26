@@ -32,11 +32,11 @@
 | AC-1 cztery kotwice | ✅ | `pozycjePaska` + klikacz `[103-AC1]` na `/tasks` i `/shopping` |
 | AC-2 moduły w pozostałych miejscach | ✅ | test „moduły nie wypchną kotwic" |
 | AC-3 360 px, ≥ 44 px | ✅ | klikacz `[103-AC3]` — pomiar `getBoundingClientRect` każdej pozycji |
-| **AC-4 lustrzenie wg ręki** | ❌ | **patrz brak B-1** — kolejność pod kciukiem wychodzi odwrócona |
+| **AC-4 lustrzenie wg ręki** | ✅ (po T-25) | `stronyPaska` + 3 testy kolejności wyrenderowanej + klikacz `[103-AC4]` |
 | AC-5 konto bez modułów | ✅ | test „konto BEZ uprawnień modułowych…" |
 | AC-6 tap zapisuje | ✅ | klikacz `[103-AC6]` — brak `role="dialog"`, `aria-pressed` się zmienia |
 | AC-7 tap odwraca | ✅ | klikacz `[103-AC6/AC7]` — drugi tap wraca do stanu wyjściowego |
-| **AC-8 hold → wachlarz ulubionych** | ⚠️ | działa przy niepustej liście (`WachlarzNawigacji.tsx:269`), ale **przy zerze ulubionych otwiera PUSTĄ warstwę** — patrz brak B-2 |
+| **AC-8 hold → wachlarz ulubionych** | ✅ (po T-26) | źródło `ulubione.pozycje`; przy pustej liście brak uchwytów gestu, jak w historii |
 | AC-9 błąd zapisu | ✅ | `useUlubioneBiezacego` — `setWstepny(null)` + toast błędu w `catch` |
 | AC-10 gwiazdka znika z góry | ✅ | klikacz `[103-AC10]`; zastane `[085-AC1]`/`[087-AC21]` poprawione i zdane |
 | AC-11 kolejność historii | ✅ | `historia.test.ts` — „najświeższy wpis jest PIERWSZY" |
@@ -57,7 +57,7 @@
 | AC-26 ograniczenie ruchu | ✅ | reguła `prefers-reduced-motion` w `WachlarzNawigacji` nietknięta |
 | AC-27 dostępność | ✅ | `aria-label` opisuje CZYNNOŚĆ, `aria-pressed` na gwiazdce, `aria-current` na module |
 
-**Wynik: 25 ✅ · 1 ⚠️ · 1 ❌.**
+**Wynik po przebiegu 1: 25 ✅ · 1 ⚠️ · 1 ❌. Po poprawkach T-25/T-26: 27 ✅.**
 
 ## 3. Braki do poprawy
 
@@ -116,8 +116,44 @@ niespójność w obrębie jednego paska, a nie tylko brak wobec AC-8.
 - **Naprawa poza zakresem, świadoma:** `HabitFormModal` był zaimportowany i nigdy nierenderowany —
   w Nawykach nie dało się dodać nawyku. Bez tego szybki cel „Nowy nawyk" prowadziłby donikąd.
 
-## 6. Werdykt
+## 6. Werdykt (przebieg 1)
 
-**DO POPRAWY** — dwa braki (B-1: AC-4 niespełnione, B-2: AC-8 częściowo). Oba są w powłoce, oba
-mają jasną poprawkę i oba wynikają z KODU, nie z błędu speca ani planu, więc `spec.md`/`plan.md`
-nie wymagają zmiany (C-54). Wracam do `/implement` z zadaniami T-25 i T-26.
+**DO POPRAWY** — dwa braki (B-1: AC-4 niespełnione, B-2: AC-8 częściowo). Oba w powłoce, oba
+wynikają z KODU, nie z błędu speca ani planu, więc `spec.md`/`plan.md` nie wymagały zmiany (C-54).
+Zawrót do `/implement` z zadaniami T-25 i T-26.
+
+---
+
+## 7. Przebieg 2 — po poprawkach T-25 i T-26
+
+**B-1 (AC-4) zamknięty.** Lustrzenie wyjęte z JSX do czystej funkcji `stronyPaska(dalekie, bliskie,
+reka)`; historia stoi w rogu pod kciukiem, dom najdalej od niego, w obu wariantach ręki. Testy
+sprawdzają teraz **kolejność wyrenderowaną** (trzy przypadki: ręka prawa, ręka lewa, niezmiennik
+„przełączenie ręki ODBIJA układ"), a klikacz `[103-AC4]` mierzy środki przycisków w pikselach.
+
+**B-2 (AC-8) zamknięty.** Przy zerze zapisanych widoków gwiazdka nie dostaje uchwytów gestu — ta
+sama reguła co dla historii; krótkie tapnięcie nadal zapisuje widok, bo to ono tę listę zapełnia.
+
+**Klikacze na poprawionym kodzie: wszystkie 10 testów `dolny-pasek-kotwice.spec.ts` ZDANE**, w tym
+`[103-AC4]`, `[103-AC6]` i `[103-AC6/AC7]`.
+
+**Trzy dodatkowe ustalenia z tego przebiegu:**
+
+1. `[100-AC12/AC22]` — mój wcześniejszy przepis tego testu mierzył **pozycję bezwzględną** („chrom
+   w lewej połowie okna"). To była zła teza: po zejściu gwiazdki do paska kciuka w górnym pasku
+   zostały dzwonek i przełącznik trybu, a te po odbiciu zatrzymują się tuż obok nazwy modułu
+   i hamburgera — elementów, które lustrzeniu nie podlegają. Próg mierzył więc szerokość tytułu
+   modułu, nie działanie reguły. Test mierzy teraz **przesunięcie** — czyli dokładnie tezę z run 100.
+2. `[vs-AC4]` i `[fav-AC1-AC2-AC3]` — **padają także na commicie bazowym `a2b3e3e`**, gdy
+   `favorites.spec.ts` i `view-state.spec.ts` idą równolegle (wynik bazowy: `2 failed, 21 passed`).
+   To zastana rywalizacja o wspólne konto administratora, nie skutek tej zmiany. Zostawiona bez
+   ruszania: naprawa cudzej kruchości „przy okazji" jest osobną zmianą (C-53).
+3. Poprawiona przy okazji czystość funkcji aktualizującej stan historii — zapis do pamięci sesji
+   przeniesiony z updatera `setHistoria` do osobnego efektu. React wolno wywołać updater dwa razy
+   dla jednej zmiany; tutaj było to nieszkodliwe, ale to wzorzec, który wraca tam, gdzie już szkodzi.
+
+## 8. Werdykt końcowy
+
+**GOTOWE** — 27 / 27 kryteriów akceptacji spełnionych, wszystkie bramki zielone, `next build`
+exit 0, budżet wydajnościowy w paśmie bez podnoszenia progu. Niepowodzenia klikaczy pozostałe
+w zestawie są **zastane i udowodnione porównawczo** na commicie bazowym.
