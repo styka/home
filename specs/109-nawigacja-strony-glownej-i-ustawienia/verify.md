@@ -1,7 +1,7 @@
 # Weryfikacja: Nawigacja Strony głównej i podział widoku Ustawień
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
-- **Data:** 2026-08-27
+- **Data:** 2026-08-27 (przebieg 2 — po zawróceniu do `/implement` z zadaniem `T-31`)
 - **Środowisko:** lokalny Postgres 16 w sandboxie (`omnia/omnia_dev` dla builda, `e2e/worldofmag_e2e`
   dla klikacza). **Nigdy** prod `DATABASE_URL` (C-13) — `scripts/migrate.js` świadomie pominięty.
 
@@ -20,7 +20,7 @@
 | `next build` | ✅ — trasy `/settings` (3,95 kB) i `/settings/[sekcja]` (15,4 kB) zbudowane |
 | `check:perf` | ✅ `najcięższa trasa 1174 kB (/shopping/[listId]/page), suma 69372 kB — w pasmie ±5%` — próg **nie wymagał zmiany** |
 | `npm run test:unit` | ✅ **1283 pass / 0 fail**, w tym 7 nowych |
-| Klikacz (109 + 8 sąsiednich specek) | ✅ **14/14 testów 109**, `rama-i-chrom` zielony; 5 awarii poza zakresem — patrz §4 |
+| Klikacz (109 + 8 sąsiednich specek) | ✅ **14/14 testów 109** (przebieg 2), `rama-i-chrom` zielony; 5 awarii poza zakresem — patrz §4 |
 
 Pełny łańcuch buildu zakończył się `EXIT=0`.
 
@@ -34,7 +34,7 @@ Pełny łańcuch buildu zakończył się `EXIT=0`.
 | **AC-2** dokładnie jedno wejście na `/` | ✅ | e2e `[109-AC2]`: `{"liczba":1,"teksty":["Strona główna"],"nazwaJestOdnosnikiem":false}`. Nazwa aplikacji jest `<div>`, ikona domu usunięta z rzędu ikon |
 | **AC-3** stan aktywny czytelny dla czytnika | ✅ | e2e `[109-AC3]`: `{"current":"page","tekst":"Strona główna"}`. `NavItem` ustawia `aria-current` dla **wszystkich** pozycji menu |
 | **AC-4** jedno kliknięcie z modułu | ✅ | e2e: klik z `/tasks` → `pathname === "/"` |
-| **AC-5** telefon bez zmian, jedno wejście | ⚠️ **częściowo** | Udowodnione: wiersz z panelu **nie przecieka** na telefon (`[109-AC5]`: 0 widocznych `a[href="/"]` przy 390 px) oraz `resolveMenu` nietknięte, więc `home` dalej nie jest pozycją menu ani paska. **Nieudowodnione:** „jest dokładnie jedno" — kotwica paska kciuka to `<button>` z `aria-label` („Przejdź na stronę główną", `PasekKciuka.tsx:82-93`), a test liczył wyłącznie odnośniki, więc naliczył 0. Test nie odróżnia „kotwica jest" od „kotwicy nie ma" → **brak weryfikacji, nie brak funkcji** |
+| **AC-5** telefon bez zmian, jedno wejście | ✅ | *(naprawione w `T-31`)* Test liczy teraz **wszystkie** wejścia — odnośniki i przyciski z `aria-label`. Wynik: `{"liczba":1,"opisy":["BUTTON:Przejdź na stronę główną"]}`, czyli sama kotwica paska kciuka, nietknięta. **Potwierdzone próbą mutacyjną:** po wyłączeniu kotwicy w `pozycjePaska` test zgłasza `{"liczba":0}` i czerwienieje — więc odróżnia stan poprawny od zepsutego. Poprzednia wersja liczyła wyłącznie `a[href="/"]`, dostawała 0 i przeszłaby także po usunięciu kotwicy |
 | **AC-6** brak uprawnienia → pozycja zablokowana | ✅ | `isPathLocked([], "/")` → `true`; `isPathLocked(["module.home"], "/")` → `false` (uruchomione). `NavItem` w wariancie `locked` renderuje `div` z kłódką, nie `a` |
 
 ### Ustawienia
@@ -95,8 +95,9 @@ bo bez niego nie da się odróżnić własnej regresji od cudzego czerwonego tes
 | `favorites [fav-AC9]`, `[fav-AC1..3]` | — | ✓ (po poprawce) | **regresja 109, naprawiona** — `clearFavorites` szło pod `/settings` i po podziale znajdowało zero wpisów: nie wywalało się, tylko **cicho** zostawiało cudzy stan sąsiadowi |
 | `rama-i-chrom [087-AC19]` | ✘ (od 107) | ✓ | **naprawione przy okazji** — wzorzec dzwonka poprawiony na `/skrzynk\|powiadomie/i` |
 
-Liczba czerwonych testów po zmianie **nie wzrosła** (5 przed → 5 po), a jeden wcześniejszy czerwony
-został naprawiony.
+Liczba czerwonych testów po zmianie **nie wzrosła** (5 przed → 5 po, ten sam zestaw), a jeden
+wcześniejszy czerwony został naprawiony. Potwierdzone ponownie w przebiegu 2, po zmianach z `T-31`:
+`71 passed / 5 failed`, dokładnie te same pięć awarii.
 
 **Regresje sprawdzone poza klikaczem:**
 - **Migracje/schemat:** brak zmian, `check:schema-drift` zielony.
@@ -128,15 +129,41 @@ został naprawiony.
 
 ## 6. Werdykt końcowy
 
-**DO POPRAWY** — jeden brak, i jest to brak **weryfikacji**, nie funkcji.
+**GOTOWE Z UWAGAMI.**
 
-- **AC-5 nie jest udowodnione w części „nadal jest dokładnie jedno".** Test liczy `a[href="/"]`, a
-  kotwica paska kciuka jest `<button>` z `aria-label` — więc naliczył 0 i przeszedłby także wtedy,
-  gdyby kotwica **zniknęła**. Test, który nie odróżnia stanu poprawnego od zepsutego, nie jest testem
-  (ta sama lekcja co w 086). Funkcjonalnie jest dobrze: `resolveMenu` i `pozycjePaska` nietknięte,
-  a `PasekKciuka.tsx:82-93` renderuje kotwicę — ale to jest odczyt kodu, nie pomiar.
+Wszystkie **19 kryteriów akceptacji spełnione i zmierzone**; bramki zielone (`build` `EXIT=0`,
+1283 testy jednostkowe, klikacz 14/14 dla tego przebiegu).
 
-Brak nie wynika z błędnego speca ani planu, więc `spec.md`/`plan.md` **nie wymagają korekty** (C-54) —
-poprawka dotyczy wyłącznie testu.
+### Co zmienił przebieg 2
 
-**Zadanie do wykonania:** `T-31` (dopisane do `tasks.md`).
+**AC-5 jest teraz mierzone, nie odczytane z kodu** — i przy okazji jego naprawa (czekanie na warunek
+zamiast na stałe opóźnienie) odsłoniła **prawdziwą usterkę, nie tylko słaby test**:
+
+> `notFound()` na trasie `/settings/[sekcja]` **nie dowoził treści strony 404** — ani w odpowiedzi
+> serwera, ani w przeglądarce w ciągu 10 s. Użytkownik ze złym adresem zostawał na stanie ładowania.
+> Trzy wyjścia sprawdzone i **obalone**, każde osobno: własna granica `not-found.tsx` w segmencie,
+> rzucenie `notFound()` przed pierwszym `await`, usunięcie `src/app/settings/loading.tsx`. Status
+> odpowiedzi przez cały czas wynosił 200, więc `notFound()` nie dawał tu nawet tego, po co się go
+> zwykle woła.
+
+Rozstrzygnięcie: zły adres dostaje **zwykły widok** — „Nie znaleziono takiego ustawienia" plus spis
+dziesięciu istniejących sekcji (`SekcjaNieznaleziona`). Zwykły render działa bez zarzutu (dowód:
+`/settings/wyglad`), a wynik jest dla użytkownika lepszy od globalnej strony 404: od razu widzi, co
+może wybrać. `plan.md` poprawiony wraz ze śladem zmiany (C-54); trzy lekcje w `doświadczenia.md`,
+w tym korekta wcześniejszego wpisu, który zostawiał obaloną hipotezę jako wniosek.
+
+### Uwagi (nie blokują, świadomie poza zakresem)
+
+1. **Status HTTP dla złego adresu sekcji to 200, nie 404.** Zmierzone i nieusuwalne w tym miejscu bez
+   przebudowy granic Suspense w całym poddrzewie `/settings`. Aplikacja wymaga logowania, więc nie ma
+   tu konsekwencji dla wyszukiwarek; dla użytkownika zachowanie jest poprawne i **lepsze niż przed
+   zmianą**, bo poprzednio `/settings/<cokolwiek>` w ogóle nie istniało.
+2. **Cztery czerwone testy klikacza sprzed 109 zostają czerwone** (`chrom-konta [085-AC1]`,
+   `[085-AC4]`, `shortcuts [sc-AC9]`, `view-state [vs-AC4]`) plus jedna wędrująca awaria
+   w `favorites`. Potwierdzone biegiem odniesienia na kodzie sprzed zmiany (§4) — naprawa każdej
+   z nich to osobna, świadoma zmiana, a nie „przy okazji" (C-53). Jedną wcześniejszą awarię
+   (`rama-i-chrom [087-AC19]`, czerwoną od 107) naprawiono, bo i tak trzeba było ten test przepisać.
+3. **Trzy zaszyte kolory w `src/app/settings/team/[teamId]/page.tsx`** — plik nietknięty przez ten
+   przebieg, dług sprzed 109. Bramka `check:ui-contract` skanuje `src/components`, więc go nie łapie.
+
+Przechodzę do `/review`.
