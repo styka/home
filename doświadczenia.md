@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Push gałęzi przechodzi, push TAGU wraca 403 (uprawnienia sesji, nie awaria proxy)
+**Problem:** Domknięcie pipeline'u wg C-52a wymaga adnotowanego tagu wydania (`prod-<NNN>-<slug>`).
+`git push origin master` przeszedł bez zarzutu — produkcja zaktualizowana — ale `git push origin
+prod-107-…` odbijał się czterokrotnie komunikatem `fatal: the remote end hung up unexpectedly`,
+a zaraz po nim mylącym `Everything up-to-date`. Wyglądało to na chwilową awarię sieci, więc poszedł
+pełny backoff 2/4/8/16 s. Bez skutku.
+
+**Rozwiązanie:** Diagnoza dopiero po wymuszeniu pełnego refspeca:
+`git push origin refs/tags/X:refs/tags/X` pokazało prawdziwy powód — **`RPC failed; HTTP 403`**.
+`curl "$HTTPS_PROXY/__agentproxy/status"` zwrócił `recentRelayFailures: []`, więc proxy jest czyste:
+403 przychodzi z GitHuba. Uprawnienia sesji obejmują `refs/heads/*`, ale nie tworzenie
+`refs/tags/*`. Tag został założony lokalnie; wypchnięcie zostaje właścicielowi.
+
+**Lekcja:** Dwie rzeczy. (1) `git push` na tagu **maskuje kod HTTP** — pokazuje „remote end hung up"
+i dokleja `Everything up-to-date`, co czyta się jak sukces. Zanim uruchomisz backoff, wymuś pełny
+refspec, żeby zobaczyć prawdziwy błąd; ponawianie 403 jest zawsze stratą czasu, bo to nie jest błąd
+przejściowy. (2) Zanim uznasz problem sieciowy za swój, sprawdź `recentRelayFailures` w statusie
+proxy — pusta lista znaczy, że winy nie ma po stronie połączenia i szukać trzeba w uprawnieniach.
+
 ## 2026-08-27 — Dowód na sąsiednim scenariuszu nie jest dowodem (wyciek kanału zespołu)
 **Problem:** Kryterium akceptacji brzmiało „gdy użytkownik **opuścił zespół**, nie widzi już kanału
 tego zespołu". Weryfikacja zaliczyła je na zielono, opierając się na sondzie, która **usuwała całą
