@@ -4,6 +4,23 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — `--shadow-database-url` wycelowany we własną bazę deweloperską ją kasuje
+**Problem:** Do wygenerowania DDL nowej migracji odpaliłem
+`prisma migrate diff --from-migrations … --to-schema-datamodel … --shadow-database-url "$DATABASE_URL"`.
+Diff wyszedł poprawny, ale następne `prisma migrate deploy` odbiło się błędem **P3005 „The database
+schema is not empty"** — a chwilę wcześniej ta sama komenda kończyła się „All migrations have been
+successfully applied". Tabele w bazie były (164), brakowało wyłącznie `_prisma_migrations`.
+
+**Rozwiązanie:** Baza shadow jest przez Prismę **resetowana** — a ja podałem jako shadow tę samą
+bazę, w której trzymam dane deweloperskie, więc `migrate diff` wyczyścił jej historię migracji
+i odtworzył sam schemat. Naprawa: osobna baza (`omnia_shadow`), `DROP DATABASE omnia_dev` +
+`CREATE DATABASE` + `migrate deploy` od zera.
+
+**Lekcja:** `--shadow-database-url` **nigdy** nie wskazuje bazy, w której cokolwiek trzymasz — to
+jest baza jednorazowa, którą Prisma ma prawo skasować. Objaw jest przy tym mylący: pierwsza komenda
+mówi „sukces", a awaria wychodzi dopiero przy **następnej**, i wygląda jak problem z baseline'em
+zamiast jak skutek poprzedniego polecenia.
+
 ## 2026-08-27 — Bramki puszczane „z pamięci" to nie jest zielony build
 **Problem:** Deploy na Render padł na bramce `check:domain` (zapadka warstwy reguł): nowy pomocnik
 `parsePresentation` w pliku `"use server"` podbił licznik 34 → 35. Lokalnie wszystko było zielone —

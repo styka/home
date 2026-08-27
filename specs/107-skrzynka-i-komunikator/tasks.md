@@ -24,7 +24,7 @@
 
 ## Faza 1 — Fundament danych
 
-- [ ] **T-2** — Migracja `prisma/migrations/0268_skrzynka_i_czat/migration.sql` wg planu §2.3:
+- [x] **T-2** — Migracja `prisma/migrations/0268_skrzynka_i_czat/migration.sql` wg planu §2.3:
   kolumna `Notification.rodzaj` z domyślną `'zadanie'`, indeks `(userId, rodzaj, readAt)`, backfill
   `module = 'sharing'` → `'relacja'`, cztery tabele czatu z indeksami i kluczami obcymi, seed
   `module.czat` + `RolePermission` dla `ADMIN` (idempotentnie, wzorzec 0262).
@@ -32,7 +32,7 @@
   wyłącznie instrukcje tej zmiany.
   **Gotowe, gdy:** `npm run check:migrations` przechodzi, a migracja aplikuje się na lokalnym
   Postgresie (`npx prisma migrate deploy`).
-- [ ] **T-3** — `prisma/schema.prisma`: `Notification.rodzaj`, modele `ChatConversation`,
+- [x] **T-3** — `prisma/schema.prisma`: `Notification.rodzaj`, modele `ChatConversation`,
   `ChatParticipant`, `ChatMessage`, `ChatReaction` + relacje odwrotne w `User` i `Workspace`.
   **Gotowe, gdy:** `npx prisma generate` czysto i `npm run check:schema-drift` nie zgłasza rozjazdu.
 

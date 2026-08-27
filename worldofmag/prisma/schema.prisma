@@ -81,6 +81,9 @@ model User {
   skinPref                UserSkinPref?
   warsztatSettings        WarsztatSettings?
   notifications           Notification[]        @relation("UserNotifications")
+  chatParticipations      ChatParticipant[]     @relation("ChatParticipations")
+  chatMessages            ChatMessage[]         @relation("ChatMessagesAuthored")
+  chatReactions           ChatReaction[]        @relation("ChatReactions")
   serviceMessages         ServiceMessage[]      @relation("SentServiceMessages")
   consents                UserConsent[]         @relation("UserConsents")
   aiUsage                 AiUsage[]             @relation("UserAiUsage")
@@ -3061,6 +3064,10 @@ model Notification {
   id        String    @id @default(cuid())
   userId    String
   module    String // tasks|health|flota|pets|languages|kitchen|services|system…
+  // 107: RODZAJ sprawy — „mam coś zrobić" kontra „ktoś czegoś ode mnie chce". String + unia TS
+  // (C-12). Domyślna wartość jest bezpieczna dla wszystkiego, co już jest w bazie: przypomnienia
+  // zostają tam, gdzie były, a migracja przestawia na „relacja" wyłącznie wiersze udostępnień.
+  rodzaj    String    @default("zadanie") // "zadanie" | "relacja"
   title     String
   body      String?
   href      String?
@@ -3076,6 +3083,7 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@index([userId, readAt])
   @@index([userId, createdAt])
+  @@index([userId, rodzaj, readAt])
 }
 
 // ─── Marketplace: czat (M1) i wyceny (M3) ─────────────────────────────────
@@ -3285,6 +3293,7 @@ model Workspace {
   youtubeChannels       YoutubeChannel[]
   youtubeVideos         YoutubeVideo[]
   youtubePrefs          YoutubePref[]
+  chatConversations     ChatConversation[]
 
   @@index([kind])
 }
@@ -3517,4 +3526,102 @@ model PromptWznowienia {
   updatedAt DateTime @updatedAt
 
   @@index([aktywny])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 107 — CZAT (komunikator prywatny i zespołowy)
+//
+// DOSTĘP DO ROZMOWY WYNIKA Z UCZESTNICTWA, nie z własności. Dlatego te tabele nie mają kolumn
+// `ownerId`/`ownerTeamId`, a `workspaceId` jest tu TOŻSAMOŚCIĄ kanału zespołowego (jak
+// w `WorkspaceMember` i `ResourceGrant`), a nie lustrem własności — stąd brak wyzwalacza
+// `omnia_fill_workspace` i brak objęcia bramką `check:workspace-fill`, która celowo patrzy tylko
+// na modele mające JEDNOCZEŚNIE `workspaceId` i kolumnę właściciela.
+//
+// Kaskada z `Workspace` realizuje dwie rzeczy naraz: usunięty zespół zabiera swój kanał (AC-25)
+// i nie zostawia po sobie osieroconych wierszy (AC-32).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ChatConversation {
+  id     String @id @default(cuid())
+  rodzaj String // "prywatna" | "zespol" — String + unia TS (C-12)
+
+  // Ustawione dla rozmowy zespołowej, NULL dla prywatnej. Indeks unikalny daje niezmiennik
+  // „dokładnie jeden kanał na przestrzeń": w PostgreSQL NULL-e w indeksie unikalnym są różne,
+  // więc rozmów prywatnych nie ogranicza.
+  workspaceId String? @unique
+
+  // Nazwa zespołu w chwili założenia kanału. Rozmowa prywatna nazwy nie ma — jej etykietą jest
+  // druga osoba, a tę wolno pokazać dopiero po sprawdzeniu uczestnictwa.
+  tytul String?
+
+  ostatniaAktywnosc DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  workspace  Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uczestnicy ChatParticipant[]
+  wiadomosci ChatMessage[]
+
+  @@index([ostatniaAktywnosc])
+}
+
+model ChatParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+
+  /// Znacznik czasu ostatniej przeczytanej wiadomości. Jedno pole zamiast tabeli odczytów:
+  /// „przeczytane do" wystarcza i na licznik nieprzeczytanych, i na potwierdzenie dla nadawcy.
+  przeczytaneDo DateTime?
+
+  /// Ostatnia chwila pisania. Wskaźnik „pisze…" liczymy z TTL przy ODCZYCIE (reguła w `domain/`),
+  /// więc nie trzeba nic kasować w tle.
+  pisalAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User             @relation("ChatParticipations", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id             String @id @default(cuid())
+  conversationId String
+  autorId        String
+  tresc          String
+
+  /// Odpowiedź z cytatem. `SetNull`, bo usunięcie cytowanej wiadomości nie może zabrać odpowiedzi.
+  odpowiedzNaId String?
+
+  editedAt  DateTime?
+  /// Miękkie usunięcie (C-24) — snapshot idzie do `TrashItem`, wiersz zostaje dla spójności cytatów.
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  autor        User             @relation("ChatMessagesAuthored", fields: [autorId], references: [id], onDelete: Cascade)
+  odpowiedzNa  ChatMessage?     @relation("ChatOdpowiedzi", fields: [odpowiedzNaId], references: [id], onDelete: SetNull)
+  odpowiedzi   ChatMessage[]    @relation("ChatOdpowiedzi")
+  reakcje      ChatReaction[]
+
+  @@index([conversationId, createdAt])
+  @@index([odpowiedzNaId])
+}
+
+model ChatReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation("ChatReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ta sama reakcja drugi raz jest JEJ COFNIĘCIEM (AC-23) — indeks unikalny jest tu regułą, nie
+  // tylko ochroną przed duplikatem.
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
