@@ -184,6 +184,12 @@
         "src/modules/youtube/ui/FilmSzczegol.tsx",
         "src/modules/youtube/ui/KanalyPage.tsx"
       ]
+    },
+    "czat": {
+      "status": "done",
+      "entries": [
+        "src/modules/czat/ui/CzatPage.tsx"
+      ]
     }
   },
   "colorExceptions": {

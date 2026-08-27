@@ -104,28 +104,28 @@
 
 ## Faza 5 — Moduł Czat: interfejs
 
-- [ ] **T-14** — `src/app/czat/layout.tsx` (`await wymagajDostepuDoModulu(czatModule.permission)`)
+- [x] **T-14** — `src/app/czat/layout.tsx` (`await wymagajDostepuDoModulu(czatModule.permission)`)
   + `src/app/czat/page.tsx` (cienki wrapper: sesja → dane → render) + wpis `"czat"` w
   `src/lib/ui/view-contract.json`.
   **Gotowe, gdy:** `npm run check:route-gating` i `npm run check:ui-contract` przechodzą, a wpisanie
   `/czat` z ręki bez uprawnienia przekierowuje na `/`.
-- [ ] **T-15** — `src/modules/czat/ui/CzatPage.tsx` + `ListaRozmow.tsx`: `ModuleView` z
+- [x] **T-15** — `src/modules/czat/ui/CzatPage.tsx` + `ListaRozmow.tsx`: `ModuleView` z
   `layout="fill"`, `density="compact"` i stanami brzegowymi **wyłącznie** przez `state`/`empty`;
   wybrana rozmowa w adresie (`/czat?r=<id>`); poniżej `md` widoczna jedna kolumna.
   **Gotowe, gdy:** na 360 × 640 widać albo listę, albo wątek (nigdy dwóch paneli), a powrót
   z wątku działa przyciskiem „wstecz". *(AC-28)*
-- [ ] **T-16** — `src/modules/czat/ui/WatekRozmowy.tsx`: bąbelki, cytat odpowiedzi z przewinięciem
+- [x] **T-16** — `src/modules/czat/ui/WatekRozmowy.tsx`: bąbelki, cytat odpowiedzi z przewinięciem
   do oryginału, reakcje emoji z licznikiem, oznaczenie „przeczytano", wskaźnik pisania, pozycja
   startowa na pierwszej nieprzeczytanej i doczytywanie starszych przy przewijaniu w górę.
   **Gotowe, gdy:** wszystkie kolory z tokenów CSS, wszystkie teksty przez `t()`.
   *(AC-18, AC-19, AC-22, AC-23, AC-26)*
-- [ ] **T-17** — `src/modules/czat/ui/PoleWiadomosci.tsx`: wysyłka, edycja i usunięcie własnej
+- [x] **T-17** — `src/modules/czat/ui/PoleWiadomosci.tsx`: wysyłka, edycja i usunięcie własnej
   wiadomości (`confirmDialog({ destructive: true })`), odpowiedź z cytatem, dławienie `zglosPisanie`
   do 1 zapisu / 3 s; `padding-bottom: env(safe-area-inset-bottom)`; przyciski pod polem na
   `onPointerDown` + `preventDefault`, żeby pierwsze tapnięcie nie chowało klawiatury.
   **Gotowe, gdy:** na telefonie pole nie zasłania ostatniej wiadomości, a klawiatura nie znika przy
   pierwszym tapnięciu w przycisk. *(AC-20, AC-28)*
-- [ ] **T-18** — `src/platform/events/sygnalKlienta.ts` (mikro-magistrala w przeglądarce) +
+- [x] **T-18** — `src/platform/events/sygnalKlienta.ts` (mikro-magistrala w przeglądarce) +
   `DataFreshness.tsx` publikuje sygnał obok `router.refresh()` + konsumenci: `WatekRozmowy`
   (dociąga nowe wiadomości) i licznik w chromie.
   **Gotowe, gdy:** wiadomość wysłana w jednej karcie pojawia się w drugiej bez odświeżenia, a przy

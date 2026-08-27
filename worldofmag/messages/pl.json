@@ -2447,6 +2447,42 @@
           "subskrypcje": "z subskrypcji"
         }
       }
+    },
+    "czat": {
+      "CzatPage": {
+        "tytul": "Czat",
+        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
+      },
+      "ListaRozmow": {
+        "rozmowy": "Rozmowy",
+        "nowaRozmowa": "Nowa rozmowa",
+        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
+      },
+      "WatekRozmowy": {
+        "wrocDoListy": "Wróć do listy rozmów",
+        "pisze": "{kto} pisze…",
+        "starsze": "Pokaż starsze wiadomości",
+        "ladowanie": "Wczytywanie…",
+        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
+        "edytowano": "(edytowano)",
+        "wiadomoscUsunieta": "Wiadomość usunięta",
+        "odpowiedz": "Odpowiedz",
+        "zareaguj": "Dodaj reakcję",
+        "edytuj": "Edytuj",
+        "usun": "Usuń",
+        "usunacWiadomosc": "Usunąć wiadomość?",
+        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
+        "przeczytanePrzez": "Przeczytane: {kto}"
+      },
+      "PoleWiadomosci": {
+        "napisz": "Napisz wiadomość…",
+        "wyslij": "Wyślij",
+        "zapisz": "Zapisz zmiany",
+        "anuluj": "Anuluj",
+        "edytujesz": "Edytujesz wiadomość",
+        "odpowiadaszNa": "Odpowiadasz: {autor}"
+      }
     }
   }
 }

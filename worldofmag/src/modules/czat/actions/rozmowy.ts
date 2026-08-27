@@ -28,6 +28,12 @@ export interface SzczegolRozmowyDTO {
   id: string;
   rodzaj: "prywatna" | "zespol";
   etykieta: string;
+  /**
+   * Kim jestem w tej rozmowie. Bez tego widok nie umie odróżnić własnej wiadomości od cudzej —
+   * a od tego zależy, czy w ogóle pokazać przycisk edycji i czy „przeczytano” jest informacją
+   * dla mnie, czy o mnie. Wyliczamy to na SERWERZE, z sesji.
+   */
+  jaId: string;
   uczestnicy: UczestnikDTO[];
   /** Nazwy osób, które piszą w tej chwili (bez mojej). */
   piszacy: string[];
@@ -157,6 +163,7 @@ export async function getRozmowa(rozmowaId: string): Promise<SzczegolRozmowyDTO>
     id: rozmowa.id,
     rodzaj: rozmowa.rodzaj === "zespol" ? "zespol" : "prywatna",
     etykieta: etykietaRozmowy({ rodzaj: rozmowa.rodzaj, tytul: rozmowa.tytul }, uczestnicy, user.id, BEZ_ROZMOWCY),
+    jaId: user.id,
     uczestnicy: rozmowa.uczestnicy.map((u) => ({
       userId: u.userId,
       nazwa: nazwaOsoby(u.user),
