@@ -10,6 +10,7 @@ import {
   ASSISTANT_LEVELS,
   ASSISTANT_PRESENTATIONS,
   ASSISTANT_VOICE_KINDS,
+  parseAssistantPresentation,
   type AssistantLevel,
   type AssistantPresentation,
   type AssistantVoiceKind,
@@ -89,12 +90,6 @@ function parseLevel(value: string | null | undefined): AssistantLevel {
   return ASSISTANT_LEVELS.includes(value as AssistantLevel) ? (value as AssistantLevel) : DEFAULTS.level;
 }
 
-function parsePresentation(value: string | null | undefined): AssistantPresentation {
-  return ASSISTANT_PRESENTATIONS.includes(value as AssistantPresentation)
-    ? (value as AssistantPresentation)
-    : DEFAULTS.presentation;
-}
-
 function parseVoiceKind(value: string | null | undefined): AssistantVoiceKind {
   return ASSISTANT_VOICE_KINDS.includes(value as AssistantVoiceKind)
     ? (value as AssistantVoiceKind)
@@ -118,7 +113,7 @@ export async function getAssistantPrefs(): Promise<AssistantPrefsDTO> {
     autoApprove: row.autoApprove,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
-    presentation: parsePresentation(row.presentation),
+    presentation: parseAssistantPresentation(row.presentation),
   };
 }
 
@@ -201,7 +196,7 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     autoApprove: row.autoApprove,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
-    presentation: parsePresentation(row.presentation),
+    presentation: parseAssistantPresentation(row.presentation),
   };
 }
 

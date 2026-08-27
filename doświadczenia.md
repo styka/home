@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Bramki puszczane „z pamięci" to nie jest zielony build
+**Problem:** Deploy na Render padł na bramce `check:domain` (zapadka warstwy reguł): nowy pomocnik
+`parsePresentation` w pliku `"use server"` podbił licznik 34 → 35. Lokalnie wszystko było zielone —
+bo świadomie nie odpalałem `npm run build` (jego ostatni krok `migrate.js` rusza produkcyjną bazę,
+C-13) i zamiast tego uruchamiałem bramki **pojedynczo, wypisując je z pamięci**. Wypisałem
+czternaście z trzydziestu czterech. `check:domain` nie było wśród nich.
+
+**Rozwiązanie:** Regułę przeniesiono do `src/types/index.ts`, obok jej unii — plik `"use server"`
+nie eksportuje funkcji synchronicznych, więc zapisanej w nim reguły nie da się ani zaimportować,
+ani przetestować. Listę bramek bierzemy odtąd **z `package.json`**, nie z głowy:
+
+```bash
+python3 -c "import json;print('\n'.join(k.strip() for k in json.load(open('package.json'))['scripts']['build'].split('&&')))"
+```
+…i puszczamy wszystkie kroki poza ostatnim (`migrate.js`).
+
+**Lekcja:** „Zweryfikowałem bramkami" znaczy **całą listą z `package.json`**, a nie tymi, które
+pamiętam. Przy trzydziestu czterech krokach pamięć jest gwarancją luki, a luka wychodzi dopiero na
+Render — czyli po promocji na produkcję. Kroku, którego nie wolno odpalić lokalnie, jest **jeden**
+(`migrate.js`); wszystkie pozostałe trzydzieści trzy wolno i trzeba.
+
 ## 2026-08-27 — `min-h-0` na opakowaniu: jedna klasa, a bez niej telefon przestaje przewijać
 **Problem:** Owinięcie `<main>` w dodatkowy kontener (`flex flex-1 min-w-0`) zabrało modułom
 przewijanie na telefonie: `/tasks` przy 360 × 640 miało `<main>` **2028 px** zamiast 595, a wewnętrzny
