@@ -767,3 +767,17 @@ export interface ShortcutHandlers {
   onCommandPalette?: () => void;
   onEscape?: () => void;
 }
+
+// ─── Powiadomienia ─────────────────────────────────────────────────────────
+
+/**
+ * 107 — RODZAJ sprawy w skrzynce.
+ *
+ * `zadanie`  — „mam coś zrobić": terminy, przeglądy, powtórki. To, co dotąd wpadało do dzwonka.
+ * `relacja`  — „ktoś czegoś ode mnie chce": udostępnienia zasobów i zbiorcze sygnały z rozmów.
+ *
+ * String + unia TS (C-12). Typ mieszka TUTAJ, a nie w `src/actions/notifications.ts`, bo plik
+ * z dyrektywą `"use server"` nie może eksportować niczego poza funkcjami asynchronicznymi —
+ * `next build` odrzuca to błędem, którego `tsc --noEmit` nie widzi (lekcja z 2026-08-27).
+ */
+export type RodzajPowiadomienia = "zadanie" | "relacja";

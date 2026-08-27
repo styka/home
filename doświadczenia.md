@@ -4,6 +4,64 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Dowód na sąsiednim scenariuszu nie jest dowodem (wyciek kanału zespołu)
+**Problem:** Kryterium akceptacji brzmiało „gdy użytkownik **opuścił zespół**, nie widzi już kanału
+tego zespołu". Weryfikacja zaliczyła je na zielono, opierając się na sondzie, która **usuwała całą
+przestrzeń zespołu** — tam kaskada klucza obcego działa bez zarzutu, kanał znika razem z nią.
+Dopiero recenzja odtworzyła ścieżkę z kryterium: `removeMember`/`leaveTeam` kasują `TeamMember`
+i (przez uzgodnienie lustra) `WorkspaceMember`, ale o wierszu `ChatParticipant` nie wiedzą — żadna
+kaskada tam nie biegnie. Były członek **nadal widział kanał i jego NOWE wiadomości**, a guard go
+przepuszczał, więc mógł też w nim pisać. Wyciek treści, nie usterka wyglądu.
+
+**Rozwiązanie:** Członkostwo rozstrzygane **przy odczycie**, nie z kopii: `assertUczestnik` dla
+rozmowy zespołowej wymaga wiersza `WorkspaceMember`, a lista używa wspólnego warunku
+`widoczneRozmowyWhere`. Świadomie NIE poszliśmy w „kasuj `ChatParticipant` w `leaveTeam`" —
+dopisanie kasowania do dwóch dzisiejszych miejsc nie zabezpiecza trzeciego, które ktoś doda jutro,
+a karą za pominięcie jest cichy wyciek. Doszedł test integracyjny z **dwiema kontrolami dodatnimi**
+(członek widzi, pozostały członek widzi dalej) — sprawdzony w obie strony: na starym kodzie jest
+czerwony, na nowym zielony.
+
+**Lekcja:** Przy kryterium dotyczącym **dostępu** sonda musi odtworzyć **dokładnie tę ścieżkę, którą
+kryterium nazywa**. „Usunięto zespół" i „ktoś wyszedł z zespołu" wyglądają jak ten sam scenariusz,
+a różnią się tym, czy w ogóle biegnie kaskada. I druga połowa: test bezpieczeństwa bez kontroli
+dodatniej przechodzi także wtedy, gdy odetniemy od zasobu **wszystkich** — dlatego zawsze sprawdzaj
+obie strony, a nowy test uruchom raz na starym kodzie, żeby zobaczyć go na czerwono.
+
+## 2026-08-27 — Zielony `tsc` z bramki nie znaczy, że `next build` sprawdzi typy tak samo
+**Problem:** Lista bramek z `package.json` zawiera `tsc --noEmit -p tsconfig.test.json`. Przeszła na
+zielono, więc uznałem typy za sprawdzone — a `next build` wywalił się kilka minut później na
+`TS2802` (`Type 'Set<string>' can only be iterated through when using '--downlevelIteration'`)
+w kodzie, który ta bramka właśnie przepuściła.
+
+**Rozwiązanie:** `Array.from(...)` zamiast spreadu (lekcja z 2026-06-03 stoi wyżej), ale prawdziwy
+wniosek jest inny. **To są dwie różne konfiguracje TypeScriptu.** `tsconfig.test.json` ustawia
+`target: ES2022`, bo testy chodzą w Node; główny `tsconfig.json`, którego używa `next build`,
+`target` nie ustawia w ogóle. Spread `Set`/`Map` jest legalny w pierwszej i nielegalny w drugiej.
+
+**Lekcja:** Bramka `tsc` z listy `build` sprawdza typy **testów**, nie typy aplikacji — jest
+uzupełnieniem `next build`, a nie jego szybszym zamiennikiem. Kod iterujący `Set`/`Map` przechodzi
+przez nią zawsze, a wykłada się dopiero na buildzie, po kilku minutach. Przy takim kodzie nie ma
+skrótu: trzeba puścić `next build`. I odwrotnie — to jest właśnie powód, dla którego ta druga
+konfiguracja w ogóle istnieje (`tsconfig.json` wyklucza `*.test.ts`), więc żadnej z nich nie da się
+usunąć.
+
+## 2026-08-27 — `--shadow-database-url` wycelowany we własną bazę deweloperską ją kasuje
+**Problem:** Do wygenerowania DDL nowej migracji odpaliłem
+`prisma migrate diff --from-migrations … --to-schema-datamodel … --shadow-database-url "$DATABASE_URL"`.
+Diff wyszedł poprawny, ale następne `prisma migrate deploy` odbiło się błędem **P3005 „The database
+schema is not empty"** — a chwilę wcześniej ta sama komenda kończyła się „All migrations have been
+successfully applied". Tabele w bazie były (164), brakowało wyłącznie `_prisma_migrations`.
+
+**Rozwiązanie:** Baza shadow jest przez Prismę **resetowana** — a ja podałem jako shadow tę samą
+bazę, w której trzymam dane deweloperskie, więc `migrate diff` wyczyścił jej historię migracji
+i odtworzył sam schemat. Naprawa: osobna baza (`omnia_shadow`), `DROP DATABASE omnia_dev` +
+`CREATE DATABASE` + `migrate deploy` od zera.
+
+**Lekcja:** `--shadow-database-url` **nigdy** nie wskazuje bazy, w której cokolwiek trzymasz — to
+jest baza jednorazowa, którą Prisma ma prawo skasować. Objaw jest przy tym mylący: pierwsza komenda
+mówi „sukces", a awaria wychodzi dopiero przy **następnej**, i wygląda jak problem z baseline'em
+zamiast jak skutek poprzedniego polecenia.
+
 ## 2026-08-27 — Bramki puszczane „z pamięci" to nie jest zielony build
 **Problem:** Deploy na Render padł na bramce `check:domain` (zapadka warstwy reguł): nowy pomocnik
 `parsePresentation` w pliku `"use server"` podbił licznik 34 → 35. Lokalnie wszystko było zielone —

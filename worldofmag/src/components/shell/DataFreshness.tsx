@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { opublikujSygnal } from "@/platform/events/sygnalKlienta";
 
 // Globalny nasłuchiwacz świeżości danych.
 //
@@ -71,7 +72,17 @@ export function DataFreshness() {
         nieudane = 0; // połączenie stanęło — licznik prób od zera
       });
 
-      zrodlo.addEventListener("zmiana", () => {
+      zrodlo.addEventListener("zmiana", (e) => {
+        // 107: sygnał idzie DALEJ, do komponentów z własnym stanem (wątek rozmowy, licznik
+        // nieprzeczytanych). `router.refresh()` przeładowuje dane serwerowe, ale nie dotyka
+        // stanu klienta — a rozmowa jest zbudowana właśnie z niego (pozycja przewijania,
+        // doczytane starsze wiadomości, treść w polu).
+        try {
+          const dane = JSON.parse((e as MessageEvent).data as string);
+          opublikujSygnal(dane);
+        } catch {
+          // Sygnał bez ładunku albo uszkodzony — odświeżenie poniżej i tak jest właściwą reakcją.
+        }
         refresh();
       });
 

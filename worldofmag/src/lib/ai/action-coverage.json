@@ -1387,6 +1387,12 @@
     "status": "ai",
     "access": "owner"
   },
+  "notifications:getLicznikiSkrzynki": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "notifications:getNotifications": {
     "kind": "read",
     "status": "excluded",
@@ -3049,6 +3055,73 @@
   "workspaceSettings:setWorkspaceLocale": {
     "status": "excluded",
     "reason": "settings",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowy": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowa": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowcy": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getLicznikNieprzeczytanych": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:otworzRozmowePrywatna": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:oznaczPrzeczytane": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:zglosPisanie": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "wiadomosci:getWiadomosci": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "wiadomosci:wyslijWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "wiadomosci:edytujWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner",
+    "guardedVia": "assertAutor"
+  },
+  "wiadomosci:usunWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner",
+    "guardedVia": "assertAutor"
+  },
+  "wiadomosci:przelaczReakcje": {
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   }
 }

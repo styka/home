@@ -5,6 +5,8 @@ import { requireAuth, getUserTeamIds, ownedOrAsync } from "@/platform/auth/serve
 import { isoDay } from "@/modules/calendar/contract";
 import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
+import { getPendingInvitationsCount } from "@/actions/invitations";
+import type { RodzajPowiadomienia } from "@/types";
 
 /**
  * 093 (zadanie 20): górna granica dla zapytań synchronizacji przypomnień.
@@ -20,6 +22,7 @@ const LIMIT_PRZYPOMNIEN = 200;
 export type NotificationDTO = {
   id: string;
   module: string;
+  rodzaj: RodzajPowiadomienia;
   title: string;
   body: string | null;
   href: string | null;
@@ -30,17 +33,27 @@ export type NotificationDTO = {
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 
-/** Lista ostatnich powiadomień użytkownika (nieprzeczytane najpierw). */
-export async function getNotifications(limit = 30): Promise<NotificationDTO[]> {
+/**
+ * Lista ostatnich powiadomień użytkownika (nieprzeczytane najpierw).
+ *
+ * 107: `rodzaj` zawęża do JEDNEGO segmentu skrzynki. Filtrujemy w zapytaniu, nie po stronie
+ * klienta — inaczej `take` obcinałby „50 najnowszych ogółem" i sprawa sprzed tygodnia nigdy nie
+ * trafiłaby do listy, która po to istnieje (dokładnie ten błąd naprawiało 106 w listach rozmów
+ * asystenta).
+ */
+export async function getNotifications(
+  opcje: { rodzaj?: RodzajPowiadomienia; limit?: number } = {},
+): Promise<NotificationDTO[]> {
   const user = await requireAuth();
   const rows = await prisma.notification.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, ...(opcje.rodzaj ? { rodzaj: opcje.rodzaj } : {}) },
     orderBy: [{ readAt: { sort: "asc", nulls: "first" } }, { createdAt: "desc" }],
-    take: limit,
+    take: opcje.limit ?? 30,
   });
   return rows.map((n) => ({
     id: n.id,
     module: n.module,
+    rodzaj: (n.rodzaj === "relacja" ? "relacja" : "zadanie") as RodzajPowiadomienia,
     title: n.title,
     body: n.body,
     href: n.href,
@@ -55,6 +68,34 @@ export async function getUnreadCount(): Promise<number> {
   return prisma.notification.count({ where: { userId: user.id, readAt: null } });
 }
 
+/** 107: liczniki segmentów skrzynki. */
+export type LicznikiSkrzynki = {
+  /** Nieprzeczytane przypomnienia („mam coś zrobić"). */
+  zadania: number;
+  /** Nieprzeczytane sprawy z ludźmi + oczekujące zaproszenia — razem, bo tyle spraw czeka. */
+  relacje: number;
+};
+
+/**
+ * 107 — LICZNIKI SKRZYNKI dla przełącznika segmentowego i dla odznaki przy dzwonku.
+ *
+ * Zaproszenia do zespołu liczymy z ICH WŁASNEJ tabeli, a nie z kopii w powiadomieniach. Kopia
+ * byłaby drugim nośnikiem tego samego stanu i przeżyłaby przyjęcie zaproszenia — czyli odznaka
+ * mówiłaby o sprawie, której już nie ma (AC-8, AC-9).
+ *
+ * Liczymy przez `count`, nie przez pobranie listy: liczba nie może zależeć od tego, ile wierszy
+ * zmieściło się w `take`.
+ */
+export async function getLicznikiSkrzynki(): Promise<LicznikiSkrzynki> {
+  const user = await requireAuth();
+  const [zadania, relacjeNieprzeczytane, zaproszenia] = await Promise.all([
+    prisma.notification.count({ where: { userId: user.id, readAt: null, rodzaj: "zadanie" } }),
+    prisma.notification.count({ where: { userId: user.id, readAt: null, rodzaj: "relacja" } }),
+    getPendingInvitationsCount(),
+  ]);
+  return { zadania, relacje: relacjeNieprzeczytane + zaproszenia };
+}
+
 export async function markNotificationRead(id: string): Promise<void> {
   const user = await requireAuth();
   await prisma.notification.updateMany({
@@ -63,10 +104,17 @@ export async function markNotificationRead(id: string): Promise<void> {
   });
 }
 
-export async function markAllNotificationsRead(): Promise<void> {
+/**
+ * „Oznacz wszystkie jako przeczytane".
+ *
+ * 107: `rodzaj` ogranicza to do OGLĄDANEJ listy. Bez tego przycisk stojący nad jednym segmentem
+ * gasiłby też drugi, którego użytkownik w tej chwili nie widzi — a to jest utrata informacji
+ * wykonana cudzym gestem.
+ */
+export async function markAllNotificationsRead(rodzaj?: RodzajPowiadomienia): Promise<void> {
   const user = await requireAuth();
   await prisma.notification.updateMany({
-    where: { userId: user.id, readAt: null },
+    where: { userId: user.id, readAt: null, ...(rodzaj ? { rodzaj } : {}) },
     data: { readAt: new Date() },
   });
 }

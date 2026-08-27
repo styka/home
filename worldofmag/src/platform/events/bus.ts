@@ -18,7 +18,23 @@
 export interface SygnalKanalu {
   /** Rodzaj zdarzenia — klient go nie renderuje, służy do diagnostyki i filtrowania. */
   type: string;
-  workspaceId: string;
+  /**
+   * Przestrzeń, której dotyczy zmiana.
+   *
+   * 107: **opcjonalna**. Zdarzenia domenowe zawsze mają przestrzeń, ale rozmowa prywatna nie żyje
+   * w żadnej — jej uczestnicy są wymienieni wprost. Wymuszanie tu pustego łańcucha byłoby
+   * kłamstwem o danych, żeby zadowolić typ.
+   */
+  workspaceId?: string;
+  /**
+   * 107: której rozmowy dotyczy sygnał — żeby otwarty wątek mógł zignorować cudzą rozmowę
+   * zamiast dociągać wiadomości przy każdym sygnale.
+   *
+   * Ładunek zostaje UBOGI: nie ma tu treści wiadomości ani nazwiska autora. Klient dostaje
+   * wyłącznie „w tej rozmowie coś się zmieniło” i pobiera treść z serwera, który sprawdza
+   * uczestnictwo — to zamyka drogę do podsłuchania cudzej rozmowy kanałem.
+   */
+  rozmowaId?: string;
 }
 
 type Sluchacz = (sygnal: SygnalKanalu) => void;

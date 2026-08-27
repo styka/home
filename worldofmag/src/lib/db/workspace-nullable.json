@@ -35,7 +35,7 @@
     "o kryterium zostaje w mocy i to ona jest tu najważniejsza: kosztowała dziewięć wywróconych",
     "testów kolejki i korektę 0237."
   ],
-  "maks": 4,
+  "maks": 5,
   "nullowalne": {
     "ItemHistory": {
       "powod": "Słownik podpowiedzi produktów w Zakupach. Wiersze systemowe (`ownerId IS NULL`) są seedowane migracją i widoczne dla każdego zalogowanego konta; użytkownik dokłada własne, które przestrzeń już mają. 69 rekordów systemowych w chwili wprowadzenia reguły."
@@ -48,6 +48,9 @@
     },
     "Tag": {
       "powod": "Etykiety w modelu trójpoziomowym z 034, dokładnie jak `NoteGroup`. Unikalność nazwy jest per właściciel (`@@unique([ownerId, name])`), więc tag systemowy i prywatny o tej samej nazwie współistnieją. Dziś zero rekordów systemowych, model je dopuszcza."
+    },
+    "ChatConversation": {
+      "powod": "107: rozmowa PRYWATNA nie leży w żadnej przestrzeni — jej granicą są wymienieni wprost uczestnicy, a nie właściciel. To jest to samo kryterium, przez które na liście jest `Job`: wiersz może nie mieć właściciela, więc NULL jest tu prawdziwą wartością, a nie brakiem uzupełnienia. Kanał ZESPOŁU ma `workspaceId` ustawione i to ono niesie jego tożsamość (indeks unikalny „jeden kanał na przestrzeń”) oraz kaskadę usuwającą kanał razem z zespołem. Odwrotność — wymuszony NOT NULL — kazałaby wymyślić przestrzeń dla rozmowy dwóch osób z różnych zespołów, czyli zmyślić właściciela."
     }
   }
 }

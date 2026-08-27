@@ -677,7 +677,9 @@
         "pokazWObszarzeTresci": "Pokaż asystenta w obszarze treści",
         "pokazWOknie": "Pokaż asystenta w oknie",
         "asystentWObszarzeTresci": "Asystent AI — obszar treści",
-        "poziomPracyAsystenta": "Poziom pracy asystenta"
+        "poziomPracyAsystenta": "Poziom pracy asystenta",
+        "rozmowy": "Rozmowy",
+        "zamknijRozmowy": "Zamknij rozmowy (wróć do wątku)"
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",
@@ -823,7 +825,22 @@
       },
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
-        "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj."
+        "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj.",
+        "skrzynka": "Skrzynka",
+        "skrzynkaZLicznikiem": "Skrzynka ({ile, plural, one {# sprawa} few {# sprawy} many {# spraw} other {# sprawy}} czeka)",
+        "rodzajeSpraw": "Rodzaje spraw",
+        "segmentDoZrobienia": "Do zrobienia",
+        "segmentRelacje": "Relacje",
+        "oznaczWszystkie": "Oznacz wszystkie na tej liście jako przeczytane",
+        "wszystkie": "Wszystkie",
+        "zamknij": "Zamknij",
+        "brakRelacji": "Brak spraw z ludźmi. Pojawią się tutaj zaproszenia do zespołów, udostępnione zasoby i nieprzeczytane rozmowy.",
+        "zaproszenieDoZespolu": "Zaproszenie do zespołu „{zespol}”",
+        "zapraszaCie": "Zaprasza: {kto}",
+        "przyjmij": "Przyjmij",
+        "odrzuc": "Odrzuć",
+        "odrzucicZaproszenie": "Odrzucić zaproszenie do „{zespol}”?",
+        "odrzucenieOpis": "Zaproszenie zniknie z listy. Osoba zapraszająca może wysłać je ponownie."
       },
       "SpeechFallbackNotice": {
         "zeszlismyNaGlosSystemowy": "Lektor serwerowy nie odpowiada — czytam głosem systemowym.",
@@ -867,6 +884,14 @@
         "rozwin": "Pokaż miejsca w module {modul}",
         "zwin": "Ukryj miejsca w module {modul}",
         "ustawieniaPaska": "Ustawienia paska"
+      },
+      "IkonaCzatu": {
+        "czat": "Czat",
+        "czatZLicznikiem": "Czat ({ile, plural, one {# rozmowa} few {# rozmowy} many {# rozmów} other {# rozmowy}} z nowościami)",
+        "zamknij": "Zamknij",
+        "ladowanie": "Ładowanie…",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się sam, a rozmowę prywatną zaczniesz w module Czat.",
+        "otworzCzat": "Otwórz Czat"
       }
     },
     "shortcuts": {
@@ -2429,6 +2454,42 @@
           "reczne": "dodany ręcznie",
           "subskrypcje": "z subskrypcji"
         }
+      }
+    },
+    "czat": {
+      "CzatPage": {
+        "tytul": "Czat",
+        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
+      },
+      "ListaRozmow": {
+        "rozmowy": "Rozmowy",
+        "nowaRozmowa": "Nowa rozmowa",
+        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
+      },
+      "WatekRozmowy": {
+        "wrocDoListy": "Wróć do listy rozmów",
+        "pisze": "{kto} pisze…",
+        "starsze": "Pokaż starsze wiadomości",
+        "ladowanie": "Wczytywanie…",
+        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
+        "edytowano": "(edytowano)",
+        "wiadomoscUsunieta": "Wiadomość usunięta",
+        "odpowiedz": "Odpowiedz",
+        "zareaguj": "Dodaj reakcję",
+        "edytuj": "Edytuj",
+        "usun": "Usuń",
+        "usunacWiadomosc": "Usunąć wiadomość?",
+        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
+        "przeczytanePrzez": "Przeczytane: {kto}"
+      },
+      "PoleWiadomosci": {
+        "napisz": "Napisz wiadomość…",
+        "wyslij": "Wyślij",
+        "zapisz": "Zapisz zmiany",
+        "anuluj": "Anuluj",
+        "edytujesz": "Edytujesz wiadomość",
+        "odpowiadaszNa": "Odpowiadasz: {autor}"
       }
     }
   }

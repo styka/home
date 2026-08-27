@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-27T08:40:13.933Z",
+  "wygenerowano": "2026-08-27T11:01:30.051Z",
   "zdolnosciPlatformy": [
     "admin",
     "ai",
@@ -54,6 +54,7 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
   "moduly": [
     "calendar",
     "contacts",
+    "czat",
     "flota",
     "habits",
     "health",
@@ -114,8 +115,8 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "copy-spec-pipeline",
     "generate-architecture"
   ],
-  "liczbaModeli": 163,
-  "liczbaMigracji": 280,
+  "liczbaModeli": 167,
+  "liczbaMigracji": 281,
   "modeleZWersja": [
     "ShoppingList",
     "Note",
@@ -176,12 +177,13 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "DomainEvent",
     "YoutubeChannel",
     "YoutubeVideo",
-    "YoutubePref"
+    "YoutubePref",
+    "ChatConversation"
   ],
   "zapadki": [
     {
       "nazwa": "Najcięższa trasa (bajty JS)",
-      "wartosc": 1191000,
+      "wartosc": 1201339,
       "bramka": "check:perf"
     }
   ]

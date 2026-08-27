@@ -15,6 +15,7 @@ import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { PromptWznowieniaDialog } from "./PromptWznowieniaDialog";
 import { NotificationBell } from "./NotificationBell";
+import { IkonaCzatu } from "./IkonaCzatu";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SpeechFallbackNotice } from "@/components/shell/SpeechFallbackNotice";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
@@ -192,9 +193,10 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             aria-label={t("otworzMenu")}
           >
             <Menu size={18} />
-            {invitationCount > 0 && (
-              <span style={{ position: "absolute", top: 2, right: 2, background: "var(--accent-red)", borderRadius: "50%", width: 8, height: 8 }} />
-            )}
+            {/* 107: BEZIMIENNA CZERWONA KROPKA ZNIKA. Była jedynym śladem oczekującego zaproszenia
+                — tylko na telefonie i tylko w formie „coś tam jest, poszukaj". Rolę przejął licznik
+                skrzynki obok, który mówi ILE spraw czeka i pozwala je załatwić na miejscu (AC-8).
+                Nazwana odznaka przy pozycji „Zaproszenia" w menu zostaje — ta niczego nie ukrywa. */}
           </button>
           <Link
             href={activeModule?.href ?? "/"}
@@ -224,6 +226,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             {/* 085: przełącznik TRYBU ADMINISTRATORA stoi obok dzwonka — w chromie konta. */}
             <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
+            {/* 107: czat ZA dzwonkiem — ta sama kolejność co w rzędzie chromu na komputerze. */}
+            <IkonaCzatu placement="topbar" />
           </div>
         </div>
       </div>

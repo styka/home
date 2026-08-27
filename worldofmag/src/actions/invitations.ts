@@ -83,6 +83,9 @@ export async function acceptInvitation(invitationId: string) {
   await mirrorTeamWorkspace(invitation.teamId)
   revalidatePath("/invitations")
   revalidatePath("/settings")
+  // 107: zaproszenie da się dziś przyjąć z panelu skrzynki, z dowolnego ekranu — powłoka musi
+  // przeliczyć licznik i zasoby nowego zespołu bez ręcznego przeładowania strony (AC-6).
+  revalidatePath("/", "layout")
 }
 
 export async function rejectInvitation(invitationId: string) {
@@ -99,6 +102,7 @@ export async function rejectInvitation(invitationId: string) {
     data: { status: "REJECTED" },
   })
   revalidatePath("/invitations")
+  revalidatePath("/", "layout")
 }
 
 export async function getPendingInvitationsCount(): Promise<number> {

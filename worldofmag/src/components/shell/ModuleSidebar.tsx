@@ -8,6 +8,7 @@ import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Pack
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
+import { IkonaCzatu } from "./IkonaCzatu";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
 import { MODULES } from "@/lib/modules";
@@ -296,6 +297,8 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <PrzelacznikTrybuAdmina />
           <NotificationBell placement="chrome" />
+          {/* 107: czat ZA dzwonkiem — ta sama kolejność co w górnym pasku telefonu. */}
+          <IkonaCzatu placement="chrome" />
         </div>
       </div>
 
