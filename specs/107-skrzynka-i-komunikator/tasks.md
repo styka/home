@@ -72,30 +72,30 @@
 
 ## Faza 4 — Moduł Czat: rdzeń serwerowy
 
-- [ ] **T-9** — `src/modules/czat/domain/rozmowa.ts` + `domain/__tests__/rozmowa.test.ts`:
+- [x] **T-9** — `src/modules/czat/domain/rozmowa.ts` + `domain/__tests__/rozmowa.test.ts`:
   `czyMozeEdytowac`, `czyPisze` (TTL 6 s), `stanPrzeczytania`, `podsumujNieprzeczytane`,
   `etykietaRozmowy`. Wpis `"czat"` w `src/lib/domain-coverage.json` (`rodzaj: "domena"`).
   **Gotowe, gdy:** `npm run check:domain` przechodzi, `npm run test:unit` zielony, plik reguł nie
   importuje Prismy, Reacta ani sesji.
-- [ ] **T-10** — `src/modules/czat/module.ts` (`defineModule` z `szybkieCele` wewnątrz tras modułu)
+- [x] **T-10** — `src/modules/czat/module.ts` (`defineModule` z `szybkieCele` wewnątrz tras modułu)
   + `contract.ts` (tylko to, czego używa chrom: licznik i podgląd rozmów) + wpięcie w
   `src/lib/modules.tsx` (import, `DECLARED`, `MODULE_ORDER` po `contacts`) + wpis `"czat"` w
   `src/lib/sharing-classification.json` (`rodzaj: "zakres"` z powodem).
   **Gotowe, gdy:** `npm run check:module-registry` i `npm run check:boundaries` przechodzą, a moduł
   pojawia się w nawigacji, wachlarzu i mapowaniu ścieżka → uprawnienie.
-- [ ] **T-11** — `src/platform/events/bus.ts`: `SygnalKanalu.workspaceId` staje się opcjonalne,
+- [x] **T-11** — `src/platform/events/bus.ts`: `SygnalKanalu.workspaceId` staje się opcjonalne,
   dochodzi `rozmowaId?`. `src/modules/czat/lib/sygnal.ts` — `sygnalRozmowy(rozmowaId, uczestnicy)`
   rozgłasza na kanały `user:<id>`. `src/modules/czat/lib/dostep.ts` — `assertUczestnik`,
   `assertAutor`, `assertMozeRozmawiac`.
   **Gotowe, gdy:** `npm run check:realtime` przechodzi (trasa strumienia nietknięta, szyna nadal
   zwraca odsubskrybowanie), a ładunek sygnału nie niesie treści wiadomości.
-- [ ] **T-12** — `src/modules/czat/actions/rozmowy.ts`: `getRozmowy` (zapewnia kanał każdego zespołu
+- [x] **T-12** — `src/modules/czat/actions/rozmowy.ts`: `getRozmowy` (zapewnia kanał każdego zespołu
   użytkownika), `getRozmowa`, `getRozmowcy` (tylko osoby powiązane zespołem albo nadaniem),
   `getLicznikNieprzeczytanych`, `otworzRozmowePrywatna`, `oznaczPrzeczytane`, `zglosPisanie`.
   Każda mutacja: guard + `revalidatePath("/czat")`. Wpisy w `action-coverage.json`.
   **Gotowe, gdy:** `npm run check:ai-coverage` i `npm run check:owner-columns` przechodzą, a lista
   rozmówców nie ujawnia kont niepowiązanych. *(AC-14, AC-15, AC-24, AC-25)*
-- [ ] **T-13** — `src/modules/czat/actions/wiadomosci.ts`: `getWiadomosci` z
+- [x] **T-13** — `src/modules/czat/actions/wiadomosci.ts`: `getWiadomosci` z
   `...zapytanieKursorowe({ kursor, rozmiar })`, `wyslijWiadomosc` (+ `ostatniaAktywnosc`, sygnał),
   `edytujWiadomosc`, `usunWiadomosc` (miękkie, snapshot do `TrashItem` — C-24), `przelaczReakcje`.
   Wpisy w `action-coverage.json`.

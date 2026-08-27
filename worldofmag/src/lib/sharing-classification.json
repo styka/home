@@ -93,6 +93,10 @@
     "youtube": {
       "rodzaj": "wlasciciel",
       "powod": "102: kanały, filmy i transkrypcje są ściśle osobiste (moduł nie ma wariantu zespołowego). Dostęp to wyłącznie „czy to moja przestrzeń\" — deklaracja wyrażałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
+    },
+    "czat": {
+      "rodzaj": "zakres",
+      "powod": "107: dostęp do rozmowy wynika z UCZESTNICTWA — lista pokazuje wyłącznie rozmowy, w których jestem uczestnikiem, a poza tym nie ma decyzji per-rekord. Nie ma tu ról udostępniania (viewer/editor/manager): w rozmowie albo się jest, albo nie. Deklaracja `sharing.ts` odwzorowywałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
     }
   }
 }

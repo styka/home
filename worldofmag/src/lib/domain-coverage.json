@@ -171,6 +171,13 @@
         "domain/film.ts"
       ],
       "powod": "102: reguła przepisania wiersza filmu na kształt dla przeglądarki — `maTranskrypcje` liczone z TREŚCI, nie ze stanu (retencja czyści transkrypcje odrzuconych, zostawiając stan „jest\"). Pobieranie z YouTube (lib/kanal, lib/filmy, lib/transkrypcja) to adaptery infrastruktury, nie reguły — mają własne testy na zapisanych próbkach."
+    },
+    "czat": {
+      "decyzja": "domena",
+      "pliki": [
+        "domain/rozmowa.ts"
+      ],
+      "powod": "107: reguły rozmowy, których nie widać w kodzie akcji — „pisze…” wygasa TTL-em przy ODCZYCIE (wygaszanie zapisem zostawiłoby wieczne „pisze…” po zamkniętej karcie), nieprzeczytane liczą się względem znacznika odczytu i pomijają własne wiadomości, a „przeczytano” pyta o CUDZE znaczniki i mówi przez kogo. Wysyłka, rozgłoszenie sygnału i guardy uczestnictwa to adaptery infrastruktury, nie reguły."
     }
   },
   "obserwacje": {

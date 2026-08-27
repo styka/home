@@ -48,6 +48,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   else if (item.module === "tasks") await restoreTask(data);
   else if (item.module === "weather") await restoreWeatherIdea(data);
   else if (item.module === "youtube") await restoreYoutubeChannel(data);
+  else if (item.module === "czat") await restoreChatMessage(data, item.userId);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
@@ -302,5 +303,24 @@ async function restoreWeatherIdea(d: Record<string, unknown>): Promise<void> {
       lastSeenAt: asDate(d.lastSeenAt) ?? new Date(),
       createdAt: asDate(d.createdAt) ?? new Date(),
     },
+  });
+}
+
+/**
+ * 107: przywrócenie własnej wiadomości z czatu.
+ *
+ * Usunięcie było miękkie, więc przywracamy przez **zdjęcie znacznika**, a nie przez utworzenie
+ * nowego wiersza — inaczej cytaty w cudzych odpowiedziach wskazywałyby dalej na wiadomość
+ * oznaczoną jako usunięta, a w rozmowie pojawiłaby się jej druga kopia.
+ *
+ * Warunek autorstwa jest w zapytaniu, nie przed nim: wpis kosza należy do autora, ale to jest
+ * zapis do wspólnej rozmowy i nie ma powodu, żeby jedyną obroną było pochodzenie migawki.
+ */
+async function restoreChatMessage(d: Record<string, unknown>, userId: string): Promise<void> {
+  const id = d.id as string;
+  if (!id) throw new Error("Uszkodzona migawka wiadomości");
+  await prisma.chatMessage.updateMany({
+    where: { id, autorId: userId },
+    data: { deletedAt: null },
   });
 }
