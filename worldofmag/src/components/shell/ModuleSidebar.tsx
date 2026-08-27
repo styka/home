@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition, type ComponentType } from "react";
-import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus, Home } from "lucide-react";
+import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
 import { MODULES } from "@/lib/modules";
 import { isPathLocked } from "@/lib/pathPermissions";
-import { resolveMenu, defaultMenuPrefs, type MenuPrefs, type ModuleDef } from "@/lib/modules";
+import { resolveMenu, defaultMenuPrefs, modulStronyGlownej, type MenuPrefs, type ModuleDef } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { FavoriteStarButton } from "@/components/favorites/FavoriteStarButton";
 import { ShortcutsButton } from "@/components/shortcuts/ShortcutsButton";
@@ -155,6 +155,10 @@ function NavItem({
   return (
     <Link
       href={href}
+      // 109 (AC-3): stan aktywny był dotąd WYŁĄCZNIE kolorem, więc czytnik ekranu go nie widział.
+      // `aria-current` jest tu, a nie tylko przy Stronie głównej, bo problem dotyczył wszystkich
+      // pozycji menu — poprawka w jednym miejscu obsługuje je wszystkie naraz.
+      aria-current={isActive ? "page" : undefined}
       className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
       style={{
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
@@ -238,6 +242,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const [, startTransition] = useTransition();
 
   const { enabled, more } = resolveMenu(userPermissions, menuPrefs);
+  // 109: Strona główna NIE jest pozycją `resolveMenu` (nie da się jej przestawić ani schować) —
+  // to stały wiersz panelu, czytany wprost z deklaracji modułu.
+  const stronaGlowna = modulStronyGlownej();
 
   function isLocked(href: string): boolean {
     return isPathLocked(userPermissions, href);
@@ -279,21 +286,20 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * aplikacji obok ikony notyfikacji tak by były wyrównane do prawej ale najpierw była ikona
        * przełącznika dla admina a bardziej z prawej ikona notyfikacji".
        *
-       * Nazwa aplikacji zostaje odnośnikiem do strony głównej, ale nie jest już jedynym wejściem —
-       * w rzędzie niżej stoi jawna ikona domu (AC-20).
+       * 109 (AC-2): NAZWA APLIKACJI NIE JEST JUŻ ODNOŚNIKIEM — jest samą marką.
+       *
+       * Do 109 prowadziły na `/` dwa miejsca naraz: ta nazwa i ikona domu w rzędzie niżej. Żadne
+       * nie było opisane słowami, więc w nazwę trzeba było się DOMYŚLIĆ kliknąć, a ikona czytała
+       * się jak jedno z narzędzi konta. Dwa nienazwane wejścia zastąpił jeden nazwany wiersz pod
+       * spodem; marka przestaje konkurować z nawigacją.
        */}
       <div className="flex items-center gap-2 px-4 h-12 border-b" style={{ borderColor: "var(--border)" }}>
-        <Link
-          href="/"
-          className="flex min-w-0 items-center gap-2"
-          style={{ textDecoration: "none" }}
-          title={t("stronaGlowna")}
-        >
+        <div className="flex min-w-0 items-center gap-2">
           <BrandLogo px={20} />
           <span className="truncate" style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
             <AppName />
           </span>
-        </Link>
+        </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <PrzelacznikTrybuAdmina />
           <NotificationBell placement="chrome" />
@@ -315,26 +321,38 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * Cztery ikony: dzwonek, zapis widoku, ściągawka skrótów, tryb administratora. Ściągawka jest
        * TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania).
        */}
+      {/**
+       * 109 (AC-1): STRONA GŁÓWNA JAKO NAZWANY WIERSZ, NAD RZĘDEM IKON KONTA.
+       *
+       * To ODWRACA decyzję z 087, która wyrzuciła „Stronę główną" z menu i zostawiła po niej ikonę
+       * domu w rzędzie ikon. Zgłoszenie właściciela jest dosłownie o kolejności: „dziwnie wygląda,
+       * że mamy ulubione, a dopiero niżej strona główna".
+       *
+       * Dlatego wiersz stoi TUTAJ, a nie jako pierwsza pozycja `<nav>`: w `<nav>` wylądowałby POD
+       * gwiazdką ulubionych, czyli dokładnie w układzie, na który właściciel narzeka. Przy okazji
+       * zostaje nietknięty niezmiennik z 086 — rząd ikon dalej stoi nad nawigacją MODUŁÓW.
+       *
+       * Dane (etykieta, ikona, kolor, `exact`, uprawnienie) czyta `modulStronyGlownej()` z rejestru
+       * modułów — bez drugiej kopii etykiety w powłoce (C-36).
+       */}
+      {stronaGlowna && (
+        <div className="mt-1">
+          <NavItem
+            href={stronaGlowna.href}
+            label={stronaGlowna.label}
+            icon={<stronaGlowna.Icon size={18} />}
+            iconColor={stronaGlowna.color}
+            pathname={pathname}
+            exact={stronaGlowna.exact}
+            locked={isLocked(stronaGlowna.href)}
+          />
+        </div>
+      )}
+
       {/* 100: rząd idzie za dominującą ręką (`omnia-chrom-konta` + `html[data-reka]`) — te same
-          ikony, ta sama kolejność względem kciuka co na telefonie. */}
+          ikony, ta sama kolejność względem kciuka co na telefonie.
+          109: ikona domu wyszła stąd do własnego wiersza wyżej; zostają gwiazdka i skróty. */}
       <div className="omnia-chrom-konta mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
-        {/* 087 (AC-20): od lewej dom, gwiazdka, skróty. Ikona domu zastępuje pozycję „Strona
-            główna" w nawigacji — stoi pierwsza, bo to najczęstszy powrót. */}
-        <Link
-          href="/"
-          title={t("stronaGlowna")}
-          aria-label={t("stronaGlowna")}
-          aria-current={pathname === "/" ? "page" : undefined}
-          className="flex items-center justify-center rounded"
-          style={{
-            width: 32,
-            height: 32,
-            color: pathname === "/" ? "var(--text-primary)" : "var(--text-secondary)",
-            background: pathname === "/" ? "var(--bg-hover)" : "transparent",
-          }}
-        >
-          <Home size={18} />
-        </Link>
         <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
         <ShortcutsButton />
       </div>

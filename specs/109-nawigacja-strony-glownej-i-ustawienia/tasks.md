@@ -20,18 +20,18 @@ nie wyglądało na przeoczenie.
 
 ## Faza 1 — Panel boczny: jedno nazwane wejście na Stronę główną
 
-- [ ] **T-1** — `src/lib/modules.tsx`: dodaj `modulStronyGlownej(): ModuleDef | null` czytające wpis
+- [x] **T-1** — `src/lib/modules.tsx`: dodaj `modulStronyGlownej(): ModuleDef | null` czytające wpis
       `home` z `MODULES`. Bez zmian w `resolveMenu` — Strona główna dalej **nie wraca** do listy
       menu, „Więcej…", ekranu zarządzania menu ani dolnego paska.
       *Gotowe, gdy:* funkcja zwraca deklarację (href `/`, `exact`, ikona, kolor, `permission`),
       `resolveMenu` zwraca to samo co przed zmianą (test jednostkowy albo `tsc` + odczyt kodu).
 
-- [ ] **T-2** — `ModuleSidebar`: `NavItem` dostaje `aria-current={isActive ? "page" : undefined}`.
+- [x] **T-2** — `ModuleSidebar`: `NavItem` dostaje `aria-current={isActive ? "page" : undefined}`.
       Zmiana w jednym miejscu, korzystają z niej wszystkie pozycje menu.
       *Gotowe, gdy:* na dowolnej trasie modułu aktywna pozycja ma `aria-current="page"`, nieaktywne
       nie mają atrybutu. (AC-3)
 
-- [ ] **T-3** — `ModuleSidebar`, trzy zmiany układu:
+- [x] **T-3** — `ModuleSidebar`, trzy zmiany układu:
       1. nazwa aplikacji przestaje być `<Link>` → `<div>` z `BrandLogo` + `AppName`;
       2. **nowy wiersz „Strona główna"** (`NavItem` z danych `modulStronyGlownej()`), renderowany
          **między nazwą aplikacji a rzędem ikon konta**, z `locked={isPathLocked(userPermissions, "/")}`;

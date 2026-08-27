@@ -49,6 +49,23 @@ export const MODULES: ModuleDef[] = mergeModules(DECLARED, MODULE_ORDER);
 const MODULE_INDEX = new Map(MODULES.map((m, i) => [m.id, i]));
 
 /**
+ * 109: DEKLARACJA STRONY GŁÓWNEJ DLA PANELU BOCZNEGO.
+ *
+ * Strona główna wraca jako nazwany wiersz nawigacji (087 zamieniło ją na ikonę domu w rzędzie ikon
+ * konta — właściciel zgłosił, że przez to stoi POD ulubionymi i nie jest opisana słowami). Wiersz
+ * potrzebuje etykiety, ikony, koloru, `exact` i uprawnienia — czyli dokładnie tego, co już stoi
+ * w deklaracji modułu.
+ *
+ * Dlatego czytamy stąd, a nie z nowej stałej w powłoce: równoległa lista modułowa jest tym, co
+ * przebudowa 048/049 wyrzuciła (C-36), a druga kopia etykiety rozjechałaby się przy pierwszej
+ * zmianie nazwy. `resolveMenu` zostaje nietknięte, więc Strona główna dalej NIE wraca ani do
+ * kolejności menu, ani do „Więcej…", ani do ekranu zarządzania menu, ani do dolnego paska.
+ */
+export function modulStronyGlownej(): ModuleDef | null {
+  return MODULES.find((m) => m.id === "home") ?? null;
+}
+
+/**
  * Mapowanie ścieżka → uprawnienie **wszystkich** modułów. Po fali 3 (048) nie ma już modułów
  * nieprzeniesionych, więc to jest komplet — `legacyPermissionForPath` obsługuje wyłącznie
  * powierzchnie SPOZA rejestru modułów (ustawienia, admin, zaproszenia).
