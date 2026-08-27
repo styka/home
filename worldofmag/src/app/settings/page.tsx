@@ -261,6 +261,22 @@ export default async function SettingsPage({
         <UserFactsSection />
       </section>
 
+      {/* 108: wejście do działu przewodników. Sąsiaduje z dokumentami prawnymi, bo to to samo
+          miejsce psychiczne — rzeczy do przeczytania, nie przełączniki. Przewodniki MIESZKAJĄ pod
+          /guide, a nie tutaj: lektura schowana w ustawieniach konta byłaby niewidoczna dla kogoś,
+          kto do ustawień nie zagląda. */}
+      <section>
+        <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+          {t("pomocIPrzewodniki")}
+        </h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>
+          {t("przewodnikiOpis")}
+        </p>
+        <Link href="/guide" style={{ display: "inline-block", marginTop: 10, fontSize: 13, color: "var(--accent-blue)", textDecoration: "none" }}>
+          {t("otworzPrzewodniki")}
+        </Link>
+      </section>
+
       {/* Prywatność i dane (RODO) */}
       <section>
         <h2 style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>

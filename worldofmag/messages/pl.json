@@ -282,22 +282,6 @@
       "przepraszamyCosPoszloNie": "Przepraszamy, coś poszło nie tak. Spróbuj ponownie lub odśwież stronę.",
       "sprobujPonownie": "Spróbuj ponownie"
     },
-    "guide": {
-      "page": {
-        "stronaGlowna": "Strona główna",
-        "jakKorzystacZeStrony": "Jak korzystać ze strony głównej?",
-        "stronaGlownaPozwalaZarzadzac": "Strona główna pozwala zarządzać wszystkimi modułami aplikacji za pomocą języka naturalnego — wpisując lub mówiąc polecenia.",
-        "sterowanieGlosem": "Sterowanie głosem",
-        "przykladyPolecen": "Przykłady poleceń",
-        "wskazowki": "Wskazówki",
-        "mozeszWydacKilkaPolecen": "Możesz wydać kilka poleceń naraz w jednym zdaniu.",
-        "przedWykonaniemZawszeMozesz": "Przed wykonaniem zawsze możesz sprawdzić i zmienić wykryte akcje w oknie potwierdzenia.",
-        "uzyjSelektoraKontekstuAby": "Użyj selektora kontekstu aby zawęzić zakres do konkretnego modułu.",
-        "skrotCtrlEnterWysyla": "Skrót Ctrl+Enter wysyła wiadomość bez klikania przycisku.",
-        "poWykonaniuAkcjiMozesz": "Po wykonaniu akcji możesz od razu wydać kolejne polecenie.",
-        "wrocISprobuj": "Wróć i spróbuj"
-      }
-    },
     "legal": {
       "page": {
         "politykaPrywatnosciIRegulamin": "Polityka prywatności i regulamin to obecnie wersje robocze przygotowane technicznie — wymagają weryfikacji prawnej przed publicznym startem. Eksport i usunięcie danych dostępne są w",
@@ -325,7 +309,10 @@
         "prywatnoscIDane": "Prywatność i dane",
         "dokumentyPrawnePolitykaPrywatnosci": "Dokumenty prawne (polityka prywatności, regulamin, podprocesorzy) →",
         "aktywnosc": "Aktywność",
-        "brakOstatniejAktywnosci": "Brak ostatniej aktywności."
+        "brakOstatniejAktywnosci": "Brak ostatniej aktywności.",
+        "pomocIPrzewodniki": "Pomoc i przewodniki",
+        "przewodnikiOpis": "Przewodniki użytkownika po modułach Omnii — możliwości, zastosowania i zachowania, które łatwo przeoczyć.",
+        "otworzPrzewodniki": "Otwórz przewodniki"
       },
       "team": {
         "teamId": {
@@ -727,6 +714,29 @@
         "usunieto": "Usunięto z ulubionych: {nazwa}",
         "adresNieDoZapisania": "Tego widoku nie da się zapisać w ulubionych.",
         "nieUdaloSie": "Nie udało się zmienić ulubionych."
+      }
+    },
+    "guide": {
+      "PrzewodnikiHub": {
+        "przewodniki": "Przewodniki",
+        "podtytul": "Jak korzystać z Omnii — moduł po module",
+        "szukajWPrzewodnikach": "Szukaj w przewodnikach…",
+        "gotowePrzewodniki": "Gotowe przewodniki",
+        "wkrotce": "Wkrótce",
+        "wkrotceOpis": "Przewodniki powstają moduł po module. Te działy jeszcze na swój czekają — do czasu ich napisania pomoc znajdziesz u asystenta.",
+        "rozdzialow": "{liczba, plural, one {# rozdział} few {# rozdziały} many {# rozdziałów} other {# rozdziału}}",
+        "brakDostepuDoModulu": "Nie masz dostępu do tego modułu — poproś administratora, jeśli go potrzebujesz.",
+        "wynikiWyszukiwania": "{liczba, plural, =0 {Brak wyników} one {# wynik} few {# wyniki} many {# wyników} other {# wyniku}}",
+        "nicNieZnaleziono": "Nic nie znaleziono",
+        "nicNieZnalezionoOpis": "Spróbuj innego słowa — wyszukiwarka przegląda treść wszystkich rozdziałów, a wielkość liter i polskie znaki nie mają znaczenia."
+      },
+      "PrzewodnikReader": {
+        "przewodniki": "Przewodniki",
+        "spisTresci": "Spis treści",
+        "szukajWRozdzialach": "Szukaj w rozdziałach…",
+        "brakRozdzialowDlaFrazy": "Żaden rozdział nie pasuje do tej frazy.",
+        "rozdzialZ": "Rozdział {numer} z {wszystkich}",
+        "ostatniaAktualizacja": "Ostatnia aktualizacja: {data}"
       }
     },
     "legal": {
@@ -1544,7 +1554,8 @@
       },
       "NotesPage": {
         "koszPrzywrocUsuniete": "Kosz — przywróć usunięte",
-        "koszPrzywrocUsunieteNotatki": "Kosz — przywróć usunięte notatki"
+        "koszPrzywrocUsunieteNotatki": "Kosz — przywróć usunięte notatki",
+        "przewodnikPoNotatkach": "Przewodnik po Notatkach"
       },
       "NotesQA": {
         "zrodla": "Źródła:",

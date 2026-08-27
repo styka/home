@@ -7,6 +7,18 @@ raczej **jak do niego mówić** niż co wolno powiedzieć.
 Możesz pisać albo dyktować. Zanim cokolwiek się wykona, zobaczysz **plan** do zaakceptowania —
 a działania usuwające są w nim domyślnie odznaczone.
 
+## Sterowanie głosem
+
+W polu tekstowym stoją dwa przyciski, które robią zupełnie różne rzeczy:
+
+- **Mikrofon — dyktuj tekst.** Kliknij, mów, a rozpoznany tekst pojawia się w polu. Ponowne
+  kliknięcie kończy nagrywanie.
+- **Różdżka — modyfikuj głosem.** Kliknij i **opisz zmianę** zamiast dyktować treść: „popraw błędy
+  ortograficzne", „zamień psa na kota", „zrób z tego punkty". Tekst w polu zmieni się zgodnie
+  z poleceniem.
+
+Różnica w jednym zdaniu: mikrofon zapisuje to, co mówisz; różdżka **wykonuje** to, co mówisz.
+
 ## Zakupy
 
 ```
@@ -61,3 +73,15 @@ Ile wydałem w tym miesiącu na paliwo?
 
 Pod odpowiedzią zwykle znajdziesz odnośniki do miejsc, z których pochodzi — warto w nie zajrzeć,
 zamiast brać odpowiedź na wiarę.
+
+## Wskazówki
+
+- **Kilka poleceń w jednym zdaniu** jest w porządku — asystent rozbije je na osobne działania.
+- **Przed wykonaniem zobaczysz plan** i możesz z niego wyrzucić to, czego nie chciałeś. Działania
+  usuwające są w nim domyślnie odznaczone.
+- **Po wykonaniu rozmowa się nie kończy** — możesz od razu poprawić („nie, do listy Apteka") albo
+  wydać kolejne polecenie. Asystent pamięta, o czym była mowa.
+- **Rozmowy są zapisywane.** Wrócisz do nich z historii w nagłówku asystenta, a te najważniejsze
+  możesz odłożyć na listę zapisanych.
+- **Nie musisz zaczynać od nowa po zamknięciu.** Niedokończona wiadomość zostaje jako szkic i wraca
+  na dowolnym urządzeniu.

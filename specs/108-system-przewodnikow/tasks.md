@@ -85,7 +85,7 @@
 
 ## Faza 2 — Kontrakt widoku (wejście z modułu)
 
-- [ ] **T-11** — Slot `help` w `src/components/ui/view/ModuleView.tsx` i `ViewBar.tsx`:
+- [x] **T-11** — Slot `help` w `src/components/ui/view/ModuleView.tsx` i `ViewBar.tsx`:
   typ `help?: { href: string; label?: string }`, ikona `HelpCircle` **przed** kołem zębatym,
   kształt 1:1 z `PrzyciskUstawien`, `Link` (nawigacja SPA).
   **Trzy warunki widoczności naraz** (plan §5.1): `pasekMaTresc` w `ModuleView` oraz wczesny
@@ -93,7 +93,7 @@
   *Gotowe, gdy:* widok bez `help` renderuje się bajt w bajt jak dziś (sprawdzone na Pogodzie —
   bez akcji — i Wiadomościach — z akcjami), a widok z samym `help` i bez akcji pokazuje ikonę.
 
-- [ ] **T-12** — `src/modules/notes/ui/NotesPage.tsx`: `help={…}` z `hrefPrzewodnikaModulu("notes")`.
+- [x] **T-12** — `src/modules/notes/ui/NotesPage.tsx`: `help={…}` z `hrefPrzewodnikaModulu("notes")`.
   *Gotowe, gdy:* `/notes` ma ikonę pomocy prowadzącą do `/guide/notatki` (AC-1), a moduł bez
   przewodnika jej nie ma (AC-2).
 
@@ -101,32 +101,32 @@
 
 ## Faza 3 — Dział przewodników
 
-- [ ] **T-13** — `src/components/guide/PrzewodnikReader.tsx`: rama `ModuleView`
+- [x] **T-13** — `src/components/guide/PrzewodnikReader.tsx`: rama `ModuleView`
   (`breadcrumb` „‹ Przewodniki", `width="narrow"`, `state`), rozdziały jako `<section id>`,
   przyklejony spis treści na `lg` + panel na telefonie (cele ≥44 px, `Esc`), aktywny rozdział przez
   `IntersectionObserver`, filtr w spisie, przechwycone odnośniki (wzorzec
   `AICommandSheet.handleBubbleClick`), stopka z `updatedAt`.
   *Gotowe, gdy:* AC-5, AC-10, AC-11 dają się pokazać na żywo; zero hexów (C-30).
 
-- [ ] **T-14** — `src/app/guide/[slug]/page.tsx`: sesja → `przewodnikPoSlugu` → `markdownToHtml`
+- [x] **T-14** — `src/app/guide/[slug]/page.tsx`: sesja → `przewodnikPoSlugu` → `markdownToHtml`
   per rozdział → `PrzewodnikReader`; nieznany slug → `notFound()`.
   *Gotowe, gdy:* `/guide/notatki` renderuje treść, `/guide/nic-takiego` daje 404.
 
-- [ ] **T-15** — `src/components/guide/PrzewodnikiHub.tsx`: rama `ModuleView`, wyszukiwarka
+- [x] **T-15** — `src/components/guide/PrzewodnikiHub.tsx`: rama `ModuleView`, wyszukiwarka
   w `filters` (wyniki: przewodnik → rozdział → fragment, klik → `/guide/<slug>#<rozdział>`),
   dwie grupy kafelków („Gotowe" / „Wkrótce" liczone z `MODULES` minus mające przewodnik),
   kafelek bez uprawnienia wygaszony i nieklikalny, pusty wynik przez `state="empty"`.
   *Gotowe, gdy:* AC-3, AC-6, AC-12 widoczne na żywo.
 
-- [ ] **T-16** — `src/app/guide/page.tsx` przepisany: sesja → uprawnienia → `PrzewodnikiHub`.
+- [x] **T-16** — `src/app/guide/page.tsx` przepisany: sesja → uprawnienia → `PrzewodnikiHub`.
   Stara statyczna treść **usunięta dopiero po** T-10 (przeniesiona do markdownu).
   *Gotowe, gdy:* `/guide` pokazuje hub, a odnośniki ze Strony głównej dalej działają.
 
-- [ ] **T-17** `[P]` — `src/app/settings/page.tsx`: sekcja „Pomoc i przewodniki" nad „Prywatność
+- [x] **T-17** `[P]` — `src/app/settings/page.tsx`: sekcja „Pomoc i przewodniki" nad „Prywatność
   i dane", link do `/guide`, wzorzec 1:1 z linkiem `/legal`, tekst przez `t()`.
   *Gotowe, gdy:* AC-4 spełnione.
 
-- [ ] **T-18** — `messages/pl.json`: komplet tekstów interfejsu działu w namespace'ach
+- [x] **T-18** — `messages/pl.json`: komplet tekstów interfejsu działu w namespace'ach
   `app.guide.page`, `components.guide.PrzewodnikiHub`, `components.guide.PrzewodnikReader`
   (+ klucz w `app.settings.page` dla T-17).
   *Gotowe, gdy:* `npm run check:i18n` zielone — zero literałów z polskimi znakami w nowych `.tsx`,
@@ -136,15 +136,15 @@
 
 ## Faza 4 — Bramki i domknięcie
 
-- [ ] **T-19** — `src/lib/ui/view-contract.json`: uaktualniony powód wyjątku dla `guide`
+- [x] **T-19** — `src/lib/ui/view-contract.json`: uaktualniony powód wyjątku dla `guide`
   (dział przewodników, nie pojedyncza strona pomocy). `npm run check:ui-contract` zielone.
 
-- [ ] **T-20** — Bramki po kolei: `npm run copy:przewodniki`, `check:ui-contract`, `check:i18n`,
+- [x] **T-20** — Bramki po kolei: `npm run copy:przewodniki`, `check:ui-contract`, `check:i18n`,
   `check:tailwind`, `tsc --noEmit -p tsconfig.test.json`, `next lint --dir src`, `next build`
   (lokalny Postgres — **nigdy prod `DATABASE_URL`**, C-13).
   *Gotowe, gdy:* wszystkie zielone; `migrate.js` **nie** jest uruchamiany.
 
-- [ ] **T-21** — `npm run check:perf` po `next build`. Jeśli poza pasmem ±5 %: aktualizacja
+- [x] **T-21** — `npm run check:perf` po `next build`. Jeśli poza pasmem ±5 %: aktualizacja
   `src/lib/ui/perf-baseline.json` **z notatką `_zmiana_108`** (powód). Jeśli urosła
   `najciezszaTrasaB` — przenosimy indeks wyszukiwania na serwer zamiast podnosić próg (plan §8).
   *Gotowe, gdy:* bramka zielona, a każda zmiana progu ma uzasadnienie w pliku.
@@ -152,7 +152,7 @@
 - [ ] **T-22** — Mapowanie AC-1…AC-13 na wynik (wejście do `/verify`), wg tabeli z planu §8.
   *Gotowe, gdy:* każde AC ma wskazane miejsce w kodzie/treści albo sposób pokazania na żywo.
 
-- [ ] **T-23** — Wpis do `doświadczenia.md`, jeśli po drodze wyszedł nieoczywisty problem (C-51).
+- [x] **T-23** — Wpis do `doświadczenia.md`, jeśli po drodze wyszedł nieoczywisty problem (C-51).
   *Gotowe, gdy:* wpis dopisany i zacommitowany razem ze zmianą — albo świadomie pominięty, bo nic
   nieoczywistego się nie wydarzyło.
 
@@ -188,4 +188,9 @@ manifest powstaje pierwszy, a skrypt uruchamiamy dopiero po dowiezieniu treści.
 Równoległe: `T-5` (testy), `T-10` (treść Asystenta), `T-17` (Ustawienia).
 
 ## Notatki / blokady
-- Brak.
+- **T-21** — budżet zmieścił się w paśmie ±5 % (najcięższa trasa 1174 kB, suma 68 881 kB), więc
+  `perf-baseline.json` **nie był ruszany** i notatka `_zmiana_108` nie powstała. Indeks wyszukiwania
+  jedzie do przeglądarki jako dane RSC, a nie jako paczka JS — sam kod trasy `/guide` to 10,7 kB.
+- **Znaleziska poza zakresem:** test `assertOwnership: tłumaczy rozstrzygnięcie na wyjątki (078)`
+  pada **także na czystym drzewie** (sprawdzone `git stash`). Nie jest skutkiem tej zmiany i nie był
+  naprawiany — 965 pozostałych testów przechodzi.

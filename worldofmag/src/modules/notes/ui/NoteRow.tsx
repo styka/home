@@ -153,7 +153,8 @@ export function NoteRow({
   }
 
   async function handleDelete() {
-    if (!(await confirmDialog({ title: "Usunąć notatkę? Tej operacji nie można cofnąć.", destructive: true }))) return;
+    // 108: patrz `NotesPage` — notatka trafia do kosza, więc komunikat mówi prawdę o tym, co robi.
+    if (!(await confirmDialog({ title: "Usunąć notatkę? Trafi do Kosza — możesz ją przywrócić przez 30 dni.", destructive: true }))) return;
     startTransition(() => { deleteNote(note.id); });
   }
 

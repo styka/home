@@ -13,6 +13,7 @@ import {
   type Przewodnik,
   type RozdzialPrzewodnika,
 } from "@/generated/przewodniki";
+import { normalizujFraze } from "@/lib/przewodnikiSzukanie";
 
 export type { Przewodnik, RozdzialPrzewodnika };
 
@@ -59,37 +60,23 @@ export interface WynikSzukania {
   href: string;
 }
 
-/**
- * Normalizacja do porównywania: małe litery i polskie znaki sprowadzone do łacińskich.
- *
- * Bez tego „wikilink" nie znalazłby „Wikilinki", a „zalacznik" — „załącznik". Osoba szukająca
- * pomocy zwykle pisze szybko i bez ogonków; wyszukiwarka, która tego nie wybacza, jest odbierana
- * jako „nic nie ma", a nie jako „źle wpisałem".
- */
-function znormalizuj(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\u0142/g, "l");
-}
 
 const DLUGOSC_FRAGMENTU = 160;
 
 export function szukajWPrzewodnikach(fraza: string, limit = 20): WynikSzukania[] {
-  const igla = znormalizuj(fraza.trim());
+  const igla = normalizujFraze(fraza.trim());
   if (igla.length < 2) return [];
 
   const out: WynikSzukania[] = [];
   for (const p of PRZEWODNIKI) {
     for (const r of p.rozdzialy) {
-      const stog = znormalizuj(`${r.title} ${r.summary} ${r.tekst}`);
+      const stog = normalizujFraze(`${r.title} ${r.summary} ${r.tekst}`);
       const poz = stog.indexOf(igla);
       if (poz < 0) continue;
 
       // Fragment wycinamy z ORYGINAŁU, ale pozycję znamy ze znormalizowanej kopii. Obie mają tę
       // samą długość znak w znak (normalizacja niczego nie usuwa ani nie dokłada), więc indeks
-      // przenosi się wprost — dlatego `znormalizuj` nie może zacząć skracać białych znaków.
+      // przenosi się wprost — dlatego `normalizujFraze` nie może zacząć skracać białych znaków.
       const oryginal = `${r.title} ${r.summary} ${r.tekst}`;
       const start = Math.max(0, poz - DLUGOSC_FRAGMENTU / 3);
       const fragment =

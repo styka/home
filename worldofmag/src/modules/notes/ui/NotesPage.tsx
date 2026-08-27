@@ -17,6 +17,7 @@ import { ModuleView } from "@/components/ui/view";
 import type { Note, Tag as TagType, NoteGroup, NoteFilter } from "@/types";
 import { NOTE_FILTER_LABELS } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { hrefPrzewodnikaModulu } from "@/lib/przewodniki";
 
 const NOTE_FILTERS: NoteFilter[] = ["ALL", "PINNED", "NO_GROUP", "SEARCH"];
 
@@ -180,7 +181,13 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
       onToggleStatus: () => {},
       onDelete: async () => {
         if (!focusedNoteId) return;
-        if (!(await confirmDialog({ title: "Usunąć notatkę? Tej operacji nie można cofnąć.", destructive: true }))) return;
+        /**
+         * 108: komunikat mówił „Tej operacji nie można cofnąć", a `deleteNote` zapisuje pełną
+         * migawkę do kosza (30 dni na przywrócenie). Wykryte przy pisaniu przewodnika, który
+         * musiał opisać stan faktyczny. Zadania mówią w tej samej sytuacji „Trafią do Kosza" —
+         * ostrzeżenie surowsze niż rzeczywistość uczy nieufności wobec wszystkich pozostałych.
+         */
+        if (!(await confirmDialog({ title: "Usunąć notatkę? Trafi do Kosza — możesz ją przywrócić przez 30 dni.", destructive: true }))) return;
         const idx = filteredNotes.findIndex((n) => n.id === focusedNoteId);
         const next = filteredNotes[idx + 1] ?? filteredNotes[idx - 1];
         setFocusedNoteId(next?.id ?? null);
@@ -209,6 +216,12 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
 
   useKeyboardShortcuts(handlers);
 
+  /**
+   * 108: adres przewodnika po tym module. `undefined` dla modułu, który przewodnika jeszcze nie ma —
+   * wtedy rama nie rysuje ikony pomocy, więc nie ma jak trafić na pustą stronę.
+   */
+  const przewodnik = hrefPrzewodnikaModulu("notes");
+
   function toggleTagFilter(tagId: string) {
     setSelectedTagIds((ids) =>
       ids.includes(tagId) ? ids.filter((id) => id !== tagId) : [...ids, tagId]
@@ -224,6 +237,12 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
       iconColor="var(--accent-purple)"
       title="Notatki"
       href="/notes"
+      /**
+       * 108: wejście do przewodnika po tym module. Adres bierzemy z jednego miejsca w aplikacji —
+       * dla modułu bez przewodnika jest tam `undefined`, więc rama nie narysuje ikony i nie ma jak
+       * poprowadzić czytelnika na pustą stronę.
+       */
+      help={przewodnik ? { href: przewodnik, label: t("przewodnikPoNotatkach") } : undefined}
       breadcrumb={
         backHref ? (
           <Link href={backHref} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none" }}>

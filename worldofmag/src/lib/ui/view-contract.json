@@ -26,7 +26,7 @@
     },
     "guide": {
       "status": "exempt",
-      "reason": "Dokumentacja pomocy — własny układ czytelniczy, nie widok listowy modułu."
+      "reason": "Dział przewodników użytkownika (108): hub /guide i czytnik /guide/[slug]. Oba renderują ModuleView ze `state`, ale wpis zostaje wyjątkiem, bo `guide` nie jest modułem z rejestru MODULES — nie ma sluga uprawnień ani pozycji w menu, więc reguła \"widok modułu\" go nie dotyczy."
     },
     "habits": {
       "status": "done",

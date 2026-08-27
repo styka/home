@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import { Settings2 } from "lucide-react";
+import { HelpCircle, Settings2 } from "lucide-react";
 
 /**
  * 045 — pasek bieżącego widoku. Trzy strefy:
@@ -32,6 +32,19 @@ export interface ViewBarProps {
   actions?: ReactNode;
   /** 087 (AC-7, AC-8): wejście do ustawień modułu — ostatnia pozycja strefy akcji. */
   settings?: { onClick?: () => void; href?: string; active?: boolean; label?: string };
+  /**
+   * 108: wejście do PRZEWODNIKA tego modułu — przed kołem zębatym ustawień.
+   *
+   * Ta sama decyzja, co przy `settings` w 087, i z tego samego powodu: pomoc będzie miał w końcu
+   * każdy moduł, więc miejsce wybiera się RAZ. Gdyby każdy moduł wybierał sam, po dwudziestu
+   * modułach byłoby dwadzieścia miejsc na to samo.
+   *
+   * Pole jest opcjonalne i to jest cała obsługa modułu bez przewodnika — nie ma tu żadnej gałęzi
+   * ani flagi „czy przewodnik istnieje". Moduł podaje wynik `hrefPrzewodnikaModulu`, a ten dla
+   * modułu bez przewodnika jest `undefined`, więc ikona nie powstaje i nie ma jak poprowadzić na
+   * pustą stronę.
+   */
+  help?: { href: string; label?: string };
   /** Wariant gęsty: tytuł widoku wchodzi do paska zamiast osobnego nagłówka. */
   compact?: boolean;
   title?: string;
@@ -40,10 +53,10 @@ export interface ViewBarProps {
   iconColor?: string;
 }
 
-export function ViewBar({ filters, actions, settings, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
+export function ViewBar({ filters, actions, settings, help, compact, title, titleHref, icon, iconColor }: ViewBarProps) {
   // Pusty pasek nie zajmuje miejsca — moduł bez filtrów i akcji, renderowany poza
   // powłoką, nie powinien dostawać pustej listwy z obramowaniem.
-  if (!compact && !filters && !actions && !settings) return null;
+  if (!compact && !filters && !actions && !settings && !help) return null;
 
   return (
     /**
@@ -86,8 +99,8 @@ export function ViewBar({ filters, actions, settings, compact, title, titleHref,
        * dzieci wracają na swoje miejsca w pasku.
        */}
       <div
-        className={(actions || settings) ? "flex min-w-0 items-center gap-2 md:contents" : "hidden md:contents"}
-        style={{ minHeight: compact && (actions || settings) ? 48 : undefined }}
+        className={(actions || settings || help) ? "flex min-w-0 items-center gap-2 md:contents" : "hidden md:contents"}
+        style={{ minHeight: compact && (actions || settings || help) ? 48 : undefined }}
       >
       {/* Wariant gęsty: tytuł w pasku, nie nad nim. */}
       {compact && title && (
@@ -118,9 +131,10 @@ export function ViewBar({ filters, actions, settings, compact, title, titleHref,
          * cele dotyku, C-31). Od `md` wszystko wraca do stanu sprzed zmiany — `md:flex-none`,
          * `md:ml-0` i dzieci bez rozciągania.
          */}
-        {(actions || settings) && (
+        {(actions || settings || help) && (
           <div className="ml-auto flex flex-1 items-center gap-1.5 [&>*]:flex-1 md:order-3 md:ml-0 md:flex-none md:shrink-0 md:[&>*]:flex-none">
             {actions}
+            {help && <PrzyciskPomocy {...help} />}
             {settings && <PrzyciskUstawien {...settings} />}
           </div>
         )}
@@ -148,6 +162,40 @@ export function ViewBar({ filters, actions, settings, compact, title, titleHref,
         {filters}
       </div>
     </div>
+  );
+}
+
+/**
+ * 108: wejście do przewodnika modułu — rysowane przez RAMĘ, tak samo jak ustawienia.
+ *
+ * Kształt jest celowo identyczny z `PrzyciskUstawien`: dwie sąsiadujące ikony o różnych rozmiarach
+ * czytałyby się jak dwie różne klasy elementów. Różnicę niesie ikona i podpowiedź, nie geometria.
+ *
+ * Zawsze `Link`, nigdy `button` z `onClick`: przewodnik jest ADRESEM — ma się dać otworzyć w nowej
+ * karcie, dodać do ulubionych i wysłać komuś. Przycisk otwierający panel odebrałby te trzy rzeczy
+ * naraz.
+ */
+function PrzyciskPomocy({ href, label }: NonNullable<ViewBarProps["help"]>) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      aria-label={label}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 36,
+        minHeight: 36,
+        borderRadius: "var(--radius-control)",
+        border: "none",
+        background: "transparent",
+        color: "var(--text-muted)",
+        textDecoration: "none",
+      }}
+    >
+      <HelpCircle size={16} />
+    </Link>
   );
 }
 

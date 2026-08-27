@@ -61,6 +61,16 @@ export interface ModuleViewProps {
   settings?: { onClick?: () => void; href?: string; active?: boolean; label?: string };
 
   /**
+   * 108: wejście do PRZEWODNIKA tego modułu — ikona pomocy przed kołem zębatym ustawień.
+   *
+   * Rozszerzenie kontraktu, nie wyjątek w module (C-33). Moduł podaje wynik
+   * `hrefPrzewodnikaModulu(<id>)`; dla modułu bez przewodnika jest to `undefined`, więc ikona
+   * po prostu nie powstaje. Kolejny moduł włącza pomoc dopisaniem treści i jednej linii u siebie —
+   * bez wracania tutaj.
+   */
+  help?: { href: string; label?: string };
+
+  /**
    * 087 (AC-1): RAMA BEZ CHROMU — widok bierze na siebie całą nawigację.
    *
    * Dołożone dla trybu czytania w Wiadomościach. Samo `filters={undefined}` nie wystarcza: w
@@ -157,6 +167,7 @@ export function ModuleView({
   filters,
   actions,
   settings,
+  help,
   chromeless = false,
   state = "ready",
   empty,
@@ -180,7 +191,7 @@ export function ModuleView({
    * m.in. Usługi i Warsztaty). Zostawał po nim pusty pasek wysokości `12px + var(--view-padding)`
    * pod nagłówkiem: nie błąd wyglądający na błąd, tylko dziura, którą łatwo wziąć za odstęp.
    */
-  const pasekMaTresc = !chromeless && (compact || !!filters || !!actions || !!settings);
+  const pasekMaTresc = !chromeless && (compact || !!filters || !!actions || !!settings || !!help);
 
   /**
    * Wysokość przyklejonego paska jako zmienna CSS na ramie.
@@ -355,6 +366,7 @@ export function ModuleView({
             icon={compact ? icon : undefined}
             iconColor={iconColor}
             filters={filters}
+            help={help}
             settings={settings}
             actions={compact && headerAction ? (
               <>

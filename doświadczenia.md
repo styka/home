@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Pisanie przewodnika jako audyt: dwa komunikaty kłamały o kasowaniu
+**Problem:** Przy pisaniu pierwszego przewodnika użytkownika (moduł Notatki) trzeba było opisać, co
+dokładnie robi „Usuń". Okazało się, że `deleteNote` zapisuje pełną migawkę do kosza (30 dni na
+przywrócenie, jak w Zadaniach), a **oba** okna potwierdzenia — w `NotesPage` i w `NoteRow` — mówiły
+„Tej operacji nie można cofnąć". Gdyby przewodnik opisał prawdę, stanąłby w sprzeczności z aplikacją;
+gdyby powtórzył komunikat, kłamałby razem z nią.
+
+**Rozwiązanie:** Oba komunikaty mówią teraz to, co robi kod: „Trafi do Kosza — możesz ją przywrócić
+przez 30 dni" (dokładnie ten wzorzec, którego używają Zadania). Fakty z przewodnika sprawdzane były
+w kodzie, plik po pliku, a nie pisane z pamięci — stąd w treści wzięły się także limit 2,5 MB na
+załącznik, 20 pamiętanych wersji i to, że wikilink przy dwóch notatkach o tym samym tytule trafia
+w pierwszą z brzegu.
+
+**Lekcja:** **Napisanie przewodnika użytkownika jest formą audytu i warto tak je traktować.** Nikt
+nie czyta okien potwierdzenia obok siebie, więc rozjazd między nimi a kodem może stać latami; dopiero
+próba opisania modułu zdaniem po zdaniu zmusza do sprawdzenia każdego twierdzenia. Osobno:
+**ostrzeżenie surowsze niż rzeczywistość jest usterką, nie ostrożnością** — użytkownik, który raz
+odkryje, że „nieodwracalne" dało się odwrócić, przestaje wierzyć wszystkim pozostałym ostrzeżeniom
+w aplikacji, także tym prawdziwym. To ta sama zasada, którą 086 zastosowało do czerwonego przycisku
+stojącego wszędzie.
+
+---
+
 ## 2026-08-27 — Push gałęzi przechodzi, push TAGU wraca 403 (uprawnienia sesji, nie awaria proxy)
 **Problem:** Domknięcie pipeline'u wg C-52a wymaga adnotowanego tagu wydania (`prod-<NNN>-<slug>`).
 `git push origin master` przeszedł bez zarzutu — produkcja zaktualizowana — ale `git push origin
