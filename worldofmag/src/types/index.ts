@@ -281,6 +281,13 @@ export function isAssistantLevel(value: string): value is AssistantLevel {
 export type AssistantVoiceKind = "browser" | "server";
 export const ASSISTANT_VOICE_KINDS: AssistantVoiceKind[] = ["browser", "server"];
 
+// 106: sposób prezentacji asystenta na KOMPUTERZE — "window" = pływające okno nad stroną,
+// "content" = asystent w obszarze treści modułu (treść zostaje przykryta, adres strony bez zmian).
+// Na telefonie pole nie ma znaczenia: tam asystent zawsze jest arkuszem, a wąski ekran nie ma
+// obszaru treści, który dałoby się sensownie oddać rozmowie.
+export type AssistantPresentation = "window" | "content";
+export const ASSISTANT_PRESENTATIONS: AssistantPresentation[] = ["window", "content"];
+
 export type TaskStatusFilter = "ALL" | TaskStatus;
 export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "IN_VERIFICATION", "DONE", "DEFERRED", "CANCELLED"];
 export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {

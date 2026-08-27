@@ -8,8 +8,10 @@ import { configuredSpeechVoices } from "@/lib/tts/serverTts";
 import { type ServerVoice } from "@/lib/tts/serverVoices";
 import {
   ASSISTANT_LEVELS,
+  ASSISTANT_PRESENTATIONS,
   ASSISTANT_VOICE_KINDS,
   type AssistantLevel,
+  type AssistantPresentation,
   type AssistantVoiceKind,
 } from "@/types";
 import {
@@ -53,6 +55,11 @@ export interface AssistantPrefsDTO {
   readerRate: number;
   /** 080 (Z12): czy widok podąża za czytaną wiadomością. */
   readerFollow: boolean;
+  /**
+   * 106: sposób prezentacji asystenta na komputerze — okno nad stroną czy obszar treści modułu.
+   * Na telefonie ignorowane (tam asystent zawsze jest arkuszem).
+   */
+  presentation: AssistantPresentation;
 }
 
 export interface AssistantPrefsInput {
@@ -63,6 +70,7 @@ export interface AssistantPrefsInput {
   autoApprove?: boolean;
   readerRate?: number;
   readerFollow?: boolean;
+  presentation?: string;
 }
 
 const DEFAULTS: AssistantPrefsDTO = {
@@ -73,11 +81,18 @@ const DEFAULTS: AssistantPrefsDTO = {
   autoApprove: false,
   readerRate: READER_RATE_DEFAULT,
   readerFollow: true,
+  presentation: "window",
 };
 
 
 function parseLevel(value: string | null | undefined): AssistantLevel {
   return ASSISTANT_LEVELS.includes(value as AssistantLevel) ? (value as AssistantLevel) : DEFAULTS.level;
+}
+
+function parsePresentation(value: string | null | undefined): AssistantPresentation {
+  return ASSISTANT_PRESENTATIONS.includes(value as AssistantPresentation)
+    ? (value as AssistantPresentation)
+    : DEFAULTS.presentation;
 }
 
 function parseVoiceKind(value: string | null | undefined): AssistantVoiceKind {
@@ -103,6 +118,7 @@ export async function getAssistantPrefs(): Promise<AssistantPrefsDTO> {
     autoApprove: row.autoApprove,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
+    presentation: parsePresentation(row.presentation),
   };
 }
 
@@ -122,11 +138,18 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     autoApprove?: boolean;
     readerRate?: number;
     readerFollow?: boolean;
+    presentation?: AssistantPresentation;
   } = {};
 
   if (input.autoApprove !== undefined) data.autoApprove = input.autoApprove === true;
   if (input.readerRate !== undefined) data.readerRate = parseReaderRate(input.readerRate);
   if (input.readerFollow !== undefined) data.readerFollow = input.readerFollow === true;
+  // 106: wartość spoza unii jest IGNOROWANA, nie zapisywana — to jedyne pole, które klient wysyła
+  // przy zwykłym przełączniku w nagłówku asystenta, więc wywalenie błędu zablokowałoby okno
+  // zamiast czegokolwiek naprawić. Ta sama zasada co przy nierozpoznanym głosie lektora.
+  if (input.presentation !== undefined && ASSISTANT_PRESENTATIONS.includes(input.presentation as AssistantPresentation)) {
+    data.presentation = input.presentation as AssistantPresentation;
+  }
 
   if (input.instructions !== undefined) {
     if (input.instructions.length > ASSISTANT_INSTRUCTIONS_MAX) {
@@ -178,6 +201,7 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     autoApprove: row.autoApprove,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
+    presentation: parsePresentation(row.presentation),
   };
 }
 

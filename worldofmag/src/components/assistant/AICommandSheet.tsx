@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
   History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Brain, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
+  MoreVertical, Bookmark, BookmarkX, PanelRightOpen, PanelRightClose,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
 import { useDictation } from "@/hooks/useDictation";
@@ -15,7 +16,7 @@ import { withPln, DEFAULT_USD_PLN_RATE } from "@/lib/usdPln";
 import { speak, stopSpeaking, speechTextFromMarkdown, ttsSupported, primeSpeech, getAvailableVoices, onVoicesChanged, setPreferredVoiceURI, getPreferredVoiceURI, setServerVoiceId, speechAvailable } from "@/lib/tts";
 import { createSpeechListener, speechRecognitionSupported, type SpeechListener } from "@/lib/speechRecognition";
 import {
-  listAiConversations, getAiConversation, createAiConversation, appendAiMessage,
+  listAiConversations, setAiConversationSaved, getAiConversation, createAiConversation, appendAiMessage,
   deleteAiConversation, renameAiConversation, saveConversationDraft, type ConversationMeta,
 } from "@/actions/aiConversations";
 import { createUserReport } from "@/modules/reports/contract";
@@ -24,18 +25,22 @@ import { aiCallsToText } from "@/platform/ai/aiCallLog";
 import { submitFeedbackTask } from "@/actions/feedback";
 import { TASK_PRIORITY_LABELS, type TaskPriority } from "@/types";
 import { getAssistantPrefs, getSpeechOptions, updateAssistantPrefs } from "@/actions/assistantPrefs";
+import type { ConversationLists } from "@/actions/aiConversations";
 import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
-import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel } from "@/types";
+import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel, type AssistantPresentation } from "@/types";
 import type { AIAction } from "@/platform/ai/aiAction";
 import { isDestructiveAction } from "@/platform/ai/aiAction";
 import type { ActionResult } from "@/lib/ai/executorShared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/platform/ai/assistantBus";
 import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
 import { useOverlayState } from "@/hooks/useOverlayState";
-import { useIsNarrowScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
+import { useIsNarrowScreen, useIsWideScreen, usePinToVisualViewport, VV_HEIGHT_VAR, VV_TOP_VAR } from "@/hooks/useVisualViewport";
+import { AnchoredLayer } from "@/components/ui/AnchoredLayer";
 import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import { AssistantLevelSettings } from "@/components/assistant/AssistantLevelSettings";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
+import { PrzelacznikSegmentowy } from "@/components/ui/nav/PrzelacznikSegmentowy";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 
 interface RouteContext {
@@ -325,7 +330,19 @@ function newId(): string {
   return `t${Date.now()}_${TURN_SEQ}`;
 }
 
-export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_RATE }: { isAdmin?: boolean; usdPlnRate?: number } = {}) {
+export function AICommandSheet({
+  isAdmin = false,
+  usdPlnRate = DEFAULT_USD_PLN_RATE,
+  onPrzykrycie,
+}: {
+  isAdmin?: boolean;
+  usdPlnRate?: number;
+  /**
+   * 106: „przykrywam właśnie obszar treści". Powłoka odcina wtedy `<main>` od fokusu i czytnika
+   * ekranu — sam asystent tego nie zrobi, bo nie zna elementu, który przykrywa.
+   */
+  onPrzykrycie?: (przykryte: boolean) => void;
+} = {}) {
   const t = useTranslations("components.assistant.AICommandSheet");
   const pathname = usePathname();
   const router = useRouter();
@@ -396,7 +413,29 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   const showPrefs = headerPanel === "prefs";
   const showReport = headerPanel === "report";
   const showHistory = headerPanel === "history";
-  const [conversations, setConversations] = useState<ConversationMeta[]>([]);
+  // 106: rozmowy w DWÓCH listach. Podział robi serwer (dwa rozłączne zapytania), nie klient —
+  // wspólne „50 najnowszych" wycinałoby starą rozmowę zapisaną, czyli tę, którą lista „Zapisane"
+  // ma właśnie ratować.
+  const [conversations, setConversations] = useState<ConversationLists>({ zapisane: [], historia: [] });
+  // Wybrana lista to stan SESJI, nie preferencja: startujemy od historii, czyli od zachowania
+  // sprzed zmiany dla kogoś, kto niczego nie zapisał.
+  const [listaRozmow, setListaRozmow] = useState<"zapisane" | "historia">("historia");
+  /**
+   * 106: sposób prezentacji na komputerze (`AssistantPref.presentation`). Nie ma go w propach
+   * powłoki, bo liczy się dopiero w chwili OTWARCIA asystenta — a wtedy i tak czytamy z bazy całą
+   * resztę preferencji. Serwerowe wstrzykiwanie kupiłoby brak mignięcia w sytuacji, w której nie
+   * ma czym mignąć.
+   */
+  const [presentation, setPresentation] = useState<AssistantPresentation>("window");
+  /** 106: menu „Więcej" — akcje drugiego planu, przeniesione z rozpychającego się paska. */
+  const [showWiecej, setShowWiecej] = useState(false);
+  /**
+   * Czy listy rozmów doszły już z serwera. Bez tego etykieta „Zapisz rozmowę" / „Usuń z zapisanych"
+   * liczy się z PUSTYCH list i pierwsze kliknięcie po otwarciu menu może pójść w złą stronę
+   * (zapisanie rozmowy, która już jest zapisana na drugim urządzeniu).
+   */
+  const [listyWczytane, setListyWczytane] = useState(false);
+  const confirmDialog = useConfirm();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState("");
 
@@ -415,6 +454,38 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // `visualViewport`. Gdyby szła przez stan Reacta, korekta trafiałaby klatkę po tym, jak iOS
   // przesunie widoczny obszar pod klawiaturę, i okno na moment wyjeżdżałoby nad ekran.
   const fullScreen = usePinToVisualViewport(sheetRef, isNarrow && isOpen, keepConversationBottom);
+  /**
+   * 106: tryb „asystent w obszarze treści".
+   *
+   * Warunek jest KONIUNKCJĄ preferencji i szerokości, nie samą preferencją: poniżej `lg` nie ma
+   * obszaru treści, który dałoby się oddać rozmowie, więc telefon dostaje dotychczasowy arkusz
+   * nawet wtedy, gdy na komputerze wybrano tryb treści (AC-18). Dzięki temu wybór jest jedną
+   * wartością na koncie, a nie dwiema — osobna „preferencja mobilna" byłaby drugim nośnikiem
+   * tego samego faktu.
+   */
+  const isWide = useIsWideScreen();
+  const wObszarzeTresci = presentation === "content" && isWide;
+  const przykrywaTresc = wObszarzeTresci && isOpen;
+
+  // Powłoka musi wiedzieć, kiedy odciąć treść od fokusu i czytnika ekranu (`inert`).
+  useEffect(() => {
+    onPrzykrycie?.(przykrywaTresc);
+  }, [przykrywaTresc, onPrzykrycie]);
+  // Przy odmontowaniu zdejmujemy zasłonę — inaczej `<main>` zostałby `inert` na zawsze.
+  useEffect(() => () => onPrzykrycie?.(false), [onPrzykrycie]);
+
+  function togglePresentation() {
+    const poprzedni = presentation;
+    const next: AssistantPresentation = poprzedni === "content" ? "window" : "content";
+    setPresentation(next);
+    void updateAssistantPrefs({ presentation: next }).catch(() => {
+      // Zapis się nie udał — cofamy, żeby ekran nie pokazywał stanu, którego konto nie zna.
+      // Cofamy do wartości ZAPAMIĘTANEJ przy tym kliknięciu, a nie do domknięcia z renderu:
+      // przy dwóch szybkich przełączeniach i błędzie na pierwszym ekran wróciłby do stanu
+      // sprzed pierwszego kliknięcia, a nie do tego, co faktycznie stoi na koncie.
+      setPresentation(poprzedni);
+    });
+  }
 
   // 036 — USUNIĘTE: blokada przewijania dokumentu (`overflow: hidden` na `html`).
   //
@@ -432,6 +503,11 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
   // Dwa ukryte inputy: galeria (bez capture) i aparat (`capture="environment"`).
   const fileRef = useRef<HTMLInputElement | null>(null);
   const cameraRef = useRef<HTMLInputElement | null>(null);
+  // 106: kotwice dla warstw `AnchoredLayer` — menu poziomu pracy (przy kompozytorze) i menu
+  // „Więcej" (w nagłówku). Warstwa liczy pozycję z prostokąta kotwicy, więc ref musi być na
+  // przycisku, nie na jego opakowaniu.
+  const levelBtnRef = useRef<HTMLButtonElement | null>(null);
+  const wiecejBtnRef = useRef<HTMLButtonElement | null>(null);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   // Stałe preferencje użytkownika („custom instructions") — pamięć per-urządzenie
   // (localStorage), wstrzykiwana do każdego polecenia. Ref, by uniknąć stale-closure.
@@ -713,7 +789,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         if (tag === "textarea" || tag === "input") return;
         // 034: Esc domyka najpierw rozwiniętą sekcję nagłówka (powrót do rozmowy), a dopiero
         // gdy żadnej nie ma — cały arkusz. Bez tego jedyne wyjście z historii było przez X.
-        if (showLevelMenu) { setShowLevelMenu(false); return; }
+        // 106: menu poziomu i menu „Więcej" NIE są tu obsługiwane — `AnchoredLayer` łapie Esc
+        // w fazie PRZECHWYTYWANIA i zatrzymuje zdarzenie, a ten nasłuch wisi na bąbelkowaniu.
+        // Warstwa zamyka się sama, arkusz zostaje otwarty (AC-4).
         if (headerPanel !== "none") { setHeaderPanel("none"); return; }
         handleClose();
       }
@@ -721,7 +799,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, headerPanel, showLevelMenu]);
+  }, [isOpen, headerPanel]);
 
   // Zatrzymaj generowanie przy zamknięciu/unmount.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -737,6 +815,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
         if (cancelled) return;
         setLevel(p.level);
         setAutoApprove(p.autoApprove);
+        setPresentation(p.presentation);
         if (p.voiceKind === "server" && p.voiceId) {
           setServerVoiceId(p.voiceId);
           setVoiceURIState(toServerVoiceValue(p.voiceId));
@@ -961,6 +1040,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     if (!options?.keepPanel) setHeaderPanel("none");
     setReportDone(null);
     setShowLevelMenu(false);
+    setShowWiecej(false);
   }
 
   /** 034: klik w ikonę nagłówka otwiera sekcję, ponowny klik ją zamyka; inne sekcje się chowają. */
@@ -969,7 +1049,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     setShowLevelMenu(false);
     setHeaderPanel((current) => (current === panel ? "none" : panel));
     if (panel === "history") {
-      void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+      void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
     }
   }
 
@@ -1594,13 +1674,34 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     } catch { /* ignore */ }
   }
 
+  /**
+   * 106: usunięcie rozmowy pyta o potwierdzenie (C-34).
+   *
+   * Wcześniej kasowało od razu — i nie było to celowe „bo szybciej", tylko przeoczenie: akcja
+   * siedziała wyłącznie w wierszu listy, gdzie łatwo ją przeoczyć. Skoro od tego przebiegu ta sama
+   * akcja stoi też w menu nagłówka, musi mieć JEDNO zachowanie w obu miejscach — inaczej ten sam
+   * napis znaczyłby dwie różne rzeczy zależnie od tego, skąd go kliknięto.
+   */
   async function removeConversation(id: string) {
+    if (!(await confirmDialog({ title: t("usunRozmowePytanie"), description: t("usunRozmoweOpis"), destructive: true }))) return;
     try {
       await deleteAiConversation(id);
-      setConversations((c) => c.filter((x) => x.id !== id));
+      setConversations((c) => ({
+        zapisane: c.zapisane.filter((x) => x.id !== id),
+        historia: c.historia.filter((x) => x.id !== id),
+      }));
       // 032: nie proponuj powrotu do rozmowy, której już nie ma.
       if (lastConversationId === id) { setLastConversationId(null); setLastConversationLabel(""); }
       if (convoIdRef.current === id) resetConversation();
+    } catch { /* ignore */ }
+  }
+
+  /** 106: przeniesienie rozmowy między listą „Zapisane" a historią (odwracalne — AC-10). */
+  async function toggleSaved(id: string, saved: boolean) {
+    try {
+      await setAiConversationSaved(id, saved);
+      const swieze = await listAiConversations();
+      setConversations(swieze);
     } catch { /* ignore */ }
   }
 
@@ -1608,9 +1709,19 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
     const title = renameText.trim();
     setRenamingId(null);
     if (!title) return;
-    setConversations((c) => c.map((x) => (x.id === id ? { ...x, title } : x)));
+    const przepisz = (lista: ConversationMeta[]) => lista.map((x) => (x.id === id ? { ...x, title } : x));
+    setConversations((c) => ({ zapisane: przepisz(c.zapisane), historia: przepisz(c.historia) }));
     try { await renameAiConversation(id, title); } catch { /* ignore */ }
   }
+
+  /** 106: czy BIEŻĄCA rozmowa jest zapisana — potrzebne do etykiety akcji w menu „Więcej". */
+  const biezacaZapisana = conversationId !== null && conversations.zapisane.some((c) => c.id === conversationId);
+  /** Pustej rozmowy nie ma czego zapisywać ani nazywać. */
+  const rozmowaPusta = conversationId === null || turns.length === 0;
+  /** Zapisać można dopiero wtedy, gdy wiadomo, na której liście rozmowa stoi. */
+  const zapisNiedostepny = rozmowaPusta || !listyWczytane;
+  /** 106: lista pokazywana w szufladzie — wybór segmentu, nic więcej. */
+  const widocznaLista = listaRozmow === "zapisane" ? conversations.zapisane : conversations.historia;
 
   const planTurn = planTurnId ? (turns.find((t) => t.id === planTurnId && t.kind === "plan") as Extract<Turn, { kind: "plan" }> | undefined) : undefined;
 
@@ -1621,7 +1732,13 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       {/* FAB — akcja główna (najwyższy z-index wśród pływających przycisków, by
           ewentualnie zasłaniać przycisk admina, nigdy odwrotnie). Chowany, gdy
           otwarty jest modal treściowy. */}
-      {!modalOpen && (
+      {/* 106 (poprawka po recenzji): pływającej ikony NIE renderujemy przy otwartym asystencie.
+          W trybie okna była tylko niewidoczna (przykrywała ją warstwa 9990), więc nikomu nie
+          przeszkadzała; w trybie treści warstwa jest niżej i FAB lądował NAD kompozytorem —
+          zmierzone: `elementFromPoint` w środku przycisku „Wyślij" zwracał FAB, czyli wiadomości
+          nie dawało się wysłać kliknięciem. Przycisk, którego jedynym zadaniem jest otworzyć
+          asystenta, przy otwartym asystencie i tak nie ma czego robić. */}
+      {!modalOpen && !isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           title="Asystent AI"
@@ -1641,27 +1758,50 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
       {isOpen && (
         <div
           data-omnia-overlay="assistant"
-          className="fixed inset-0 flex items-end md:items-center md:justify-center"
+          // 106: w trybie obszaru treści warstwa jest `absolute` w opakowaniu powłoki, więc
+          // przykrywa DOKŁADNIE obszar treści — nawigacja modułów obok zostaje widoczna i klikalna
+          // (AC-20). W trybie okna wszystko zostaje jak było: `fixed` nad całą stroną.
+          className={przykrywaTresc ? "absolute inset-0 flex" : "fixed inset-0 flex items-end md:items-center md:justify-center"}
           style={{
-            zIndex: 9990,
+            // 106 (poprawka po recenzji): 45, nie 30. Ani `<main>`, ani opakowanie nie tworzą
+            // własnego kontekstu układania, więc pływające elementy MODUŁÓW (pasek akcji zbiorczych
+            // Zadań i wskaźnik offline Zakupów — `fixed z-40`) rysowałyby się NA zadokowanym
+            // asystencie, a siedząc w `inert` treści nie dałyby się już zamknąć. 45 stoi ponad tym
+            // chromem i nadal poniżej `Modal` (50) oraz warstwy kotwiczonej (9995).
+            zIndex: przykrywaTresc ? 45 : 9990,
             // Na pełnym ekranie tło i tak jest całkowicie zasłonięte — przezroczystość oszczędza
             // jedną warstwę do złożenia i usuwa „przebłysk" przy animacji klawiatury.
-            backgroundColor: fullScreen ? "transparent" : "rgba(0,0,0,0.6)",
+            // W trybie treści przyciemnienia nie ma w ogóle: nie ma czego przyciemniać, bo pod
+            // spodem nie leży strona do „zajrzenia", tylko treść, którą świadomie odłożyliśmy.
+            backgroundColor: fullScreen || przykrywaTresc ? "transparent" : "rgba(0,0,0,0.6)",
           }}
-          onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+          // Kliknięcie w tło zamyka TYLKO okno. W trybie treści nie ma tła, a przypadkowe
+          // kliknięcie obok kompozytora nie może wyrzucać z rozmowy.
+          onClick={(e) => { if (!przykrywaTresc && e.target === e.currentTarget) handleClose(); }}
         >
           <div
             ref={sheetRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Asystent AI"
-            className="w-full md:max-w-lg md:mx-4"
+            // 106: w obszarze treści to NIE jest modal — nawigacja obok działa, więc
+            // `aria-modal` byłoby kłamstwem wobec czytnika ekranu. Stąd `region` + nazwa.
+            role={przykrywaTresc ? "region" : "dialog"}
+            aria-modal={przykrywaTresc ? undefined : true}
+            aria-label={przykrywaTresc ? t("asystentWObszarzeTresci") : "Asystent AI"}
+            className={przykrywaTresc ? "w-full" : "w-full md:max-w-lg md:mx-4"}
             style={{
               backgroundColor: "var(--bg-surface)",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
-              ...(fullScreen
+              ...(przykrywaTresc
+                ? {
+                    // Wypełnia obszar treści bez zaokrągleń i bez ramki od strony powłoki —
+                    // to nie okno leżące NA stronie, tylko treść na jej miejscu.
+                    position: "absolute" as const,
+                    inset: 0,
+                    borderRadius: 0,
+                    borderLeft: "1px solid var(--border)",
+                  }
+                : fullScreen
                 ? {
                     // Telefon: okno wypełnia WIDOCZNY obszar. Sterujemy WYŁĄCZNIE wysokością —
                     // `--vv-height` ustawia `usePinToVisualViewport` synchronicznie na elemencie
@@ -1711,16 +1851,33 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
               </div>
             )}
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", minWidth: 0, gap: 8 }}>
+            {/* Header — 106.
+                Pasek trzymał osiem rzeczy w jednym rzędzie i przy 360 px ikona „nowa rozmowa"
+                nachodziła na znacznik „auto". Podział jest teraz jawny:
+                  · PIERWSZY PLAN (widoczne zawsze): nazwa, znacznik trybu automatycznego,
+                    nowa rozmowa, historia, „Więcej", dokowanie (od `lg`), zamknij;
+                  · DRUGI PLAN (pod „Więcej"): akcje bieżącej rozmowy, ustawienia, zgłoszenie
+                    problemu, przełącznik trybu administratora.
+                Reguła podziału jest jedna i wynika z lekcji przebiegu 100 (przełącznik segmentowy
+                zastąpił tam ⋮): menu nie mówi ani co jest dostępne, ani co jest wybrane. Dlatego
+                pod „Więcej" idą WYŁĄCZNIE CZYNNOŚCI — żaden wskaźnik stanu i żadne wyjście. */}
+            <div className="flex items-center justify-between px-5 py-2 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)", minWidth: 0, gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 <Sparkles size={15} style={{ color: "var(--accent-blue)", flexShrink: 0 }} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>Asystent AI</span>
+                {/* `minWidth: 0` + ellipsis: gdy zabraknie miejsca, ustępuje NAZWA, a nie przyciski. */}
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Asystent AI</span>
                 {/* 041: tryb automatyczny nie może działać po cichu. Znacznik stoi w nagłówku, czyli
-                    tam, gdzie widać go PRZEZ CAŁĄ rozmowę — a nie tylko w chwili przełączania. */}
+                    tam, gdzie widać go PRZEZ CAŁĄ rozmowę — a nie tylko w chwili przełączania.
+                    106: poniżej `sm` zostaje sama ikona — pełną treść niosą `title` i `aria-label`,
+                    więc znacznik nie znika ani dla oka, ani dla czytnika ekranu (AC-2). */}
                 {autoApprove && (
                   <span
+                    // `aria-label` na elemencie BEZ roli nie jest wystawiane przez ARIA — czytnik
+                    // ekranu przeczytałby wtedy samą ikonę, czyli nic. `role="img"` czyni ze
+                    // znacznika obiekt z nazwą (AC-2).
+                    role="img"
                     title={t("bezpieczneAkcjeWykonujaSie")}
+                    aria-label={t("trybAutomatycznyWlaczony")}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0,
                       fontSize: 10.5, padding: "2px 6px", borderRadius: 999,
@@ -1728,21 +1885,131 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                       whiteSpace: "nowrap",
                     }}
                   >
-                    <Zap size={10} /> auto
+                    <Zap size={10} /> <span className="hidden sm:inline">auto</span>
                   </span>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={iconBtn}><Plus size={16} /></button>
-                <button onClick={() => togglePanel("prefs")} title="Ustawienia asystenta" aria-label="Ustawienia asystenta" aria-expanded={showPrefs} style={{ ...iconBtn, color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}><Settings size={16} /></button>
-                <button onClick={() => togglePanel("report")} title={t("zglosProblemZAsystentem")} aria-label={t("zglosProblemZAsystentem")} aria-expanded={showReport} style={{ ...iconBtn, color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }}><Bug size={16} /></button>
-                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...iconBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
-                {/* 083: asystent ma WŁASNY górny pasek, więc przełącznik kosztów musi być i tutaj —
-                    inaczej administrator, który wszedł w rozmowę, nie miałby jak go dosięgnąć. */}
-                <PrzelacznikTrybuAdmina />
-                <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={iconBtn}><X size={16} /></button>
+              <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={headerBtn}><Plus size={16} /></button>
+                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...headerBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
+                <button
+                  ref={wiecejBtnRef}
+                  onClick={() => {
+                    const otwieram = !showWiecej;
+                    setShowWiecej(otwieram);
+                    // Etykieta „Zapisz rozmowę" / „Usuń z zapisanych" czyta stan z list, a te
+                    // wczytują się dotąd dopiero przy otwarciu historii. Bez tego odczytu menu
+                    // pokazywałoby „Zapisz" dla rozmowy już zapisanej — czyli kłamałoby o stanie,
+                    // i to w miejscu, w którym stanu nie widać z niczego innego.
+                    if (otwieram) void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
+                  }}
+                  title={t("wiecej")}
+                  aria-label={t("wiecejAkcji")}
+                  aria-expanded={showWiecej}
+                  style={{ ...headerBtn, color: showWiecej || showPrefs || showReport || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }}
+                >
+                  <MoreVertical size={16} />
+                </button>
+                {/* 106: przełącznik trybu prezentacji — WIDOCZNY, nie schowany pod „Więcej".
+                    W trybie obszaru treści to jedno z dwóch zawsze dostępnych wyjść (drugim jest
+                    „Zamknij"), a wyjście, którego trzeba szukać w menu, nie jest wyjściem (AC-19).
+                    Tylko od `lg`: na węższym ekranie nie ma obszaru treści, który dałoby się oddać
+                    rozmowie, więc przycisk nie miałby czego przełączać. */}
+                {/* 106 (poprawka po recenzji): przycisk renderujemy WARUNKOWO, a nie chowamy klasą.
+                    `headerBtn` dziedziczy z `iconBtn` `display: "flex"`, a styl w atrybucie wygrywa
+                    z `.hidden` — przycisk był więc widoczny na telefonie, gdzie nie ma czego
+                    przełączać, a dotknięcie zapisywało `content` NA KONCIE i asystent otwierał się
+                    zadokowany przy następnym wejściu na komputer (łamie AC-18). Ta sama pułapka jest
+                    opisana przy pływającej ikonie 160 linii wyżej — i mimo to tu się powtórzyła. */}
+                {isWide && (
+                <button
+                  onClick={togglePresentation}
+                  title={wObszarzeTresci ? t("pokazWOknie") : t("pokazWObszarzeTresci")}
+                  aria-label={wObszarzeTresci ? t("pokazWOknie") : t("pokazWObszarzeTresci")}
+                  aria-pressed={wObszarzeTresci}
+                  style={{ ...headerBtn, color: wObszarzeTresci ? "var(--accent-blue)" : "var(--text-muted)" }}
+                >
+                  {wObszarzeTresci ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+                </button>
+                )}
+                <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={headerBtn}><X size={16} /></button>
               </div>
             </div>
+
+            {/* 106: menu „Więcej" — wspólna warstwa kotwiczona, ta sama co pod menu poziomu pracy. */}
+            <AnchoredLayer
+              anchorRef={wiecejBtnRef}
+              open={showWiecej}
+              onClose={() => setShowWiecej(false)}
+              side="dol"
+              align="koniec"
+              width={260}
+              role="menu"
+              ariaLabel={t("wiecejAkcji")}
+            >
+              <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+                <p style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)", padding: "6px 10px 2px" }}>
+                  {t("akcjeRozmowy")}
+                </p>
+                <button
+                  role="menuitem"
+                  disabled={zapisNiedostepny}
+                  onClick={() => { setShowWiecej(false); if (conversationId) void toggleSaved(conversationId, !biezacaZapisana); }}
+                  title={rozmowaPusta ? t("pustaRozmowaNieDaSieZapisac") : undefined}
+                  style={{ ...menuItem, opacity: zapisNiedostepny ? 0.45 : 1, cursor: zapisNiedostepny ? "default" : "pointer" }}
+                >
+                  {biezacaZapisana ? <BookmarkX size={15} style={{ color: "var(--text-muted)" }} /> : <Bookmark size={15} style={{ color: "var(--accent-blue)" }} />}
+                  {biezacaZapisana ? t("usunZZapisanych") : t("zapiszRozmowe")}
+                </button>
+                <button
+                  role="menuitem"
+                  disabled={rozmowaPusta}
+                  onClick={() => {
+                    setShowWiecej(false);
+                    if (!conversationId) return;
+                    const biezaca = [...conversations.zapisane, ...conversations.historia].find((c) => c.id === conversationId);
+                    setRenameText(biezaca?.title ?? "");
+                    setRenamingId(conversationId);
+                    // Pole nazwy stoi w WIERSZU listy, więc trzeba pokazać tę listę, na której ta
+                    // rozmowa naprawdę jest. Inaczej „Zmień nazwę" otwierałoby historię z kursorem
+                    // w polu, którego nie widać — akcja bez skutku widocznego dla użytkownika.
+                    setListaRozmow(biezacaZapisana ? "zapisane" : "historia");
+                    setHeaderPanel("history");
+                    void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
+                  }}
+                  style={{ ...menuItem, opacity: rozmowaPusta ? 0.45 : 1, cursor: rozmowaPusta ? "default" : "pointer" }}
+                >
+                  <Pencil size={15} style={{ color: "var(--text-muted)" }} />
+                  {t("zmienNazweRozmowyAkcja")}
+                </button>
+                <button
+                  role="menuitem"
+                  disabled={rozmowaPusta}
+                  onClick={() => { setShowWiecej(false); if (conversationId) void removeConversation(conversationId); }}
+                  style={{ ...menuItem, opacity: rozmowaPusta ? 0.45 : 1, cursor: rozmowaPusta ? "default" : "pointer", color: "var(--accent-red)" }}
+                >
+                  <Trash2 size={15} />
+                  {t("usunRozmoweAkcja")}
+                </button>
+
+                <div style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <button role="menuitem" onClick={() => { setShowWiecej(false); togglePanel("prefs"); }} style={menuItem}>
+                    <Settings size={15} style={{ color: showPrefs || prefs.trim() ? "var(--accent-blue)" : "var(--text-muted)" }} />
+                    Ustawienia asystenta
+                  </button>
+                  <button role="menuitem" onClick={() => { setShowWiecej(false); togglePanel("report"); }} style={menuItem}>
+                    <Bug size={15} style={{ color: showReport ? "var(--accent-purple)" : "var(--text-muted)" }} />
+                    {t("zglosProblemZAsystentem")}
+                  </button>
+                  {/* 083: asystent ma WŁASNY górny pasek, więc przełącznik trybu administratora musi
+                      być i tutaj — inaczej administrator, który wszedł w rozmowę, nie miałby jak go
+                      dosięgnąć. 106 przenosi go do menu; warunek `isAdmin` niesie sam komponent. */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 6px" }}>
+                    <PrzelacznikTrybuAdmina />
+                  </div>
+                </div>
+              </div>
+            </AnchoredLayer>
 
             {/* 034: powrót do poprzedniej rozmowy dostaje WŁASNY wiersz pod nagłówkiem. Wcześniej
                 siedział w rzędzie ikon i na telefonie rozpychał nagłówek poza ekran (tytuł rozmowy
@@ -1913,8 +2180,30 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                 więc nie miały własnego przewijania i dłuższa treść była po prostu ucinana. */}
             {showHistory ? (
               <div className="flex-1 overflow-y-auto px-3 py-3" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {conversations.length === 0 && <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16 }}>{t("brakZapisanychRozmow")}</p>}
-                {conversations.map((c) => (
+                {/* 106: dwie listy rozmów jako PRZEŁĄCZNIK SEGMENTOWY, nie pozycje w menu.
+                    Wprost z przebiegu 100: segment mówi jednocześnie, co jest dostępne (widać obie
+                    listy) i co jest wybrane (widać zaznaczenie) — menu nie mówi ani jednego, ani
+                    drugiego.
+                    `wylaczona: false` przekazujemy JAWNIE, bo komponent domyślnie wyłącza segment
+                    o liczniku zero. To dobra reguła tam, gdzie pustka niczego nie uczy — tu jest
+                    odwrotnie: w pustej liście „Zapisane" stoi jedyne wyjaśnienie, jak coś na nią
+                    trafia, a potrzebuje go dokładnie ten, kto niczego jeszcze nie zapisał. */}
+                <PrzelacznikSegmentowy
+                  ariaLabel={t("listyRozmow")}
+                  wybrana={listaRozmow}
+                  onWybor={(id) => setListaRozmow(id === "zapisane" ? "zapisane" : "historia")}
+                  pozycje={[
+                    { id: "zapisane", etykieta: t("listaZapisane"), licznik: conversations.zapisane.length, wylaczona: false },
+                    { id: "historia", etykieta: t("listaHistoria"), licznik: conversations.historia.length, wylaczona: false },
+                  ]}
+                  className="mb-2"
+                />
+                {widocznaLista.length === 0 && (
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16, lineHeight: 1.5 }}>
+                    {listaRozmow === "zapisane" ? t("brakZapisanychRozmowOpis") : t("brakZapisanychRozmow")}
+                  </p>
+                )}
+                {widocznaLista.map((c) => (
                   // 031: `minWidth: 0` na wierszu ORAZ na przycisku tytułu — bez tego dziecko flexboxa
                   // ma domyślnie `min-width: auto` i długi tytuł rozpycha wiersz poza szerokość ekranu
                   // (na telefonie objawiało się to przewijaniem w poziomie w historii rozmów).
@@ -1933,6 +2222,17 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         <span style={{ fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowWrap: "anywhere" }}>{c.title}</span>
                       </button>
                     )}
+                    {/* 106: zapisanie/odznaczenie stoi też TU, w wierszu listy — AC-10 wymaga
+                        odwracalności, a odwraca się wygodnie tam, gdzie się na listę patrzy. */}
+                    <button
+                      onClick={() => void toggleSaved(c.id, !c.saved)}
+                      title={c.saved ? t("usunZZapisanych") : t("dodajDoZapisanych")}
+                      aria-label={c.saved ? t("usunZZapisanych") : t("dodajDoZapisanych")}
+                      aria-pressed={c.saved}
+                      style={{ ...iconBtn, color: c.saved ? "var(--accent-blue)" : "var(--text-muted)" }}
+                    >
+                      {c.saved ? <BookmarkX size={14} /> : <Bookmark size={14} />}
+                    </button>
                     <button onClick={() => { setRenamingId(c.id); setRenameText(c.title); }} title={t("zmienNazwe")} aria-label={t("zmienNazweRozmowy")} style={{ ...iconBtn, color: "var(--text-muted)" }}><Pencil size={13} /></button>
                     <button onClick={() => removeConversation(c.id)} title={t("usun")} aria-label={t("usunRozmowe")} style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
                   </div>
@@ -2140,8 +2440,9 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {/* 031: poziom pracy asystenta — NA LEWO od mikrofonu. Wybór zapisuje się na
                           koncie użytkownika, więc jest ten sam na każdym urządzeniu. */}
-                      <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div style={{ flexShrink: 0 }}>
                         <button
+                          ref={levelBtnRef}
                           onClick={() => setShowLevelMenu((v) => !v)}
                           disabled={busy}
                           title={`Poziom pracy asystenta: ${ASSISTANT_LEVEL_LABELS[level]}`}
@@ -2151,19 +2452,28 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                         >
                           {levelIcon(level, 19)}
                         </button>
-                        {showLevelMenu && (
-                          <div
-                            role="menu"
-                            style={{
-                              // 032: przycisk poziomu siedzi w PRAWEJ grupie akcji kompozytora, więc
-                              // menu musi być kotwiczone prawą krawędzią (rozwija się w stronę środka).
-                              // Przy `left: 0` szerokie menu wychodziło poza prawą krawędź telefonu.
-                              position: "absolute", bottom: "calc(100% + 6px)", right: 0, left: "auto", zIndex: 6,
-                              minWidth: 240, maxWidth: "min(300px, calc(100vw - 40px))",
-                              padding: 4, background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                              borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-                            }}
-                          >
+                        {/* 106: menu poziomu na WSPÓLNEJ warstwie kotwiczonej (`AnchoredLayer`, 080),
+                            a nie na własnym `position: absolute`.
+                            Zgłoszenie właściciela: na komputerze menu wyjeżdżało ponad górną krawędź
+                            asystenta i górna część była ucięta. Przyczyny były dwie i warstwa znosi
+                            OBIE naraz: (1) zaszyte `bottom: calc(100% + 6px)` znaczyło „zawsze w górę",
+                            bez pytania, czy jest tam miejsce; (2) `position: absolute` daje się
+                            przyciąć każdemu przodkowi z `overflow: hidden` — a arkusz asystenta ma go
+                            wprost. Portal do `body` + odbicie strony + `maxHeight` liczone z okna
+                            załatwiają to raz, dla wszystkich takich okienek w aplikacji.
+                            Treść menu jest przeniesiona BEZ ZMIAN — te same poziomy, ten sam
+                            `changeLevel`, ten sam przełącznik auto-zatwierdzania. */}
+                        <AnchoredLayer
+                          anchorRef={levelBtnRef}
+                          open={showLevelMenu}
+                          onClose={() => setShowLevelMenu(false)}
+                          side="gora"
+                          align="koniec"
+                          width={280}
+                          role="menu"
+                          ariaLabel={t("poziomPracyAsystenta")}
+                        >
+                          <div style={{ padding: 4 }}>
                             {ASSISTANT_LEVELS.map((lvl) => (
                               // 035: wiersz poziomu to przycisk WYBORU, a przy „Własnym" dochodzi po prawej
                               // druga, mniejsza ikona otwierająca konfigurację tego poziomu. Zagnieżdżanie
@@ -2238,7 +2548,7 @@ export function AICommandSheet({ isAdmin = false, usdPlnRate = DEFAULT_USD_PLN_R
                               </button>
                             </div>
                           </div>
-                        )}
+                        </AnchoredLayer>
                       </div>
                       {/* Mikrofon dyktowania — dopisuje mowę do pola (oddzielny od trybu rozmowy głosowej) */}
                       {dictation.supported && !busy && (
@@ -2331,6 +2641,16 @@ function conversationLabelFrom(turns: Turn[]): string {
 }
 
 const iconBtn: React.CSSProperties = { padding: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", borderRadius: 6 };
+// 106: przyciski GÓRNEGO PASKA mają cel dotyku 44 × 44 px (C-31). `iconBtn` (28 px) zostaje tam,
+// gdzie stoi gęsto obok tekstu — w wierszach list — bo tam powiększenie rozepchałoby wiersz.
+const headerBtn: React.CSSProperties = { ...iconBtn, minWidth: 44, minHeight: 44, padding: 0, justifyContent: "center" };
+// Pozycja menu kotwiczonego. Wysokość 40 px + pełna szerokość: w liście pionowej cel dotyku
+// mierzy się wierszem, nie kwadratem.
+const menuItem: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: 40,
+  padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent",
+  color: "var(--text-primary)", fontSize: 13, cursor: "pointer", textAlign: "left",
+};
 const rowBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 8, border: "none", background: "var(--bg-elevated)", cursor: "pointer", textAlign: "left", width: "100%" };
 const chipBtn: React.CSSProperties = { fontSize: 12.5, padding: "8px 12px", borderRadius: 18, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", cursor: "pointer", textAlign: "left" };
 const voicePillBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-secondary)", background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", cursor: "pointer" };

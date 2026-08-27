@@ -14,6 +14,17 @@ export type ConversationMeta = {
   id: string;
   title: string;
   updatedAt: Date;
+  /** 106: czy rozmowa stoi na liście „Zapisane" (a nie w historii). */
+  saved: boolean;
+};
+
+/**
+ * 106: rozmowy w DWÓCH rozłącznych listach. Jedno pole `saved` jest jedynym źródłem podziału,
+ * więc rozmowa nie ma jak trafić na obie naraz ani zniknąć z obu.
+ */
+export type ConversationLists = {
+  zapisane: ConversationMeta[];
+  historia: ConversationMeta[];
 };
 
 export type StoredMessage = {
@@ -25,16 +36,37 @@ export type StoredMessage = {
   createdAt: Date;
 };
 
-/** Lista rozmów użytkownika (meta, najnowsze na górze). */
-export async function listAiConversations(): Promise<ConversationMeta[]> {
+/**
+ * Rozmowy użytkownika w dwóch listach (meta, najnowsze na górze).
+ *
+ * 106: DWA rozłączne zapytania, nie jedno z podziałem po stronie klienta. Wcześniej było jedno
+ * z `take: 50`, czyli „50 najnowszych W OGÓLE" — rozmowa zapisana pół roku temu wypadała z wyniku,
+ * a to jest dokładnie ta wada, którą lista „Zapisane" ma usunąć. Podział na kliencie odtworzyłby
+ * ją co do joty: filtrowałby zbiór, w którym tej rozmowy już nie ma.
+ *
+ * Każde zapytanie ma jawne ograniczenie (`check:pagination` jest od 096 regułą bezwzględną).
+ */
+export async function listAiConversations(): Promise<ConversationLists> {
   const user = await requireAuth();
-  const rows = await prisma.aiConversation.findMany({
-    where: { userId: user.id },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true, title: true, updatedAt: true },
-    take: 50,
-  });
-  return rows;
+  // `take` stoi przy każdym zapytaniu WPROST, a nie we wspólnym obiekcie rozsypywanym spreadem:
+  // bramka `check:pagination` czyta granicę w miejscu wywołania i słusznie nie ufa temu, co przyszło
+  // przez zmienną — po to, żeby recenzent widział limit tam, gdzie patrzy na zapytanie.
+  const wybor = { id: true, title: true, updatedAt: true, saved: true };
+  const [zapisane, historia] = await Promise.all([
+    prisma.aiConversation.findMany({
+      where: { userId: user.id, saved: true },
+      orderBy: { updatedAt: "desc" },
+      select: wybor,
+      take: 50,
+    }),
+    prisma.aiConversation.findMany({
+      where: { userId: user.id, saved: false },
+      orderBy: { updatedAt: "desc" },
+      select: wybor,
+      take: 50,
+    }),
+  ]);
+  return { zapisane, historia };
 }
 
 /** Pełna rozmowa z wiadomościami (po weryfikacji własności). */
@@ -106,6 +138,18 @@ export async function renameAiConversation(id: string, title: string): Promise<v
   const t = title.trim();
   if (!t) throw new Error("Pusty tytuł");
   await prisma.aiConversation.updateMany({ where: { id, userId: user.id }, data: { title: t } });
+  revalidatePath("/");
+}
+
+/**
+ * 106: przeniesienie rozmowy między listą „Zapisane" a historią.
+ *
+ * `userId` w `where` JEST guardem własności (wzorzec `renameAiConversation`): cudza rozmowa nie
+ * pasuje do filtra, więc operacja jest niewykonalna — a nie „wykonalna i sprawdzana osobno".
+ */
+export async function setAiConversationSaved(id: string, saved: boolean): Promise<void> {
+  const user = await requireAuth();
+  await prisma.aiConversation.updateMany({ where: { id, userId: user.id }, data: { saved } });
   revalidatePath("/");
 }
 
