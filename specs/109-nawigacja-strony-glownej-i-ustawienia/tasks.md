@@ -156,7 +156,15 @@ materiału — sprawdzane w T-27 razem z resztą buildu.
       potem `tail -40 /tmp/e2e.log`. *Gotowe, gdy:* nowy spec zielony, a liczba czerwonych
       w pozostałych nie rośnie względem stanu sprzed zmiany.
 
-- [ ] **T-29** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
+- [x] **T-29** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
+
+- [ ] **T-31** — *(z `/verify`)* **AC-5 mierzone, nie odczytane z kodu.** Test `[109-AC5]` liczy
+      `a[href="/"]` i przy 390 px dostaje **0**, bo kotwica paska kciuka jest `<button>`
+      z `aria-label` („Przejdź na stronę główną", `PasekKciuka.tsx:82-93`) — więc przeszedłby także
+      wtedy, gdyby kotwica zniknęła. Przepisz test tak, żeby liczył **wszystkie** wejścia na stronę
+      główną (odnośniki + przyciski z `aria-label`) i wymagał **dokładnie jednego**; sprawdź próbą
+      mutacyjną, że test czerwienieje po usunięciu kotwicy.
+      *Gotowe, gdy:* test wymaga `=== 1` i udowodniono, że wykrywa brak kotwicy.
 
 - [x] **T-30** — Wpis do `doświadczenia.md` (C-51): odwrócenie decyzji z 087 i lekcja o czytaniu
       zgłoszenia opisującego stan sprzed kilku przebiegów (zgłoszenie nazywa OBJAW z chwili, gdy
