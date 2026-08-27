@@ -43,17 +43,17 @@
 
 ## Faza 2 — Przywracanie pozycji przewijania (zgłoszenie 1)
 
-- [ ] **T-6** — `src/platform/nawigacja/przewijanie.ts` (plan §5.1): czysta logika + pamięć sesji —
+- [x] **T-6** — `src/platform/nawigacja/przewijanie.ts` (plan §5.1): czysta logika + pamięć sesji —
   `zapamietaj`, `odczytaj`, `oznaczPowrot`, `czyPowrot`, limit ~20 wpisów. Wzorzec `historia.ts`:
   **brak pamięci sesji jest stanem poprawnym**, nie wyjątkiem.
   **Gotowe, gdy:** testy w `__tests__/przewijanie.test.ts` pokrywają limit, `sessionStorage`
   rzucający przy samym dostępie (AC-3), oraz to, że flaga powrotu jest **jednorazowa**.
-- [ ] **T-7** — `src/hooks/usePrzywroceniePrzewijania.ts`: zapis dławiony klatką, jeden nasłuch
+- [x] **T-7** — `src/hooks/usePrzywroceniePrzewijania.ts`: zapis dławiony klatką, jeden nasłuch
   `popstate` na okno, przywracanie po malowaniu z oknem ponowień do ~1 s (listy dociągane
   asynchronicznie nie mają wysokości w pierwszej klatce).
   **Gotowe, gdy:** hook nie tworzy niczego na poziomie modułu (`check:client-safe`) i nie robi
   nic, gdy pamięci nie ma.
-- [ ] **T-8** — Wpięcie hooka w kontener przewijania `ModuleView` (C-35: komponent razem
+- [x] **T-8** — Wpięcie hooka w kontener przewijania `ModuleView` (C-35: komponent razem
   z konsumentem). Obejmuje wszystkie widoki modułów **oraz `/admin`** (przez `RamaPanelu`).
   W komentarzu zapisz znane ograniczenie: `layout="fill"` przewija treść modułu, nie ramę.
   **Gotowe, gdy:** ręcznie na `/admin` i `/wiadomosci` powrót wstecz wraca w to samo miejsce,
