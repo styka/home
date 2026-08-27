@@ -259,7 +259,8 @@ export function PrzewodnikReader({
           display: "flex",
           gap: 32,
           alignItems: "flex-start",
-          padding: "0 var(--view-padding) 64px",
+          // Wypełnienie poziome należy do ramy (`0 var(--view-padding)`); własne dałoby podwójne.
+          paddingBottom: 48,
         }}
       >
         {/* Spis treści na komputerze — przyklejony, więc towarzyszy czytaniu. */}

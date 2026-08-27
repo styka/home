@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Lock, Search, Clock } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
-import { normalizujFraze } from "@/lib/przewodnikiSzukanie";
+import { szukajWIndeksie, type WpisIndeksu } from "@/lib/przewodnikiSzukanie";
 
 /**
  * 108 — DZIAŁ PRZEWODNIKÓW: jedno miejsce ze wszystkimi przewodnikami użytkownika.
@@ -29,19 +29,13 @@ export interface KafelekPrzewodnika {
   zablokowany: boolean;
 }
 
+export type { WpisIndeksu };
+
 export interface KafelekWkrotce {
   moduleId: string;
   label: string;
   kolor: string;
   zablokowany: boolean;
-}
-
-export interface WpisIndeksu {
-  przewodnikSlug: string;
-  przewodnikTitle: string;
-  rozdzialSlug: string;
-  rozdzialTitle: string;
-  tekst: string;
 }
 
 export function PrzewodnikiHub({
@@ -56,26 +50,15 @@ export function PrzewodnikiHub({
   const t = useTranslations("components.guide.PrzewodnikiHub");
   const [fraza, setFraza] = useState("");
 
+  /**
+   * Wyszukiwanie w treści — ta sama funkcja, którą testują testy jednostkowe.
+   *
+   * `null` (a nie pusta tablica) znaczy „nie szukamy": czym innym jest brak frazy, przy którym
+   * pokazujemy kafelki, a czym innym fraza bez trafień, przy której należy się stan pusty.
+   */
   const wyniki = useMemo(() => {
-    const igla = normalizujFraze(fraza);
-    if (igla.length < 2) return null;
-    const out: { klucz: string; href: string; przewodnik: string; rozdzial: string; fragment: string }[] = [];
-    for (const w of indeks) {
-      const stog = `${w.rozdzialTitle} ${w.tekst}`;
-      const poz = normalizujFraze(stog).indexOf(igla);
-      if (poz < 0) continue;
-      const start = Math.max(0, poz - 50);
-      out.push({
-        klucz: `${w.przewodnikSlug}/${w.rozdzialSlug}`,
-        href: `/guide/${w.przewodnikSlug}#${w.rozdzialSlug}`,
-        przewodnik: w.przewodnikTitle,
-        rozdzial: w.rozdzialTitle,
-        fragment:
-          (start > 0 ? "…" : "") + stog.slice(start, start + 170).trim() + (start + 170 < stog.length ? "…" : ""),
-      });
-      if (out.length >= 24) break;
-    }
-    return out;
+    if (fraza.trim().length < 2) return null;
+    return szukajWIndeksie(indeks, fraza);
   }, [fraza, indeks]);
 
   const pustyWynik = wyniki !== null && wyniki.length === 0;
@@ -123,13 +106,15 @@ export function PrzewodnikiHub({
         </div>
       }
     >
-      <div style={{ padding: "0 var(--view-padding) 48px", display: "flex", flexDirection: "column", gap: 32 }}>
+      {/* Bez własnego wypełnienia poziomego — obszar treści ramy ma już `0 var(--view-padding)`,
+          więc drugie odsunęłoby dział o 32 px zamiast 16 i rozjechało go z resztą aplikacji. */}
+      <div style={{ paddingBottom: 32, display: "flex", flexDirection: "column", gap: 32 }}>
         {wyniki !== null ? (
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <Naglowek tekst={t("wynikiWyszukiwania", { liczba: wyniki.length })} />
             {wyniki.map((w) => (
               <Link
-                key={w.klucz}
+                key={`${w.przewodnikSlug}/${w.rozdzialSlug}`}
                 href={w.href}
                 style={{
                   display: "block",
@@ -140,9 +125,9 @@ export function PrzewodnikiHub({
                   textDecoration: "none",
                 }}
               >
-                <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{w.przewodnik}</p>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{w.przewodnikTitle}</p>
                 <p style={{ margin: "2px 0 4px", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
-                  {w.rozdzial}
+                  {w.rozdzialTitle}
                 </p>
                 <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
                   {w.fragment}

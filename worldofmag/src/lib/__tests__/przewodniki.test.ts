@@ -2,10 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   hrefPrzewodnikaModulu,
+  indeksWyszukiwania,
   przewodnikPoSlugu,
-  szukajWPrzewodnikach,
   wszystkiePrzewodniki,
 } from "@/lib/przewodniki";
+import { szukajWIndeksie } from "@/lib/przewodnikiSzukanie";
+
+/**
+ * Wyszukiwanie testujemy na TYM SAMYM indeksie, który dostaje hub — bo hub woła tę samą funkcję.
+ * Osobna ścieżka „dla serwera" znaczyłaby, że testy sprawdzają co innego niż klik czytelnika.
+ */
+const szukaj = (fraza: string) => szukajWIndeksie(indeksWyszukiwania(), fraza);
 
 /**
  * 108 — dwie rzeczy, które muszą działać, bo od nich zależą kryteria akceptacji AC-2 i AC-6.
@@ -42,7 +49,7 @@ test("slug nieznanego przewodnika zwraca null, nie rzuca", () => {
 });
 
 test("wyszukiwanie wskazuje rozdział, w którym fraza występuje (AC-6)", () => {
-  const wyniki = szukajWPrzewodnikach("wikilink");
+  const wyniki = szukaj("wikilink");
   assert.ok(wyniki.length > 0, "fraza z treści przewodnika musi cokolwiek znaleźć");
   assert.ok(
     wyniki.some((w) => w.rozdzialSlug === "04-wikilinki"),
@@ -52,8 +59,8 @@ test("wyszukiwanie wskazuje rozdział, w którym fraza występuje (AC-6)", () =>
 });
 
 test("wielkość liter i polskie znaki nie mają znaczenia (AC-6)", () => {
-  const zOgonkami = szukajWPrzewodnikach("załącznik");
-  const bezOgonkow = szukajWPrzewodnikach("ZALACZNIK");
+  const zOgonkami = szukaj("załącznik");
+  const bezOgonkow = szukaj("ZALACZNIK");
   assert.ok(zOgonkami.length > 0, "fraza z ogonkami musi cokolwiek znaleźć");
   assert.deepEqual(
     bezOgonkow.map((w) => w.rozdzialSlug),
@@ -63,10 +70,10 @@ test("wielkość liter i polskie znaki nie mają znaczenia (AC-6)", () => {
 });
 
 test("fraza, której nie ma, daje pustą listę — nie błąd", () => {
-  assert.deepEqual(szukajWPrzewodnikach("zyrafa-na-rowerze"), []);
+  assert.deepEqual(szukaj("zyrafa-na-rowerze"), []);
 });
 
 test("jedna litera nie uruchamia wyszukiwania", () => {
   // Inaczej pierwsze naciśnięcie klawisza zwracałoby wszystko, co zawiera tę literę.
-  assert.deepEqual(szukajWPrzewodnikach("a"), []);
+  assert.deepEqual(szukaj("a"), []);
 });

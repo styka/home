@@ -13,7 +13,7 @@ import {
   type Przewodnik,
   type RozdzialPrzewodnika,
 } from "@/generated/przewodniki";
-import { normalizujFraze } from "@/lib/przewodnikiSzukanie";
+import type { WpisIndeksu } from "@/lib/przewodnikiSzukanie";
 
 export type { Przewodnik, RozdzialPrzewodnika };
 
@@ -50,50 +50,21 @@ export function moduleZPrzewodnikiem(): Set<string> {
   return out;
 }
 
-export interface WynikSzukania {
-  przewodnikSlug: string;
-  przewodnikTitle: string;
-  rozdzialSlug: string;
-  rozdzialTitle: string;
-  /** Fragment treści wokół trafienia — z oryginalną wielkością liter. */
-  fragment: string;
-  href: string;
-}
-
-
-const DLUGOSC_FRAGMENTU = 160;
-
-export function szukajWPrzewodnikach(fraza: string, limit = 20): WynikSzukania[] {
-  const igla = normalizujFraze(fraza.trim());
-  if (igla.length < 2) return [];
-
-  const out: WynikSzukania[] = [];
-  for (const p of PRZEWODNIKI) {
-    for (const r of p.rozdzialy) {
-      const stog = normalizujFraze(`${r.title} ${r.summary} ${r.tekst}`);
-      const poz = stog.indexOf(igla);
-      if (poz < 0) continue;
-
-      // Fragment wycinamy z ORYGINAŁU, ale pozycję znamy ze znormalizowanej kopii. Obie mają tę
-      // samą długość znak w znak (normalizacja niczego nie usuwa ani nie dokłada), więc indeks
-      // przenosi się wprost — dlatego `normalizujFraze` nie może zacząć skracać białych znaków.
-      const oryginal = `${r.title} ${r.summary} ${r.tekst}`;
-      const start = Math.max(0, poz - DLUGOSC_FRAGMENTU / 3);
-      const fragment =
-        (start > 0 ? "…" : "") +
-        oryginal.slice(start, start + DLUGOSC_FRAGMENTU).trim() +
-        (start + DLUGOSC_FRAGMENTU < oryginal.length ? "…" : "");
-
-      out.push({
-        przewodnikSlug: p.slug,
-        przewodnikTitle: p.title,
-        rozdzialSlug: r.slug,
-        rozdzialTitle: r.title,
-        fragment,
-        href: `${hrefPrzewodnika(p.slug)}#${r.slug}`,
-      });
-      if (out.length >= limit) return out;
-    }
-  }
-  return out;
+/**
+ * Chudy indeks do wyszukiwania — sam tekst rozdziałów, bez markdownu.
+ *
+ * Budowany na SERWERZE i przekazywany hubowi w propsach. Gdyby hub sięgnął po `PRZEWODNIKI`
+ * bezpośrednio, wiózłby do przeglądarki pełną treść wszystkich przewodników tylko po to, żeby dało
+ * się w niej szukać.
+ */
+export function indeksWyszukiwania(): WpisIndeksu[] {
+  return PRZEWODNIKI.flatMap((p) =>
+    p.rozdzialy.map((r) => ({
+      przewodnikSlug: p.slug,
+      przewodnikTitle: p.title,
+      rozdzialSlug: r.slug,
+      rozdzialTitle: r.title,
+      tekst: r.tekst,
+    }))
+  );
 }

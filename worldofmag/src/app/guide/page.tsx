@@ -2,12 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { MODULES } from "@/lib/modules";
 import { isPathLocked } from "@/lib/pathPermissions";
-import { moduleZPrzewodnikiem, wszystkiePrzewodniki } from "@/lib/przewodniki";
+import { indeksWyszukiwania, moduleZPrzewodnikiem, wszystkiePrzewodniki } from "@/lib/przewodniki";
 import {
   PrzewodnikiHub,
   type KafelekPrzewodnika,
   type KafelekWkrotce,
-  type WpisIndeksu,
 } from "@/components/guide/PrzewodnikiHub";
 
 /**
@@ -57,21 +56,8 @@ export default async function GuidePage() {
     zablokowany: isPathLocked(permissions, m.href),
   }));
 
-  /**
-   * Indeks wyszukiwania: sam tekst rozdziałów, bez markdownu.
-   *
-   * Do przeglądarki idzie ta chuda postać, a nie `PRZEWODNIKI` — inaczej hub wiózłby ze sobą pełną
-   * treść wszystkich przewodników tylko po to, żeby dało się w niej szukać.
-   */
-  const indeks: WpisIndeksu[] = przewodniki.flatMap((p) =>
-    p.rozdzialy.map((r) => ({
-      przewodnikSlug: p.slug,
-      przewodnikTitle: p.title,
-      rozdzialSlug: r.slug,
-      rozdzialTitle: r.title,
-      tekst: r.tekst,
-    }))
-  );
+  // Indeks liczy `lib/przewodniki` — patrz `indeksWyszukiwania`.
+  const indeks = indeksWyszukiwania();
 
   return <PrzewodnikiHub gotowe={gotowe} wkrotce={wkrotce} indeks={indeks} />;
 }
