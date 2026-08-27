@@ -84,9 +84,12 @@ zgłoszenia.
 
 ### Ustawienia — podział na sekcje
 
-- [ ] **AC-7** — Given zalogowany użytkownik, when otworzy `/settings` na komputerze, then widzi
-      **spis sekcji** obok treści, a nie jedną kolumnę ze wszystkimi sekcjami po kolei; sam spis
-      mieści się na ekranie **bez przewijania**.
+- [ ] **AC-7** — Given zalogowany użytkownik na komputerze, when otworzy `/settings`, then widzi
+      **spis sekcji** mieszczący się na ekranie **bez przewijania** (a nie jedną kolumnę ze
+      wszystkimi sekcjami po kolei), a po wejściu w sekcję spis **zostaje widoczny obok treści**
+      jako lista, z której da się przeskoczyć do innej sekcji bez wracania do spisu.
+      *(Uściślone na etapie planu — C-54: `/settings` jest spisem, lista boczna towarzyszy
+      widokowi sekcji.)*
 - [ ] **AC-8** — Given `/settings` na telefonie, when użytkownik otworzy widok, then widzi
       **wyłącznie listę sekcji** (krótkie pozycje z nazwą i jednozdaniowym opisem), a wejście
       w pozycję otwiera sekcję z **widocznym powrotem** do spisu.
