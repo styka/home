@@ -288,6 +288,20 @@ export const ASSISTANT_VOICE_KINDS: AssistantVoiceKind[] = ["browser", "server"]
 export type AssistantPresentation = "window" | "content";
 export const ASSISTANT_PRESENTATIONS: AssistantPresentation[] = ["window", "content"];
 
+/**
+ * Rozpoznaje sposób prezentacji, sprowadzając wszystko nieznane do `"window"`.
+ *
+ * Mieszka TUTAJ, obok swojej unii, a nie w pliku akcji — plik `"use server"` nie eksportuje funkcji
+ * synchronicznych, więc reguły w nim zapisanej nie da się ani zaimportować, ani przetestować
+ * (bramka `check:domain`). Wartość awaryjna jest częścią reguły: kolumna w bazie jest zwykłym
+ * tekstem, więc każdy odczyt musi przewidzieć wartość spoza unii.
+ */
+export function parseAssistantPresentation(value: string | null | undefined): AssistantPresentation {
+  return ASSISTANT_PRESENTATIONS.includes(value as AssistantPresentation)
+    ? (value as AssistantPresentation)
+    : "window";
+}
+
 export type TaskStatusFilter = "ALL" | TaskStatus;
 export const TASK_STATUS_FILTERS: TaskStatusFilter[] = ["ALL", "TODO", "IN_PROGRESS", "IN_VERIFICATION", "DONE", "DEFERRED", "CANCELLED"];
 export const TASK_STATUS_FILTER_LABELS: Record<TaskStatusFilter, string> = {
