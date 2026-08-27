@@ -18,7 +18,7 @@ async function clearFavorites(page: import("@playwright/test").Page) {
   // kolejności elementów w drzewie paska widoku.
   const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]:not([aria-label*="to miejsce"])';
   for (let i = 0; i < 40; i++) {
-    await page.goto("/settings");
+    await page.goto("/settings/nawigacja");
     // 098: NIE `networkidle` — od 072 aplikacja trzyma otwarty strumien zdarzen (`/api/events`),
     // wiec sieć nigdy nie jest bezczynna i to oczekiwanie konczylo sie limitem czasu testu.
     await page.waitForLoadState("load").catch(() => {});

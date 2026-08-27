@@ -61,12 +61,15 @@ async function skoczDoUlubionego(page: import("@playwright/test").Page, name: st
  * przypadkowego stanu.
  */
 async function clearFavorites(page: import("@playwright/test").Page) {
+  // 109: edytor ulubionych mieszka pod `/settings/nawigacja` — `/settings` jest od tego przebiegu
+  // SPISEM sekcji. Adres spisu nie wywala testu, tylko cicho zwraca zero wpisów, więc sprzątanie
+  // udawałoby, że zadziałało, a kolejny test dostawałby cudzy stan.
   // Wykluczamy GWIAZDKĘ bieżącego widoku („Usuń to miejsce z ulubionych"), która też siedzi
   // w `main` (pasek widoku). Kasowanie ma dotyczyć WPISÓW LISTY w ustawieniach — klikanie
   // gwiazdki tylko przełącza `/settings` w kółko i pętla nigdy nie schodzi do zera.
   const sel = 'button[aria-label^="Usu"][aria-label$="z ulubionych"]:not([aria-label*="to miejsce"])';
   for (let i = 0; i < 40; i++) {
-    await page.goto("/settings");
+    await page.goto("/settings/nawigacja");
     await page.waitForLoadState("load").catch(() => {});
     const lista = page.getByRole("main").locator(sel);
     const n = await lista.count();
@@ -107,7 +110,7 @@ test.describe("042 — ulubione widoki", () => {
 
     // Wymuszamy drugi zapis tej samej ścieżki bezpośrednio przez akcję serwera:
     // interfejs pokazuje już „usuń", więc duplikat mógłby powstać tylko tędy.
-    await page.goto("/settings");
+    await page.goto("/settings/nawigacja");
     // AC-9 mowi o BRAKU DUPLIKATU TEGO SAMEGO widoku — liczymy wiec wpisy o tej nazwie,
     // a nie wszystkie ulubione (te moga zostac po innych testach w tej samej bazie).
     const rows = page.locator('button[aria-label*="Notatki raz"][aria-label$="z ulubionych"]');
@@ -159,7 +162,7 @@ test.describe("042 — ulubione widoki", () => {
     await page.goto("/shopping");
     await saveCurrentAs(page, "Nawyki stare");
 
-    await page.goto("/settings");
+    await page.goto("/settings/nawigacja");
     await page.locator('button[aria-label^="Zmie"][aria-label*="Nawyki stare"]').click();
     // Kontrolowany input Reacta nie ma atrybutu `value` w DOM — bierzemy pole, ktore dostalo focus.
     const editor = page.locator("input:focus");
@@ -284,7 +287,7 @@ test.describe("043/087 — ulubione widoczne od pierwszego wejścia", () => {
     await kliknijGwiazdkeUlubionych(page, GWIAZDKA);
 
     await page.getByRole("button", { name: /Zarządzaj ulubionymi/i }).click();
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe("/settings");
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe("/settings/nawigacja");
 
     // Edytor z 042 (nazwa / ikona / kolor / kolejność) jest na miejscu, pod kotwicą.
     await expect(page.locator("#ulubione")).toBeVisible({ timeout: 10_000 });

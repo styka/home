@@ -4,6 +4,75 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Zgłoszenie opisywało stan sprzed trzech przebiegów, a wina i tak była prawdziwa
+**Problem:** Właściciel zgłosił „zduplikowany link »Strona główna« w menu bocznym", wskazując pozycję
+listy modułów. Tej pozycji **nie było już w kodzie** — 087 usunęło ją stamtąd i zastąpiło ikoną domu
+w rzędzie ikon konta. Naturalna reakcja („to już naprawione") byłaby błędna: sedno zgłoszenia —
+dwa wejścia na `/`, oba nienazwane, a to bardziej widoczne stoi POD gwiazdką ulubionych — było
+w pełni aktualne.
+
+**Rozwiązanie:** Przed napisaniem specyfikacji sprawdziliśmy, co panel robi DZIŚ (`ModuleSidebar`,
+`resolveMenu`), i opisaliśmy stan zastany osobnym akapitem w `spec.md`. Kryteria akceptacji celują
+w stan dzisiejszy, nie w ten z chwili zgłoszenia.
+
+**Lekcja:** **Zgłoszenie nazywa OBJAW z chwili, w której je pisano.** Między zgłoszeniem a naprawą
+mogło wejść kilka przebiegów, więc pierwszym krokiem jest odczytanie kodu, a nie ufanie opisowi
+miejsca. Ale odwrotny błąd jest gorszy: „opis się nie zgadza, więc zgłoszenie nieaktualne" zamyka
+prawdziwą usterkę. Zgadzaj kod z SEDNEM zgłoszenia, nie z jego adresem DOM.
+
+## 2026-08-27 — `notFound()` z wnętrza renderu daje stronę 404 ze statusem 200
+**Problem:** Test kliknięciowy dla nowej trasy `/settings/[sekcja]` sprawdzał, że nieznana sekcja
+zwraca status 404. Dostawał 200 — mimo że przeglądarka pokazywała poprawną stronę „Nie znaleziono
+strony". Podejrzenie padło na kolejność `auth()` i `notFound()` (hipoteza: strumień odpowiedzi już
+ruszył, więc statusu nie da się zmienić).
+
+**Rozwiązanie:** Zmierzone na `next start` z prawdziwym ciasteczkiem sesji: `/zupelnie-nieistniejaca`
+→ **404**, `/settings/nieistniejaca-sekcja` → **200** z treścią strony 404. Przestawienie walidacji
+segmentu PRZED `auth()` niczego nie zmieniło. Różnica nie leży w strumieniu, tylko w tym, KTO
+odrzuca żądanie: status 404 ustawia router Nexta, gdy nie dopasuje trasy; `notFound()` wywołane
+w renderze podmienia wyłącznie treść. Test sprawdza więc TREŚĆ (brak nagłówka sekcji, brak listy
+bocznej, komunikat 404), a kod niesie komentarz z pomiarem.
+
+**Lekcja:** Zanim napiszesz asercję na status HTTP, sprawdź jednym `curl`-em, co framework naprawdę
+zwraca. Asercja na status pilnowałaby tu szczegółu implementacji Nexta, a nie reguły, o którą chodzi
+(„nieznana sekcja nie pokazuje treści żadnej sekcji"). I nie zostawiaj hipotezy w komentarzu jako
+faktu — sprawdzone „przestawienie kolejności tego nie zmienia" jest warte więcej niż zgrabne
+wyjaśnienie, którego nikt nie zmierzył.
+
+## 2026-08-27 — Podział długiej strony cicho zepsuł SPRZĄTANIE w testach, nie same testy
+**Problem:** Po rozbiciu `/settings` na sekcje klikacz pokazał awarię w `favorites.spec.ts` —
+ale za każdym uruchomieniem w INNYM teście (raz `fav-AC9`, raz `fav-AC4`). Wyglądało to na flaka.
+Prawdziwa przyczyna była inna: pomocnicza funkcja `clearFavorites` szła pod `/settings` i liczyła
+tam wpisy ulubionych. Po zmianie edytor mieszka pod `/settings/nawigacja`, więc funkcja znajdowała
+**zero wpisów i wracała jako „posprzątane"** — nie wywalała się, tylko zostawiała cudzy stan
+następnemu testowi.
+
+**Rozwiązanie:** Wszystkie pomocnicze wejścia w klikaczu (`favorites`, `shortcuts`, `view-state`,
+`chromWidoku`, `przewodniki`) przestawione na adresy sekcji, z komentarzem, dlaczego zły adres nie
+objawia się błędem. Bieg odniesienia na kodzie SPRZED zmiany pokazał, że pozostałe cztery awarie
+(dwie w `chrom-konta`, `sc-AC9`, `vs-AC4`) i jedna wędrująca awaria w `favorites` istniały już
+wcześniej — czyli nie są regresją tego przebiegu.
+
+**Lekcja:** Dwie rzeczy. (1) **Przenosząc treść pod nowy adres, wyszukaj ten adres także w testach —
+w POMOCNIKACH, nie tylko w asercjach.** Asercja pod złym adresem czerwienieje od razu; sprzątanie
+pod złym adresem kończy się ciszą i przenosi awarię do sąsiada. (2) **Zanim nazwiesz czerwony test
+swoją regresją albo cudzym flakiem, zrób bieg odniesienia na kodzie sprzed zmiany.** Kosztuje jedno
+uruchomienie i jest jedyną rzeczą, która odróżnia te dwie diagnozy.
+
+## 2026-08-27 — Test był czerwony od 107, bo szukał przycisku po starej nazwie
+**Problem:** `[087-AC19+AC20]` w `rama-i-chrom.spec.ts` przewracał się na „dzwonek musi być
+widoczny", choć dzwonek był na ekranie. Wzorzec szukał `aria-label` pasującego do `/Powiadomienia/i`,
+a 107 zamieniło dzwonek w SKRZYNKĘ — od tamtej pory etykieta brzmi „Skrzynka".
+
+**Rozwiązanie:** Wzorzec poprawiony na `/skrzynk|powiadomie/i`, z komentarzem nazywającym przebieg,
+który zmienił etykietę.
+
+**Lekcja:** Test dopasowany do WIDOCZNEGO TEKSTU staje się nieaktualny przy każdej zmianie nazwy —
+i wtedy nie znika, tylko **zaczyna raportować nieprawdę** („element niewidoczny" o elemencie, który
+stoi na ekranie). Zmieniając `aria-label` komponentu powłoki, przeszukaj klikacz po starej nazwie;
+a znajdując czerwony test, który twierdzi rzecz sprzeczną ze zrzutem ekranu, podejrzewaj najpierw
+jego selektor, nie aplikację.
+
 ## 2026-08-27 — „Nie widzę tego na mobile", a chodziło o inną TRASĘ, nie o rozmiar ekranu
 **Problem:** Po wdrożeniu przewodników właściciel zgłosił „nie widzę guide na mobile". Naturalny
 pierwszy trop — układ na wąskim ekranie: `ViewBar` chowa na telefonie cały wiersz akcji

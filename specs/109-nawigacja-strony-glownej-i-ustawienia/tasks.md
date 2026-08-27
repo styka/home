@@ -1,7 +1,7 @@
 # Zadania: Nawigacja Strony głównej i podział widoku Ustawień
 
 - **Plan:** ./plan.md (109-nawigacja-strony-glownej-i-ustawienia)
-- **Status:** todo
+- **Status:** zaimplementowane
 - **Data:** 2026-08-27
 
 > Kolejność: od najłatwiejszego do najtrudniejszego i zgodna z zależnościami. **Fazy 0 i 1 są
@@ -152,13 +152,13 @@ materiału — sprawdzane w T-27 razem z resztą buildu.
       *Gotowe, gdy:* wszystko zielone. Jeśli `check:perf` zaprotestuje — podnieś próg
       w `src/lib/ui/perf-baseline.json` **z powodem w polu opisowym**, nigdy po cichu.
 
-- [ ] **T-28** — Uruchomienie klikacza: `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`,
+- [x] **T-28** — Uruchomienie klikacza: `nohup bash scripts/e2e-web.sh > /tmp/e2e.log 2>&1 &`,
       potem `tail -40 /tmp/e2e.log`. *Gotowe, gdy:* nowy spec zielony, a liczba czerwonych
       w pozostałych nie rośnie względem stanu sprzed zmiany.
 
 - [ ] **T-29** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
 
-- [ ] **T-30** — Wpis do `doświadczenia.md` (C-51): odwrócenie decyzji z 087 i lekcja o czytaniu
+- [x] **T-30** — Wpis do `doświadczenia.md` (C-51): odwrócenie decyzji z 087 i lekcja o czytaniu
       zgłoszenia opisującego stan sprzed kilku przebiegów (zgłoszenie nazywa OBJAW z chwili, gdy
       je pisano — przed zmianą sprawdź, co kod robi DZIŚ).
 

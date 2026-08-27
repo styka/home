@@ -101,7 +101,7 @@ test.describe("Przewodniki", () => {
   });
 
   test("[AC-4] Ustawienia prowadzą do działu przewodników", async ({ page }) => {
-    await page.goto("/settings");
+    await page.goto("/settings/pomoc");
     const link = page.getByRole("link", { name: "Otwórz przewodniki" });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute("href", "/guide");

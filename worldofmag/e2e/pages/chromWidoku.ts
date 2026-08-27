@@ -67,7 +67,8 @@ export async function skoczDoUlubionego(page: Page, nazwa: string): Promise<void
  * i kończyła wyjątkiem „nie udało się wyczyścić w 40 iteracjach". Test sprząta po sobie, nie po innych.
  */
 export async function usunUlubioneONazwie(page: Page, nazwa: string): Promise<void> {
-  await page.goto("/settings");
+  // 109: wpisy ulubionych są pod `/settings/nawigacja`; `/settings` to spis sekcji.
+  await page.goto("/settings/nawigacja");
   await page.waitForLoadState("load").catch(() => {});
   const wiersz = page.getByRole("main").locator(`button[aria-label^="Usu"][aria-label*="${nazwa}"]`);
   for (let i = 0; i < 5 && (await wiersz.count()) > 0; i++) {
