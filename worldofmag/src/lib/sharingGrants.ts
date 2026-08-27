@@ -208,6 +208,8 @@ export async function nadajDostep(
             body: `${etykietaTypu} — rola: ${role}.`,
             href: "/udostepnione",
             dedupeKey: `grant-${grant.id}`,
+            // 107: to jest sprawa Z CZŁOWIEKIEM, nie termin do odhaczenia — segment „Relacje".
+            rodzaj: "relacja",
           }),
         ),
     );
@@ -238,6 +240,7 @@ export async function nadajDostep(
     body: `${etykietaTypu} — rola: ${role}.`,
     href: "/udostepnione",
     dedupeKey: `grant-${grant.id}`,
+    rodzaj: "relacja",
   });
   return { rodzaj: "nadano", grantId: grant.id };
 }
@@ -299,6 +302,7 @@ export async function odbierzDostep(userId: string, grantId: string): Promise<vo
       body: `${etykieta} nie jest już Tobie udostępniony.`,
       href: "/udostepnione",
       dedupeKey: `revoke-${grantId}`,
+      rodzaj: "relacja",
     });
   }
 }

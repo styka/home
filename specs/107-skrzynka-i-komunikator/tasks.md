@@ -38,13 +38,13 @@
 
 ## Faza 2 — Skrzynka: warstwa serwera
 
-- [ ] **T-4** — `src/types/index.ts`: `export type RodzajPowiadomienia = "zadanie" | "relacja";`
+- [x] **T-4** — `src/types/index.ts`: `export type RodzajPowiadomienia = "zadanie" | "relacja";`
   (plik `"use server"` nie może eksportować nie-funkcji). `src/lib/notify.ts`: `NotifyInput` zyskuje
   `rodzaj?` (domyślnie `"zadanie"`) i `aktualizuj?: boolean` — przy `true` `upsert` nadpisuje
   tytuł/treść i zeruje `readAt` (dla zbiorczego sygnału z rozmowy).
   **Gotowe, gdy:** `tsc --noEmit -p tsconfig.test.json` czysto, dotychczasowe wywołania `notifyUser`
   działają bez zmian.
-- [ ] **T-5** — `src/actions/notifications.ts`: `getNotifications({ rodzaj?, limit? })`,
+- [x] **T-5** — `src/actions/notifications.ts`: `getNotifications({ rodzaj?, limit? })`,
   nowa `getLicznikiSkrzynki()` (`{ zadania, relacje, zaproszenia }`), `markAllNotificationsRead(rodzaj?)`.
   Wpis `notifications:getLicznikiSkrzynki` do `src/lib/ai/action-coverage.json`
   (`status: "excluded"`, `reason: "settings"`, `access: "self"`).

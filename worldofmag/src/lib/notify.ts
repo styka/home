@@ -1,4 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
+import type { RodzajPowiadomienia } from "@/types";
 
 // 031 (audyt kontroli dostępu): `notifyUser` żyła w `src/actions/notifications.ts` z dyrektywą
 // `"use server"`, więc — jak każda eksportowana funkcja w takim pliku — była wystawiona jako
@@ -15,6 +16,18 @@ export interface NotifyInput {
   href?: string | null;
   dueAt?: Date | null;
   dedupeKey?: string | null;
+  /** 107: rodzaj sprawy — decyduje, w którym segmencie skrzynki pozycja wyląduje. */
+  rodzaj?: RodzajPowiadomienia;
+  /**
+   * 107: czy powtórne wywołanie ma NADPISAĆ istniejące powiadomienie i przywrócić je do
+   * nieprzeczytanych.
+   *
+   * Domyślne `false` jest poprawne dla przypomnień: skan terminów chodzi w kółko, a wskrzeszanie
+   * przeczytanego przypomnienia przy każdym przebiegu byłoby spamem. Zbiorczy sygnał z rozmowy
+   * potrzebuje odwrotności — bez tego licznik zamarłby na pierwszej wiadomości i „3 nowe" nigdy
+   * by się nie pojawiło (AC-27).
+   */
+  aktualizuj?: boolean;
 }
 
 /**
@@ -28,12 +41,15 @@ export async function notifyUser(input: NotifyInput): Promise<void> {
     body: input.body ?? null,
     href: input.href ?? null,
     dueAt: input.dueAt ?? null,
+    rodzaj: input.rodzaj ?? "zadanie",
   };
   if (input.dedupeKey) {
     await prisma.notification.upsert({
       where: { userId_dedupeKey: { userId: input.userId, dedupeKey: input.dedupeKey } },
       create: { userId: input.userId, dedupeKey: input.dedupeKey, ...data },
-      update: {}, // istnieje → nie duplikuj i nie „odczytuj" ponownie
+      // istnieje → domyślnie nie duplikuj i nie „odczytuj" ponownie; przy `aktualizuj`
+      // nadpisz treść i przywróć do nieprzeczytanych (jedna pozycja na rozmowę — AC-27).
+      update: input.aktualizuj ? { ...data, readAt: null } : {},
     });
   } else {
     await prisma.notification.create({ data: { userId: input.userId, ...data } });

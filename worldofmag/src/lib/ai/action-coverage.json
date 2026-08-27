@@ -1387,6 +1387,12 @@
     "status": "ai",
     "access": "owner"
   },
+  "notifications:getLicznikiSkrzynki": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "settings",
+    "access": "self"
+  },
   "notifications:getNotifications": {
     "kind": "read",
     "status": "excluded",
