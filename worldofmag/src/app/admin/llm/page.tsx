@@ -7,8 +7,7 @@ import { getLlmProviders, getAssignments, getAiCostBreakdown, getCostAlertThresh
 import { getDefaultSectionModes } from "@/actions/aiSections";
 import { CONFIG_LEVELS, type ConfigLevel } from "@/platform/llm/operationTypes";
 import { LlmConfigPanel } from "@/components/admin/LlmConfigPanel";
-import { ChevronLeft, Cpu } from "lucide-react";
-import Link from "next/link";
+import { Cpu } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { PowrotDoPanelu } from "@/components/admin/PowrotDoPanelu";
 

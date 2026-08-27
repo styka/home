@@ -37,27 +37,35 @@ import {
  * **Same klucze tekstów, zero literałów** (C-32). Bramka `check:i18n` nie widzi kluczy podawanych
  * zmienną, więc ich istnienia pilnuje test jednostkowy obok tego pliku.
  */
-export type NarzedzieAdmina = {
+type WspolneNarzedzia = {
   /**
    * Ostatni segment trasy pod `/admin` — to po nim bramka kojarzy wpis z katalogiem na dysku.
    * Pozycje spoza `/admin` (moderacja usług) mają `id` opisowe i `href` wskazujący gdzie indziej;
    * bramka je pomija, bo nie ma czego porównać.
    */
   id: string;
-  href: string;
   Ikona: LucideIcon;
   /** Klucze w przestrzeni `components.admin.SpisNarzedziAdmina`. */
   kluczNazwy: string;
   kluczOpisu: string;
   /** Dodatkowe słowa dla wyszukiwarki — czego szuka administrator, nie zawsze jest w nazwie. */
   kluczHasel: string;
-  /**
-   * Pozycja, która nie jest odnośnikiem, tylko uruchamia coś na miejscu. Dziś jedna: tryb
-   * wskazywania elementu do zgłoszenia. Bez tego pola musiałaby wypaść z rejestru — a wtedy
-   * wypadłaby też z wyszukiwarki, czyli z jedynego miejsca, gdzie się jej szuka.
-   */
-  akcja?: "wskazElement";
 };
+
+/**
+ * Pozycja jest ALBO odnośnikiem, ALBO akcją — nigdy jednym i drugim.
+ *
+ * Unia zamiast opcjonalnej `akcja` obok wymaganego `href`: akcja („wskaż element do zgłoszenia")
+ * nie prowadzi pod żaden adres, więc wymagany `href` zmuszał ją do noszenia atrapy `"#"` — czyli
+ * nieprawdy w pliku, którego całym zadaniem jest być jedynym źródłem prawdy. Przy unii kompilator
+ * pilnuje, że odnośnik ma adres, a akcja go nie ma.
+ *
+ * Akcja **zostaje w rejestrze**, mimo że nie jest trasą: inaczej wypadłaby też z wyszukiwarki,
+ * czyli z jedynego miejsca, w którym administrator jej szuka.
+ */
+export type NarzedzieAdmina =
+  | (WspolneNarzedzia & { href: string; akcja?: undefined })
+  | (WspolneNarzedzia & { href?: undefined; akcja: "wskazElement" });
 
 export type GrupaNarzedzi = {
   id: string;
@@ -65,11 +73,7 @@ export type GrupaNarzedzi = {
   narzedzia: NarzedzieAdmina[];
 };
 
-function n(
-  id: string,
-  Ikona: LucideIcon,
-  opcje?: { href?: string; akcja?: NarzedzieAdmina["akcja"] },
-): NarzedzieAdmina {
+function n(id: string, Ikona: LucideIcon, opcje?: { href?: string }): NarzedzieAdmina {
   return {
     id,
     href: opcje?.href ?? `/admin/${id}`,
@@ -77,7 +81,18 @@ function n(
     kluczNazwy: `narzedzia.${id}.nazwa`,
     kluczOpisu: `narzedzia.${id}.opis`,
     kluczHasel: `narzedzia.${id}.hasla`,
-    ...(opcje?.akcja ? { akcja: opcje.akcja } : {}),
+  };
+}
+
+/** Pozycja uruchamiająca coś na miejscu — bez adresu, bo nigdzie nie prowadzi. */
+function akcja(id: string, Ikona: LucideIcon, rodzaj: "wskazElement"): NarzedzieAdmina {
+  return {
+    id,
+    Ikona,
+    kluczNazwy: `narzedzia.${id}.nazwa`,
+    kluczOpisu: `narzedzia.${id}.opis`,
+    kluczHasel: `narzedzia.${id}.hasla`,
+    akcja: rodzaj,
   };
 }
 
@@ -136,7 +151,7 @@ export const GRUPY_NARZEDZI: GrupaNarzedzi[] = [
       n("playground", MousePointerClick),
       n("e2e", Bug),
       n("qa", ClipboardList),
-      n("zglos-blad", Bug, { href: "#", akcja: "wskazElement" }),
+      akcja("zglos-blad", Bug, "wskazElement"),
     ],
   },
 ];
@@ -155,6 +170,6 @@ export function wszystkieNarzedzia(): NarzedzieAdmina[] {
  */
 export function idNarzedziPodAdmin(): string[] {
   return wszystkieNarzedzia()
-    .filter((x) => !x.akcja && x.href === `/admin/${x.id}`)
+    .filter((x) => x.href === `/admin/${x.id}`)
     .map((x) => x.id);
 }

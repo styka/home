@@ -158,7 +158,7 @@ function Pozycja({ narzedzie }: { narzedzie: NarzedzieAdmina }) {
    */
   if (narzedzie.akcja === "wskazElement") {
     return (
-      <button type="button" onClick={() => startFeedbackInspector()} style={{ ...styl, border: "1px solid var(--border)" }}>
+      <button type="button" onClick={() => startFeedbackInspector()} style={styl}>
         {tresc}
       </button>
     );

@@ -62,10 +62,18 @@ test("identyfikatory narzędzi i grup są unikalne", () => {
   }
 });
 
-test("każda pozycja ma adres, a identyfikator nadaje się na segment trasy", () => {
+test("pozycja jest ALBO odnośnikiem z adresem, ALBO akcją bez adresu", () => {
+  // Unia w typie pilnuje tego przy kompilacji; ten test pilnuje, że dane faktycznie się w nią
+  // układają — wcześniej akcja nosiła atrapę `href: "#"`, którą asercja `href.length > 0`
+  // zaliczała bez mrugnięcia.
   for (const narzedzie of wszystkieNarzedzia()) {
-    assert.ok(narzedzie.href.length > 0, `narzędzie „${narzedzie.id}" bez adresu`);
     assert.match(narzedzie.id, /^[a-z][a-z0-9-]*$/, `identyfikator „${narzedzie.id}" nie nadaje się na segment trasy`);
+    if (narzedzie.akcja) {
+      assert.equal(narzedzie.href, undefined, `akcja „${narzedzie.id}" nie powinna mieć adresu`);
+    } else {
+      assert.ok(narzedzie.href.length > 0, `narzędzie „${narzedzie.id}" bez adresu`);
+      assert.ok(narzedzie.href.startsWith("/"), `adres „${narzedzie.href}" nie jest ścieżką w aplikacji`);
+    }
   }
 });
 
