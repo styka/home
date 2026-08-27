@@ -126,7 +126,16 @@ test("[087-AC13] potwierdzenie Oznacz wszystkie ma tresc", async ({ page }) => {
   await expect(dialog.getByRole("button", { name: "Usuń" })).toHaveCount(0);
 });
 
-test("[087-AC17] nawigacja nie ma pozycji Ulubione ani Strona glowna", async ({ page }) => {
+test("[087-AC17] lista modulow nie ma pozycji Ulubione", async ({ page }) => {
+  /**
+   * 109 ZMIENIA POŁOWĘ TEGO TESTU — nie „naprawiaj" go z powrotem.
+   *
+   * 087 wyrzuciło z nawigacji dwie pozycje naraz: Ulubione i Stronę główną. Reguła o Ulubionych
+   * zostaje (jedno wejście, gwiazdka w rzędzie ikon konta). Strona główna WRACA jako nazwany
+   * wiersz — właściciel zgłosił, że ikona domu w rzędzie narzędzi nie jest opisana słowami i stoi
+   * pod ulubionymi. Wiersz stoi POZA `<nav>`, nad rzędem ikon, więc lista modułów dalej go nie
+   * zawiera; pilnuje tego asercja niżej, żeby nie wrócił jako dublet pozycji menu.
+   */
   await otworz(page, "/pogoda");
   const pozycje = await page.evaluate(() =>
     Array.from(document.querySelectorAll("aside nav a, aside nav button"))
@@ -135,7 +144,10 @@ test("[087-AC17] nawigacja nie ma pozycji Ulubione ani Strona glowna", async ({ 
   );
   console.log(`[087-AC17] pozycje nawigacji: ${JSON.stringify(pozycje)}`);
   expect(pozycje.some((p) => /^Ulubione/.test(p)), "Ulubione nie jest juz pozycja menu").toBe(false);
-  expect(pozycje.some((p) => /^Strona główna$/.test(p)), "Strona glowna nie jest juz pozycja menu").toBe(false);
+  expect(
+    pozycje.some((p) => /^Strona główna$/.test(p)),
+    "Strona glowna ma wlasny wiersz nad rzedem ikon, nie jest pozycja listy modulow (109)",
+  ).toBe(false);
 });
 
 test("[087-AC18] gwiazdka otwiera jeden dialog z lista i operacja na biezacym widoku", async ({ page }) => {
@@ -147,39 +159,59 @@ test("[087-AC18] gwiazdka otwiera jeden dialog z lista i operacja na biezacym wi
   await expect(dialog.getByRole("button", { name: /(Dodaj|Usuń) bieżący widok/i })).toBeVisible();
 });
 
-test("[087-AC19+AC20] uklad ikon w panelu bocznym", async ({ page }) => {
+test("[087-AC19 + 109-AC1] uklad wierszy w panelu bocznym", async ({ page }) => {
+  /**
+   * 109 ZMIENIA UKŁAD OPISANY W 087-AC20 — nie „naprawiaj" go z powrotem.
+   *
+   * 087 postawiło ikonę domu jako pierwszą w rzędzie ikon konta (dom, gwiazdka, skróty).
+   * Właściciel zgłosił dwie rzeczy naraz: wejście na stronę główną nie jest opisane słowami i stoi
+   * POD ulubionymi. Od 109 Strona główna ma własny, nazwany wiersz NAD tym rzędem, a w rzędzie
+   * zostają gwiazdka i skróty. Niezmiennik z 086 (rząd ikon nad nawigacją modułów) zostaje.
+   */
   await otworz(page, "/pogoda");
   const uklad = await page.evaluate(() => {
     const aside = document.querySelector("aside");
     if (!aside) return null;
+    const widoczny = (el: Element) => el.getClientRects().length > 0;
     const znajdz = (re: RegExp) =>
       Array.from(aside.querySelectorAll("button, a")).find(
-        (b) => re.test(b.getAttribute("aria-label") ?? "") && b.getClientRects().length > 0,
+        (b) => re.test(b.getAttribute("aria-label") ?? "") && widoczny(b),
       );
-    const p = (el?: Element) =>
+    const p = (el?: Element | null) =>
       el ? { x: Math.round(el.getBoundingClientRect().left), y: Math.round(el.getBoundingClientRect().top) } : null;
+    // Wiersz Strony głównej jest zwykłą pozycją nawigacji — szukamy go po TEKŚCIE, nie po
+    // `aria-label`, bo od 109 jest opisany słowami i to jest właśnie sedno zmiany.
+    const dom =
+      Array.from(aside.querySelectorAll("a")).find(
+        (a) => a.getAttribute("href") === "/" && /Strona główna/.test(a.textContent || "") && widoczny(a),
+      ) ?? null;
     return {
       dzwonek: p(znajdz(/Powiadomienia/i)),
       tryb: p(znajdz(/tryb administratora/i)),
-      dom: p(znajdz(/Strona główna/i)),
+      dom: p(dom),
       gwiazdka: p(znajdz(/Ulubione/i)),
       skroty: p(znajdz(/skrót/i)),
+      // 109-AC2: w całym panelu ma być DOKŁADNIE JEDNO wejście na `/`.
+      wejsciaNaStroneGlowna: Array.from(aside.querySelectorAll('a[href="/"]')).filter(widoczny).length,
     };
   });
-  console.log(`[087-AC19+20] ${JSON.stringify(uklad)}`);
+  console.log(`[087-AC19 + 109-AC1] ${JSON.stringify(uklad)}`);
   expect(uklad).not.toBeNull();
   const { dzwonek, tryb, dom, gwiazdka, skroty } = uklad!;
   for (const [nazwa, el] of Object.entries({ dzwonek, tryb, dom, gwiazdka, skroty })) {
     expect(el, `${nazwa} musi być widoczny`).not.toBeNull();
   }
-  // AC-19: przełącznik admina i dzwonek w jednym wierszu, admin PRZED dzwonkiem.
+  // 087-AC19: przełącznik admina i dzwonek w jednym wierszu, admin PRZED dzwonkiem.
   expect(Math.abs(tryb!.y - dzwonek!.y), "admin i dzwonek w tym samym wierszu").toBeLessThan(8);
   expect(tryb!.x, "najpierw przełącznik admina, bardziej z prawej dzwonek").toBeLessThan(dzwonek!.x);
-  // AC-20: rząd niżej — dom, gwiazdka, skróty, w tej kolejności.
-  expect(dom!.y, "rząd ikon stoi PONIŻEJ wiersza z nazwą aplikacji").toBeGreaterThan(dzwonek!.y);
-  expect(Math.abs(gwiazdka!.y - dom!.y), "dom i gwiazdka w jednym wierszu").toBeLessThan(8);
-  expect(dom!.x).toBeLessThan(gwiazdka!.x);
+  // 109-AC1: nazwany wiersz Strony głównej stoi POD nazwą aplikacji i NAD gwiazdką.
+  expect(dom!.y, "Strona główna stoi poniżej wiersza z nazwą aplikacji").toBeGreaterThan(dzwonek!.y);
+  expect(dom!.y, "Strona główna stoi NAD rzędem ikon konta").toBeLessThan(gwiazdka!.y);
+  // 087-AC20 w części, która zostaje: gwiazdka i skróty w jednym rzędzie, w tej kolejności.
+  expect(Math.abs(gwiazdka!.y - skroty!.y), "gwiazdka i skróty w jednym wierszu").toBeLessThan(8);
   expect(gwiazdka!.x).toBeLessThan(skroty!.x);
+  // 109-AC2: jedno wejście na `/`, więc nazwa aplikacji nie jest już odnośnikiem.
+  expect(uklad!.wejsciaNaStroneGlowna, "dokładnie jedno wejście na stronę główną w panelu").toBe(1);
 });
 
 test("[087-AC21] telefon ma jedno wejscie do ulubionych", async ({ page }) => {

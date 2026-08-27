@@ -41,7 +41,7 @@ nie wyglądało na przeoczenie.
       *Gotowe, gdy:* w panelu widocznych jest dokładnie **jedno** wejście na `/`, opisane słowami,
       stojące nad gwiazdką i nad pierwszą pozycją `<nav>`. (AC-1, AC-2, AC-4, AC-6)
 
-- [ ] **T-4** `[P]` — `e2e/specs/rama-i-chrom.spec.ts`: aktualizacja dwóch testów kodujących
+- [x] **T-4** `[P]` — `e2e/specs/rama-i-chrom.spec.ts`: aktualizacja dwóch testów kodujących
       decyzję z 087 — `[087-AC17]` (asercja o Stronie głównej odwrócona; asercja o Ulubionych
       **zostaje**) i `[087-AC19+AC20]` (`dom` nie jest już w rzędzie ikon, tylko we własnym wierszu
       nad nim). W komentarzu zapisz, że zmienia to 109, żeby następna osoba tego nie „naprawiła".
