@@ -88,3 +88,17 @@ test("hasła pomocnicze prowadzą do sekcji, której nazwa ich nie zawiera", () 
   // „drive" nie pada w nazwie ani w opisie — po to są hasła.
   assert.ok(bezOgonkow(hasla).includes("drive"), "sekcja Połączenia musi być znajdowana po słowie „drive”");
 });
+
+test("każda sekcja jest chroniona tym samym uprawnieniem co /settings", async () => {
+  // 109: rozbicie jednej chronionej strony na dziesięć adresów mnoży miejsca do obronienia.
+  // Dopasowanie po prefiksie w `legacyPermissionForPath` obejmuje podścieżki — ten test zapisuje
+  // to jako REGUŁĘ, a nie przypadek: zamiana `startsWith` na porównanie równością odsłoniłaby
+  // wszystkie sekcje naraz i nie zmieniłaby niczego, co widać na ekranie.
+  const { legacyPermissionForPath } = await import("@/platform/auth/permissions");
+  const oczekiwane = legacyPermissionForPath("/settings");
+  assert.equal(typeof oczekiwane, "string");
+  for (const sekcja of SEKCJE_USTAWIEN) {
+    assert.equal(legacyPermissionForPath(`/settings/${sekcja.id}`), oczekiwane, `sekcja ${sekcja.id}`);
+  }
+  assert.equal(legacyPermissionForPath("/settings/team/new"), oczekiwane);
+});

@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   const state = url.searchParams.get("state");
   const cookieState = req.cookies.get("drive_oauth_state")?.value;
 
-  const settingsUrl = new URL("/settings", req.url);
+  // 109: Ustawienia dzielą się na sekcje — powrót z OAuth Dysku ląduje tam, gdzie Dysk mieszka.
+  const settingsUrl = new URL("/settings/polaczenia", req.url);
 
   if (url.searchParams.get("error")) {
     settingsUrl.searchParams.set("drive", "denied");

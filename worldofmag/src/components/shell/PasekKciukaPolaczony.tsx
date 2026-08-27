@@ -103,7 +103,7 @@ export function PasekKciukaPolaczony({
         galezie={galezie}
         ostatnie={historiaDostepna.map((w) => ({ id: w.sciezka, etykieta: w.etykieta, href: w.sciezka }))}
         ulubione={ulubioneDostepne.map((f) => ({ id: f.id, etykieta: f.label, href: f.path }))}
-        hrefUstawien="/settings#menu"
+        hrefUstawien="/settings/nawigacja"
       />
     </>
   );

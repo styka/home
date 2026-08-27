@@ -340,6 +340,13 @@
         "brakDanychTytul": "Nic tu jeszcze nie ma",
         "jezykBrakOpis": "Ustawienia języka i strefy czasowej wczytają się, gdy przestrzeń będzie gotowa.",
         "planBrakOpis": "Informacje o planie pojawią się po zalogowaniu."
+      },
+      "sekcje": {
+        "menu": "Menu",
+        "ulubioneWidoki": "Ulubione widoki",
+        "dyskGoogle": "Dysk Google",
+        "kalendarzSubskrypcja": "Kalendarz — subskrypcja",
+        "wiedzaOTobie": "Wiedza o Tobie"
       }
     },
     "shopping": {

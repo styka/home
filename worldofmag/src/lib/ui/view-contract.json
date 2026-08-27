@@ -129,8 +129,12 @@
       ]
     },
     "settings": {
-      "status": "exempt",
-      "reason": "Ustawienia konta — element powłoki, nie moduł z rejestru MODULES."
+      "status": "done",
+      "entries": [
+        "src/app/settings/page.tsx",
+        "src/components/settings/RamaSekcji.tsx"
+      ],
+      "reason": "109: Ustawienia przestały rysować własny nagłówek. Spis sekcji (/settings) i widok pojedynczej sekcji (/settings/[sekcja]) renderują ModuleView ze `state`; wcześniejszy wyjątek „element powłoki, nie moduł MODULES\" przestał być prawdziwy — powodem wyjątku był ręczny nagłówek, nie brak sluga."
     },
     "shopping": {
       "status": "done",

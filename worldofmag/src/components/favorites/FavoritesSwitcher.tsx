@@ -125,7 +125,7 @@ export function FavoritesSwitcher({ favorites, open, onClose }: FavoritesSwitche
         >
           <Settings size={12} style={{ color: "var(--text-muted)" }} />
           <button
-            onClick={() => go("/settings")}
+            onClick={() => go("/settings/nawigacja")}
             className="text-xs"
             style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >

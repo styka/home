@@ -190,7 +190,7 @@ export default function NewReportPage() {
                 ? toDrive
                   ? "Treść raportu trafi jako plik .md do folderu „Omnia/Raporty” na Twoim Dysku. Metadane zostają w bazie."
                   : "Treść raportu zostanie zapisana w bazie danych."
-                : <>{t("dyskGoogleNieJest")} <Link href="/settings" style={{ color: "var(--accent-blue)" }}>Ustawienia → Dysk Google</Link>.</>}
+                : <>{t("dyskGoogleNieJest")} <Link href="/settings/polaczenia" style={{ color: "var(--accent-blue)" }}>Ustawienia → Dysk Google</Link>.</>}
             </p>
           </div>
 

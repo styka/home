@@ -124,7 +124,7 @@ export function ImageUrlInput({
       {needsConnect ? (
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
           Aby wgrywać pliki, najpierw{" "}
-          <Link href="/settings" style={{ color: "var(--accent-blue)" }}>
+          <Link href="/settings/polaczenia" style={{ color: "var(--accent-blue)" }}>
             {t("connectDrive")}
           </Link>{" "}
           w Ustawieniach.

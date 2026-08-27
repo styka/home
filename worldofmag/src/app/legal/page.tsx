@@ -54,7 +54,7 @@ export default async function LegalIndexPage() {
         </div>
 
         <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-          {t("politykaPrywatnosciIRegulamin")} <Link href="/settings" style={{ color: "var(--accent-blue)" }}>{t("ustawieniaPrywatnoscIDane")}</Link>.
+          {t("politykaPrywatnosciIRegulamin")} <Link href="/settings/prywatnosc" style={{ color: "var(--accent-blue)" }}>{t("ustawieniaPrywatnoscIDane")}</Link>.
         </p>
       </div>
     </div>

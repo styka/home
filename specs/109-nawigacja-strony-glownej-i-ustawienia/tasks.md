@@ -86,46 +86,46 @@ nie wyglądało na przeoczenie.
 > Sekcje przenosimy **1:1**, bez przeprojektowywania zawartości (C-53). Każda jest osobnym
 > **serwerowym** komponentem i awaituje wyłącznie swoje dane — to jest właściwy cel podziału.
 
-- [ ] **T-11** — `src/components/settings/sekcje/Konto.tsx` — profil (awatar, nazwa, e-mail) +
+- [x] **T-11** — `src/components/settings/sekcje/Konto.tsx` — profil (awatar, nazwa, e-mail) +
       formularz `signOut`. *Gotowe, gdy:* wylogowanie działa jak przed zmianą.
-- [ ] **T-12** `[P]` — `Wyglad.tsx` — `SkinPicker` (`listAvailableSkins`, `getActiveSkinId`,
+- [x] **T-12** `[P]` — `Wyglad.tsx` — `SkinPicker` (`listAvailableSkins`, `getActiveSkinId`,
       `getMyTeams` → `teamOpts`).
-- [ ] **T-13** `[P]` — `Nawigacja.tsx` — `MenuPrefsEditor` + `FavoriteViewsEditor`; **zachowaj
+- [x] **T-13** `[P]` — `Nawigacja.tsx` — `MenuPrefsEditor` + `FavoriteViewsEditor`; **zachowaj
       kotwicę `id="ulubione"`** na bloku ulubionych. (AC-11)
-- [ ] **T-14** `[P]` — `Jezyk.tsx` — `WorkspaceLocaleSection`; przy braku danych **stan pusty
+- [x] **T-14** `[P]` — `Jezyk.tsx` — `WorkspaceLocaleSection`; przy braku danych **stan pusty
       z wyjaśnieniem**, nigdy pusty ekran.
-- [ ] **T-15** `[P]` — `Polaczenia.tsx` — `DriveSettings` (z `notice` z `searchParams.drive`) +
+- [x] **T-15** `[P]` — `Polaczenia.tsx` — `DriveSettings` (z `notice` z `searchParams.drive`) +
       `IcalFeedCard`.
-- [ ] **T-16** `[P]` — `Asystent.tsx` — plan (`getActivePlan`) + `AiUsageMeters` (`getMyAiUsage`) +
+- [x] **T-16** `[P]` — `Asystent.tsx` — plan (`getActivePlan`) + `AiUsageMeters` (`getMyAiUsage`) +
       `UserFactsSection`; sekcje warunkowe ze stanem pustym.
-- [ ] **T-17** `[P]` — `Zespoly.tsx` — lista zespołów (`getMyTeams`) + odnośnik „Nowy zespół".
-- [ ] **T-18** `[P]` — `Pomoc.tsx` — opis + odnośnik do `/guide`.
-- [ ] **T-19** `[P]` — `Prywatnosc.tsx` — `PrivacySettings` + odnośnik do `/legal`.
-- [ ] **T-20** `[P]` — `Aktywnosc.tsx` — `ActivityFeed` (`getRecentActivity(30)`, uprawnienia).
+- [x] **T-17** `[P]` — `Zespoly.tsx` — lista zespołów (`getMyTeams`) + odnośnik „Nowy zespół".
+- [x] **T-18** `[P]` — `Pomoc.tsx` — opis + odnośnik do `/guide`.
+- [x] **T-19** `[P]` — `Prywatnosc.tsx` — `PrivacySettings` + odnośnik do `/legal`.
+- [x] **T-20** `[P]` — `Aktywnosc.tsx` — `ActivityFeed` (`getRecentActivity(30)`, uprawnienia).
 
-- [ ] **T-21** — `src/app/settings/[sekcja]/page.tsx` (server): `auth()` + przekierowanie przy
+- [x] **T-21** — `src/app/settings/[sekcja]/page.tsx` (server): `auth()` + przekierowanie przy
       braku sesji, walidacja segmentu przez `znajdzSekcje` → `notFound()`, dobór komponentu sekcji,
       przekazanie `searchParams` tam, gdzie sekcja go potrzebuje (`polaczenia`).
       *Gotowe, gdy:* każdy z 10 adresów renderuje swoją sekcję, `/settings/nieistniejaca` daje 404,
       `/settings/team/new` działa jak dotąd. (AC-9, AC-12)
 
-- [ ] **T-22** — `src/app/settings/page.tsx`: przepisanie na **spis** — `ModuleView` (tytuł
+- [x] **T-22** — `src/app/settings/page.tsx`: przepisanie na **spis** — `ModuleView` (tytuł
       „Ustawienia", `state="ready"`) + `SpisUstawien` wariant `kafelki`. Ręcznie rysowany `<h1>`
       i cała jednokolumnowa treść znikają.
       *Gotowe, gdy:* `/settings` pokazuje 10 kafelków mieszczących się bez przewijania na 1280 px
       i całą szerokość listy na 390 px. (AC-7, AC-8, AC-16)
 
-- [ ] **T-23** — `src/lib/ui/view-contract.json`: wpis `settings` z `exempt` na `done` + wpisy
+- [x] **T-23** — `src/lib/ui/view-contract.json`: wpis `settings` z `exempt` na `done` + wpisy
       wskazujące `SpisUstawien` i `RamaSekcji`.
       *Gotowe, gdy:* `npm run check:ui-contract` przechodzi. (AC-16, AC-17)
 
-- [ ] **T-24** — Sprawdź, że `permissionForPath("/settings/<sekcja>")` zwraca to samo co
+- [x] **T-24** — Sprawdź, że `permissionForPath("/settings/<sekcja>")` zwraca to samo co
       `permissionForPath("/settings")` (`legacyPermissionForPath` w `platform/auth/permissions.ts`);
       jeśli nie — dopasuj dopasowanie po prefiksie.
       *Gotowe, gdy:* test jednostkowy dla `/settings`, `/settings/wyglad`, `/settings/team/new`
       zwraca `module.settings`. (C-22)
 
-- [ ] **T-25** — Odnośniki w głąb ustawień (tabela z planu §5.4): `api/drive/callback/route.ts`,
+- [x] **T-25** — Odnośniki w głąb ustawień (tabela z planu §5.4): `api/drive/callback/route.ts`,
       `ImageUrlInput.tsx`, `admin/reports/new/page.tsx` → `/settings/polaczenia`;
       `legal/page.tsx` → `/settings/prywatnosc`; `PasekKciukaPolaczony.tsx` (`/settings#menu`)
       i `FavoritesSwitcher.tsx` → `/settings/nawigacja`.
