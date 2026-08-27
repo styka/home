@@ -91,16 +91,16 @@
 
 ## Faza 5 — Układ modułu Wiadomości (zgłoszenie 3)
 
-- [ ] **T-14** — Trzy zakładki: `feed` · `hot` · `timeline`; `ContentSwitch` i klucz `tresc` usunięte
+- [x] **T-14** — Trzy zakładki: `feed` · `hot` · `timeline`; `ContentSwitch` i klucz `tresc` usunięte
   (plan §5.3). **Zgodność zapisanych widoków:** stare `?tresc=timeline` normalizuje się do
   `?widok=timeline`, `widok=sources` nadal renderuje zarządzanie źródłami.
   **Gotowe, gdy:** wejście na stary adres ląduje na osi czasu, nie na pustce (AC-10..AC-12).
-- [ ] **T-15** — Zarządzanie źródłami z panelu filtra portali (stopka „Zarządzaj źródłami" →
+- [x] **T-15** — Zarządzanie źródłami z panelu filtra portali (stopka „Zarządzaj źródłami" →
   `NewsSettings` w `Modal`, stopka respektuje `env(safe-area-inset-bottom)`) — AC-17.
-- [ ] **T-16** — Pasek stanu odświeżania: gałąź `DONE` zwija się do **samego czasu**, liczby idą do
+- [x] **T-16** — Pasek stanu odświeżania: gałąź `DONE` zwija się do **samego czasu**, liczby idą do
   `title`/`aria-label`; gałęzie „trwa" i „nie powiodło się" **nietknięte** (AC-14, AC-15).
   `AiCostBadge` zostaje — jest meldunkiem na szynę kosztów.
-- [ ] **T-17** — Proporcje w pasku akcji Wiadomości: „Odśwież" dostaje `KLASA_AKCJI_ROZCIAGLIWEJ`
+- [x] **T-17** — Proporcje w pasku akcji Wiadomości: „Odśwież" dostaje `KLASA_AKCJI_ROZCIAGLIWEJ`
   z T-3, „Nowy temat" i koło zębate **nie** (AC-13).
 
 ## Faza 6 — Wiedza o użytkowniku (zgłoszenie 2)

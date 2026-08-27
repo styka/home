@@ -22,6 +22,7 @@ import { cn } from "@/lib/cn";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { zglosKoszt } from "@/platform/ai/kosztBus";
 import { ModuleView } from "@/components/ui/view";
+import { KLASA_AKCJI_IKONOWEJ } from "@/components/ui/view/ViewBar";
 import {
   GroupNavigator,
   sasiadujacaGrupa,
@@ -53,7 +54,18 @@ import {
   type NewsRefreshState,
 } from "../actions/news";
 
-type View = "feed" | "hot" | "sources" | "settings";
+/**
+ * 111: OŚ CZASU JEST ZAKŁADKĄ, a nie opcją przełącznika ukrytego w pasku nawigacji.
+ *
+ * Zgłoszenie właściciela: „może zakładki: nowe (wiadomości), gorące tematy, oś czasu — czyli
+ * wydzielenie zakładki na oś czasu". Miał rację: oś czasu jest jednym z dwóch głównych sposobów
+ * czytania tego modułu, a stała za przełącznikiem, którego łatwo nie zauważyć — zwłaszcza że poniżej
+ * `lg` zwija się on do dwóch ikon.
+ *
+ * `sources` ZOSTAJE w unii, choć nie jest już zakładką: zapisane widoki (ulubione) trzymają adres,
+ * więc `?widok=sources` musi nadal prowadzić do zarządzania źródłami, a nie do pustki.
+ */
+type View = "feed" | "hot" | "timeline" | "sources" | "settings";
 /** 040/083: co pokazujemy — nowe wiadomości (domyślnie) albo linię czasu. Union TS, nie enum (C-12). */
 type ContentKey = "items" | "timeline";
 
@@ -99,7 +111,13 @@ export function NewsPage({
    */
   const viewSpec = useMemo(
     () => ({
-      widok: oneOf(["feed", "hot", "sources", "settings"] as const, "feed"),
+      widok: oneOf(["feed", "hot", "timeline", "sources", "settings"] as const, "feed"),
+      /**
+       * 111: KLUCZ ZGODNOŚCI, nie stan widoku. Do 111 to on decydował, czy widać wiadomości, czy oś
+       * czasu; teraz decyduje o tym zakładka. Klucz zostaje w specyfikacji wyłącznie po to, żeby
+       * zapisany wcześniej adres `?tresc=timeline` dał się odczytać i przepisać na `?widok=timeline`
+       * (niżej). Bez tego ulubione zapisane przed 111 otwierałyby wiadomości zamiast osi czasu.
+       */
       tresc: oneOf(["items", "timeline"] as const, "items"),
       zrodla: idList(),
       /**
@@ -116,7 +134,31 @@ export function NewsPage({
   const [viewState, setViewState] = useViewState(viewSpec, viewParams);
   const view = viewState.widok;
   const setView = useCallback((value: View) => setViewState({ widok: value }), [setViewState]);
-  const tresc = viewState.tresc;
+  /**
+   * 111: rodzaj treści WYNIKA z zakładki — jedna decyzja ma jedno miejsce.
+   *
+   * Dwa nośniki tej samej decyzji (zakładka i przełącznik) dałyby stany bez sensu, np. „zakładka
+   * Oś czasu, przełącznik Wiadomości". Ta sama lekcja co w 083/084 przy filtrze tematów.
+   */
+  const tresc: ContentKey = view === "timeline" ? "timeline" : "items";
+  /** Zakładki pokazujące strumień tematów — obie karmi ten sam pasek nawigacji. */
+  const widokTresci = view === "feed" || view === "timeline";
+
+  /**
+   * 111: ZAPISANE WIDOKI SPRZED 111 MUSZĄ DALEJ DZIAŁAĆ.
+   *
+   * Gwiazdka „zapisz ten widok" zapamiętuje ADRES, a do 111 oś czasu mieszkała w kluczu `tresc`.
+   * Ulubione zapisane wcześniej niosą więc `?tresc=timeline` — bez tego przepisania otworzyłyby
+   * wiadomości, czyli co innego niż w chwili zapisu. To jest ta sama pułapka, którą 084 zafundowało
+   * kluczowi `temat`; tym razem jest obsłużona, a nie odkryta po fakcie.
+   *
+   * Przepisujemy RAZ, przy wejściu: `tresc` znika z adresu, a zakładka staje się jedynym nośnikiem.
+   */
+  useEffect(() => {
+    if (viewState.tresc === "timeline" && view === "feed") {
+      setViewState({ widok: "timeline", tresc: "items" });
+    }
+  }, [viewState.tresc, view, setViewState]);
   const wybraneZrodla = viewState.zrodla;
   const trybCzytania = viewState.czytanie === "1";
 
@@ -206,13 +248,13 @@ export function NewsPage({
   }, []);
 
   useEffect(() => {
-    if (view === "feed" && tresc === "items") loadStream();
-  }, [view, tresc, loadStream]);
+    if (widokTresci && tresc === "items") loadStream();
+  }, [widokTresci, tresc, loadStream]);
 
   useEffect(() => {
     // Oś czasu czytamy dopiero, gdy jest na ekranie — to osobne, niemałe zapytanie.
-    if (view === "feed" && tresc === "timeline") loadTimeline();
-  }, [view, tresc, loadTimeline]);
+    if (widokTresci && tresc === "timeline") loadTimeline();
+  }, [widokTresci, tresc, loadTimeline]);
 
   // ── Stan przebiegu odświeżania ────────────────────────────────────────────
   // 039: czytamy z KOLEJKI, nie z pamięci komponentu — powrót na stronę pokazuje trwający przebieg.
@@ -549,7 +591,7 @@ export function NewsPage({
        */
       // Tylko w widoku wiadomości: pasek modułu (a w nim JEDYNE wyjście z trybu) renderuje się
       // wyłącznie tam, więc `chromeless` na innej zakładce zostawiłby ramę bez klamki.
-      chromeless={trybCzytania && view === "feed"}
+      chromeless={trybCzytania && widokTresci}
       filters={trybCzytania ? undefined : <ViewTabs view={view} onChange={setView} />}
       /**
        * 087 (AC-7): ustawienia modułu w slocie ramy, nie jako czwarta zakładka. Ten sam przycisk
@@ -569,7 +611,20 @@ export function NewsPage({
         <>
           {/* 083 (AC-21): „nowy temat" wychodzi z paska nawigacji do akcji widoku — dodanie tematu
               nie dotyczy tematu wybranego, więc nie ma czego stać obok jego nazwy. */}
-          <Button size="sm" variant="ghost" onClick={() => setCreating(true)} title="Nowy temat">
+          {/**
+            * 111: „Nowy temat" jest na telefonie SAMĄ IKONĄ, więc nie rozciąga się (C-33, klasa
+            * z ramy). Do 111 pasek rozciągał wszystkie trzy akcje po równo i wiersz wyglądał na
+            * pusty — zgłoszenie właściciela: „dwie ikony po bokach i jedna ikona z tekstem na
+            * środku". Rozciąga się tylko „Odśwież", bo tylko on ma czym wypełnić szerokość.
+            */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setCreating(true)}
+            title="Nowy temat"
+            aria-label="Nowy temat"
+            className={KLASA_AKCJI_IKONOWEJ}
+          >
             <Plus size={15} />
             <span className="hidden md:inline">Nowy temat</span>
           </Button>
@@ -601,7 +656,7 @@ export function NewsPage({
           />
         )}
 
-        {view === "feed" && (
+        {widokTresci && (
           <div
             className="min-w-0"
             // Wysokość paska jako zmienna CSS: czytają ją sekcje tematów (przyklejony nagłówek
@@ -653,8 +708,11 @@ export function NewsPage({
                       sources={enabledSources}
                       wybrane={wybraneZrodla}
                       onZmiana={(klucze) => setViewState({ zrodla: klucze })}
+                      /* 111 (AC-17): „Źródła" przestały być zakładką, więc zarządzanie nimi
+                         wchodzi tam, gdzie i tak stoi ich filtr. Adres `?widok=sources` nadal
+                         działa — ulubione zapisane wcześniej muszą prowadzić tam, gdzie prowadziły. */
+                      onZarzadzaj={() => setView("sources")}
                     />
-                    <ContentSwitch value={tresc} onChange={(v) => setViewState({ tresc: v })} />
                     {/**
                       * 087 (AC-3): przełącznik trybu czytania stoi W PASKU MODUŁU, a nie w akcjach
                       * widoku — bo w trybie czytania akcji widoku nie ma, więc byłby jedynym
@@ -745,9 +803,12 @@ export function NewsPage({
  * z etykietą dla czytnika ekranu — funkcja zostaje, miejsce nie.
  */
 const VIEW_TABS: Array<{ key: View; label: string; icon: typeof Newspaper; tylkoIkona?: boolean }> = [
-  { key: "feed", label: "Tematy", icon: Newspaper },
+  // 111: „Wiadomości", nie „Tematy" — zakładka nazywa RODZAJ TREŚCI, tak jak dwie pozostałe.
+  // Nazwa „Tematy" mówiła o osi podziału (tematy), a nie o tym, co się w niej czyta.
+  { key: "feed", label: "Wiadomości", icon: Newspaper },
   { key: "hot", label: "Gorące tematy", icon: Flame },
-  { key: "sources", label: "Źródła", icon: Library },
+  // 111: oś czasu awansuje z opcji przełącznika na zakładkę — zgłoszenie właściciela.
+  { key: "timeline", label: "Oś czasu", icon: CalendarClock },
 ];
 
 /**
@@ -791,53 +852,6 @@ function ViewTabs({ view, onChange }: { view: View; onChange: (v: View) => void 
 }
 
 /**
- * 083: przełącznik treści — nowe wiadomości ⇄ linia czasu.
- *
- * Stoi w pasku nawigacji, a nie pod nazwą tematu, bo od 083 dotyczy CAŁEGO widoku: oś czasu działa
- * także przy wybranych wszystkich tematach (zgłoszenie właściciela).
- */
-function ContentSwitch({ value, onChange }: { value: ContentKey; onChange: (v: ContentKey) => void }) {
-  const t = useTranslations("modules.news.NewsPage");
-  const opcje: Array<{ key: ContentKey; label: string; Ikona: typeof Newspaper }> = [
-    { key: "items", label: t("wiadomosciKrotko"), Ikona: Newspaper },
-    { key: "timeline", label: t("liniaCzasuKrotko"), Ikona: CalendarClock },
-  ];
-  return (
-    /**
-     * 084 (AC-20): na wąskim ekranie przełącznik zwija się do IKON.
-     *
-     * Zgłoszenie właściciela: „switch wiadomości/linia czasu już nawet rozszerza stronę poza ekran
-     * i trzeba scrolować na boki, co jest nieakceptowalne". Dwie etykiety tekstowe to ~150 px —
-     * przy 360 px ekranu nie da się ich zmieścić obok listy tematów i filtra portali.
-     *
-     * Chowamy TEKST, nie funkcję: `aria-label` niesie pełną nazwę, więc dla czytnika ekranu i dla
-     * testu nic się nie zmienia, a cel dotyku zostaje pełnowymiarowy.
-     */
-    <div className="flex shrink-0 items-center rounded-md border border-[var(--border)] p-0.5">
-      {opcje.map((o) => (
-        <button
-          key={o.key}
-          type="button"
-          aria-pressed={value === o.key}
-          aria-label={o.label}
-          title={o.label}
-          onClick={() => onChange(o.key)}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded px-2 py-2.5 text-xs transition-colors",
-            value === o.key
-              ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-              : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          )}
-        >
-          <o.Ikona size={15} className="shrink-0" />
-          <span className="hidden lg:inline">{o.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/**
  * 039: pasek stanu przebiegu odświeżania.
  *
  * Pokazuje ETAP („Pobieram źródła (3/5)…") czytany z kolejki, a nie z pamięci komponentu — więc
@@ -872,11 +886,26 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
   const r = state.result;
   if (state.status !== "DONE" || !r) return null;
 
+  /**
+   * 111: UDANY PRZEBIEG TO JEDNA LICZBA — KIEDY.
+   *
+   * Zgłoszenie właściciela: „tu wystarczy tylko czas ostatniego odświeżenia". Poprzednia wersja
+   * pisała pięć liczb w jednym zdaniu („źródeł: 9 · nowych materiałów: 1 · pozycji: 2 · faktów na
+   * osi: 1"), z czego na co dzień liczy się wyłącznie pierwsza — a przy wąskim ekranie zdanie
+   * zawijało się na dwa wiersze i zjadało miejsce nad treścią.
+   *
+   * Liczby nie znikają, tylko przestają zajmować wiersz: idą do podpowiedzi i do etykiety dla
+   * czytnika ekranu. Skróceniu podlega WYŁĄCZNIE opis udanego przebiegu — „trwa" i „nie powiodło
+   * się" zostają w pełnej postaci, bo tam każde słowo jest potrzebne od razu.
+   */
+  const szczegoly =
+    `źródeł: ${r.sources} · nowych materiałów: ${r.fetched} · pozycji: ${r.assigned} · ` +
+    `faktów na osi: ${r.timelineAdded}`;
+
   return (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
-      <span>
-        Ostatnie odświeżanie: {formatWhen(state.startedAt)} · źródeł: {r.sources} · nowych materiałów:{" "}
-        {r.fetched} · pozycji: {r.assigned} · faktów na osi: {r.timelineAdded}
+      <span title={szczegoly} aria-label={`Ostatnie odświeżanie: ${formatWhen(state.startedAt)} — ${szczegoly}`}>
+        Ostatnie odświeżanie: {formatWhen(state.startedAt)}
       </span>
       {r.llmUnconfigured && (
         <span className="text-[var(--accent-amber)]">{t("modelNieskonfigurowanyMaterialPobrany")}</span>
