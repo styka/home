@@ -114,7 +114,12 @@ export function WatekRozmowy({
       if (pierwsza) {
         const cel = el.querySelector<HTMLElement>(`#w-${CSS.escape(pierwsza.id)}`);
         if (cel) {
-          el.scrollTop = cel.offsetTop - el.offsetTop;
+          // Różnica prostokątów, nie `offsetTop`. `offsetTop` mierzy się względem najbliższego
+          // POZYCJONOWANEGO przodka, a ten kontener pozycjonowany nie jest — odejmowanie działałoby
+          // tylko dopóty, dopóki oba elementy mają tego samego przodka. Dodanie komukolwiek
+          // `position: relative` po drodze (zwykła zmiana stylu) po cichu przestawiłoby punkt
+          // odniesienia i rozmowa otwierałaby się w losowym miejscu.
+          el.scrollTop += cel.getBoundingClientRect().top - el.getBoundingClientRect().top;
           return;
         }
       }

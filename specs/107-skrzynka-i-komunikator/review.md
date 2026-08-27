@@ -1,5 +1,8 @@
 # Recenzja: Skrzynka odbiorcza i komunikator zespołowy
 
+> **Dwa przebiegi.** Poniżej przebieg 1 (werdykt: ZMIANY WYMAGANE), zachowany bez zacierania.
+> **Obowiązujący werdykt jest na końcu pliku — przebieg 2.**
+
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Weryfikacja:** ./verify.md
 - **Data:** 2026-08-27
 - **Zakres:** `git diff origin/develop...HEAD` — 52 pliki, +3720 / −80
@@ -120,3 +123,65 @@ U-5 jest kosmetyczny i idzie przy okazji.
 Braki wracają do `/implement` jako T-26…T-30. **Nie jest to wina planu ani speca** — spec formułował
 AC-25 poprawnie, to weryfikacja dowiodła go na sąsiednim scenariuszu. Dlatego poprawiam także
 `verify.md`, żeby historia decyzji się zgadzała (C-54).
+
+---
+
+# Przebieg 2 — recenzja poprawek
+
+- **Data:** 2026-08-27, po T-26…T-31 i drugim przebiegu weryfikacji.
+- **Zakres:** delta od przebiegu 1 (poprawki U-1…U-5, AC-26 dowieziony kodem, AC-7 zawężony w specu)
+  **plus ponowny przegląd całości pod kątem defektów wniesionych przez same poprawki.**
+
+## Ustalenia przebiegu 2
+
+### U-6 — pozycja startowa liczona przez `offsetTop` (**wniesiona przez poprawkę AC-26**)
+- **Plik:** `src/modules/czat/ui/WatekRozmowy.tsx` (kod z T-26…T-31, przed korektą w tym przebiegu)
+- **Kategoria:** correctness
+- **Opis:** Przewijanie do pierwszej nieprzeczytanej liczyło `cel.offsetTop - el.offsetTop`.
+- **Scenariusz awarii:** `offsetTop` mierzy się względem najbliższego **pozycjonowanego** przodka.
+  Kontener przewijania pozycjonowany nie jest, więc dziś oba elementy trafiają na tego samego
+  przodka i odejmowanie daje właściwą liczbę — **przypadkiem**. Wystarczy, że ktoś doda kontenerowi
+  `position: relative` (zwykła zmiana stylu, np. przy dokładaniu nakładki), a `cel.offsetParent`
+  staje się sam kontener; `cel.offsetTop` jest wtedy już liczony względem niego, a odjęcie
+  `el.offsetTop` (mierzonego względem czegoś innego) przestawia rozmowę w losowe miejsce. Objaw:
+  „czat czasem otwiera się nie tam, gdzie trzeba", bez żadnego błędu.
+- **Status:** ✅ **naprawione w tym przebiegu** — `el.scrollTop += cel.getBoundingClientRect().top -
+  el.getBoundingClientRect().top`, miara niezależna od tego, co jest pozycjonowane.
+
+## Ponowny przegląd poprawek z przebiegu 1
+
+| Ustalenie | Ocena poprawki |
+|---|---|
+| **U-1** | ✅ Rozstrzyganie przy odczycie zamiast kasowania kopii — właściwy wybór. `widoczneRozmowyWhere` jest **jednym** warunkiem, wspólnym dla listy i licznika, więc nie ma jak rozjechać dwóch miejsc. Wiersz `ChatParticipant` celowo przeżywa wyjście i jest to **udokumentowane w teście**, żeby następna osoba nie „posprzątała" go w dobrej wierze i nie zamieniła obrony przy odczycie w obronę przez kasowanie |
+| **U-2** | ✅ `groupBy` + porównanie w pamięci. Sprawdzone, że `_max.createdAt` liczy **cudze nieusunięte** wiadomości, a brak znacznika odczytu daje „wszystko nowe", nie „nic nowego" |
+| **U-3** | ✅ Sprzątanie zbędnych uczestnictw dokłada samo-naprawę: bez niego porównanie zbiorów fałszowałoby się po każdym wyjściu z zespołu i pętla `upsert` chodziłaby przy każdym odczycie mimo poprawki |
+| **U-4** | ✅ Warunek `visibilityState === "visible"` jest istotny — rozmowa otwarta w tle nie jest czytana, więc odnotowanie odczytu byłoby zapisaniem nieprawdy |
+| **U-5** | ✅ |
+
+**Sprawdzone i czyste:** brak pętli sprzężenia zwrotnego (`oznaczPrzeczytane` nie rozgłasza sygnału,
+więc nasłuch nie wywołuje sam siebie); `progOdczytuRef` trzymany w `ref`, a nie w stanie — inaczej
+pozycja startowa liczyłaby się ze znacznika, który sama przed chwilą przesunęła; nowy test jest
+`integration` i pomija się bez bazy, zamiast fałszować wynik.
+
+## Bramki (potwierdzenie na finalnym kodzie)
+
+34 bramki skryptowe ✅ · `tsc` ✅ · `next lint` **0 błędów** ✅ · `next build` ✅ (`/czat` 7,53 kB) ·
+budżet wydajnościowy ✅ w paśmie · `test:unit` **1268/1268** ✅.
+
+## Werdykt przebiegu 2
+
+**APPROVE Z UWAGAMI.**
+
+Wszystkie ustalenia przebiegu 1 zamknięte z dowodem; jedyny defekt wniesiony przez same poprawki
+(U-6) znaleziony i naprawiony w tym przebiegu. Zero naruszeń konstytucji.
+
+**Uwagi przenoszone do właściciela** (nie blokujące, do sprawdzenia na środowisku testowym):
+- **AC-16** — dostarczanie wiadomości bez odświeżania strony. Łańcuch kodu kompletny i bramka
+  `check:realtime` zielona, ale w tym środowisku nie dało się otworzyć dwóch równoczesnych sesji.
+  Warto sprawdzić jako pierwsze po wdrożeniu.
+- **AC-28** — zachowanie na telefonie (klawiatura, obszar bezpieczny, jedna kolumna). Sprawdzone
+  w kodzie, niesprawdzone na urządzeniu.
+- **Szyna czasu rzeczywistego działa w jednym procesie.** Przy dwóch instancjach karta dostanie
+  sygnał tylko ze swojej; siatką bezpieczeństwa jest istniejące odpytywanie awaryjne co 5 minut.
+  To ograniczenie **nie jest nowe** — dotyczy całej aplikacji od 072 — ale czat jest pierwszą
+  funkcją, w której użytkownik odczuje je jako opóźnienie, a nie jako niewidoczny szczegół.
