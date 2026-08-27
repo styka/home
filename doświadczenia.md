@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — „Nie widzę tego na mobile", a chodziło o inną TRASĘ, nie o rozmiar ekranu
+**Problem:** Po wdrożeniu przewodników właściciel zgłosił „nie widzę guide na mobile". Naturalny
+pierwszy trop — układ na wąskim ekranie: `ViewBar` chowa na telefonie cały wiersz akcji
+(`hidden md:contents`), gdy nie ma w nim treści, więc podejrzenie padło na warunki widoczności.
+Sonda w kliknięciowym teście przy 390 px pokazała co innego: `/notes/all` → link do przewodnika
+jest i jest widoczny; `/notes` → **zero linków**, i to w obu rozmiarach ekranu.
+
+**Rozwiązanie:** Slot `help` był wpięty tylko w `NotesPage` (`/notes/all`), a nie w `NotesHomePage`
+(`/notes`) — czyli na stronie, na którą prowadzi menu boczne, dolny pasek kciuka i szybki cel
+modułu. Pomoc istniała wyłącznie tam, gdzie trzeba było najpierw świadomie wejść. Po wpięciu
+w `NotesHomePage` test AC został rozbity na cztery kombinacje: (`/notes`, `/notes/all`) ×
+(komputer, telefon).
+
+**Lekcja:** Dwie rzeczy. (1) **Zgłoszenie „na mobile" nazywa OKOLICZNOŚĆ, w której właściciel to
+zobaczył, a nie przyczynę.** Zanim zaczniesz zmieniać CSS pod wąski ekran, sprawdź sondą, czy ten
+sam element jest na komputerze — różnica trasa vs rozmiar kosztuje jedno uruchomienie klikacza,
+a szukanie w złej warstwie kosztuje godziny. (2) **Kryterium mówiące „w dowolnym widoku modułu"
+wymaga testu na WIĘCEJ NIŻ JEDNEJ trasie.** Test jednej trasy daje zielony wynik, który nie znaczy
+tego, co kryterium; moduł z osobną stroną główną i osobną listą to w Omnii norma, nie wyjątek —
+`*HomePage.tsx` obok `*Page.tsx` ma kilkanaście modułów, więc ta sama luka czeka przy każdym
+kolejnym przewodniku.
+
+---
+
 ## 2026-08-27 — Pisanie przewodnika jako audyt: dwa komunikaty kłamały o kasowaniu
 **Problem:** Przy pisaniu pierwszego przewodnika użytkownika (moduł Notatki) trzeba było opisać, co
 dokładnie robi „Usuń". Okazało się, że `deleteNote` zapisuje pełną migawkę do kosza (30 dni na

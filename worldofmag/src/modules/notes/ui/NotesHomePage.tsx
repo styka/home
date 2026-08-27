@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FileText, ChevronRight, Pin, FolderOpen, Tag, Plus, LayoutList } from "lucide-react";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
+import { hrefPrzewodnikaModulu } from "@/lib/przewodniki";
 
 interface RecentNote {
   id: string;
@@ -47,6 +48,9 @@ export function NotesHomePage({
       ? `${totalCount} ${pluralizePolish(totalCount, "notatka", "notatki", "notatek")} · ${pinnedCount} przypięte`
       : `${totalCount} ${pluralizePolish(totalCount, "notatka", "notatki", "notatek")}`;
 
+  // 108: `undefined` dla modułu bez przewodnika — rama nie narysuje wtedy ikony pomocy.
+  const przewodnik = hrefPrzewodnikaModulu("notes");
+
   return (
     <ModuleView
       width="narrow"
@@ -55,6 +59,14 @@ export function NotesHomePage({
       iconColor="var(--accent-amber)"
       title="Notatki"
       subtitle={subtitle}
+      /**
+       * 108: wejście do przewodnika po module — także TUTAJ, nie tylko na liście notatek.
+       *
+       * `/notes` jest stroną, na którą prowadzi menu, dolny pasek i szybki cel modułu; `/notes/all`
+       * trzeba dopiero wybrać. Pomoc obecna wyłącznie na liście była więc niewidoczna dokładnie dla
+       * kogoś, kto właśnie wszedł do modułu i szuka, jak z niego korzystać.
+       */
+      help={przewodnik ? { href: przewodnik, label: t("przewodnikPoNotatkach") } : undefined}
       headerAction={
         <Link
           href="/notes/all?akcja=nowa-notatka"

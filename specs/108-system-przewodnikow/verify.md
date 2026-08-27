@@ -29,7 +29,7 @@
 
 | AC | Werdykt | Dowód |
 |---|---|---|
-| **AC-1** — ikona pomocy w Notatkach otwiera przewodnik po Notatkach | ✅ | E2E `[AC-1]`: na `/notes/all` widoczny `link[name="Przewodnik po Notatkach"]`, klik → `/guide/notatki`. Kod: `NotesPage.tsx:217,239` (`hrefPrzewodnikaModulu("notes")` → prop `help`), `ViewBar.tsx:178` (`PrzyciskPomocy`) |
+| **AC-1** — ikona pomocy w **dowolnym** widoku Notatek otwiera przewodnik | ✅ *(po poprawce — patrz §4)* | E2E `[AC-1]` ×4 (`/notes` i `/notes/all` × komputer i telefon 390 px): widoczny `link[name="Przewodnik po Notatkach"]`, klik → `/guide/notatki`. Kod: `NotesPage.tsx`, `NotesHomePage.tsx` (`hrefPrzewodnikaModulu("notes")` → prop `help`), `ViewBar.tsx` (`PrzyciskPomocy`). **Pierwsza wersja weryfikacji zaliczyła to AC przedwcześnie** — sprawdzała wyłącznie `/notes/all` |
 | **AC-2** — moduł bez przewodnika nie ma ikony | ✅ | E2E `[AC-2]`: na `/habits` `link[name=/^Przewodnik po/]` ma `count 0`. Test jednostkowy: `hrefPrzewodnikaModulu("habits") === undefined`. Mechanizm jest **typowy, nie warunkowy** — `help` jest opcjonalny, więc `undefined` znaczy „brak ikony" |
 | **AC-3** — dział z rozróżnieniem „gotowe"/„wkrótce" | ✅ | E2E `[AC-3]` ×2: `/guide` pokazuje nagłówki „Gotowe przewodniki" i „Wkrótce"; klik w kafelek Notatek → `/guide/notatki` z widoczną treścią. Lista „wkrótce" liczona z `MODULES` (`src/app/guide/page.tsx:52`) |
 | **AC-4** — wejście z Ustawień | ✅ | E2E `[AC-4]`: `link[name="Otwórz przewodniki"]` z `href="/guide"`. Kod: `src/app/settings/page.tsx` (sekcja „Pomoc i przewodniki" nad „Prywatność i dane") |
@@ -87,6 +87,22 @@
 - **Budżet wydajnościowy bez zmiany progu.** Indeks wyszukiwania jedzie do przeglądarki jako dane
   RSC, nie jako paczka JS, więc kod trasy `/guide` to 10,7 kB. Suma zmieściła się w paśmie ±5 %,
   więc `perf-baseline.json` nie był ruszany.
+
+- **Luka wykryta przez właściciela po wdrożeniu — AC-1 zaliczone przedwcześnie.** Slot pomocy był
+  wpięty tylko w `NotesPage` (`/notes/all`), a **nie** w `NotesHomePage` (`/notes`) — czyli na
+  stronie, na którą prowadzi menu boczne, dolny pasek kciuka i szybki cel modułu. Ikona istniała
+  więc wyłącznie tam, gdzie trzeba było najpierw świadomie wejść: niewidoczna dokładnie dla kogoś,
+  kto właśnie otworzył moduł i szuka pomocy. Zgłoszenie brzmiało „nie widzę guide na mobile", ale
+  telefon nie miał z tym nic wspólnego — sonda pokazała `linków=1` na `/notes/all` przy 390 px
+  i `linków=0` na `/notes` w obu rozmiarach.
+  *Przyczyna po mojej stronie:* AC-1 mówi „w **dowolnym** widoku modułu", a test sprawdzał jedną
+  trasę i jeden rozmiar ekranu — więc zielony wynik nie znaczył tego, co miał znaczyć.
+  *Poprawka:* `help` wpięty w `NotesHomePage`; test AC-1 rozbity na **cztery** kombinacje
+  (`/notes`, `/notes/all`) × (komputer, telefon 390 px). 18/18 e2e.
+  *Świadomie poza zakresem:* `/notes/groups` i `/notes/tags` nie renderują `ModuleView` w ogóle
+  (nie są w manifeście kontraktu widoku), więc ikony tam nie ma i jej dołożenie wymaga osobnej
+  konwersji tych dwóch widoków na ramę — zmiana większa niż ten feature, zgłoszona zamiast cicho
+  doklejona.
 
 ## 5. Werdykt końcowy
 

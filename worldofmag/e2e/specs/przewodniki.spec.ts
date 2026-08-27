@@ -71,13 +71,29 @@ test.describe("Przewodniki", () => {
     expect(await page.evaluate(() => (window as unknown as { __spa?: boolean }).__spa)).toBe(true);
   });
 
-  test("[AC-1] Notatki mają w pasku ikonę pomocy prowadzącą do przewodnika", async ({ page }) => {
-    await page.goto("/notes/all");
-    const pomoc = page.getByRole("link", { name: "Przewodnik po Notatkach" });
-    await expect(pomoc).toBeVisible();
-    await pomoc.click();
-    await expect(page).toHaveURL(/\/guide\/notatki/);
-  });
+  /**
+   * AC-1 na OBU widokach modułu i w OBU rozmiarach ekranu.
+   *
+   * Pierwsza wersja sprawdzała tylko `/notes/all` na komputerze i przepuściła realną lukę: `/notes`
+   * — czyli strona, na którą prowadzi menu, dolny pasek i szybki cel modułu — nie dostała slotu
+   * pomocy wcale. Ikona istniała więc wyłącznie tam, gdzie trzeba było najpierw świadomie wejść,
+   * czyli była niewidoczna dokładnie dla kogoś, kto właśnie otworzył moduł i szuka pomocy.
+   */
+  for (const trasa of ["/notes", "/notes/all"]) {
+    for (const ekran of [
+      { nazwa: "komputer", viewport: { width: 1280, height: 800 } },
+      { nazwa: "telefon", viewport: { width: 390, height: 844 } },
+    ]) {
+      test(`[AC-1] ikona pomocy na ${trasa} (${ekran.nazwa})`, async ({ page }) => {
+        await page.setViewportSize(ekran.viewport);
+        await page.goto(trasa);
+        const pomoc = page.getByRole("link", { name: "Przewodnik po Notatkach" }).first();
+        await expect(pomoc).toBeVisible();
+        await pomoc.click();
+        await expect(page).toHaveURL(/\/guide\/notatki/);
+      });
+    }
+  }
 
   test("[AC-2] moduł bez przewodnika nie ma ikony pomocy", async ({ page }) => {
     await page.goto("/habits");
