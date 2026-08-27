@@ -15,6 +15,7 @@ import { ConsentBanner } from "@/components/legal/ConsentBanner";
 import { FeedbackInspector } from "./FeedbackInspector";
 import { PromptWznowieniaDialog } from "./PromptWznowieniaDialog";
 import { NotificationBell } from "./NotificationBell";
+import { IkonaCzatu } from "./IkonaCzatu";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SpeechFallbackNotice } from "@/components/shell/SpeechFallbackNotice";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
@@ -225,6 +226,8 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
             {/* 085: przełącznik TRYBU ADMINISTRATORA stoi obok dzwonka — w chromie konta. */}
             <PrzelacznikTrybuAdmina />
             <NotificationBell placement="topbar" />
+            {/* 107: czat ZA dzwonkiem — ta sama kolejność co w rzędzie chromu na komputerze. */}
+            <IkonaCzatu placement="topbar" />
           </div>
         </div>
       </div>

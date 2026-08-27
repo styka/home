@@ -137,6 +137,25 @@ export async function purgeUserData(userId: string): Promise<void> {
     if (moje) await tx.contact.deleteMany({ where: moje });
     await tx.serviceFavorite.deleteMany({ where: { userId } });
 
+    // 107: ROZMOWY PRYWATNE BEZ DRUGIEJ STRONY.
+    //
+    // Uczestnictwo, wiadomości i reakcje znikają kaskadą razem z kontem, ale sama rozmowa nie ma
+    // do konta klucza obcego — zostałaby pustą skorupą, której nikt już nie otworzy (AC-32).
+    // Kanały zespołów zostają nietknięte: one należą do przestrzeni i mają dalej uczestników.
+    //
+    // Kasujemy PRZED `user.delete()`, bo po nim wiersz uczestnictwa już nie istnieje i nie da się
+    // wskazać, które rozmowy były jego.
+    const rozmowyProwadzone = await tx.chatParticipant.findMany({
+      // paginacja: kompletny — pominięta rozmowa zostałaby osierocona na stałe.
+      where: { userId, conversation: { rodzaj: "prywatna" } },
+      select: { conversationId: true },
+    });
+    if (rozmowyProwadzone.length > 0) {
+      await tx.chatConversation.deleteMany({
+        where: { id: { in: rozmowyProwadzone.map((r) => r.conversationId) } },
+      });
+    }
+
     // Reszta (CASCADE) zniknie wraz z użytkownikiem.
     await tx.user.delete({ where: { id: userId } });
   });

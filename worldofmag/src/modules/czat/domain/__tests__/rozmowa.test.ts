@@ -6,6 +6,7 @@ import {
   czyPisze,
   etykietaRozmowy,
   ktoPrzeczytal,
+  nazwaOsoby,
   piszacy,
   policzNieprzeczytane,
   type UczestnikRozmowy,
@@ -80,4 +81,15 @@ test("rozmowa bez drugiej strony dostaje etykietę zastępczą, nie pustą", () 
   const sam: UczestnikRozmowy[] = [UCZESTNICY[0]];
   assert.equal(etykietaRozmowy({ rodzaj: "prywatna", tytul: null }, sam, "ja", "Konto usunięte"), "Konto usunięte");
   assert.equal(etykietaRozmowy({ rodzaj: "zespol", tytul: null }, sam, "ja", "Zespół"), "Zespół");
+});
+
+test("nazwa osoby schodzi po zapasach: imię → adres → etykieta zastępcza", () => {
+  assert.equal(nazwaOsoby({ name: "Szymon", email: "a@b.pl" }, "—"), "Szymon");
+  assert.equal(nazwaOsoby({ name: null, email: "a@b.pl" }, "—"), "a@b.pl");
+  assert.equal(nazwaOsoby({ name: "   ", email: "a@b.pl" }, "—"), "a@b.pl", "same spacje to brak imienia");
+
+  // Konto usunięte: wiersz wiadomości zostaje, bo wiszą na nim cytaty. Bez trzeciego zapasu
+  // rozmowa pokazałaby puste miejsce tam, gdzie stał autor.
+  assert.equal(nazwaOsoby(null, "Konto usunięte"), "Konto usunięte");
+  assert.equal(nazwaOsoby({ name: null, email: null }, "Konto usunięte"), "Konto usunięte");
 });

@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { assertMozeRozmawiac, assertUczestnik, idPowiazanychOsob } from "../lib/dostep";
-import { etykietaRozmowy, piszacy, type UczestnikRozmowy } from "../domain/rozmowa";
+import { etykietaRozmowy, nazwaOsoby, piszacy, type UczestnikRozmowy } from "../domain/rozmowa";
 
 /** Rozmowa tak, jak widzi ją lista. Daty jako tekst — DTO przekracza granicę serwer→klient. */
 export interface RozmowaDTO {
@@ -47,10 +47,6 @@ export interface RozmowcaDTO {
 }
 
 const BEZ_ROZMOWCY = "Rozmowa bez uczestnika";
-
-function nazwaOsoby(u: { name: string | null; email: string | null }): string {
-  return u.name ?? u.email ?? BEZ_ROZMOWCY;
-}
 
 /**
  * Zapewnia kanał dla każdego zespołu, do którego użytkownik należy, i dopisuje go do uczestników.
@@ -125,7 +121,7 @@ export async function getRozmowy(): Promise<RozmowaDTO[]> {
     rodzaj: r.rodzaj === "zespol" ? "zespol" : "prywatna",
     etykieta: etykietaRozmowy(
       { rodzaj: r.rodzaj, tytul: r.tytul },
-      r.uczestnicy.map((u) => ({ userId: u.userId, nazwa: nazwaOsoby(u.user), przeczytaneDo: u.przeczytaneDo, pisalAt: u.pisalAt })),
+      r.uczestnicy.map((u) => ({ userId: u.userId, nazwa: nazwaOsoby(u.user, BEZ_ROZMOWCY), przeczytaneDo: u.przeczytaneDo, pisalAt: u.pisalAt })),
       user.id,
       BEZ_ROZMOWCY,
     ),
@@ -154,7 +150,7 @@ export async function getRozmowa(rozmowaId: string): Promise<SzczegolRozmowyDTO>
 
   const uczestnicy: UczestnikRozmowy[] = rozmowa.uczestnicy.map((u) => ({
     userId: u.userId,
-    nazwa: nazwaOsoby(u.user),
+    nazwa: nazwaOsoby(u.user, BEZ_ROZMOWCY),
     przeczytaneDo: u.przeczytaneDo,
     pisalAt: u.pisalAt,
   }));
@@ -166,7 +162,7 @@ export async function getRozmowa(rozmowaId: string): Promise<SzczegolRozmowyDTO>
     jaId: user.id,
     uczestnicy: rozmowa.uczestnicy.map((u) => ({
       userId: u.userId,
-      nazwa: nazwaOsoby(u.user),
+      nazwa: nazwaOsoby(u.user, BEZ_ROZMOWCY),
       avatarUrl: u.user.avatarUrl,
       przeczytaneDo: u.przeczytaneDo?.toISOString() ?? null,
     })),
@@ -186,12 +182,15 @@ export async function getRozmowcy(): Promise<RozmowcaDTO[]> {
   if (powiazani.size === 0) return [];
 
   const osoby = await prisma.user.findMany({
-    where: { id: { in: [...powiazani] } },
+    // `Array.from`, nie `[...set]`: główny `tsconfig.json` nie ustawia `target`, więc spread
+    // iterowalnego wymagałby `downlevelIteration`. `tsconfig.test.json` ma ES2022 i tego NIE
+    // wyłapie — czerwieni się dopiero `next build` (wpis z 2026-06-03).
+    where: { id: { in: Array.from(powiazani) } },
     select: { id: true, name: true, email: true, avatarUrl: true },
     orderBy: { name: "asc" },
     take: SUFIT_LISTY,
   });
-  return osoby.map((o) => ({ userId: o.id, nazwa: nazwaOsoby(o), avatarUrl: o.avatarUrl }));
+  return osoby.map((o) => ({ userId: o.id, nazwa: nazwaOsoby(o, BEZ_ROZMOWCY), avatarUrl: o.avatarUrl }));
 }
 
 /** Ile rozmów ma dla mnie coś nowego — liczba dla odznaki w chromie. */

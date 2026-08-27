@@ -16,6 +16,25 @@
  *     drugiej strony.
  */
 
+/**
+ * Jak nazwać człowieka w rozmowie.
+ *
+ * To jest REGUŁA, nie formatowanie: kolejność zapasów decyduje o tym, czy w kanale zespołu zobaczy
+ * się imię, adres e-mail, czy nic. Trzeci zapas jest konieczny, bo konto może zostać usunięte —
+ * a wiersz wiadomości zostaje (wiszą na nim cytaty). Bez niego rozmowa pokazywałaby puste miejsce
+ * tam, gdzie stał autor.
+ *
+ * Mieszka tutaj, a nie w pliku akcji, bo plik z `"use server"` nie eksportuje funkcji
+ * synchronicznych — reguła w nim zawarta jest niesprawdzalna (lekcja z 2026-08-27, ta sama, która
+ * wygnała stąd `parsePresentation`).
+ */
+export function nazwaOsoby(
+  u: { name: string | null; email: string | null } | null | undefined,
+  zapas: string,
+): string {
+  return u?.name?.trim() || u?.email?.trim() || zapas;
+}
+
 /** Ile czasu od ostatniego sygnału uznajemy, że rozmówca nadal pisze. */
 export const TTL_PISANIA_MS = 6_000;
 

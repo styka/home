@@ -4,6 +4,24 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Zielony `tsc` z bramki nie znaczy, że `next build` sprawdzi typy tak samo
+**Problem:** Lista bramek z `package.json` zawiera `tsc --noEmit -p tsconfig.test.json`. Przeszła na
+zielono, więc uznałem typy za sprawdzone — a `next build` wywalił się kilka minut później na
+`TS2802` (`Type 'Set<string>' can only be iterated through when using '--downlevelIteration'`)
+w kodzie, który ta bramka właśnie przepuściła.
+
+**Rozwiązanie:** `Array.from(...)` zamiast spreadu (lekcja z 2026-06-03 stoi wyżej), ale prawdziwy
+wniosek jest inny. **To są dwie różne konfiguracje TypeScriptu.** `tsconfig.test.json` ustawia
+`target: ES2022`, bo testy chodzą w Node; główny `tsconfig.json`, którego używa `next build`,
+`target` nie ustawia w ogóle. Spread `Set`/`Map` jest legalny w pierwszej i nielegalny w drugiej.
+
+**Lekcja:** Bramka `tsc` z listy `build` sprawdza typy **testów**, nie typy aplikacji — jest
+uzupełnieniem `next build`, a nie jego szybszym zamiennikiem. Kod iterujący `Set`/`Map` przechodzi
+przez nią zawsze, a wykłada się dopiero na buildzie, po kilku minutach. Przy takim kodzie nie ma
+skrótu: trzeba puścić `next build`. I odwrotnie — to jest właśnie powód, dla którego ta druga
+konfiguracja w ogóle istnieje (`tsconfig.json` wyklucza `*.test.ts`), więc żadnej z nich nie da się
+usunąć.
+
 ## 2026-08-27 — `--shadow-database-url` wycelowany we własną bazę deweloperską ją kasuje
 **Problem:** Do wygenerowania DDL nowej migracji odpaliłem
 `prisma migrate diff --from-migrations … --to-schema-datamodel … --shadow-database-url "$DATABASE_URL"`.

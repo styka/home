@@ -6,8 +6,12 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { stronaZWierszy, zapytanieKursorowe } from "@/platform/pagination";
 import { notifyUser } from "@/lib/notify";
 import { recordTrash } from "@/platform/trash/trash";
+import { nazwaOsoby } from "../domain/rozmowa";
 import { assertAutor, assertUczestnik } from "../lib/dostep";
 import { sygnalRozmowy } from "../lib/sygnal";
+
+/** Etykieta autora, którego konta już nie ma — wiersz wiadomości zostaje, bo wiszą na nim cytaty. */
+const BEZ_AUTORA = "—";
 
 /** Maksymalna długość wiadomości — bezpiecznik, nie funkcja produktowa. */
 const MAKS_DLUGOSC = 4000;
@@ -35,10 +39,6 @@ export interface StronaWiadomosci {
   pozycje: WiadomoscDTO[];
   jestWiecej: boolean;
   nastepnyKursor: string | null;
-}
-
-function nazwaOsoby(u: { name: string | null; email: string | null } | null): string {
-  return u?.name ?? u?.email ?? "—";
 }
 
 /** Treść usuniętej wiadomości nigdy nie opuszcza serwera — cytat też jej nie zdradza. */
@@ -80,7 +80,7 @@ export async function getWiadomosci(
       return {
         id: w.id,
         autorId: w.autorId,
-        autor: nazwaOsoby(w.autor),
+        autor: nazwaOsoby(w.autor, BEZ_AUTORA),
         tresc: w.deletedAt ? USUNIETA : w.tresc,
         createdAt: w.createdAt.toISOString(),
         editedAt: w.editedAt?.toISOString() ?? null,
@@ -88,11 +88,12 @@ export async function getWiadomosci(
         odpowiedzNa: w.odpowiedzNa
           ? {
               id: w.odpowiedzNa.id,
-              autor: nazwaOsoby(w.odpowiedzNa.autor),
+              autor: nazwaOsoby(w.odpowiedzNa.autor, BEZ_AUTORA),
               tresc: w.odpowiedzNa.deletedAt ? USUNIETA : w.odpowiedzNa.tresc,
             }
           : null,
-        reakcje: [...grupy.entries()].map(([emoji, g]) => ({ emoji, ile: g.ile, moja: g.moja })),
+        // `Array.from` z tego samego powodu co wyżej — spread `Map` wymagałby `downlevelIteration`.
+        reakcje: Array.from(grupy.entries()).map(([emoji, g]) => ({ emoji, ile: g.ile, moja: g.moja })),
       };
     }),
   };
@@ -149,7 +150,7 @@ export async function wyslijWiadomosc(
     },
   });
 
-  const nadawca = nazwaOsoby(rozmowa.uczestnicy.find((u) => u.userId === user.id)?.user ?? null);
+  const nadawca = nazwaOsoby(rozmowa.uczestnicy.find((u) => u.userId === user.id)?.user ?? null, BEZ_AUTORA);
   const skad = rozmowa.rodzaj === "zespol" && rozmowa.tytul ? rozmowa.tytul : nadawca;
 
   await Promise.all(

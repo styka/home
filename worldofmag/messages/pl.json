@@ -884,6 +884,14 @@
         "rozwin": "Pokaż miejsca w module {modul}",
         "zwin": "Ukryj miejsca w module {modul}",
         "ustawieniaPaska": "Ustawienia paska"
+      },
+      "IkonaCzatu": {
+        "czat": "Czat",
+        "czatZLicznikiem": "Czat ({ile, plural, one {# rozmowa} few {# rozmowy} many {# rozmów} other {# rozmowy}} z nowościami)",
+        "zamknij": "Zamknij",
+        "ladowanie": "Ładowanie…",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się sam, a rozmowę prywatną zaczniesz w module Czat.",
+        "otworzCzat": "Otwórz Czat"
       }
     },
     "shortcuts": {

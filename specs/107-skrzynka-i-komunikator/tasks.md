@@ -133,12 +133,12 @@
 
 ## Faza 6 — Spięcie skrzynki z czatem
 
-- [ ] **T-19** — `src/components/shell/IkonaCzatu.tsx` (warianty `topbar` / `chrome`, licznik,
+- [x] **T-19** — `src/components/shell/IkonaCzatu.tsx` (warianty `topbar` / `chrome`, licznik,
   `AnchoredLayer` z listą rozmów i wejściem do modułu) + wpięcie w `AppShell` (górny pasek telefonu)
   i `ModuleSidebar` (rząd nad nawigacją), za dzwonkiem. Dane **z kontraktu** modułu, nigdy z wnętrza.
   **Gotowe, gdy:** obie ikony stoją w tej samej kolejności na telefonie i komputerze, lustrzą się
   z ustawieniem ręki dominującej i mają cel dotyku 44 × 44 px. *(AC-10, AC-11, AC-12, AC-13)*
-- [ ] **T-20** — Zbiorczy sygnał z rozmowy: `wyslijWiadomosc` woła `notifyUser` z
+- [x] **T-20** — Zbiorczy sygnał z rozmowy: `wyslijWiadomosc` woła `notifyUser` z
   `rodzaj: "relacja"`, `aktualizuj: true` i `dedupeKey: "czat-<rozmowaId>"` (jedna pozycja na
   rozmowę, treść „N nowych wiadomości od …"); `oznaczPrzeczytane` oznacza to powiadomienie jako
   przeczytane.
@@ -147,15 +147,15 @@
 
 ## Faza 7 — Domknięcie i bramki
 
-- [ ] **T-21** — `src/lib/privacy/purge.ts`: po usunięciu konta domykamy rozmowy prywatne, którym
+- [x] **T-21** — `src/lib/privacy/purge.ts`: po usunięciu konta domykamy rozmowy prywatne, którym
   zostało mniej niż dwóch uczestników.
   **Gotowe, gdy:** po usunięciu konta testowego nie zostaje ani jedna osierocona rozmowa. *(AC-32)*
-- [ ] **T-22** — Komplet tekstów w `messages/pl.json` (`modules.czat.*`,
+- [x] **T-22** — Komplet tekstów w `messages/pl.json` (`modules.czat.*`,
   `components.shell.NotificationBell.*`, `components.shell.IkonaCzatu.*`) i zero literałów
   w komponentach.
   **Gotowe, gdy:** `npm run check:i18n` przechodzi, a każde `t("klucz")` rozwiązuje się do
   istniejącego wpisu. *(AC-31)*
-- [ ] **T-23** — **Pełna lista bramek wzięta z `package.json`, nie z pamięci** (lekcja z 2026-08-27):
+- [x] **T-23** — **Pełna lista bramek wzięta z `package.json`, nie z pamięci** (lekcja z 2026-08-27):
   ```bash
   python3 -c "import json;print('\n'.join(k.strip() for k in json.load(open('package.json'))['scripts']['build'].split('&&')))"
   ```
@@ -165,7 +165,7 @@
   **Gotowe, gdy:** wszystkie bramki zielone, `next build` przechodzi. *(AC-33)*
 - [ ] **T-24** — Mapowanie każdego AC ze speca na wynik obserwacji (wejście do `/verify`).
   **Gotowe, gdy:** żadne AC nie zostaje bez pokrycia albo bez jawnie zapisanego powodu.
-- [ ] **T-25** — Wpisy do `doświadczenia.md` (C-51) dla każdej nieoczywistej pułapki napotkanej
+- [x] **T-25** — Wpisy do `doświadczenia.md` (C-51) dla każdej nieoczywistej pułapki napotkanej
   po drodze, po polsku, w formacie `## YYYY-MM-DD — tytuł` / Problem / Rozwiązanie / Lekcja.
 
 ---
