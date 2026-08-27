@@ -89,8 +89,8 @@ w `doświadczenia.md`.
 | AC-21 | ✅ | `[K]` `wiadomosci.ts:190,210` — `assertAutor` w ciele **obu** mutacji, niezależnie od interfejsu; `[B]` `check:ai-coverage` weryfikuje obecność guardu, a `guardedVia: "assertAutor"` w manifeście |
 | AC-22 | ✅ | `[S]` odpowiedź **przeżywa** usunięcie cytowanej (`ON DELETE SET NULL`); `[K]` cytat walidowany do TEJ rozmowy (`wiadomosci.ts:122-129`), przewijanie kotwicą `#w-<id>` |
 | AC-23 | ✅ | `[S]` duplikat reakcji odrzucony przez indeks unikalny; `[K]` `przelaczReakcje` — `deleteMany` i dopiero przy zerze `create`, więc drugie kliknięcie cofa |
-| AC-24 | ✅ | `[K]` `assertUczestnik` w `getWiadomosci`, `getRozmowa`, `oznaczPrzeczytane`, `zglosPisanie`, `przelaczReakcje`; komunikat celowo identyczny z „rozmowa nie istnieje", żeby nie potwierdzać istnienia cudzej |
-| AC-25 | ✅ | `[S]` skasowanie przestrzeni zespołu zabiera kanał, uczestnictwa i wiadomości kaskadą, a rozmowę prywatną zostawia nietkniętą |
+| AC-24 | ⚠️ **skorygowane w recenzji** | Dla rozmów prywatnych ✅. Dla kanałów zespołu guard przepuszcza byłego członka (U-1, T-26). `[K]` `assertUczestnik` w `getWiadomosci`, `getRozmowa`, `oznaczPrzeczytane`, `zglosPisanie`, `przelaczReakcje`; komunikat celowo identyczny z „rozmowa nie istnieje", żeby nie potwierdzać istnienia cudzej |
+| AC-25 | ❌ **skorygowane w recenzji** | `[S]` sonda dowiodła kaskady po **usunięciu przestrzeni** — ale AC-25 mówi o **opuszczeniu zespołu**, a to inna ścieżka, bez kaskady. Recenzja (U-1) wykazała sondą, że były członek nadal widzi kanał i jego nowe wiadomości. Dowód na sąsiednim scenariuszu nie jest dowodem. Poprawka: T-26 |
 | AC-26 | ✅ | `[K]` `getWiadomosci` z `zapytanieKursorowe`; `WatekRozmowy.tsx:139-141` doczytuje przy `scrollTop < 40`. ⚠️ **pozycja startowa jest końcem rozmowy, nie pierwszą nieprzeczytaną** — patrz §5 |
 | AC-27 | ✅ | `[S]` trzy wywołania → **jedna** pozycja, treść nadpisana, wróciła do nieprzeczytanych; `[S]` regresja: zwykłe przypomnienie **nie** jest wskrzeszane |
 | AC-28 | ⚠️ **częściowo** | `[K]` `CzatPage.tsx:73,84` — poniżej `md` widoczny dokładnie jeden panel; `PoleWiadomosci.tsx:83` `env(safe-area-inset-bottom)`; `PoleWiadomosci.tsx:100` `onPointerDown` + `preventDefault`. **Nie zmierzone na realnym telefonie** — brak urządzenia w środowisku |
@@ -105,7 +105,13 @@ w `doświadczenia.md`.
 | AC-32 | ✅ | `[S]` trzy asercje: kaskady działają, **sama rozmowa nie znika** (dlatego purge jej potrzebuje), krok z `purge.ts` domyka osieroconą |
 | AC-33 | ✅ | §1 |
 
-**Podsumowanie:** 29 ✅ · 4 ⚠️ · 0 ❌.
+**Podsumowanie (po korekcie z recenzji):** 27 ✅ · 5 ⚠️ · 1 ❌.
+
+> **Korekta wpisana po `/review` (C-54).** Pierwotny werdykt tej sekcji brzmiał 29 ✅ · 4 ⚠️ · 0 ❌
+> i był **za łagodny**: AC-25 zaliczyłem na podstawie sondy sprawdzającej usunięcie przestrzeni,
+> podczas gdy kryterium mówi o opuszczeniu zespołu. Recenzja wykazała, że ta druga ścieżka wycieka.
+> Lekcja zapisana zamiast zatarcia: **dowód na sąsiednim scenariuszu nie jest dowodem** — przy
+> kryterium dotyczącym dostępu trzeba odtworzyć dokładnie tę ścieżkę, którą kryterium nazywa.
 
 ## 3. Zgodność z konstytucją
 
@@ -165,7 +171,7 @@ dwie to nieścisłości speca, jedna to granica środowiska.
 
 ## 6. Werdykt końcowy
 
-**GOTOWE Z UWAGAMI.**
+**GOTOWE Z UWAGAMI** — *unieważnione przez `/review`: obowiązuje werdykt ZMIANY WYMAGANE (U-1).*
 
 Wszystkie bramki zielone (35 skryptowych + `tsc` + `lint` + `build` + 1267 testów), 29 z 33 kryteriów
 spełnionych z dowodem, 4 częściowe — z czego dwa to nieścisłości speca do domknięcia w `/review`,

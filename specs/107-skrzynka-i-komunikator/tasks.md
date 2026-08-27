@@ -168,6 +168,28 @@
 - [x] **T-25** — Wpisy do `doświadczenia.md` (C-51) dla każdej nieoczywistej pułapki napotkanej
   po drodze, po polsku, w formacie `## YYYY-MM-DD — tytuł` / Problem / Rozwiązanie / Lekcja.
 
+## Faza 8 — Poprawki z recenzji (`review.md`)
+
+- [ ] **T-26** — **U-1 (blokujące, wyciek).** Członkostwo w zespole rozstrzygane PRZY ODCZYCIE, nie
+  z kopii w `ChatParticipant`: `assertUczestnik` dla rozmowy `zespol` wymaga wiersza
+  `WorkspaceMember`; `getRozmowy` filtruje kanały zespołu przez `workspace: { members: { some } }`;
+  `zapewnijKanalyZespolow` sprząta osierocone uczestnictwa (samo-naprawa).
+  **Gotowe, gdy:** sonda „Bob opuszcza zespół, Ala pisze" pokazuje, że kanał znika z listy **i** że
+  guard odrzuca byłego członka. *(AC-24, AC-25)*
+- [ ] **T-27** — **U-2.** `getLicznikNieprzeczytanych` na jednym `groupBy` zamiast `count` na rozmowę.
+  **Gotowe, gdy:** funkcja wykonuje stałą liczbę zapytań niezależnie od liczby rozmów. *(AC-17)*
+- [ ] **T-28** — **U-3.** `zapewnijKanalyZespolow` uzgadnia kanały tylko wtedy, gdy liczba moich
+  przestrzeni zespołowych różni się od liczby moich kanałów zespołowych.
+  **Gotowe, gdy:** zwykłe wywołanie `getRozmowy` nie zapisuje niczego do bazy. *(AC-14)*
+- [ ] **T-29** — **U-4.** Po dociągnięciu wiadomości z sygnału wątek oznacza je jako przeczytane,
+  gdy karta jest widoczna.
+  **Gotowe, gdy:** wiadomość, która przyszła do OTWARTEJ rozmowy, nie zapala odznaki. *(AC-17)*
+- [ ] **T-30** `[P]` — **U-5.** Jedna deklaracja krawędzi w `ListaRozmow` zamiast trzech.
+- [ ] **T-31** — Powtórka bramek po poprawkach: pełna lista z `package.json` (bez `migrate.js`),
+  `test:unit`, `next build`; w razie zmiany rozmiaru paczki — próg wydajnościowy do wartości
+  zmierzonej. *(AC-33)*
+
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania
@@ -182,20 +204,20 @@
 | AC-10, AC-11 | T-8, T-19 |
 | AC-12 | T-19 |
 | AC-13 | T-7, T-19 |
-| AC-14, AC-15 | T-12 |
+| AC-14, AC-15 | T-12, **T-28** |
 | AC-16 | T-11, T-18 |
-| AC-17 | T-12, T-20 |
+| AC-17 | T-12, T-20, **T-27**, **T-29** |
 | AC-18, AC-19 | T-9, T-12, T-16 |
 | AC-20, AC-21 | T-13, T-17 |
 | AC-22, AC-23 | T-13, T-16 |
-| AC-24, AC-25 | T-11, T-12 |
+| AC-24, AC-25 | T-11, T-12, **T-26** |
 | AC-26 | T-13, T-16 |
 | AC-27 | T-20 |
 | AC-28 | T-15, T-17 |
 | AC-29, AC-30 | T-1 |
 | AC-31 | T-22 (+ kontrola hexów w T-23) |
 | AC-32 | T-2 (kaskady), T-21 |
-| AC-33 | T-23 |
+| AC-33 | T-23, **T-31** |
 
 ## Notatki / blokady
 
