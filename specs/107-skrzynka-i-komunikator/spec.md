@@ -103,9 +103,14 @@ infrastruktury, tylko nowego miejsca.
 - [ ] **AC-6** — Given użytkownik przyjmie zaproszenie w panelu, when akcja się powiedzie, then
   pozycja znika z listy, licznik maleje, a użytkownik od razu ma dostęp do zasobów tego zespołu
   (bez ręcznego odświeżania strony).
-- [ ] **AC-7** — Given ktoś udostępnił użytkownikowi zasób (bezpośrednim nadaniem albo zaproszeniem
-  na adres e-mail, który należy do istniejącego konta), when zapraszany otworzy segment „Relacje",
-  then widzi tę pozycję z nazwą zasobu i rolą, a kliknięcie prowadzi do tego zasobu.
+- [ ] **AC-7** — Given ktoś udostępnił użytkownikowi zasób, when zapraszany otworzy segment
+  „Relacje", then widzi tę pozycję z nazwą zasobu i rolą, a kliknięcie prowadzi do tego zasobu.
+  *(Poprawione na etapie weryfikacji, C-54: pierwotne brzmienie wymieniało obok nadania także
+  „zaproszenie na adres e-mail, który należy do istniejącego konta". Taka pozycja **nigdy nie
+  powstaje** — udostępnianie sprawdza konto PRZED zapisem i dla istniejącego tworzy od razu
+  nadanie; zaproszenie e-mailowe dotyczy wyłącznie adresów BEZ konta, a takiego nie ma komu pokazać
+  w skrzynce. Kryterium opisywało stan nieosiągalny, więc zawężamy je do tego, co realnie zachodzi,
+  zamiast dokładać kod pod scenariusz, którego nie ma.)*
 - [ ] **AC-8** — Given użytkownik nie ma żadnych oczekujących zaproszeń, when patrzy na ikonę
   w chromie, then nie widzi licznika ani kropki (sygnał nie kłamie o istnieniu spraw).
 - [ ] **AC-9** — Given zaproszenie zostało przyjęte lub odrzucone na osobnej stronie zaproszeń,

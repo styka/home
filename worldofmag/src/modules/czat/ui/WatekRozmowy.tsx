@@ -51,12 +51,22 @@ export function WatekRozmowy({
   const [reakcjeDla, setReakcjeDla] = useState<string | null>(null);
   const przewijanieRef = useRef<HTMLDivElement>(null);
   const doDoluRef = useRef(true);
+  /**
+   * Znacznik odczytu **z chwili wejścia** do rozmowy (AC-26). Musi być zapamiętany w ref, bo już
+   * po pierwszym wczytaniu wołamy `oznaczPrzeczytane` — gdyby pozycja startowa liczyła się
+   * z bieżącego stanu, liczyłaby się ze znacznika, który sama przed chwilą przesunęła.
+   */
+  const progOdczytuRef = useRef<string | null | undefined>(undefined);
+  const ustawionoPozycje = useRef(false);
 
   const wczytaj = useCallback(async () => {
     const [strona, glowa] = await Promise.all([getWiadomosci(rozmowaId), getRozmowa(rozmowaId)]);
     setWiadomosci(strona.pozycje);
     setKursor(strona.nastepnyKursor);
     setJestWiecej(strona.jestWiecej);
+    if (progOdczytuRef.current === undefined) {
+      progOdczytuRef.current = glowa.uczestnicy.find((u) => u.userId === glowa.jaId)?.przeczytaneDo ?? null;
+    }
     setSzczegol(glowa);
     setLadowanie(false);
   }, [rozmowaId]);
@@ -86,12 +96,32 @@ export function WatekRozmowy({
     });
   }), [rozmowaId, wczytaj, onZmiana]);
 
-  // Do dołu tylko wtedy, gdy użytkownik NIE przewinął w górę — inaczej czytanie historii
+  // POZYCJA STARTOWA: pierwsza nieprzeczytana, a przy jej braku koniec rozmowy (AC-26). Potem —
+  // do dołu tylko wtedy, gdy użytkownik NIE przewinął w górę, inaczej czytanie historii
   // przerywałaby każda nowa wiadomość.
   useEffect(() => {
     const el = przewijanieRef.current;
-    if (el && doDoluRef.current) el.scrollTop = el.scrollHeight;
-  }, [wiadomosci]);
+    if (!el || wiadomosci.length === 0) return;
+
+    if (!ustawionoPozycje.current) {
+      ustawionoPozycje.current = true;
+      const prog = progOdczytuRef.current;
+      // `wiadomosci` idą od najnowszych, więc PIERWSZA nieprzeczytana to ostatnia pasująca.
+      const nieprzeczytane = wiadomosci.filter(
+        (w) => !w.usunieta && w.autorId !== szczegol?.jaId && (!prog || w.createdAt > prog),
+      );
+      const pierwsza = nieprzeczytane[nieprzeczytane.length - 1];
+      if (pierwsza) {
+        const cel = el.querySelector<HTMLElement>(`#w-${CSS.escape(pierwsza.id)}`);
+        if (cel) {
+          el.scrollTop = cel.offsetTop - el.offsetTop;
+          return;
+        }
+      }
+    }
+
+    if (doDoluRef.current) el.scrollTop = el.scrollHeight;
+  }, [wiadomosci, szczegol]);
 
   const doczytajStarsze = useCallback(async () => {
     if (!kursor || !jestWiecej) return;

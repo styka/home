@@ -356,7 +356,7 @@ Krytyczne dla tej zmiany: `check:migrations`, `check:schema-drift`, `check:modul
 | AC | Jak sprawdzamy |
 |---|---|
 | AC-1..AC-4 | ręcznie w panelu dzwonka (dwa segmenty, liczniki, segment z zerem widoczny, znacznik rodzaju) |
-| AC-5..AC-7 | konto z zaproszeniem do zespołu + nadaniem zasobu: przyjmij/odrzuć w panelu; nadanie prowadzi do zasobu |
+| AC-5..AC-7 | konto z zaproszeniem do zespołu + nadaniem zasobu: przyjmij/odrzuć w panelu; nadanie prowadzi do zasobu (AC-7 zawężone na etapie weryfikacji — patrz spec) |
 | AC-8 | konto bez zaproszeń → brak licznika |
 | AC-9 | przyjęcie na `/invitations` → panel pokazuje ten sam stan (wspólne akcje) |
 | AC-10..AC-13 | oględziny chromu na 360 px i na komputerze + pomiar celu dotyku w narzędziach przeglądarki |

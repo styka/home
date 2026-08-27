@@ -1,5 +1,9 @@
 # Weryfikacja: Skrzynka odbiorcza i komunikator zespołowy
 
+> **Ten plik ma dwa przebiegi.** Poniżej stoi przebieg 1 (przed recenzją), zachowany bez zacierania,
+> z korektami wpisanymi w miejscu. **Obowiązujący werdykt jest w sekcji 7 — przebieg 2**, na końcu
+> pliku.
+
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
 - **Data:** 2026-08-27
 - **Środowisko:** lokalny PostgreSQL 16 (`127.0.0.1:5432/omnia_dev`), migracje zaaplikowane
@@ -180,3 +184,70 @@ regresji.
 
 Nie zawracam do `/implement`: żaden brak nie wynika z błędnej implementacji, a poprawki dotyczą
 tekstu kryteriów, nie zachowania systemu.
+
+---
+
+# 7. Przebieg 2 — po poprawkach z recenzji
+
+- **Data:** 2026-08-27, po `review.md` (werdykt: ZMIANY WYMAGANE) i zadaniach T-26…T-31.
+
+## 7.1 Co się zmieniło
+
+Recenzja zgłosiła pięć ustaleń; wszystkie domknięte. Dodatkowo domknięte **dwie rozbieżności speca**,
+które przebieg 1 tylko nazwał (§5).
+
+## 7.2 Bramki (powtórka pełnej listy)
+
+| Krok | Wynik |
+|---|---|
+| 34 bramki skryptowe z `package.json` | ✅ wszystkie |
+| `tsc --noEmit -p tsconfig.test.json` | ✅ czysto |
+| `next lint --dir src` | ✅ **0 błędów** |
+| `next build` | ✅ przechodzi, trasa `/czat` 7,33 kB |
+| `check-perf-budget` | ✅ w paśmie |
+| `npm run test:unit` | ✅ **1268/1268** (+1 wobec przebiegu 1 — nowy test regresji dostępu) |
+
+## 7.3 Ustalenia recenzji — weryfikacja skutku
+
+| Ustalenie | Werdykt | Dowód |
+|---|---|---|
+| **U-1** wyciek kanału do byłego członka | ✅ zamknięte | `[S]` sonda odtwarzająca **dokładnie** ścieżkę z kryterium: kanał znika z listy byłego członka, guard go odrzuca, a **dwie kontrole dodatnie** potwierdzają, że członek i pozostały członek widzą kanał dalej. `[T]` test `dostep.integration.test.ts` — **sprawdzony w obie strony**: na kodzie sprzed poprawki `not ok`, po poprawce `ok` |
+| **U-2** N+1 w liczniku | ✅ zamknięte | `[S]` pomiar wywołań Prismy przez rozszerzenie klienta: **2 zapytania przy 13 rozmowach** (było 14) |
+| **U-3** zapisy na ścieżce odczytu | ✅ zamknięte | `[K]` `rozmowy.ts` `zapewnijKanalyZespolow` — dwa odczyty, porównanie zbiorów, pętla `upsert` **pusta** w zwykłym przebiegu |
+| **U-4** odznaka nad otwartą rozmową | ✅ zamknięte | `[K]` `WatekRozmowy.tsx` — po dociągnięciu z sygnału `oznaczPrzeczytane`, warunkowane `document.visibilityState === "visible"` |
+| **U-5** potrójna krawędź | ✅ zamknięte | `[K]` `ListaRozmow.tsx` — `border: "none", borderBottom: …` w tej kolejności |
+
+## 7.4 Rozbieżności speca z przebiegu 1 — domknięte
+
+| Rozbieżność | Rozstrzygnięcie |
+|---|---|
+| **AC-7** wymieniał zaproszenie e-mailowe na adres z kontem | **Poprawiony spec (C-54).** Taka pozycja nigdy nie powstaje — udostępnianie sprawdza konto przed zapisem i dla istniejącego tworzy od razu nadanie. Kryterium opisywało stan nieosiągalny; zawężone do tego, co realnie zachodzi, **zamiast dokładania kodu pod scenariusz, którego nie ma** |
+| **AC-26** pozycja startowa | **Poprawiony KOD, nie kryterium.** Spec miał rację. `WatekRozmowy` zapamiętuje znacznik odczytu **z chwili wejścia** (w `ref`, bo `oznaczPrzeczytane` zaraz go przesunie — inaczej pozycja liczyłaby się ze znacznika, który sama przed chwilą ustawiła) i przewija do pierwszej nieprzeczytanej; przy jej braku na koniec rozmowy |
+
+## 7.5 Zaktualizowany bilans kryteriów
+
+**31 ✅ · 2 ⚠️ · 0 ❌.**
+
+Dwa pozostałe ⚠️ to **AC-16** i **AC-28** — nie brak w kodzie, tylko granica środowiska: nie ma tu
+ani dwóch równoczesnych sesji przeglądarkowych, ani telefonu. Łańcuch kodu prześledzony i kompletny,
+`check:realtime` zielona. Zapisuję to jako **niesprawdzone**, nie jako spełnione — te dwa kryteria
+domyka dopiero pierwsze wejście właściciela na środowisko testowe.
+
+## 7.6 Regresje
+
+Bez zmian wobec §4, plus:
+
+- **`assertUczestnik` wykonuje teraz dodatkowe zapytanie dla kanałów zespołu.** Świadomy koszt: jedno
+  wyszukanie po kluczu głównym, na ścieżce, która i tak sięga do bazy. Alternatywa (kasowanie kopii
+  przy opuszczaniu zespołu) jest tańsza w czasie działania i **droższa w utrzymaniu** — cichy wyciek
+  przy pierwszym pominiętym miejscu.
+- **Test regresji jest `integration` i pomija się bez `DATABASE_URL`** — tak samo jak istniejące testy
+  budżetów AI. W środowisku bez bazy nie fałszuje wyniku, tylko mówi „pominięty".
+
+## 7.7 Werdykt końcowy przebiegu 2
+
+**GOTOWE Z UWAGAMI.**
+
+Wszystkie bramki zielone, wszystkie ustalenia recenzji zamknięte z dowodem, obie rozbieżności speca
+domknięte we właściwym artefakcie. Dwa kryteria (AC-16, AC-28) pozostają **niesprawdzone
+obserwacyjnie** — z nazwaną przyczyną, nie zaliczone „na oko".
