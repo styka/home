@@ -271,6 +271,44 @@ test.describe("106 — ergonomia asystenta", () => {
     await expect.poll(async () => (await historiaTab.textContent())?.match(/\d+/)?.[0], { timeout: 10_000 }).not.toBe("0");
   });
 
+  test("[106-AC14b] w trybie treści nic z modułu nie przebija nad asystenta", async ({ page }) => {
+    await ustawTrybWBazie("content");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await otworzAsystenta(page, "/tasks/all");
+    await expect(page.getByRole("button", { name: /Pokaż asystenta w oknie/i })).toBeVisible({ timeout: 10_000 });
+
+    /**
+     * Sedno: panel asystenta jest RODZEŃSTWEM `<main>`, a nie jego przodkiem, więc o kolejności
+     * malowania decydują z-indeksy w tym samym kontekście. Pasek widoku modułu (`ModuleView`) ma
+     * `zIndex: 40` i siedzi wewnątrz `<main>` — bez odizolowania kontekstu `<main>` maluje się
+     * NAD asystentem, mimo że asystent go „przykrywa".
+     *
+     * Sprawdzamy to jedyną miarą, która mówi prawdę o warstwach: co naprawdę jest na wierzchu
+     * w danym punkcie ekranu.
+     */
+    const wynik = await page.evaluate((sel) => {
+      const panel = document.querySelector(sel) as HTMLElement | null;
+      const main = document.querySelector("main");
+      if (!panel || !main) return null;
+      const r = panel.getBoundingClientRect();
+      const punkty: { x: number; y: number }[] = [
+        { x: r.x + r.width / 2, y: r.y + 12 },   // pas, w którym stoi pasek widoku modułu
+        { x: r.x + r.width / 2, y: r.y + 40 },
+        { x: r.x + r.width / 2, y: r.y + r.height / 2 },
+      ];
+      return punkty.map(({ x, y }) => {
+        const el = document.elementFromPoint(x, y);
+        return { wPanelu: Boolean(el && panel.contains(el)), wTresci: Boolean(el && main.contains(el)) };
+      });
+    }, ASYSTENT);
+
+    expect(wynik).not.toBeNull();
+    for (const [i, p] of wynik!.entries()) {
+      expect(p.wTresci, `punkt ${i}: nad asystentem jest element z przykrytej treści`).toBe(false);
+      expect(p.wPanelu, `punkt ${i}: na wierzchu powinien być asystent`).toBe(true);
+    }
+  });
+
   test("[106-AC18] na telefonie tryb treści nie obowiązuje — asystent zostaje arkuszem", async ({ page }) => {
     // Najpierw włącz tryb treści na szerokim ekranie (preferencja siada na koncie)…
     await ustawTrybWBazie("content");
