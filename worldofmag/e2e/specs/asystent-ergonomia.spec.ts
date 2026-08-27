@@ -79,6 +79,98 @@ test.describe("106 — ergonomia asystenta", () => {
    */
   test.describe.configure({ mode: "serial" });
 
+  test("[106-R1] opakowanie obszaru treści nie zabiera modułom przewijania (360 px)", async ({ page }) => {
+    /**
+     * Regresja, której nie złapał ani build, ani reszta klikaczy, ani ta specyfikacja: nowe
+     * opakowanie `<main>` weszło do KOLUMNOWEGO flexboksa (poniżej `md` powłoka jest `flex-col`)
+     * z `overflow: visible`, więc jego automatyczny rozmiar minimalny to WYSOKOŚĆ TREŚCI.
+     * `<main>` był na to odporny dzięki `overflow-hidden`; opakowanie nie odziedziczyło tej
+     * odporności i rozpychało się na całą listę — wewnętrzny kontener przestawał być kontenerem
+     * przewijania i na telefonie widać było tylko pierwszy ekran KAŻDEGO modułu.
+     *
+     * Dlatego mierzymy jedyną rzecz, która to wyłapuje: czy treść modułu daje się PRZEWINĄĆ.
+     * Asystent w tym teście w ogóle nie występuje — usterka dotyczy powłoki, nie jego.
+     */
+    const bledy: string[] = [];
+    page.on("pageerror", (e) => bledy.push("pageerror: " + e.message.split("\n")[0]));
+    page.on("console", (m) => { if (m.type() === "error") bledy.push("console: " + m.text().slice(0, 200)); });
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto("/tasks/all");
+    await page.waitForLoadState("load").catch(() => {});
+    // `evaluate` nie czeka na nic, więc na obszar treści czekamy osobno.
+    // `state: "attached"` — nie „visible": Playwright uznaje element o zerowej wysokości za
+    // niewidoczny, a właśnie wysokość `<main>` jest tu przedmiotem pomiaru.
+    const jest = await page.waitForSelector("main", { state: "attached", timeout: 15_000 }).catch(() => null);
+    if (!jest) {
+      const stan = await page.evaluate(() => ({ url: location.pathname, dlugosc: document.body.innerHTML.length, tekst: document.body.innerText.slice(0, 200) }));
+      throw new Error(`brak <main>; stan=${JSON.stringify(stan)}; bledy=${JSON.stringify(bledy.slice(0, 4))}`);
+    }
+    // Poczekaj, aż moduł wypełni treść (inaczej zmierzymy pustą ramę zaraz po hydratacji).
+    await expect.poll(async () => page.evaluate(() => document.querySelector("main")?.scrollHeight ?? 0), { timeout: 15_000 }).toBeGreaterThan(200);
+
+    const wynik = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      if (!main) return null;
+      // Kontener przewijania szukamy po ZACHOWANIU, nie po nazwie klasy: moduły różnią się
+      // sposobem, w jaki go deklarują, a testujemy tu układ powłoki, nie konwencję modułu.
+      let rama: HTMLElement | null = null;
+      let najwieksza = 0;
+      for (const el of Array.from(main.querySelectorAll<HTMLElement>("*"))) {
+        const st = getComputedStyle(el);
+        const przewijalny = /(auto|scroll)/.test(st.overflowY);
+        const zapas = el.scrollHeight - el.clientHeight;
+        if (przewijalny && zapas > najwieksza) { najwieksza = zapas; rama = el; }
+      }
+      if (rama) rama.scrollTop = 400;
+      return {
+        wysokoscMain: main.getBoundingClientRect().height,
+        maRame: Boolean(rama),
+        przewinieto: rama?.scrollTop ?? 0,
+      };
+    });
+
+    expect(wynik).not.toBeNull();
+    // `<main>` musi mieścić się w ekranie — nie rozpychać się na wysokość listy.
+    expect(wynik!.wysokoscMain, "<main> wyższy niż ekran = opakowanie zjadło ograniczenie").toBeLessThanOrEqual(640);
+    if (wynik!.maRame) {
+      expect(wynik!.przewinieto, "treść modułu musi dać się przewinąć").toBeGreaterThan(0);
+    }
+  });
+
+  test("[106-R2] w trybie treści nic nie zasłania kompozytora", async ({ page }) => {
+    // FAB miał `zIndex: 41`, a zadokowany panel 30 — pływająca ikona lądowała NAD przyciskiem
+    // „Wyślij" i kliknięcie trafiało w nią, nie w wysyłanie.
+    await ustawTrybWBazie("content");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await otworzAsystenta(page, "/tasks/all");
+    await expect(page.getByRole("button", { name: /Pokaż asystenta w oknie/i })).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole("textbox").first().fill("test");
+    const wyslij = page.getByRole("button", { name: /Wyślij/i }).first();
+    await expect(wyslij).toBeVisible({ timeout: 10_000 });
+
+    const naWierzchu = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll("button")).find((b) => /Wyślij/i.test(b.getAttribute("aria-label") ?? ""));
+      if (!btn) return null;
+      const r = btn.getBoundingClientRect();
+      const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return { toPrzyciskWysylania: Boolean(el && (el === btn || btn.contains(el))) };
+    });
+    expect(naWierzchu).not.toBeNull();
+    expect(naWierzchu!.toPrzyciskWysylania, "w punkcie przycisku „Wyślij” jest coś innego").toBe(true);
+  });
+
+  test("[106-R3] przełącznik dokowania nie istnieje na telefonie", async ({ page }) => {
+    // `headerBtn` niesie `display: "flex"` w atrybucie `style`, co unieważniało `hidden lg:flex`.
+    // Dotknięcie na telefonie zapisywało `content` NA KONCIE i asystent otwierał się zadokowany
+    // przy następnym wejściu na komputerze — czyli dokładnie to, czego zakazuje AC-18.
+    await ustawTrybWBazie("window");
+    await page.setViewportSize({ width: 360, height: 780 });
+    await otworzAsystenta(page);
+    await expect(page.getByRole("button", { name: /Pokaż asystenta w obszarze treści/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Pokaż asystenta w oknie/i })).toHaveCount(0);
+  });
+
   test("[106-AC1] przy 360 px przyciski paska nie nachodzą na siebie i mają cel 44 px", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await otworzAsystenta(page);

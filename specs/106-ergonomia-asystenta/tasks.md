@@ -1,7 +1,7 @@
 # Zadania: Ergonomia asystenta AI — chrom, sesje i tryb dokowania
 
 - **Plan:** ./plan.md (106-ergonomia-asystenta)
-- **Status:** zrobione
+- **Status:** zrobione (po nawrocie z recenzji)
 - **Data:** 2026-08-26
 
 > Kolejność: od najłatwiejszego do najtrudniejszego i zgodnie z zależnościami
@@ -150,6 +150,43 @@
       `display: none` gubi pozycję przewijania; `inert` przez `ref`, nie prop (React 18);
       wspólne `take: 50` na jednej liście chowa rekordy wyróżnione.
       **Gotowe, gdy:** oba pliki opisują stan po zmianie.
+
+## Faza 5 — poprawki po recenzji (nawrót z `/review`)
+
+- [x] **T-17** — **Opakowanie obszaru treści musi mieć `min-h-0`.** Korzeń powłoki jest
+      `flex-col` poniżej `md`, a nowe opakowanie ma `overflow: visible`, więc jego
+      `min-height: auto` rozwiązuje się do **wysokości treści**: `<main>` przestaje być
+      ograniczony ekranem i wewnętrzny kontener przestaje być kontenerem przewijania.
+      Zmierzone: `/tasks` przy 360 × 640 — `main` **2028 px** zamiast 595, `scrollTop` stoi na 0.
+      Skutek: **na telefonie w każdym module widać tylko pierwszy ekran listy.**
+      Wcześniej działało, bo `<main>` ma `overflow-hidden`, przy którym automatyczny rozmiar
+      minimalny wynosi 0 — opakowanie tej własności nie odziedziczyło.
+      **Gotowe, gdy:** klikacz przy 360 px przewija listę modułu o > 300 px.
+
+- [x] **T-18** — **Przełącznik dokowania jest widoczny na telefonie.** `headerBtn` dziedziczy
+      z `iconBtn` `display: "flex"`, a styl w atrybucie wygrywa z klasą `.hidden` — dokładnie ta
+      pułapka jest opisana 160 linii wyżej w tym samym pliku (przebieg 100). Dotknięcie zapisuje
+      `presentation="content"` **na koncie**, na telefonie nic nie robi, a przy następnym wejściu
+      na komputerze asystent otwiera się zadokowany — czyli łamie AC-18 („nie da się trafić
+      przypadkiem"). **Gotowe, gdy:** przy 360 px przycisku nie ma w drzewie.
+
+- [x] **T-19** — **Pływająca ikona zasłania kompozytor w trybie treści.** FAB ma `zIndex: 41`
+      (a przy otwartym panelu roboczym 55), zadokowany panel — 30. Zmierzone: `elementFromPoint`
+      w środku przycisku „Wyślij" zwraca FAB, więc **wiadomości nie da się wysłać kliknięciem**.
+      Ta sama warstwa 30 leży poniżej `fixed z-40/z-50` z modułów (pasek akcji zbiorczych Zadań,
+      wskaźnik offline Zakupów), które po zadokowaniu rysowałyby się na asystencie, a będąc
+      w `inert` treści nie dałyby się już zamknąć.
+      **Gotowe, gdy:** warstwa trybu treści stoi ponad chromem modułów i poniżej `Modal` (50),
+      a pływająca ikona nie renderuje się przy otwartym asystencie.
+
+- [x] **T-20** `[P]` — Drobne z recenzji: `role="img"` na znaczniku „auto" (bez roli `aria-label`
+      nie jest wystawiane — AC-2); wycofanie `togglePresentation` przez zapamiętaną wartość, nie
+      przez domknięcie; pozycja „Zapisz rozmowę" wyłączona do czasu wczytania list (inaczej
+      pierwszy klik może pójść w złą stronę); komentarz `deleteAiConversation` wrócić nad właściwą
+      funkcję.
+
+- [x] **T-21** — Lekcje do `doświadczenia.md`: `min-h-0` na opakowaniu w kolumnowym flexboksie;
+      `display` w atrybucie `style` unieważnia `hidden`/`lg:flex`.
 
 ## Mapowanie kryteriów akceptacji → zadania
 

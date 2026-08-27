@@ -141,7 +141,6 @@ export async function renameAiConversation(id: string, title: string): Promise<v
   revalidatePath("/");
 }
 
-/** Usuwa rozmowę wraz z wiadomościami (kaskada FK). */
 /**
  * 106: przeniesienie rozmowy między listą „Zapisane" a historią.
  *
@@ -154,6 +153,7 @@ export async function setAiConversationSaved(id: string, saved: boolean): Promis
   revalidatePath("/");
 }
 
+/** Usuwa rozmowę wraz z wiadomościami (kaskada FK). */
 export async function deleteAiConversation(id: string): Promise<void> {
   const user = await requireAuth();
   await prisma.aiConversation.deleteMany({ where: { id, userId: user.id } });

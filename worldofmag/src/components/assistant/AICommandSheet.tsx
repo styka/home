@@ -429,6 +429,12 @@ export function AICommandSheet({
   const [presentation, setPresentation] = useState<AssistantPresentation>("window");
   /** 106: menu „Więcej" — akcje drugiego planu, przeniesione z rozpychającego się paska. */
   const [showWiecej, setShowWiecej] = useState(false);
+  /**
+   * Czy listy rozmów doszły już z serwera. Bez tego etykieta „Zapisz rozmowę" / „Usuń z zapisanych"
+   * liczy się z PUSTYCH list i pierwsze kliknięcie po otwarciu menu może pójść w złą stronę
+   * (zapisanie rozmowy, która już jest zapisana na drugim urządzeniu).
+   */
+  const [listyWczytane, setListyWczytane] = useState(false);
   const confirmDialog = useConfirm();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState("");
@@ -469,11 +475,15 @@ export function AICommandSheet({
   useEffect(() => () => onPrzykrycie?.(false), [onPrzykrycie]);
 
   function togglePresentation() {
-    const next: AssistantPresentation = presentation === "content" ? "window" : "content";
+    const poprzedni = presentation;
+    const next: AssistantPresentation = poprzedni === "content" ? "window" : "content";
     setPresentation(next);
     void updateAssistantPrefs({ presentation: next }).catch(() => {
       // Zapis się nie udał — cofamy, żeby ekran nie pokazywał stanu, którego konto nie zna.
-      setPresentation(presentation);
+      // Cofamy do wartości ZAPAMIĘTANEJ przy tym kliknięciu, a nie do domknięcia z renderu:
+      // przy dwóch szybkich przełączeniach i błędzie na pierwszym ekran wróciłby do stanu
+      // sprzed pierwszego kliknięcia, a nie do tego, co faktycznie stoi na koncie.
+      setPresentation(poprzedni);
     });
   }
 
@@ -1039,7 +1049,7 @@ export function AICommandSheet({
     setShowLevelMenu(false);
     setHeaderPanel((current) => (current === panel ? "none" : panel));
     if (panel === "history") {
-      void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+      void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
     }
   }
 
@@ -1708,6 +1718,8 @@ export function AICommandSheet({
   const biezacaZapisana = conversationId !== null && conversations.zapisane.some((c) => c.id === conversationId);
   /** Pustej rozmowy nie ma czego zapisywać ani nazywać. */
   const rozmowaPusta = conversationId === null || turns.length === 0;
+  /** Zapisać można dopiero wtedy, gdy wiadomo, na której liście rozmowa stoi. */
+  const zapisNiedostepny = rozmowaPusta || !listyWczytane;
   /** 106: lista pokazywana w szufladzie — wybór segmentu, nic więcej. */
   const widocznaLista = listaRozmow === "zapisane" ? conversations.zapisane : conversations.historia;
 
@@ -1720,7 +1732,13 @@ export function AICommandSheet({
       {/* FAB — akcja główna (najwyższy z-index wśród pływających przycisków, by
           ewentualnie zasłaniać przycisk admina, nigdy odwrotnie). Chowany, gdy
           otwarty jest modal treściowy. */}
-      {!modalOpen && (
+      {/* 106 (poprawka po recenzji): pływającej ikony NIE renderujemy przy otwartym asystencie.
+          W trybie okna była tylko niewidoczna (przykrywała ją warstwa 9990), więc nikomu nie
+          przeszkadzała; w trybie treści warstwa jest niżej i FAB lądował NAD kompozytorem —
+          zmierzone: `elementFromPoint` w środku przycisku „Wyślij" zwracał FAB, czyli wiadomości
+          nie dawało się wysłać kliknięciem. Przycisk, którego jedynym zadaniem jest otworzyć
+          asystenta, przy otwartym asystencie i tak nie ma czego robić. */}
+      {!modalOpen && !isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           title="Asystent AI"
@@ -1745,7 +1763,12 @@ export function AICommandSheet({
           // (AC-20). W trybie okna wszystko zostaje jak było: `fixed` nad całą stroną.
           className={przykrywaTresc ? "absolute inset-0 flex" : "fixed inset-0 flex items-end md:items-center md:justify-center"}
           style={{
-            zIndex: przykrywaTresc ? 30 : 9990,
+            // 106 (poprawka po recenzji): 45, nie 30. Ani `<main>`, ani opakowanie nie tworzą
+            // własnego kontekstu układania, więc pływające elementy MODUŁÓW (pasek akcji zbiorczych
+            // Zadań i wskaźnik offline Zakupów — `fixed z-40`) rysowałyby się NA zadokowanym
+            // asystencie, a siedząc w `inert` treści nie dałyby się już zamknąć. 45 stoi ponad tym
+            // chromem i nadal poniżej `Modal` (50) oraz warstwy kotwiczonej (9995).
+            zIndex: przykrywaTresc ? 45 : 9990,
             // Na pełnym ekranie tło i tak jest całkowicie zasłonięte — przezroczystość oszczędza
             // jedną warstwę do złożenia i usuwa „przebłysk" przy animacji klawiatury.
             // W trybie treści przyciemnienia nie ma w ogóle: nie ma czego przyciemniać, bo pod
@@ -1849,6 +1872,10 @@ export function AICommandSheet({
                     więc znacznik nie znika ani dla oka, ani dla czytnika ekranu (AC-2). */}
                 {autoApprove && (
                   <span
+                    // `aria-label` na elemencie BEZ roli nie jest wystawiane przez ARIA — czytnik
+                    // ekranu przeczytałby wtedy samą ikonę, czyli nic. `role="img"` czyni ze
+                    // znacznika obiekt z nazwą (AC-2).
+                    role="img"
                     title={t("bezpieczneAkcjeWykonujaSie")}
                     aria-label={t("trybAutomatycznyWlaczony")}
                     style={{
@@ -1874,7 +1901,7 @@ export function AICommandSheet({
                     // wczytują się dotąd dopiero przy otwarciu historii. Bez tego odczytu menu
                     // pokazywałoby „Zapisz" dla rozmowy już zapisanej — czyli kłamałoby o stanie,
                     // i to w miejscu, w którym stanu nie widać z niczego innego.
-                    if (otwieram) void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+                    if (otwieram) void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
                   }}
                   title={t("wiecej")}
                   aria-label={t("wiecejAkcji")}
@@ -1888,9 +1915,15 @@ export function AICommandSheet({
                     „Zamknij"), a wyjście, którego trzeba szukać w menu, nie jest wyjściem (AC-19).
                     Tylko od `lg`: na węższym ekranie nie ma obszaru treści, który dałoby się oddać
                     rozmowie, więc przycisk nie miałby czego przełączać. */}
+                {/* 106 (poprawka po recenzji): przycisk renderujemy WARUNKOWO, a nie chowamy klasą.
+                    `headerBtn` dziedziczy z `iconBtn` `display: "flex"`, a styl w atrybucie wygrywa
+                    z `.hidden` — przycisk był więc widoczny na telefonie, gdzie nie ma czego
+                    przełączać, a dotknięcie zapisywało `content` NA KONCIE i asystent otwierał się
+                    zadokowany przy następnym wejściu na komputer (łamie AC-18). Ta sama pułapka jest
+                    opisana przy pływającej ikonie 160 linii wyżej — i mimo to tu się powtórzyła. */}
+                {isWide && (
                 <button
                   onClick={togglePresentation}
-                  className="hidden lg:flex"
                   title={wObszarzeTresci ? t("pokazWOknie") : t("pokazWObszarzeTresci")}
                   aria-label={wObszarzeTresci ? t("pokazWOknie") : t("pokazWObszarzeTresci")}
                   aria-pressed={wObszarzeTresci}
@@ -1898,6 +1931,7 @@ export function AICommandSheet({
                 >
                   {wObszarzeTresci ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
                 </button>
+                )}
                 <button onClick={handleClose} title="Zamknij" aria-label="Zamknij asystenta" style={headerBtn}><X size={16} /></button>
               </div>
             </div>
@@ -1919,10 +1953,10 @@ export function AICommandSheet({
                 </p>
                 <button
                   role="menuitem"
-                  disabled={rozmowaPusta}
+                  disabled={zapisNiedostepny}
                   onClick={() => { setShowWiecej(false); if (conversationId) void toggleSaved(conversationId, !biezacaZapisana); }}
                   title={rozmowaPusta ? t("pustaRozmowaNieDaSieZapisac") : undefined}
-                  style={{ ...menuItem, opacity: rozmowaPusta ? 0.45 : 1, cursor: rozmowaPusta ? "default" : "pointer" }}
+                  style={{ ...menuItem, opacity: zapisNiedostepny ? 0.45 : 1, cursor: zapisNiedostepny ? "default" : "pointer" }}
                 >
                   {biezacaZapisana ? <BookmarkX size={15} style={{ color: "var(--text-muted)" }} /> : <Bookmark size={15} style={{ color: "var(--accent-blue)" }} />}
                   {biezacaZapisana ? t("usunZZapisanych") : t("zapiszRozmowe")}
@@ -1941,7 +1975,7 @@ export function AICommandSheet({
                     // w polu, którego nie widać — akcja bez skutku widocznego dla użytkownika.
                     setListaRozmow(biezacaZapisana ? "zapisane" : "historia");
                     setHeaderPanel("history");
-                    void listAiConversations().then(setConversations).catch(() => { /* ignore */ });
+                    void listAiConversations().then((r) => { setConversations(r); setListyWczytane(true); }).catch(() => { /* ignore */ });
                   }}
                   style={{ ...menuItem, opacity: rozmowaPusta ? 0.45 : 1, cursor: rozmowaPusta ? "default" : "pointer" }}
                 >

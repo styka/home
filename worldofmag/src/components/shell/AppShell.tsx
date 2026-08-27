@@ -335,8 +335,15 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           przejmuje `flex-1 min-w-0` od `<main>`, więc układ „nawigacja | treść" jest ten sam.
 
           Opakowanie NIE MOŻE dostać `transform`, `filter` ani `contain`: każde z nich robi z niego
-          układ odniesienia dla `position: fixed`, a na tym stoi tryb okna i arkusz na telefonie. */}
-      <div className="relative flex flex-1 min-w-0">
+          układ odniesienia dla `position: fixed`, a na tym stoi tryb okna i arkusz na telefonie.
+
+          `min-h-0` NIE jest ozdobą — bez niego aplikacja przestaje się przewijać na telefonie.
+          Poniżej `md` korzeń powłoki jest `flex-col`, a element flexowy z `overflow: visible` ma
+          automatyczny rozmiar minimalny równy WYSOKOŚCI TREŚCI. `<main>` był na to odporny, bo ma
+          `overflow-hidden` (przy którym ten rozmiar wynosi 0) — opakowanie tej odporności nie
+          odziedziczyło i rozpychało się na całą listę: zmierzone `/tasks` przy 360 × 640 → `main`
+          2028 px zamiast 595 px, a wewnętrzny kontener przestawał być kontenerem przewijania. */}
+      <div className="relative flex flex-1 min-w-0 min-h-0">
         <main ref={mainRef} className="flex-1 overflow-hidden flex flex-col min-w-0 pb-16 md:pb-0">
           {children}
         </main>

@@ -4,6 +4,55 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — `min-h-0` na opakowaniu: jedna klasa, a bez niej telefon przestaje przewijać
+**Problem:** Owinięcie `<main>` w dodatkowy kontener (`flex flex-1 min-w-0`) zabrało modułom
+przewijanie na telefonie: `/tasks` przy 360 × 640 miało `<main>` **2028 px** zamiast 595, a wewnętrzny
+kontener przestawał być kontenerem przewijania (`scrollHeight == clientHeight`, `scrollTop` stoi na 0).
+Widać było pierwszy ekran listy i nic więcej — w KAŻDYM module naraz. Build zielony, `tsc` zielony,
+kilkanaście klikaczy zielonych.
+
+**Rozwiązanie:** `min-h-0` na opakowaniu. Element flexowy ma `min-height: auto`, co w kolumnowym
+kontenerze rozwiązuje się do **wysokości treści** — chyba że ma `overflow` inny niż `visible`.
+Stary `<main>` był odporny przypadkiem: ma `overflow-hidden`, przy którym ten rozmiar wynosi 0.
+Nowe opakowanie tej odporności nie odziedziczyło.
+
+**Lekcja:** Wstawiając kontener MIĘDZY element flexowy a jego rodzica, przenieś na niego nie tylko
+klasy układu (`flex-1`, `min-w-0`), ale i to, co dawało staremu elementowi odporność na
+`min-height: auto`. W kolumnowym flexboksie brak `min-h-0` nie objawia się błędem, tylko
+zniknięciem przewijania — i tylko na wąskim ekranie, więc desktopowe klikacze tego nie widzą.
+
+## 2026-08-27 — `display` w atrybucie `style` unieważnia `hidden lg:flex`
+**Problem:** Przycisk dokowania asystenta miał `className="hidden lg:flex"` i `style={headerBtn}`,
+gdzie `headerBtn` dziedziczy z `iconBtn` `display: "flex"`. Styl w atrybucie ma wyższy priorytet niż
+klasa, więc przycisk **był widoczny na telefonie**. Dotknięcie zapisywało tryb „w obszarze treści"
+NA KONCIE, na telefonie nie robiło nic widocznego, a asystent otwierał się zadokowany przy następnym
+wejściu z komputera.
+
+**Rozwiązanie:** Renderowanie warunkowe (`{isWide && <button …>}`) zamiast chowania klasą.
+Najgorsze w tej usterce jest to, że **ostrzeżenie przed nią stało 160 linii wyżej w tym samym pliku**
+— przy pływającej ikonie, gdzie przebieg 100 rozwiązał dokładnie ten sam problem.
+
+**Lekcja:** Nie mieszaj `display` z atrybutu `style` z klasami `hidden`/`sm:flex` — one nigdy nie
+wygrają. Gdy komponent bierze wspólny obiekt stylu, sprawdź, czy nie niesie `display`. I czytaj
+komentarze w pliku, który zmieniasz: ten sam plik potrafi już zawierać opis pułapki, w którą właśnie
+wchodzisz.
+
+## 2026-08-27 — Osierocony `next start` psuje każdy kolejny przebieg klikaczy
+**Problem:** Testy pokazywały **czarną stronę** na trasie modułu i „Refused to execute script …
+MIME type ('text/html')" na chunku layoutu. Wyglądało to na awarię hydratacji wprowadzoną zmianą.
+W rzeczywistości dwa serwery `next-server`, uruchomione ręcznie 1,5 godziny wcześniej do diagnostyki,
+wciąż trzymały port 3000 — a `playwright.config.ts` ma `reuseExistingServer: !process.env.CI`, więc
+każdy kolejny przebieg **reużywał tamtego serwera** ze starym `.next`. Serwowany HTML wskazywał
+chunki, których po przebudowie już nie było.
+
+**Rozwiązanie:** `ps -eo pid,etime,cmd | grep "[n]ext-server"` — czas życia procesu od razu pokazał,
+że to nie jest serwer z tego przebiegu — i `kill` po PID. Po sprzątnięciu ten sam zestaw: 14/14.
+
+**Lekcja:** Zanim uznasz czarną stronę albo błąd MIME chunku za regresję kodu, sprawdź, **czyj serwer
+odpowiada**. Przy `reuseExistingServer` osierocony proces zatruwa wszystkie następne przebiegi i daje
+objawy nie do odróżnienia od usterki hydratacji. Ubijaj ręcznie uruchomione serwery od razu po
+diagnostyce — i nigdy `pkill -f "next start"` z poziomu narzędzia, bo wzorzec łapie własną powłokę.
+
 ## 2026-08-26 — `export A=... B="$A"` w jednej instrukcji: druga zmienna jest pusta
 **Problem:** Do lokalnej weryfikacji migracji ustawiałem połączenie jednym poleceniem:
 `export DATABASE_URL='postgresql://…' DIRECT_URL="$DATABASE_URL"`. `prisma migrate deploy` odbijał
