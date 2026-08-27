@@ -140,13 +140,13 @@ materiału — sprawdzane w T-27 razem z resztą buildu.
 
 ## Faza 5 — Klikacz, bramki i domknięcie
 
-- [ ] **T-26** — `e2e/specs/109-nawigacja-i-ustawienia.spec.ts`: testy dla AC-1…AC-19 wg mapowania
+- [x] **T-26** — `e2e/specs/109-nawigacja-i-ustawienia.spec.ts`: testy dla AC-1…AC-19 wg mapowania
       z planu §8. Aktualizacja istniejących specek, które wchodzą w ustawienia:
       `favorites.spec.ts` (ulubione → `/settings/nawigacja`), `teams.spec.ts` (zespoły →
       `/settings/zespoly`). **Bez `networkidle`** (`check:e2e-waits`).
       *Gotowe, gdy:* nowy spec przechodzi i żaden istniejący nie czerwienieje z powodu zmiany tras.
 
-- [ ] **T-27** — Bramki lokalnie na lokalnym Postgresie (C-13, **nigdy prod `DATABASE_URL`**):
+- [x] **T-27** — Bramki lokalnie na lokalnym Postgresie (C-13, **nigdy prod `DATABASE_URL`**):
       `check:i18n` → `check:ui-contract` → `check:test-types` → `test:unit` → `next lint --dir src`
       → `npm run build` **do kroku `next build`** (bez `scripts/migrate.js`).
       *Gotowe, gdy:* wszystko zielone. Jeśli `check:perf` zaprotestuje — podnieś próg
