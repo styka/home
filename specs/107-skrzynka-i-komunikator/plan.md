@@ -246,8 +246,9 @@ które nie mają już co najmniej dwóch uczestników (AC-32, „bez osieroconyc
   ikona wchodzi obok niej w `AppShell` (górny pasek telefonu) i w `ModuleSidebar` (rząd nad
   nawigacją). Kolejność: dzwonek, potem czat (AC-10, AC-11); rząd i tak lustrzy się klasą
   `.omnia-chrom-konta` za `html[data-reka]`, więc ręka dominująca działa bez dodatkowej pracy.
-- Cel dotyku 44 × 44 px (C-31) — dzisiejsze 34 px dzwonka podnosimy razem z tym (AC-13); wygląd
-  zostaje ten sam, rośnie tylko obszar klikalny.
+- Cel dotyku 44 × 44 px **w wariancie `topbar`** (telefon — C-31); w rzędzie chromu na komputerze
+  zostaje 34 px ustalone w 086, bo tam celuje mysz, a podniesienie jednej ikony rozjechałoby rząd
+  z czterema sąsiadkami. Doprecyzowane razem z AC-13 na etapie implementacji (C-54).
 - Panel: `AnchoredLayer` z listą rozmów (nieprzeczytane u góry) + stopka „Otwórz Czat" → `/czat`.
 - Dane bierze z **kontraktu** modułu (`@/modules/czat/contract`), nigdy z jego wnętrza (C-36).
 

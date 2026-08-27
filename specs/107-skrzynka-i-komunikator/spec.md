@@ -120,8 +120,13 @@ infrastruktury, tylko nowego miejsca.
 - [ ] **AC-12** — Given ikona czatu, when użytkownik ją kliknie, then otwiera się szybki podgląd
   rozmów (lista rozmów z nieprzeczytanymi na górze), a z niego można wejść w rozmowę na pełnym
   ekranie.
-- [ ] **AC-13** — Given każda z ikon chromu, when mierzymy jej cel dotyku, then ma co najmniej
-  44 × 44 px i opis dla czytnika ekranu zawierający liczbę spraw.
+- [ ] **AC-13** — Given ikony chromu **na powierzchni dotykowej** (górny pasek telefonu), when
+  mierzymy ich cel dotyku, then ma on co najmniej 44 × 44 px; obie ikony mają opis dla czytnika
+  ekranu zawierający liczbę spraw.
+  *(Poprawione na etapie implementacji, C-54: pierwotne brzmienie obejmowało też rząd chromu na
+  komputerze. Reguła 44 px z C-31 dotyczy **dotyku**, a tam celuje mysz — podniesienie samej tej
+  jednej ikony rozjechałoby rząd z czterema sąsiadkami, którego geometrię ustalono w 086. Zmiana
+  zawęża wymóg tam, gdzie ma sens, zamiast zostawiać rozjazd „kod robi X, spec mówi Y".)*
 
 **Komunikator — rozmowy**
 - [ ] **AC-14** — Given użytkownik należy do zespołu, when wejdzie do modułu Czat, then widzi

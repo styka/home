@@ -825,7 +825,22 @@
       },
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
-        "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj."
+        "brakPowiadomienPrzypomnieniaO": "Brak powiadomień. Przypomnienia o terminach pojawią się tutaj.",
+        "skrzynka": "Skrzynka",
+        "skrzynkaZLicznikiem": "Skrzynka ({ile, plural, one {# sprawa} few {# sprawy} many {# spraw} other {# sprawy}} czeka)",
+        "rodzajeSpraw": "Rodzaje spraw",
+        "segmentDoZrobienia": "Do zrobienia",
+        "segmentRelacje": "Relacje",
+        "oznaczWszystkie": "Oznacz wszystkie na tej liście jako przeczytane",
+        "wszystkie": "Wszystkie",
+        "zamknij": "Zamknij",
+        "brakRelacji": "Brak spraw z ludźmi. Pojawią się tutaj zaproszenia do zespołów, udostępnione zasoby i nieprzeczytane rozmowy.",
+        "zaproszenieDoZespolu": "Zaproszenie do zespołu „{zespol}”",
+        "zapraszaCie": "Zaprasza: {kto}",
+        "przyjmij": "Przyjmij",
+        "odrzuc": "Odrzuć",
+        "odrzucicZaproszenie": "Odrzucić zaproszenie do „{zespol}”?",
+        "odrzucenieOpis": "Zaproszenie zniknie z listy. Osoba zapraszająca może wysłać je ponownie."
       },
       "SpeechFallbackNotice": {
         "zeszlismyNaGlosSystemowy": "Lektor serwerowy nie odpowiada — czytam głosem systemowym.",

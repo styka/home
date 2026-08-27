@@ -58,7 +58,7 @@
 
 ## Faza 3 — Skrzynka: interfejs
 
-- [ ] **T-7** — `src/components/shell/NotificationBell.tsx` → skrzynka: `PrzelacznikSegmentowy`
+- [x] **T-7** — `src/components/shell/NotificationBell.tsx` → skrzynka: `PrzelacznikSegmentowy`
   („Do zrobienia" / „Relacje", oba `wylaczona: false` jawnie) **poza** obszarem przewijania; segment
   „Relacje" renderuje najpierw żywe zaproszenia do zespołu z przyciskami „Przyjmij"/„Odrzuć"
   (`confirmDialog({ destructive: true })` przy odrzuceniu), potem powiadomienia rodzaju `relacja`;
