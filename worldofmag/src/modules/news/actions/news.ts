@@ -17,6 +17,13 @@ import type { NewsItem, NewsSource } from "@prisma/client";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { przeliczGoraceTematy, type HotTopic, type WynikGoracychTematow } from "../lib/goraceTematy";
+import {
+  czyZaDlugie,
+  instrukcjaDlugosci,
+  instrukcjaKorekty,
+  poziomStreszczenia,
+  LIMIT_MATERIALU,
+} from "../lib/dlugoscStreszczenia";
 
 export type SummaryLength = "short" | "medium" | "long";
 /**
@@ -552,17 +559,6 @@ export async function setShowEmptyTopics(show: boolean): Promise<void> {
 
 // ─── LLM helpers ───────────────────────────────────────────────────────────
 
-function lengthInstruction(length: SummaryLength): string {
-  switch (length) {
-    case "short":
-      return "Streszczenie KRÓTKIE: jedno zdanie, maks. ~25 słów, sama esencja.";
-    case "long":
-      return "Streszczenie SZCZEGÓŁOWE: 4–6 zdań, kontekst, liczby, konsekwencje (maks. ~130 słów).";
-    default:
-      return "Streszczenie ŚREDNIE: 2–3 zdania, najważniejsze fakty (maks. ~60 słów).";
-  }
-}
-
 class LlmError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -690,37 +686,120 @@ export async function getNewsRefreshState(): Promise<NewsRefreshState | null> {
 
 export interface ResummarizeResult {
   summary: string;
+  /** 111: czy tekst przyszedł z pamięci (nie kosztował). UI nie pokazuje wtedy wskaźnika kosztu. */
+  fromMemory: boolean;
+  /** 111: czy powstał z pełnej treści artykułu, czy tylko ze skrótu z kanału. */
+  fromArticle: boolean;
   usage?: AiUsageInfo;
 }
 
+/**
+ * 111: STRESZCZENIE NA WYBRANYM POZIOMIE — zapamiętane, a nie generowane od nowa przy każdym kliknięciu.
+ *
+ * Zgłoszenie właściciela: „jak streszczę na poziom krótki, a następnie znowu na średni, to jest
+ * streszczenie około dwa razy dłuższe, mimo że poziom ten sam". Przyczyny były trzy i wszystkie
+ * siedziały w tej funkcji:
+ *
+ * 1. **Nie sprawdzała, czy poziom już istnieje.** Każde przełączenie było nową, płatną generacją,
+ *    a wynik modelu przy tej samej instrukcji nie jest identyczny. Teraz poziom raz wygenerowany
+ *    zostaje — powrót do niego jest natychmiastowy i darmowy (AC-18).
+ * 2. **Streszczała poprzednie streszczenie.** `const body = article.text || item.summary` znaczyło:
+ *    gdy pobranie artykułu się nie uda, streść to, co akurat stoi w `summary` — czyli tekst już raz
+ *    skrócony. Streszczenie streszczenia gubi fakty i za każdym przejściem gubi ich więcej. Materiał
+ *    jest teraz zawsze ŹRÓDŁOWY: pełny artykuł, a gdy go nie ma — surowy skrót z kanału z puli
+ *    artykułów, nigdy `item.summary` (AC-19).
+ * 3. **Limit długości był miękki.** Instrukcja mówiła „maks. ~60 słów" przy kilkakrotnie większym
+ *    materiale niż widzi przebieg wsadowy. Pułap jest teraz twardy i sprawdzany, a wynik grubo poza
+ *    nim dostaje JEDNĄ korektę (AC-23).
+ *
+ * `force` to ręczne „wygeneruj ponownie" (AC-20): jedyna droga do nadpisania zapamiętanego tekstu.
+ * Świadomie nie ma drugiej akcji o tym samym ciele — dwa wejścia do jednej reguły to dwa miejsca,
+ * w których trzeba pamiętać o tej samej poprawce.
+ */
 export async function resummarizeItem(
   itemId: string,
-  length: SummaryLength
+  length: SummaryLength,
+  opts: { force?: boolean } = {}
 ): Promise<ResummarizeResult> {
   const user = await requireAuth();
   const item = await prisma.newsItem.findUnique({
     where: { id: itemId },
-    include: { topic: true, source: true },
+    include: { topic: true, source: true, article: true },
   });
   if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
 
+  const poziom = poziomStreszczenia(length);
+
+  // 1. Pamięć. Bez `force` zapamiętany poziom wraca DOKŁADNIE taki, jaki użytkownik już czytał —
+  //    bez wywołania modelu, więc i bez kosztu.
+  if (!opts.force) {
+    const zapamietane = await prisma.newsItemSummary.findUnique({
+      where: { itemId_length: { itemId, length: poziom } },
+    });
+    if (zapamietane) {
+      // Wskaźnik „który poziom jest teraz pokazywany" musi nadążyć za wyborem, inaczej po
+      // odświeżeniu strony karta wróciłaby do poprzedniego poziomu.
+      await prisma.newsItem.update({
+        where: { id: itemId },
+        data: { summary: zapamietane.text, summaryLength: poziom, summaryFailed: false },
+      });
+      revalidatePath("/wiadomosci");
+      return { summary: zapamietane.text, fromMemory: true, fromArticle: zapamietane.fromArticle };
+    }
+  }
+
+  // 2. Materiał ZAWSZE źródłowy. Kolejność: pełny artykuł → surowy skrót z kanału. Nigdy
+  //    `item.summary`, bo to jest wynik poprzedniego streszczania (patrz punkt 2 w nagłówku).
   const article = await fetchArticle(item.url);
-  const body = article.text || item.summary;
+  const zArtykulu = (article.text ?? "").trim();
+  const material = zArtykulu || (item.article?.description ?? "").trim();
+  if (!material) {
+    // Brak materiału to nie jest awaria modelu i nie wolno go zapisać jako streszczenia —
+    // utrwaliłoby to nieudaną generację jako „streszczenie poziomu X" (AC-22).
+    await prisma.newsItem.update({ where: { id: itemId }, data: { summaryFailed: true } });
+    revalidatePath("/wiadomosci");
+    throw new Error("Nie udało się pobrać treści artykułu — spróbuj ponownie za chwilę.");
+  }
+
   const system =
     "Streszczasz artykuł prasowy po polsku. Zwróć WYŁĄCZNIE JSON {\"summary\":\"...\"}.";
-  const userPrompt =
-    `Tytuł: ${item.title}\nTreść: ${body.slice(0, 4000)}\n\n${lengthInstruction(length)}`;
   const sink: LlmSink = [];
+  const userPrompt =
+    `Tytuł: ${item.title}\nTreść: ${material.slice(0, LIMIT_MATERIALU)}\n\n${instrukcjaDlugosci(poziom)}`;
   const out = await llmJson<{ summary: string }>("generation", system, userPrompt, 2000, sink, "streszczenie");
-  const summary = out.summary?.trim();
+  let summary = out.summary?.trim();
   if (!summary) throw new Error("Pusta odpowiedź LLM");
 
-  await prisma.newsItem.update({
-    where: { id: itemId },
-    data: { summary, summaryLength: length },
-  });
+  // 3. JEDNA korekta, gdy wynik grubo przekracza pułap poziomu. Nie tniemy tekstu sami — ucięcie
+  //    streszczenia w połowie zdania jest gorsze niż streszczenie o kilkanaście słów za długie.
+  if (czyZaDlugie(summary, poziom)) {
+    const poprawka = await llmJson<{ summary: string }>(
+      "generation",
+      system,
+      `${userPrompt}\n\nDotychczasowa odpowiedź: ${summary}\n\n${instrukcjaKorekty(poziom)}`,
+      2000,
+      sink,
+      "streszczenie (korekta długości)"
+    );
+    const krotsze = poprawka.summary?.trim();
+    // Gdy korekta zawiodła, zostaje pierwszy wynik: za długie streszczenie jest lepsze niż żadne.
+    if (krotsze) summary = krotsze;
+  }
+
+  const fromArticle = zArtykulu.length > 0;
+  await prisma.$transaction([
+    prisma.newsItemSummary.upsert({
+      where: { itemId_length: { itemId, length: poziom } },
+      create: { itemId, length: poziom, text: summary, fromArticle },
+      update: { text: summary, fromArticle },
+    }),
+    prisma.newsItem.update({
+      where: { id: itemId },
+      data: { summary, summaryLength: poziom, summaryFailed: false },
+    }),
+  ]);
   revalidatePath("/wiadomosci");
-  return { summary, usage: await visibleUsage(usageFromChat(sink)) };
+  return { summary, fromMemory: false, fromArticle, usage: await visibleUsage(usageFromChat(sink)) };
 }
 
 /**

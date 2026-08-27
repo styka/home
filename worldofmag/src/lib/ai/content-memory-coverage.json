@@ -1,7 +1,7 @@
 {
   "src/modules/news/actions/news.ts": {
     "mode": "on-demand",
-    "reason": "086: po przeniesieniu rdzenia goracych tematow do modules/news/lib/goraceTematy.ts w tym pliku zostalo JEDNO wywolanie modelu — resummarizeItem. Jest na zadanie: klikniecie w inna dlugosc streszczenia JEST wyrazna prosba, a wynik zalezy od wybranej dlugosci, wiec pamiec zwrocilaby nie to, o co uzytkownik poprosil."
+    "reason": "111: w tym pliku zostalo JEDNO wywolanie modelu — resummarizeItem. Zostaje `on-demand`, bo wywolanie dzieje sie na wyrazny klik uzytkownika. UZASADNIENIE Z 086 ('pamiec zwrocilaby nie to, o co uzytkownik poprosil') przestalo byc prawdziwe i dlatego jest tu przepisane: od 111 akcja MA wlasna pamiec, ale PER POZIOM (tabela NewsItemSummary, unikat [itemId, length]), wiec zwraca dokladnie ten poziom, o ktory poproszono. Nie idzie to przez `rememberedContent`/`AiContent`, bo tamta pamiec jest kluczowana zakresem i warunkami generacji, a tu kluczem jest poziom szczegolowosci wybrany przez uzytkownika. Reczne 'Wygeneruj ponownie' (force) omija pamiec."
   },
   "src/modules/weather/actions/weather.ts": {
     "mode": "remembered",

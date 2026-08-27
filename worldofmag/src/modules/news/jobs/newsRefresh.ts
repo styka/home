@@ -25,6 +25,13 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { przetworzPartiami } from "../lib/partieStreszczen";
 import { logEvent } from "@/platform/observability/log";
 import { przeliczGoraceTematy, etapGoracychTematow } from "../lib/goraceTematy";
+import { fetchArticle } from "@/lib/news/article";
+import {
+  instrukcjaDlugosci,
+  materialUbogi,
+  poziomStreszczenia,
+  LIMIT_MATERIALU,
+} from "../lib/dlugoscStreszczenia";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -366,17 +373,6 @@ const SUMMARY_BATCH = 10;
 /** 080 (Z5): łącznie tyle podejść do streszczenia jednej pozycji (pierwsze + dwa ponowienia). */
 const SUMMARY_MAX_ATTEMPTS = 3;
 
-function lengthInstruction(length: string): string {
-  switch (length) {
-    case "short":
-      return "Streszczenie KRÓTKIE: jedno zdanie, maks. ~25 słów, sama esencja.";
-    case "long":
-      return "Streszczenie SZCZEGÓŁOWE: 4–6 zdań, kontekst, liczby, konsekwencje (maks. ~130 słów).";
-    default:
-      return "Streszczenie ŚREDNIE: 2–3 zdania, najważniejsze fakty (maks. ~60 słów).";
-  }
-}
-
 /**
  * Streszcza nowe pozycje w domyślnej długości użytkownika — **wsadowo**, ze skrótu z kanału.
  *
@@ -384,6 +380,72 @@ function lengthInstruction(length: string): string {
  * przebieg dla materiału, którego użytkownik w większości nawet nie otworzy. Pełny tekst dociąga
  * dopiero `resummarizeItem`, gdy ktoś poprosi o dłuższe streszczenie konkretnej pozycji.
  */
+/**
+ * 111: POZYCJA Z UBOGIM SKRÓTEM DOSTAJE PEŁNY ARTYKUŁ, ZANIM ZAPYTAMY MODEL.
+ *
+ * Zgłoszenie właściciela: „czasem generujesz w treściach wiadomości coś w stylu, że brak
+ * informacji, a jak się zmieni poziom, by wygenerować nowe streszczenie, to jednak znajdujesz
+ * treść do streszczenia".
+ *
+ * Miał rację i przyczyna nie była przypadkowa. Przebieg wsadowy widzi WYŁĄCZNIE skrót z kanału RSS,
+ * a część kanałów podaje pusty opis albo samą zapowiedź. Model dostawał wtedy „(brak)" i uczciwie
+ * pisał, że nie ma czego streszczać. Ręczna zmiana poziomu szła inną ścieżką — tą, która dociąga
+ * pełny artykuł — więc treść „nagle" się znajdowała. Użytkownik nie ma jak tego wiedzieć, więc
+ * musiał zgadywać, że pomoże przełączenie poziomu.
+ *
+ * Dociągamy **tylko tam, gdzie faktycznie brakuje materiału** i z twardym limitem: pobranie
+ * wszystkich artykułów to byłoby kilkadziesiąt żądań HTTP na przebieg dla materiału, którego
+ * użytkownik w większości nawet nie otworzy — i to jest świadoma decyzja sprzed 111, której nie
+ * odwracamy. Błąd pobrania nie przerywa etapu: pozycja idzie dalej z tym, co ma.
+ */
+const MAKS_DOCIAGNIEC = 12;
+
+/** Poniżej tylu znaków wynik modelu uznajemy za nieudany, a nie za krótkie streszczenie. */
+const MIN_WYNIKU = 20;
+
+interface PozycjaDoStreszczenia {
+  id: string;
+  title: string;
+  material: string;
+  fromArticle: boolean;
+}
+
+async function uzupelnijUbogiMaterial(
+  pozycje: Array<{ id: string; title: string; summary: string; url: string }>,
+  ctx: JobContext
+): Promise<PozycjaDoStreszczenia[]> {
+  const ubogie = pozycje.filter((p) => materialUbogi(p.summary)).slice(0, MAKS_DOCIAGNIEC);
+  const dociagniete = new Map<string, string>();
+
+  if (ubogie.length > 0) {
+    ctx.progress?.(`Dociągam treść (${ubogie.length} poz.)…`);
+    for (const p of ubogie) {
+      try {
+        const artykul = await fetchArticle(p.url);
+        const tekst = (artykul.text ?? "").trim();
+        if (tekst) dociagniete.set(p.id, tekst);
+      } catch (e) {
+        // Świadomie cicho na poziomie pozycji: brak treści jednego artykułu nie jest powodem, żeby
+        // przerwać streszczanie pozostałych. Zapis do dziennika zostaje, bo powtarzalne
+        // niepowodzenie jednego portalu jest informacją.
+        logEvent("warn", "news.summarize.article_fetch_failed", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+  }
+
+  return pozycje.map((p) => {
+    const zArtykulu = dociagniete.get(p.id);
+    return {
+      id: p.id,
+      title: p.title,
+      material: zArtykulu ?? p.summary,
+      fromArticle: Boolean(zArtykulu),
+    };
+  });
+}
+
 async function summarizeItems(
   itemIds: string[],
   defaultLength: string,
@@ -392,12 +454,14 @@ async function summarizeItems(
 ): Promise<number> {
   if (itemIds.length === 0) return 0;
 
-  const items = await prisma.newsItem.findMany({
+  const surowe = await prisma.newsItem.findMany({
     take: SUFIT_LISTY,
     where: { id: { in: itemIds } },
-    select: { id: true, title: true, summary: true },
+    select: { id: true, title: true, summary: true, url: true },
   });
-  if (items.length === 0) return 0;
+  if (surowe.length === 0) return 0;
+
+  const items = await uzupelnijUbogiMaterial(surowe, ctx);
 
   const system =
     "Streszczasz wiadomości prasowe po polsku, rzeczowo i bez ozdobników. Nie dopisujesz niczego, " +
@@ -428,13 +492,13 @@ async function summarizeItems(
       ctx.progress?.(attempt === 1 ? `${postep}…` : `${postep}, podejście ${attempt}…`);
 
       const blocks = batch
-        .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.summary.slice(0, 600) || "(brak)"}`)
+        .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.material.slice(0, LIMIT_MATERIALU) || "(brak)"}`)
         .join("\n");
 
       const out = await llmJson<{ summaries?: Array<{ index: number; title?: string; summary: string }> }>(
         "generation",
         system,
-        `${lengthInstruction(defaultLength)}\n\nMATERIAŁY:\n${blocks}\n\n` +
+        `${instrukcjaDlugosci(poziomStreszczenia(defaultLength))}\n\nMATERIAŁY:\n${blocks}\n\n` +
           `Zwróć JSON: {"summaries":[{"index":0,"title":"...","summary":"..."}]} dla KAŻDEGO materiału.\n` +
           `Pole "title" to TYTUŁ PO POLSKU: przetłumacz go, a jeśli już jest po polsku — przepisz bez zmian. ` +
           `Nie dopisuj do tytułu niczego, czego nie ma w oryginale, i nie zmieniaj jego sensu.`,
@@ -446,7 +510,11 @@ async function summarizeItems(
       for (const s of out.summaries ?? []) {
         const item = batch[s.index];
         const text = s.summary?.trim();
-        if (!item || !text) continue;
+        // 111: pusty ORAZ skrajnie krótki wynik liczy się jako NIEUDANA pozycja, a nie jako
+        // streszczenie. Do 111 `summaryFailed` ustawiała wyłącznie awaria całej partii, więc
+        // odpowiedź w rodzaju „brak treści" lądowała w bazie jako pełnoprawne streszczenie —
+        // i to jest druga połowa zgłoszenia właściciela o „braku informacji" w treści wiadomości.
+        if (!item || !text || text.length < MIN_WYNIKU) continue;
         // 084 (AC-22): tytuł po polsku zapisujemy TYM SAMYM wywołaniem. Pominięty tytuł zostawia
         // oryginał — brak tłumaczenia jest gorszy niż tytuł, ale pusty tytuł jest gorszy od obu.
         const tytul = s.title?.trim();
@@ -458,6 +526,19 @@ async function summarizeItems(
             summaryFailed: false,
             ...(tytul ? { title: tytul } : {}),
           },
+        });
+        // 111: ten sam tekst ląduje w pamięci poziomów, więc powrót do poziomu domyślnego po
+        // zajrzeniu na inny jest natychmiastowy i darmowy (AC-18). Bez tego zapisu pamięć
+        // zaczynałaby się dopiero od pierwszego ręcznego przełączenia.
+        await prisma.newsItemSummary.upsert({
+          where: { itemId_length: { itemId: item.id, length: poziomStreszczenia(defaultLength) } },
+          create: {
+            itemId: item.id,
+            length: poziomStreszczenia(defaultLength),
+            text,
+            fromArticle: item.fromArticle,
+          },
+          update: { text, fromArticle: item.fromArticle },
         });
         // Zgłaszamy sukces NATYCHMIAST po zapisie: gdyby kolejny `update` w tej partii rzucił,
         // ta pozycja ma już streszczenie w bazie i nie może trafić do „bez streszczenia".

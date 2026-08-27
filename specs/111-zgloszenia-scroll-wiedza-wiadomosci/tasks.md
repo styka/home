@@ -35,7 +35,7 @@
   przejdzie nawet po naprawie nośnika tekstu.
   **Gotowe, gdy:** test jednostkowy pokazuje, że zmiana samej treści bloku (przy tym samym tytule)
   zmienia klucz.
-- [ ] **T-5** `[P]` — **`src/modules/news/lib/dlugoscStreszczenia.ts`** (plan §3.3): jedna definicja
+- [x] **T-5** `[P]` — **`src/modules/news/lib/dlugoscStreszczenia.ts`** (plan §3.3): jedna definicja
   poziomów dla obu ścieżek — `instrukcjaDlugosci`, `maksSlow`, `czyZaDlugie`, `LIMIT_MATERIALU`
   + testy jednostkowe.
   **Gotowe, gdy:** funkcja `lengthInstruction` **znika** z `news.ts` i z `newsRefresh.ts` (koniec
@@ -61,18 +61,18 @@
 
 ## Faza 3 — Streszczenia per poziom (zgłoszenie 4)
 
-- [ ] **T-9** — `resummarizeItem` na nowo (plan §3.1): pamięć per poziom (zwrot bez wywołania
+- [x] **T-9** — `resummarizeItem` na nowo (plan §3.1): pamięć per poziom (zwrot bez wywołania
   modelu), `force` dla ręcznej regeneracji, materiał **wyłącznie źródłowy** (pełny artykuł →
   skrót z `NewsArticle`, **nigdy** `item.summary`), `upsert` do `NewsItemSummary`, jedna korekta
   przy wyniku ponad pułap, `revalidatePath`. Guard dostępu **bez zmian** (C-21).
   **Gotowe, gdy:** zwrotka niesie `fromMemory` i `fromArticle`; testy: drugi raz ten sam poziom =
   identyczny tekst i **zero** wywołań atrapy modelu (AC-18), przy nieudanym pobraniu artykułu
   materiałem jest opis z `NewsArticle` (AC-19), `force` nadpisuje (AC-20).
-- [ ] **T-10** — `newsRefresh.summarizeItems` (plan §3.2): dociąganie pełnego artykułu dla pozycji
+- [x] **T-10** — `newsRefresh.summarizeItems` (plan §3.2): dociąganie pełnego artykułu dla pozycji
   z ubogim skrótem (limit 12 na przebieg, sekwencyjnie, błąd pobrania nie przerywa etapu), zapis
   wyniku **także** do `NewsItemSummary`, pusty/skrajnie krótki wynik modelu = niepowodzenie pozycji.
   **Gotowe, gdy:** test pokazuje dociągnięcie dla pustego skrótu i respektowanie limitu (AC-21).
-- [ ] **T-11** — `src/lib/ai/content-memory-coverage.json`: przepisz uzasadnienie dla
+- [x] **T-11** — `src/lib/ai/content-memory-coverage.json`: przepisz uzasadnienie dla
   `src/modules/news/actions/news.ts` — dotychczasowe („pamięć zwróciłaby nie to, o co użytkownik
   poprosił") po tej zmianie **jest nieprawdziwe**, bo pamięć jest per poziom. Klasyfikacja zostaje
   `on-demand`.
