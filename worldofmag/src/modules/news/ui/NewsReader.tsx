@@ -15,6 +15,7 @@ import {
   setSpeechFallbackNotice,
 } from "@/lib/tts";
 import { getAssistantPrefs, updateAssistantPrefs, getSpeechOptions } from "@/actions/assistantPrefs";
+import { podpisBlokow } from "../lib/podpisBlokow";
 
 /**
  * 039: lektor wiadomości — czyta zdanie po zdaniu i podświetla to, które właśnie leci.
@@ -258,9 +259,19 @@ export function NewsReader({
   // Zależność to PODPIS TREŚCI, nie tożsamość tablicy: gdyby konsument budował `blocks` w ciele
   // komponentu, każdy render dawałby nową tablicę i lektor milkłby sam z siebie po pierwszym
   // zdaniu. Podpis zmienia się dopiero wtedy, gdy naprawdę zmienia się zestaw wiadomości.
-  const blocksKey = useMemo(() => blocks.map((b) => b.title).join(" "), [blocks]);
+  //
+  // 111: PODPIS OBEJMUJE TAKŻE TREŚĆ, nie tylko tytuły.
+  //
+  // Zgłoszenie właściciela: „jeśli wiadomość streszczę na inny poziom, to lektor i tak będzie
+  // czytał ten pierwszy streszczony tekst". Tytuł przy zmianie poziomu streszczenia **się nie
+  // zmienia**, więc podpis liczony z samych tytułów był identyczny, ten efekt się nie budził
+  // i lektor czytał dalej zdania sprzed zmiany. Podpis nazywał się „podpisem TREŚCI", a treści
+  // nie obejmował — to jest cała usterka.
+  const blocksKey = useMemo(() => podpisBlokow(blocks), [blocks]);
   /** Treść zdania czytanego ostatnio — po zmianie zestawu szukamy go w nowej liście. */
   const ostatnieZdanie = useRef<string | null>(null);
+  /** Tytuł bloku, w którym byliśmy — ratunek, gdy zdanie zniknęło, ale wiadomość została. */
+  const ostatniTytul = useRef<string | null>(null);
   const pierwszyZestaw = useRef(true);
   useEffect(() => {
     // Pierwszy przebieg to montaż — nie ma czego uciszać, a start należy do autostartu.
@@ -278,13 +289,30 @@ export function NewsReader({
      */
     const graloPrzed = activeRef.current;
     const tekst = ostatnieZdanie.current;
+    const tytul = ostatniTytul.current;
     silence();
     releaseSpeech(silence);
     lastReportedBlock.current = null;
     if (!graloPrzed || !tekst) return;
     const i = sentences.findIndex((x) => x.text === tekst);
-    if (i >= 0) playFromRef.current?.(i);
-  }, [blocksKey, sentences, silence]);
+    if (i >= 0) {
+      playFromRef.current?.(i);
+      return;
+    }
+    /**
+     * 111: ZDANIE ZNIKŁO, ALE WIADOMOŚĆ ZOSTAŁA — czytamy ją od nowa, zamiast milknąć.
+     *
+     * To są dwie różne sytuacje i do 111 obie kończyły się ciszą. Gdy słuchacz oznaczy wiadomość
+     * jako przeczytaną, wypada ona z zestawu i cisza jest właściwa (decyzja z 084: zgadywanie
+     * następnika byłoby gorsze). Ale gdy zmieni się POZIOM STRESZCZENIA, wiadomość zostaje —
+     * zmienia się tylko jej treść, więc czytanie jej nowej wersji od początku nie jest zgadywaniem.
+     *
+     * Rozróżniamy je po tytule bloku: tytuł przeżywa zmianę poziomu i ginie razem z wiadomością.
+     */
+    if (!tytul) return;
+    const j = sentences.findIndex((x) => blocks[x.block]?.title === tytul);
+    if (j >= 0) playFromRef.current?.(j);
+  }, [blocksKey, sentences, blocks, silence]);
 
   const playFrom = useCallback(
     (index: number) => {
@@ -297,6 +325,9 @@ export function NewsReader({
       indexRef.current = index;
       activeRef.current = true;
       ostatnieZdanie.current = sentences[index].text;
+      // 111: zapamiętujemy też, w KTÓREJ wiadomości jesteśmy — po zmianie poziomu streszczenia
+      // zdania już nie będzie, a tytuł zostanie i po nim wracamy do tej samej wiadomości.
+      ostatniTytul.current = blocks[sentences[index].block]?.title ?? null;
       // Zgłaszamy się jako jedyny grający lektor — każdy inny zostaje uciszony (patrz `claimSpeech`).
       claimSpeech(silence);
       setCurrent(index);
@@ -337,7 +368,7 @@ export function NewsReader({
       if (granica) window.setTimeout(powiedz, PRZERWA_MIEDZY_WIADOMOSCIAMI_MS);
       else powiedz();
     },
-    [sentences, silence, t]
+    [sentences, blocks, silence, t]
   );
   /**
    * Efekt zmiany zestawu jest zadeklarowany WYŻEJ, więc sięga po tę funkcję przez ref. Wpięcie jej

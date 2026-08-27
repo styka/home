@@ -30,7 +30,7 @@
   { flex: none }` w `globals.css`. Domyślne rozciąganie z 087 **zostaje** — wyjątek jest po stronie
   ikony, żeby nie cofnąć tamtej poprawki (korekta planu, C-54). Ikony ramy dostają klasę zawsze.
   **Gotowe, gdy:** widoki bez ikonowych akcji wyglądają dokładnie jak przed zmianą.
-- [ ] **T-4** `[P]` — **`blocksKey` z treści, nie z samych tytułów** (`NewsReader.tsx:261`, plan
+- [x] **T-4** `[P]` — **`blocksKey` z treści, nie z samych tytułów** (`NewsReader.tsx:261`, plan
   §5.5, druga połowa zgłoszenia 5). Osobne zadanie, bo to samodzielna wada: bez niej AC-24 nie
   przejdzie nawet po naprawie nośnika tekstu.
   **Gotowe, gdy:** test jednostkowy pokazuje, że zmiana samej treści bloku (przy tym samym tytule)
