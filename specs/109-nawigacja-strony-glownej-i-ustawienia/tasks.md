@@ -158,7 +158,7 @@ materiału — sprawdzane w T-27 razem z resztą buildu.
 
 - [x] **T-29** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
 
-- [ ] **T-31** — *(z `/verify`)* **AC-5 mierzone, nie odczytane z kodu.** Test `[109-AC5]` liczy
+- [x] **T-31** — *(z `/verify`)* **AC-5 mierzone, nie odczytane z kodu.** Test `[109-AC5]` liczy
       `a[href="/"]` i przy 390 px dostaje **0**, bo kotwica paska kciuka jest `<button>`
       z `aria-label` („Przejdź na stronę główną", `PasekKciuka.tsx:82-93`) — więc przeszedłby także
       wtedy, gdyby kotwica zniknęła. Przepisz test tak, żeby liczył **wszystkie** wejścia na stronę

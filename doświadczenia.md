@@ -20,6 +20,28 @@ mogło wejść kilka przebiegów, więc pierwszym krokiem jest odczytanie kodu, 
 miejsca. Ale odwrotny błąd jest gorszy: „opis się nie zgadza, więc zgłoszenie nieaktualne" zamyka
 prawdziwą usterkę. Zgadzaj kod z SEDNEM zgłoszenia, nie z jego adresem DOM.
 
+## 2026-08-27 — `notFound()` pod `/settings` nie dowoził treści 404 wcale, a trzy „naprawy" tego nie ruszyły
+**Problem:** Nieznany adres sekcji (`/settings/nieistniejaca`) zostawiał użytkownika na stanie
+ładowania. W odpowiedzi serwera nie było ani słowa z komunikatu 404, a w przeglądarce test czekał
+na niego 10 sekund i się nie doczekał. Pierwsza diagnoza brzmiała „strumień już ruszył" i wydawała
+się elegancka.
+
+**Rozwiązanie:** Trzy hipotezy, każda sprawdzona osobno i każda **obalona**: (1) własna granica
+`not-found.tsx` w segmencie — bez zmiany; (2) rzucenie `notFound()` przed pierwszym `await` — bez
+zmiany; (3) usunięcie `src/app/settings/loading.tsx` — bez zmiany. Status odpowiedzi przez cały czas
+wynosił 200, więc `notFound()` nie dawał tu nawet tego, po co się go zwykle woła. Zwykły render
+działa bez zarzutu, więc zły adres dostaje **zwykły widok**: „nie ma takiej sekcji" plus spis sekcji,
+które istnieją. Efekt uboczny okazał się lepszy od pierwotnego zamiaru — użytkownik nie tylko wie,
+że adres jest zły, ale od razu widzi, co może wybrać.
+
+**Lekcja:** Trzy rzeczy. (1) **Elegancka hipoteza nie jest pomiarem** — „strumień już ruszył"
+tłumaczyło objaw i było fałszywe; kosztowało trzy przebudowy, bo nie zostało sprawdzone jako
+pierwsze. (2) **Gdy wbudowany mechanizm frameworka nie działa w twoim kontekście, nie obchodź go
+trzema warstwami — sprawdź, czy jest ci w ogóle potrzebny.** Tu odpowiedź brzmiała „nie": zwykły
+render robi wszystko, czego trzeba. (3) **Asercja na brak czegoś przechodzi na stronie, która się
+nie narysowała.** Zawsze poprzedzaj ją warunkiem pozytywnym — pierwsza wersja tego testu mierzyła
+po stałym opóźnieniu i raz na kilka biegów łapała czarny prostokąt.
+
 ## 2026-08-27 — `notFound()` z wnętrza renderu daje stronę 404 ze statusem 200
 **Problem:** Test kliknięciowy dla nowej trasy `/settings/[sekcja]` sprawdzał, że nieznana sekcja
 zwraca status 404. Dostawał 200 — mimo że przeglądarka pokazywała poprawną stronę „Nie znaleziono
@@ -37,7 +59,9 @@ bocznej, komunikat 404), a kod niesie komentarz z pomiarem.
 zwraca. Asercja na status pilnowałaby tu szczegółu implementacji Nexta, a nie reguły, o którą chodzi
 („nieznana sekcja nie pokazuje treści żadnej sekcji"). I nie zostawiaj hipotezy w komentarzu jako
 faktu — sprawdzone „przestawienie kolejności tego nie zmienia" jest warte więcej niż zgrabne
-wyjaśnienie, którego nikt nie zmierzył.
+wyjaśnienie, którego nikt nie zmierzył. **Ciąg dalszy tej sprawy jest we wpisie wyżej:** okazało się,
+że `notFound()` nie dowoził na tej trasie także TREŚCI, więc ostatecznie w ogóle z niego
+zrezygnowaliśmy.
 
 ## 2026-08-27 — Podział długiej strony cicho zepsuł SPRZĄTANIE w testach, nie same testy
 **Problem:** Po rozbiciu `/settings` na sekcje klikacz pokazał awarię w `favorites.spec.ts` —

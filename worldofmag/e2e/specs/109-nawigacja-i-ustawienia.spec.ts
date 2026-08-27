@@ -98,17 +98,32 @@ test("[109-AC4] jedno klikniecie z modulu wraca na strone glowna", async ({ page
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 10_000 }).toBe("/");
 });
 
-test("[109-AC5] telefon: dolny pasek ma jedno wejscie na strone glowna", async ({ page }) => {
+test("[109-AC5] telefon: dokladnie jedno wejscie na strone glowna, w pasku kciuka", async ({ page }) => {
+  /**
+   * Liczymy WSZYSTKIE wejścia, nie tylko odnośniki.
+   *
+   * Pierwsza wersja tego testu szukała `a[href="/"]` i przy 390 px dostawała **0** — bo kotwica
+   * paska kciuka jest `<button>` z `aria-label` (100/103: pozycje paska nawigują imperatywnie).
+   * Przechodziła więc także wtedy, gdyby kotwica zniknęła, czyli nie odróżniała stanu poprawnego
+   * od zepsutego. Kryterium mówi „dokładnie jedno", a nie „najwyżej jedno", więc liczba musi być
+   * dokładna, a wejście musi zostać ZNALEZIONE.
+   */
   await otworz(page, "/tasks", 390);
-  const liczba = await page.evaluate(
-    () =>
-      Array.from(document.querySelectorAll('a[href="/"], button[data-href="/"]')).filter(
-        (el) => el.getClientRects().length > 0,
-      ).length,
-  );
-  console.log(`[109-AC5] wejść na stronę główną widocznych na telefonie: ${liczba}`);
-  // Panel boczny jest ukryty poniżej `md`, więc wiersz z 109 nie dokłada tu niczego.
-  expect(liczba).toBeLessThanOrEqual(1);
+  const wynik = await page.evaluate(() => {
+    const widoczny = (el: Element) => el.getClientRects().length > 0;
+    const opis = (el: Element) => `${el.tagName}:${el.getAttribute("aria-label") ?? (el.textContent || "").trim()}`;
+    const wejscia = Array.from(document.querySelectorAll("a, button")).filter((el) => {
+      if (!widoczny(el)) return false;
+      if (el.tagName === "A" && el.getAttribute("href") === "/") return true;
+      const etykieta = `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`;
+      return /stron(a|ę|y) głównej?|na stronę główną/i.test(etykieta);
+    });
+    return { liczba: wejscia.length, opisy: wejscia.map(opis) };
+  });
+  console.log(`[109-AC5] ${JSON.stringify(wynik)}`);
+  // Panel boczny jest ukryty poniżej `md`, więc wiersz z 109 nie dokłada tu niczego — zostaje
+  // sama kotwica paska kciuka, nietknięta przez ten przebieg.
+  expect(wynik.liczba, "na telefonie wejście na stronę główną ma być dokładnie jedno").toBe(1);
 });
 
 // ─── Ustawienia: spis, sekcje, wyszukiwarka ─────────────────────────────────
@@ -142,6 +157,9 @@ test("[109-AC7] spis sekcji miesci sie bez przewijania, a przy sekcji stoi obok 
 
 test("[109-AC8] telefon: spis bez listy bocznej, a sekcja z widocznym powrotem", async ({ page }) => {
   await otworz(page, "/settings", 390);
+  // Warunek pozytywny PRZED asercją o braku: inaczej „nie ma listy bocznej" byłoby prawdą także
+  // na stronie, która jeszcze się nie narysowała.
+  await expect(page.locator('main a[href="/settings/wyglad"]')).toBeVisible({ timeout: 10_000 });
   const naSpisie = await page.evaluate(() => {
     const listaBoczna = document.querySelector("main aside");
     return !!listaBoczna && listaBoczna.getClientRects().length > 0;
@@ -253,26 +271,28 @@ test("[109-AC18] telefon: tresc sekcji nie chowa sie pod dolnym paskiem", async 
   expect(wynik!.dolTresci, "obszar treści mieści się w oknie").toBeLessThanOrEqual(wynik!.wysokoscOkna + 2);
 });
 
-test("[109] nieznana sekcja pokazuje strone 404, a trasa zespolow dziala dalej", async ({ page }) => {
+test("[109] nieznany adres sekcji pokazuje spis z wyjasnieniem, a trasa zespolow dziala dalej", async ({ page }) => {
   /**
-   * Sprawdzamy TREŚĆ, nie status HTTP. Zmierzone w `next start`: `notFound()` wywołane z wnętrza
-   * renderu zwraca stronę 404 ze statusem **200** — 404 ustawia Next wtedy, gdy trasy nie dopasował
-   * ROUTER (`/zupelnie-nieistniejaca` → 404). Asercja na status pilnowałaby więc szczegółu Nexta,
-   * a nie reguły, o którą nam chodzi: nieznana sekcja nie może pokazać treści żadnej sekcji.
+   * Zły adres NIE idzie przez `notFound()` — i to jest wynik pomiaru, nie preferencja.
+   *
+   * `notFound()` na tej trasie nie dowoził treści strony 404 ani w odpowiedzi serwera, ani
+   * w przeglądarce w ciągu 10 s: użytkownik zostawał na stanie ładowania. Sprawdzone osobno trzy
+   * wyjścia (własna granica `not-found.tsx`, rzut przed pierwszym `await`, usunięcie
+   * `settings/loading.tsx`) — żadne nie pomogło, a status i tak pozostawał 200. Zwykły render
+   * działa, więc zły adres dostaje zwykły widok: wyjaśnienie plus spis istniejących sekcji.
+   *
+   * Reguła, której pilnuje ten test: nieznany adres nie pokazuje treści ŻADNEJ sekcji i daje
+   * wyjście dalej.
    */
   await otworz(page, "/settings/nieistniejaca-sekcja");
-  const stan = await page.evaluate(() => {
-    const main = document.querySelector("main");
-    return {
-      naglowkow: main ? main.querySelectorAll("h1").length : -1,
-      listaBoczna: !!main?.querySelector("aside"),
-      tekst: (main?.textContent || "").slice(0, 120),
-    };
-  });
+  await expect(page.getByText(/Nie znaleziono takiego ustawienia/i)).toBeVisible({ timeout: 10_000 });
+  const stan = await page.evaluate(() => ({
+    listaBoczna: !!document.querySelector("main aside"),
+    pozycjiSpisu: document.querySelectorAll('main a[href^="/settings/"]').length,
+  }));
   console.log(`[109] nieznana sekcja: ${JSON.stringify(stan)}`);
-  expect(stan.naglowkow, "strona 404 nie rysuje nagłówka sekcji").toBe(0);
-  expect(stan.listaBoczna, "strona 404 nie rysuje listy sekcji").toBe(false);
-  expect(stan.tekst).toMatch(/Nie znaleziono strony/i);
+  expect(stan.listaBoczna, "to nie jest widok sekcji, więc nie ma listy bocznej").toBe(false);
+  expect(stan.pozycjiSpisu, "użytkownik dostaje spis istniejących sekcji").toBe(10);
 
   await otworz(page, "/settings/team/new");
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 10_000 }).toBe("/settings/team/new");

@@ -1,4 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { SekcjaNieznaleziona } from "@/components/settings/SekcjaNieznaleziona";
 import { auth } from "@/platform/auth/session";
 import { znajdzSekcje } from "@/lib/ustawienia/sekcje";
 import { RamaSekcji } from "@/components/settings/RamaSekcji";
@@ -38,13 +39,18 @@ export default async function SekcjaUstawienPage({
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
-  // Nieznany segment pokazuje stronę 404 aplikacji. Zmierzone: odpowiedź niesie przy tym status
-  // **200**, a nie 404 — Next ustawia 404 wtedy, gdy to ROUTER nie dopasował trasy; wywołanie
-  // `notFound()` z wnętrza renderu daje już tylko treść. Przestawianie kolejności (walidacja przed
-  // `auth()`) tego nie zmienia — sprawdzone. Dla użytkownika zachowanie jest poprawne, więc test
-  // sprawdza TREŚĆ, a nie status: asercja na status pilnowałaby szczegółu Nexta, nie naszej reguły.
+  /**
+   * Nieznany segment dostaje SPIS Z WYJAŚNIENIEM, a nie `notFound()`.
+   *
+   * Zmierzone (trzy próby, każda osobno): `notFound()` na tej trasie nie dowoził treści strony 404
+   * ani w odpowiedzi serwera, ani w przeglądarce w ciągu 10 s — użytkownik zostawał na stanie
+   * ładowania. Nie pomogła własna granica `not-found.tsx` w segmencie, przestawienie `notFound()`
+   * przed pierwszy `await` ani usunięcie `settings/loading.tsx`. Status i tak był 200, więc
+   * `notFound()` nie dawał nawet tego, po co się go zwykle woła. Uzasadnienie w
+   * `SekcjaNieznaleziona`.
+   */
   const sekcja = znajdzSekcje(params.sekcja);
-  if (!sekcja) notFound();
+  if (!sekcja) return <SekcjaNieznaleziona />;
 
   return <RamaSekcji sekcjaId={sekcja.id}>{tresc(sekcja.id, searchParams)}</RamaSekcji>;
 }
@@ -77,8 +83,9 @@ function tresc(id: string, searchParams?: { drive?: string }) {
     case "aktywnosc":
       return <Aktywnosc />;
     default:
-      // Nieosiągalne: `znajdzSekcje` odrzuciło już nieznany segment. Zostaje jako jawny brak,
-      // żeby dodanie pozycji do rejestru bez treści padło tutaj, a nie pustym ekranem.
-      notFound();
+      // Nieosiągalne: `znajdzSekcje` odrzuciło już nieznany segment. Zostaje jako jawny brak, żeby
+      // dopisanie pozycji do rejestru BEZ treści skończyło się czytelnym ekranem ze spisem,
+      // a nie pustym miejscem, w którym nie widać, czego brakuje.
+      return <SekcjaNieznaleziona />;
   }
 }

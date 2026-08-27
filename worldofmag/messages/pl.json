@@ -339,7 +339,10 @@
       "sekcja": {
         "brakDanychTytul": "Nic tu jeszcze nie ma",
         "jezykBrakOpis": "Ustawienia języka i strefy czasowej wczytają się, gdy przestrzeń będzie gotowa.",
-        "planBrakOpis": "Informacje o planie pojawią się po zalogowaniu."
+        "planBrakOpis": "Informacje o planie pojawią się po zalogowaniu.",
+        "nieZnalezionoTytul": "Nie znaleziono takiego ustawienia",
+        "nieZnalezionoOpis": "Ten adres nie wskazuje żadnej sekcji ustawień. Być może pochodzi ze starszego odnośnika.",
+        "nieZnalezionoPowrot": "Wróć do spisu ustawień"
       },
       "sekcje": {
         "menu": "Menu",

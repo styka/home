@@ -145,7 +145,13 @@ które opisują to samo (menu + ulubione, Dysk + kalendarz, plan + wiedza o uży
   z komponentem `SpisUstawien` w wariancie kafelków. Na telefonie to cały ekran, na komputerze
   siatka kafelków. Nad spisem **pole szukania**.
 - `src/app/settings/[sekcja]/page.tsx` (server) — waliduje segment przez `znajdzSekcje`, przy
-  nieznanym woła `notFound()`; renderuje ramę sekcji z **listą boczną** (`hidden md:flex`, ten sam
+  nieznanym renderuje **spis z wyjaśnieniem** (`SekcjaNieznaleziona`) — *korekta z etapu
+  implementacji (C-54): plan zakładał `notFound()`, ale zmierzono, że na tej trasie nie dowozi ono
+  treści strony 404 ani w SSR, ani w przeglądarce w ciągu 10 s (użytkownik zostaje na stanie
+  ładowania), a status i tak pozostaje 200; nie pomogła własna granica `not-found.tsx`, rzut przed
+  pierwszym `await` ani usunięcie `settings/loading.tsx` — wszystkie trzy sprawdzone osobno.
+  Zwykły render działa poprawnie, a wynik jest lepszy dla użytkownika: dostaje listę sekcji, które
+  istnieją*; renderuje ramę sekcji z **listą boczną** (`hidden md:flex`, ten sam
   `SpisUstawien` w wariancie listy, z własnym polem szukania) i treścią sekcji. `breadcrumb` =
   odnośnik „Ustawienia" → `/settings` (AC-8: widoczny powrót; na komputerze daje okruszek
   „Ustawienia › Wygląd" razem z tytułem).
@@ -243,7 +249,8 @@ ale przechodzą w buildzie tak czy tak.
 | `src/components/settings/sekcje/Prywatnosc.tsx` | nowy | prywatność i dane |
 | `src/components/settings/sekcje/Aktywnosc.tsx` | nowy | ostatnia aktywność |
 | `src/app/settings/page.tsx` | przepisanie | spis sekcji w ramie widoku (zamiast 308 linii jednej kolumny) |
-| `src/app/settings/[sekcja]/page.tsx` | nowy | trasa sekcji: walidacja segmentu, `notFound`, dobór komponentu sekcji |
+| `src/app/settings/[sekcja]/page.tsx` | nowy | trasa sekcji: walidacja segmentu, dobór komponentu sekcji, widok „nie ma takiej sekcji" |
+| `src/components/settings/SekcjaNieznaleziona.tsx` | nowy | zły adres sekcji: wyjaśnienie + spis istniejących (zamiast `notFound()` — patrz §5.2) |
 | `src/lib/ui/view-contract.json` | edycja | `settings`: `exempt` → `done` + wpisy |
 | `messages/pl.json` | edycja | nazwy/opisy/hasła sekcji, teksty wyszukiwarki i stanu pustego |
 | `src/app/api/drive/callback/route.ts` | edycja | powrót z OAuth → `/settings/polaczenia` |
@@ -300,8 +307,11 @@ Mapowanie kryteriów akceptacji na sposób sprawdzenia:
 
 - **`[sekcja]` a `team`.** Segment statyczny `team` ma pierwszeństwo, więc `/settings/team/new`
   działa jak dziś. Ale `/settings/team` (bez dalszego segmentu) trafi w `[sekcja]` z wartością
-  `"team"` → `notFound()`. Dziś ta ścieżka też jest 404, więc **zachowanie się nie zmienia** —
-  odnotowane, żeby nie zostało odkryte jako „regres".
+  `"team"` → widok „nie ma takiej sekcji" ze spisem. Dziś ta ścieżka jest 404, więc **użytkownik
+  dostaje więcej, nie mniej** — odnotowane, żeby nie zostało odkryte jako „regres".
+- **`notFound()` w tym poddrzewie nie dowozi treści** (odkryte w implementacji). Gdyby kolejna trasa
+  pod `/settings` potrzebowała odmowy, nie sięgaj po `notFound()` bez pomiaru — patrz wpis
+  w `doświadczenia.md` z 2026-08-27.
 - **Cicha utrata sekcji warunkowej.** `jezyk` i część `asystent` renderują się dziś tylko, gdy dane
   się wczytały. Po podziale sekcja bez danych dałaby pustą stronę. → każda sekcja warunkowa ma
   własny stan pusty z wyjaśnieniem; e2e przechodzi po **wszystkich dziesięciu**.
