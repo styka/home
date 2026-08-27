@@ -81,9 +81,11 @@ export function ListaRozmow({
                 aria-current={aktywna ? "true" : undefined}
                 className="flex w-full items-start gap-2 text-left"
                 style={{
-                  padding: "10px", borderBottom: "1px solid var(--border)", cursor: "pointer",
-                  background: aktywna ? "var(--bg-hover)" : "transparent", border: "none",
-                  borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--border)",
+                  padding: "10px", cursor: "pointer",
+                  background: aktywna ? "var(--bg-hover)" : "transparent",
+                  // Kolejność ma znaczenie: skrót `border` kasuje wcześniejsze krawędzie,
+                  // więc dolna musi być zadeklarowana PO nim (U-5).
+                  border: "none", borderBottom: "1px solid var(--border)",
                 }}
               >
                 <span style={{ minWidth: 0, flex: 1 }}>

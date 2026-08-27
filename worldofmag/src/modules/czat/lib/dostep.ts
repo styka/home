@@ -12,15 +12,57 @@ import { prisma } from "@/platform/db/prisma";
  * (AC-21, AC-24).
  */
 
-/** Rzuca, gdy użytkownik nie jest uczestnikiem rozmowy. Zwraca jego wiersz uczestnictwa. */
+/**
+ * Rzuca, gdy użytkownik nie ma dostępu do rozmowy. Zwraca jego wiersz uczestnictwa.
+ *
+ * **W kanale ZESPOŁU uczestnictwo nie wystarcza** (U-1 z recenzji 107). Wiersz `ChatParticipant`
+ * jest kopią faktu „należę do zespołu", a kopia przeżywa opuszczenie zespołu: `removeMember`
+ * i `leaveTeam` kasują `TeamMember` i — przez uzgodnienie lustra — `WorkspaceMember`, ale
+ * o uczestnictwie w kanale nie wiedzą. Były członek widział więc kanał i jego NOWE wiadomości.
+ *
+ * Dlatego członkostwo rozstrzygamy **przy odczycie**, a nie przez kasowanie kopii w miejscach,
+ * które zespół mutują. Dopisanie kasowania do dwóch dzisiejszych miejsc nie zabezpiecza trzeciego,
+ * które ktoś doda jutro, a karą za pominięcie jest cichy wyciek. To ta sama zasada, którą repo
+ * stosuje do dostępu gdzie indziej: rozstrzygnięć dostępu się nie cache'uje.
+ */
 export async function assertUczestnik(userId: string, rozmowaId: string) {
   const uczestnictwo = await prisma.chatParticipant.findUnique({
     where: { conversationId_userId: { conversationId: rozmowaId, userId } },
+    include: { conversation: { select: { rodzaj: true, workspaceId: true } } },
   });
   // Ten sam komunikat co dla rozmowy nieistniejącej — inaczej odpowiedź serwera mówiłaby, że
   // rozmowa o tym identyfikatorze istnieje, a to już jest informacja o cudzych danych.
   if (!uczestnictwo) throw new Error("Rozmowa nie istnieje");
+
+  if (uczestnictwo.conversation.rodzaj === "zespol") {
+    const workspaceId = uczestnictwo.conversation.workspaceId;
+    const nadalWZespole = workspaceId
+      ? await prisma.workspaceMember.findUnique({
+          where: { workspaceId_userId: { workspaceId, userId } },
+          select: { userId: true },
+        })
+      : null;
+    if (!nadalWZespole) throw new Error("Rozmowa nie istnieje");
+  }
+
   return uczestnictwo;
+}
+
+/**
+ * Warunek `where` dla rozmów, które użytkownik może dziś zobaczyć.
+ *
+ * Rozmowa prywatna: samo uczestnictwo. Kanał zespołu: uczestnictwo **oraz** aktualne członkostwo
+ * w przestrzeni. Jeden warunek zamiast filtrowania po pobraniu — inaczej `take` liczyłby także
+ * rozmowy, które i tak zostaną odrzucone, i strona wychodziłaby krótsza, niż mówi.
+ */
+export function widoczneRozmowyWhere(userId: string) {
+  return {
+    uczestnicy: { some: { userId } },
+    OR: [
+      { rodzaj: "prywatna" },
+      { rodzaj: "zespol", workspace: { members: { some: { userId } } } },
+    ],
+  };
 }
 
 /** Rzuca, gdy wiadomość nie należy do użytkownika albo już jej nie ma. Zwraca ją. */

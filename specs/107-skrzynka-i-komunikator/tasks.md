@@ -1,7 +1,7 @@
 # Zadania: Skrzynka odbiorcza i komunikator zespołowy
 
 - **Plan:** ./plan.md (107-skrzynka-i-komunikator)
-- **Status:** todo
+- **Status:** zrobione
 - **Data:** 2026-08-27
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami.
@@ -163,29 +163,29 @@
   Postgresie. Po `next build` podnosimy `sumaB` w `src/lib/ui/perf-baseline.json` do **zmierzonej**
   wartości (nowa trasa = więcej JS; pasmo ±5 % działa w obie strony).
   **Gotowe, gdy:** wszystkie bramki zielone, `next build` przechodzi. *(AC-33)*
-- [ ] **T-24** — Mapowanie każdego AC ze speca na wynik obserwacji (wejście do `/verify`).
+- [x] **T-24** — Mapowanie każdego AC ze speca na wynik obserwacji (wejście do `/verify`).
   **Gotowe, gdy:** żadne AC nie zostaje bez pokrycia albo bez jawnie zapisanego powodu.
 - [x] **T-25** — Wpisy do `doświadczenia.md` (C-51) dla każdej nieoczywistej pułapki napotkanej
   po drodze, po polsku, w formacie `## YYYY-MM-DD — tytuł` / Problem / Rozwiązanie / Lekcja.
 
 ## Faza 8 — Poprawki z recenzji (`review.md`)
 
-- [ ] **T-26** — **U-1 (blokujące, wyciek).** Członkostwo w zespole rozstrzygane PRZY ODCZYCIE, nie
+- [x] **T-26** — **U-1 (blokujące, wyciek).** Członkostwo w zespole rozstrzygane PRZY ODCZYCIE, nie
   z kopii w `ChatParticipant`: `assertUczestnik` dla rozmowy `zespol` wymaga wiersza
   `WorkspaceMember`; `getRozmowy` filtruje kanały zespołu przez `workspace: { members: { some } }`;
   `zapewnijKanalyZespolow` sprząta osierocone uczestnictwa (samo-naprawa).
   **Gotowe, gdy:** sonda „Bob opuszcza zespół, Ala pisze" pokazuje, że kanał znika z listy **i** że
   guard odrzuca byłego członka. *(AC-24, AC-25)*
-- [ ] **T-27** — **U-2.** `getLicznikNieprzeczytanych` na jednym `groupBy` zamiast `count` na rozmowę.
+- [x] **T-27** — **U-2.** `getLicznikNieprzeczytanych` na jednym `groupBy` zamiast `count` na rozmowę.
   **Gotowe, gdy:** funkcja wykonuje stałą liczbę zapytań niezależnie od liczby rozmów. *(AC-17)*
-- [ ] **T-28** — **U-3.** `zapewnijKanalyZespolow` uzgadnia kanały tylko wtedy, gdy liczba moich
+- [x] **T-28** — **U-3.** `zapewnijKanalyZespolow` uzgadnia kanały tylko wtedy, gdy liczba moich
   przestrzeni zespołowych różni się od liczby moich kanałów zespołowych.
   **Gotowe, gdy:** zwykłe wywołanie `getRozmowy` nie zapisuje niczego do bazy. *(AC-14)*
-- [ ] **T-29** — **U-4.** Po dociągnięciu wiadomości z sygnału wątek oznacza je jako przeczytane,
+- [x] **T-29** — **U-4.** Po dociągnięciu wiadomości z sygnału wątek oznacza je jako przeczytane,
   gdy karta jest widoczna.
   **Gotowe, gdy:** wiadomość, która przyszła do OTWARTEJ rozmowy, nie zapala odznaki. *(AC-17)*
 - [ ] **T-30** `[P]` — **U-5.** Jedna deklaracja krawędzi w `ListaRozmow` zamiast trzech.
-- [ ] **T-31** — Powtórka bramek po poprawkach: pełna lista z `package.json` (bez `migrate.js`),
+- [x] **T-31** — Powtórka bramek po poprawkach: pełna lista z `package.json` (bez `migrate.js`),
   `test:unit`, `next build`; w razie zmiany rozmiaru paczki — próg wydajnościowy do wartości
   zmierzonej. *(AC-33)*
 

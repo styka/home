@@ -73,9 +73,18 @@ export function WatekRozmowy({
 
   // Sygnał ze strumienia: dociągamy TYLKO wtedy, gdy dotyczy tej rozmowy. Bez tego warunku każda
   // cudza wiadomość w innym wątku kosztowałaby tu pełne zapytanie.
+  //
+  // Po dociągnięciu **odnotowujemy odczyt** (U-4 z recenzji 107). Bez tego wiadomość pojawiała się
+  // na ekranie i JEDNOCZEŚNIE zapalała odznakę „1 nieprzeczytana" — przy wiadomości, na którą
+  // właśnie patrzę. Warunek widoczności karty jest istotny: rozmowa otwarta w tle nie jest czytana,
+  // więc znaczenie odczytu miałoby tam wartość nieprawdziwą.
   useEffect(() => subskrybujSygnal((s) => {
-    if (s.type === "czat.rozmowa" && s.rozmowaId === rozmowaId) void wczytaj();
-  }), [rozmowaId, wczytaj]);
+    if (s.type !== "czat.rozmowa" || s.rozmowaId !== rozmowaId) return;
+    void wczytaj().then(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      return oznaczPrzeczytane(rozmowaId).then(onZmiana).catch(() => {});
+    });
+  }), [rozmowaId, wczytaj, onZmiana]);
 
   // Do dołu tylko wtedy, gdy użytkownik NIE przewinął w górę — inaczej czytanie historii
   // przerywałaby każda nowa wiadomość.

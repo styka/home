@@ -4,6 +4,29 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Dowód na sąsiednim scenariuszu nie jest dowodem (wyciek kanału zespołu)
+**Problem:** Kryterium akceptacji brzmiało „gdy użytkownik **opuścił zespół**, nie widzi już kanału
+tego zespołu". Weryfikacja zaliczyła je na zielono, opierając się na sondzie, która **usuwała całą
+przestrzeń zespołu** — tam kaskada klucza obcego działa bez zarzutu, kanał znika razem z nią.
+Dopiero recenzja odtworzyła ścieżkę z kryterium: `removeMember`/`leaveTeam` kasują `TeamMember`
+i (przez uzgodnienie lustra) `WorkspaceMember`, ale o wierszu `ChatParticipant` nie wiedzą — żadna
+kaskada tam nie biegnie. Były członek **nadal widział kanał i jego NOWE wiadomości**, a guard go
+przepuszczał, więc mógł też w nim pisać. Wyciek treści, nie usterka wyglądu.
+
+**Rozwiązanie:** Członkostwo rozstrzygane **przy odczycie**, nie z kopii: `assertUczestnik` dla
+rozmowy zespołowej wymaga wiersza `WorkspaceMember`, a lista używa wspólnego warunku
+`widoczneRozmowyWhere`. Świadomie NIE poszliśmy w „kasuj `ChatParticipant` w `leaveTeam`" —
+dopisanie kasowania do dwóch dzisiejszych miejsc nie zabezpiecza trzeciego, które ktoś doda jutro,
+a karą za pominięcie jest cichy wyciek. Doszedł test integracyjny z **dwiema kontrolami dodatnimi**
+(członek widzi, pozostały członek widzi dalej) — sprawdzony w obie strony: na starym kodzie jest
+czerwony, na nowym zielony.
+
+**Lekcja:** Przy kryterium dotyczącym **dostępu** sonda musi odtworzyć **dokładnie tę ścieżkę, którą
+kryterium nazywa**. „Usunięto zespół" i „ktoś wyszedł z zespołu" wyglądają jak ten sam scenariusz,
+a różnią się tym, czy w ogóle biegnie kaskada. I druga połowa: test bezpieczeństwa bez kontroli
+dodatniej przechodzi także wtedy, gdy odetniemy od zasobu **wszystkich** — dlatego zawsze sprawdzaj
+obie strony, a nowy test uruchom raz na starym kodzie, żeby zobaczyć go na czerwono.
+
 ## 2026-08-27 — Zielony `tsc` z bramki nie znaczy, że `next build` sprawdzi typy tak samo
 **Problem:** Lista bramek z `package.json` zawiera `tsc --noEmit -p tsconfig.test.json`. Przeszła na
 zielono, więc uznałem typy za sprawdzone — a `next build` wywalił się kilka minut później na

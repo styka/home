@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
-import { assertMozeRozmawiac, assertUczestnik, idPowiazanychOsob } from "../lib/dostep";
+import { assertMozeRozmawiac, assertUczestnik, idPowiazanychOsob, widoczneRozmowyWhere } from "../lib/dostep";
 import { etykietaRozmowy, nazwaOsoby, piszacy, type UczestnikRozmowy } from "../domain/rozmowa";
 
 /** Rozmowa tak, jak widzi ją lista. Daty jako tekst — DTO przekracza granicę serwer→klient. */
@@ -62,16 +62,37 @@ async function zapewnijKanalyZespolow(userId: string): Promise<void> {
     where: { userId, workspace: { kind: "team" } },
     select: { workspaceId: true, workspace: { select: { name: true } } },
   });
+  // paginacja: kompletny — porównujemy PEŁNE zbiory; ucięcie jednego z nich udawałoby rozjazd.
+  const moje = await prisma.chatParticipant.findMany({
+    where: { userId, conversation: { rodzaj: "zespol" } },
+    select: { id: true, conversation: { select: { workspaceId: true } } },
+  });
 
-  for (const cz of czlonkostwa) {
+  const powinienem = new Set(czlonkostwa.map((c) => c.workspaceId));
+  const mam = new Set(moje.map((m) => m.conversation.workspaceId).filter((id): id is string => id !== null));
+
+  // Nadmiar: uczestnictwo w kanale zespołu, do którego już nie należę. Widoczności to i tak nie daje
+  // (rozstrzyga ją `widoczneRozmowyWhere`), ale wiersz zostawiony na zawsze fałszowałby porównanie
+  // poniżej i kazał uzgadniać kanały przy każdym odczycie. Sprzątamy więc przy okazji.
+  const zbedne = moje.filter((m) => !m.conversation.workspaceId || !powinienem.has(m.conversation.workspaceId));
+  if (zbedne.length > 0) {
+    await prisma.chatParticipant.deleteMany({ where: { id: { in: zbedne.map((z) => z.id) } } });
+  }
+
+  // Braki: zespół bez mojego kanału. W zwykłym przebiegu ta pętla nie wykonuje ani jednej iteracji,
+  // więc `getRozmowy` — wołane przy KAŻDYM sygnale z czatu — przestaje pisać do bazy (U-3).
+  const brakujace = czlonkostwa.filter((c) => !mam.has(c.workspaceId));
+  for (const cz of brakujace) {
+    // `upsert` na indeksie unikalnym, nie sprawdzenie „czy istnieje": dwie równoległe karty
+    // założyłyby dwa kanały dla tej samej przestrzeni.
     const rozmowa = await prisma.chatConversation.upsert({
       where: { workspaceId: cz.workspaceId },
       create: { rodzaj: "zespol", workspaceId: cz.workspaceId, tytul: cz.workspace.name },
       update: {},
       select: { id: true },
     });
-    // Dopisanie uczestnika też przez `upsert` — członek dołączony do zespołu później ma zastać
-    // kanał, w którym już jest, a nie kanał, do którego ktoś musi go wpuścić.
+    // Członek dołączony do zespołu później ma zastać kanał, w którym już jest, a nie kanał,
+    // do którego ktoś musi go wpuścić.
     await prisma.chatParticipant.upsert({
       where: { conversationId_userId: { conversationId: rozmowa.id, userId } },
       create: { conversationId: rozmowa.id, userId },
@@ -86,7 +107,8 @@ export async function getRozmowy(): Promise<RozmowaDTO[]> {
   await zapewnijKanalyZespolow(user.id);
 
   const rozmowy = await prisma.chatConversation.findMany({
-    where: { uczestnicy: { some: { userId: user.id } } },
+    // Kanał zespołu wymaga AKTUALNEGO członkostwa, nie tylko wiersza uczestnictwa (U-1).
+    where: widoczneRozmowyWhere(user.id),
     orderBy: { ostatniaAktywnosc: "desc" },
     take: SUFIT_LISTY,
     include: {
@@ -193,30 +215,44 @@ export async function getRozmowcy(): Promise<RozmowcaDTO[]> {
   return osoby.map((o) => ({ userId: o.id, nazwa: nazwaOsoby(o, BEZ_ROZMOWCY), avatarUrl: o.avatarUrl }));
 }
 
-/** Ile rozmów ma dla mnie coś nowego — liczba dla odznaki w chromie. */
+/**
+ * Ile rozmów ma dla mnie coś nowego — liczba dla odznaki w chromie.
+ *
+ * **Stała liczba zapytań, niezależnie od liczby rozmów** (U-2 z recenzji 107). `IkonaCzatu` montuje
+ * się w powłoce, czyli na KAŻDEJ trasie aplikacji — pierwsza wersja wołała `count` osobno dla każdej
+ * rozmowy, więc konto z dwudziestoma rozmowami płaciło dwadzieścia jeden zapytań za wejście na
+ * `/tasks`. To nie był koszt czatu, tylko koszt całej aplikacji.
+ *
+ * Odznaka liczy **rozmowy**, nie wiadomości, więc dokładna liczba wiadomości jest tu niepotrzebna —
+ * wystarczy NAJNOWSZA cudza wiadomość w każdej rozmowie, a to jedno `groupBy`.
+ */
 export async function getLicznikNieprzeczytanych(): Promise<number> {
   const user = await requireAuth();
   // paginacja: kompletny — to jest LICZBA rozmów z nowościami; ucięcie dałoby zaniżoną odznakę.
-  const moje = await prisma.chatParticipant.findMany({
-    where: { userId: user.id },
-    select: { conversationId: true, przeczytaneDo: true },
+  const widoczne = await prisma.chatConversation.findMany({
+    where: widoczneRozmowyWhere(user.id),
+    select: { id: true, uczestnicy: { where: { userId: user.id }, select: { przeczytaneDo: true } } },
   });
-  if (moje.length === 0) return 0;
+  if (widoczne.length === 0) return 0;
 
-  const wyniki = await Promise.all(
-    moje.map((m) =>
-      prisma.chatMessage.count({
-        where: {
-          conversationId: m.conversationId,
-          deletedAt: null,
-          autorId: { not: user.id },
-          ...(m.przeczytaneDo ? { createdAt: { gt: m.przeczytaneDo } } : {}),
-        },
-        take: 1,
-      }),
-    ),
-  );
-  return wyniki.filter((n) => n > 0).length;
+  const najnowsze = await prisma.chatMessage.groupBy({
+    by: ["conversationId"],
+    where: {
+      conversationId: { in: widoczne.map((r) => r.id) },
+      deletedAt: null,
+      autorId: { not: user.id },
+    },
+    _max: { createdAt: true },
+  });
+  const ostatnia = new Map(najnowsze.map((g) => [g.conversationId, g._max.createdAt]));
+
+  return widoczne.filter((r) => {
+    const cudza = ostatnia.get(r.id);
+    if (!cudza) return false;
+    const przeczytaneDo = r.uczestnicy[0]?.przeczytaneDo ?? null;
+    // Brak znacznika znaczy „nie otwierałem tej rozmowy" — wtedy nowe jest wszystko cudze.
+    return przeczytaneDo === null || cudza > przeczytaneDo;
+  }).length;
 }
 
 /** Znajduje albo zakłada rozmowę 1:1 z osobą, z którą coś mnie łączy. Zwraca jej identyfikator. */
