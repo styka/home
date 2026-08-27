@@ -2,7 +2,14 @@
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
 - **Data:** 2026-08-27
-- **Werdykt:** **GOTOWE Z UWAGAMI** (uwagi dotyczą zastanych porażek klikaczy, nie tej zmiany)
+- **Werdykt:** **GOTOWE Z UWAGAMI**
+- **Uzupełnione po recenzji (2026-08-27):** recenzja świeżym okiem, prowadzona na **działającej**
+  aplikacji, znalazła trzy defekty, których ta weryfikacja nie złapała — bo mierzyła kryteria
+  akceptacji, a nie skutki uboczne zmiany w powłoce. Wszystkie trzy naprawione i objęte testami
+  (`[106-R1]`, `[106-R2]`, `[106-R3]`); szczegóły w `review.md` §2. Najważniejszy wniosek dla
+  następnej weryfikacji: **klikacz przy 360 px, który niczego nie przewija, nie sprawdza układu
+  mobilnego** — brak `min-h-0` na nowym opakowaniu odbierał przewijanie wszystkim modułom na
+  telefonie i nie ruszył ani jednej bramki.
 
 ## 1. Bramki
 
