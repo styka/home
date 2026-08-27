@@ -331,6 +331,15 @@
             "utworzTeam": "Utwórz team"
           }
         }
+      },
+      "spis": {
+        "tytul": "Ustawienia",
+        "podtytul": "Wybierz sekcję, którą chcesz zmienić."
+      },
+      "sekcja": {
+        "brakDanychTytul": "Nic tu jeszcze nie ma",
+        "jezykBrakOpis": "Ustawienia języka i strefy czasowej wczytają się, gdy przestrzeń będzie gotowa.",
+        "planBrakOpis": "Informacje o planie pojawią się po zalogowaniu."
       }
     },
     "shopping": {
@@ -800,6 +809,69 @@
       },
       "WorkspaceLocaleSection": {
         "ustawieniaZespoluZmieniaJego": "Ustawienia zespołu zmienia jego właściciel lub administrator."
+      },
+      "SpisUstawien": {
+        "etykietaSzukania": "Szukaj ustawienia",
+        "placeholderSzukania": "np. skórka, Dysk, język…",
+        "brakTrafienTytul": "Nic nie pasuje do tej frazy",
+        "brakTrafienOpis": "Spróbuj innego słowa — szukamy w nazwach i opisach sekcji.",
+        "wyczysc": "Wyczyść",
+        "sekcje": {
+          "konto": {
+            "nazwa": "Konto",
+            "opis": "Twój profil i wylogowanie.",
+            "hasla": "profil avatar email konto wyloguj zaloguj uzytkownik"
+          },
+          "wyglad": {
+            "nazwa": "Wygląd",
+            "opis": "Skórka aplikacji — kolory, typografia, gęstość.",
+            "hasla": "skorka motyw kolory ciemny jasny czcionka wyglad temat"
+          },
+          "nawigacja": {
+            "nazwa": "Menu i nawigacja",
+            "opis": "Kolejność działów w menu, dolny pasek i ulubione widoki.",
+            "hasla": "menu pasek kolejnosc ulubione widoki reka skroty nawigacja dzialy"
+          },
+          "jezyk": {
+            "nazwa": "Język i strefa czasowa",
+            "opis": "Język przestrzeni i strefa, w której liczone są daty.",
+            "hasla": "jezyk strefa czasowa lokalizacja data godzina region"
+          },
+          "polaczenia": {
+            "nazwa": "Połączenia",
+            "opis": "Dysk Google i subskrypcja kalendarza w zewnętrznej aplikacji.",
+            "hasla": "dysk google drive kalendarz ical subskrypcja pliki integracja polaczenia"
+          },
+          "asystent": {
+            "nazwa": "Asystent i AI",
+            "opis": "Twój plan, zużycie AI i wiedza, którą system o Tobie zebrał.",
+            "hasla": "asystent ai plan limit budzet zuzycie koszt wiedza fakty"
+          },
+          "zespoly": {
+            "nazwa": "Zespoły",
+            "opis": "Zespoły, do których należysz, i zakładanie nowych.",
+            "hasla": "zespol team rodzina gospodarstwo wspolpraca czlonkowie"
+          },
+          "pomoc": {
+            "nazwa": "Pomoc i przewodniki",
+            "opis": "Przewodniki po działach aplikacji.",
+            "hasla": "pomoc przewodnik instrukcja poradnik wsparcie guide"
+          },
+          "prywatnosc": {
+            "nazwa": "Prywatność i dane",
+            "opis": "Eksport danych, usunięcie konta i dokumenty prawne.",
+            "hasla": "prywatnosc dane eksport usuniecie konta rodo regulamin polityka"
+          },
+          "aktywnosc": {
+            "nazwa": "Aktywność",
+            "opis": "Ostatnie działania na Twoim koncie.",
+            "hasla": "aktywnosc historia dzialania log ostatnie"
+          }
+        }
+      },
+      "RamaSekcji": {
+        "okruszek": "Ustawienia",
+        "wrocDoSpisu": "Wróć do spisu ustawień"
       }
     },
     "sharing": {

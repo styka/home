@@ -49,32 +49,32 @@ nie wyglądało na przeoczenie.
 
 ## Faza 2 — Ustawienia: rejestr sekcji i szkielet widoku
 
-- [ ] **T-5** — `src/lib/ustawienia/sekcje.tsx`: rejestr `SEKCJE_USTAWIEN` (10 pozycji wg tabeli
+- [x] **T-5** — `src/lib/ustawienia/sekcje.tsx`: rejestr `SEKCJE_USTAWIEN` (10 pozycji wg tabeli
       z planu §5.2) + `znajdzSekcje(id)`. Każda pozycja: `id`, `Ikona`, `kluczNazwy`, `kluczOpisu`,
       `kluczHasel`. **Żadnych literałów tekstowych** — same klucze (C-32).
       *Gotowe, gdy:* rejestr ma 10 pozycji o unikalnych, ASCII-owych `id` w kolejności
       `konto, wyglad, nawigacja, jezyk, polaczenia, asystent, zespoly, pomoc, prywatnosc, aktywnosc`.
 
-- [ ] **T-6** — `messages/pl.json`: nazwy, opisy i hasła wyszukiwarki dla 10 sekcji + teksty
+- [x] **T-6** — `messages/pl.json`: nazwy, opisy i hasła wyszukiwarki dla 10 sekcji + teksty
       wyszukiwarki (etykieta pola, `placeholder`, stan pusty) i okruszka.
       *Gotowe, gdy:* każdy klucz z T-5 ma wartość; `npm run check:i18n` przechodzi.
 
-- [ ] **T-7** — `src/lib/ustawienia/__tests__/sekcje.test.ts`: dla każdej pozycji rejestru
+- [x] **T-7** — `src/lib/ustawienia/__tests__/sekcje.test.ts`: dla każdej pozycji rejestru
       sprawdź obecność wszystkich trzech kluczy w `messages/pl.json`, oraz unikalność `id`.
       To **zastępstwo za bramkę i18n**, która nie widzi kluczy dynamicznych (plan §5.2).
       *Gotowe, gdy:* `npm run test:unit` zielony i test faktycznie czerwienieje po usunięciu klucza
       (sprawdź próbą mutacyjną). (AC-19)
 
-- [ ] **T-8** — `src/components/settings/SpisUstawien.tsx` (klient): pole szukania + lista;
+- [x] **T-8** — `src/components/settings/SpisUstawien.tsx` (klient): pole szukania + lista;
       prop `wariant: "kafelki" | "lista"`, prop `aktywna?`. Filtrowanie po nazwie, opisie i haśle,
       **po normalizacji diakrytyków** (`String.normalize("NFD")`, bez nowej zależności). Brak
       trafień → stan pusty z wyjaśnieniem. Cele dotyku ≥ 44 px, kolory wyłącznie ze zmiennych CSS.
       *Gotowe, gdy:* „skorka" znajduje „Wygląd", „qqq" pokazuje stan pusty. (AC-13, AC-14, AC-15)
 
-- [ ] **T-9** `[P]` — test jednostkowy funkcji filtrującej ze spisu (bez diakrytyków, wielkość
+- [x] **T-9** `[P]` — test jednostkowy funkcji filtrującej ze spisu (bez diakrytyków, wielkość
       liter, dopasowanie po haśle). *Gotowe, gdy:* `test:unit` zielony. (AC-15)
 
-- [ ] **T-10** — `src/components/settings/RamaSekcji.tsx` (klient): `ModuleView` z `layout="fill"`,
+- [x] **T-10** — `src/components/settings/RamaSekcji.tsx` (klient): `ModuleView` z `layout="fill"`,
       `state="ready"`, `breadcrumb` → `/settings`, tytuł i ikona sekcji; w środku lista boczna
       (`hidden md:flex`, `SpisUstawien` wariant `lista`) + treść z własnym przewijaniem i dolnym
       wypełnieniem `calc(16px + env(safe-area-inset-bottom))`.
