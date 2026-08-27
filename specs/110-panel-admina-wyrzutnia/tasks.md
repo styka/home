@@ -89,19 +89,21 @@ wywołania (`/admin` → `/admin/przeglad`), nie treść — to część zadania
       *Gotowe, gdy:* `grep` na `prisma.*count(` w tym pliku daje **zero** trafień, a strona ma
       dokładnie jeden `<h1>`. (AC-2, AC-4, AC-9, AC-11, AC-13)
 
-- [ ] **T-10** — Wpięcie `PowrotDoPanelu` w **11 stron bez powrotu**: `access`, `ai-calls`,
-      `ai-coverage`, `architektura-docelowa`, `audit`, `audyt`, `audyt-podsumowanie`, `health`,
-      `jobs`, `llm`, `user-facts`.
-      *Gotowe, gdy:* każda z jedenastu ma widoczny odnośnik do `/admin`. (AC-12)
+- [x] **T-10** — Wpięcie `PowrotDoPanelu` w **3 strony bez powrotu**: `access`, `llm`,
+      `user-facts`.
+      *Korekta z implementacji (C-54):* pierwszy przegląd naliczył jedenaście braków, bo szukał
+      odnośnika tylko w plikach tras — a trasy panelu to cienkie opakowania i odnośnik siedzi
+      w komponencie z `src/components/admin/`. Przegląd idący **za renderem** daje 20 z 24 stron
+      z powrotem i trzy braki. Szczegóły w planie §5.4.
+      *Gotowe, gdy:* wszystkie 24 strony panelu mają widoczny odnośnik do `/admin`. (AC-12)
 
-- [ ] **T-11** `[P]` — Podmiana **12 ręcznych powrotów** na `PowrotDoPanelu` (`architecture`,
-      `categories`, `config`, `docs`, `e2e`, `metrics`, `playground`, `qa`, `reports`, `skins`,
-      `spec-pipeline`, `zrodla-rss`). Podmieniamy **tylko markup odnośnika**, nie jego miejsce
-      w drzewie (plan §9).
-      *Gotowe, gdy:* `grep -rn 'href="/admin"' src/app/admin` pokazuje wyłącznie użycia komponentu,
-      a strony wyglądają jak przed zmianą.
+- [x] **T-11** — **Odpada** (C-54). Miała podmienić 12 ręcznych powrotów na wspólny komponent;
+      w rzeczywistości jest ich dwadzieścia, w dwudziestu plikach, w różnych miejscach układu
+      i pod różnymi etykietami („Admin" / „Panel admina"). Wszystkie działają, więc przepisywanie
+      ich to osobna, świadoma zmiana, nie „przy okazji" (C-53). Rozjazd etykiet → obserwacja
+      w `verify.md`.
 
-- [ ] **T-12** — Test jednostkowy uprawnienia: `legacyPermissionForPath` zwraca `module.admin` dla
+- [x] **T-12** — Test jednostkowy uprawnienia: `legacyPermissionForPath` zwraca `module.admin` dla
       `/admin`, `/admin/przeglad` i pozostałych tras panelu — reguła, nie przypadek (plan §4).
       *Gotowe, gdy:* `test:unit` zielony. (AC-5)
 
@@ -112,12 +114,12 @@ czy kosz. `check:actions`, `check:ai-coverage`, `check:cost-badge` sprawdzane w 
 
 ## Faza 5 — Klikacz, bramki i domknięcie
 
-- [ ] **T-13** — `e2e/specs/110-panel-admina.spec.ts`: testy AC-1…AC-16 wg mapowania z planu §8.
+- [x] **T-13** — `e2e/specs/110-panel-admina.spec.ts`: testy AC-1…AC-16 wg mapowania z planu §8.
       AC-10 i AC-12 **pętlą po nazwach/trasach**, nie pojedynczym spojrzeniem. Asercje o BRAKU
       (AC-9) poprzedzone warunkiem pozytywnym — lekcja z 109. Bez `networkidle`.
       *Gotowe, gdy:* nowy spec zielony.
 
-- [ ] **T-14** — Bramki lokalnie na lokalnym Postgresie (C-13, **nigdy prod `DATABASE_URL`**):
+- [x] **T-14** — Bramki lokalnie na lokalnym Postgresie (C-13, **nigdy prod `DATABASE_URL`**):
       `check:admin-links` → `check:i18n` → `check:ui-contract` → `check:test-types` → `test:unit`
       → `next lint --dir src` → pełny `build` **do `next build`** (bez `scripts/migrate.js`).
       *Gotowe, gdy:* wszystko zielone. Jeśli `check:perf` zaprotestuje — podnieś próg
@@ -149,7 +151,7 @@ czy kosz. `check:actions`, `check:ai-coverage`, `check:cost-badge` sprawdzane w 
 | AC-9 `/admin` bez buildu, liczników i sesji | T-9, T-13 |
 | AC-10 przegląd niesie wszystkie dane | T-8, T-13, T-16 |
 | AC-11 `/admin` bez zapytań zliczających | T-9, T-16 |
-| AC-12 powrót z każdej strony panelu | T-7, T-10, T-11, T-13 |
+| AC-12 powrót z każdej strony panelu | T-7, T-10, T-13 |
 | AC-13 rama widoku zamiast własnego nagłówka | T-8, T-9, T-13 |
 | AC-14 kolory ze zmiennych | T-6, T-8, T-14 |
 | AC-15 telefon: jedna kolumna, obszar gestów | T-6, T-13 |
@@ -158,9 +160,9 @@ czy kosz. `check:actions`, `check:ai-coverage`, `check:cost-badge` sprawdzane w 
 ## Ścieżka krytyczna
 
 `T-1 → T-2 → T-3 → T-6 → T-9` (rejestr → teksty → spis → wyrzutnia) · `T-2 → T-5` (bramka) ·
-`T-7 → T-10, T-11` (powroty) · `T-8` niezależne od spisu, zależne od T-3 · wszystko →
+`T-7 → T-10` (powroty) · `T-8` niezależne od spisu, zależne od T-3 · wszystko →
 `T-13 → T-14 → T-15 → T-16 → T-17`.
-T-10 i T-11 są między sobą równoległe, ale oba czekają na T-7.
+T-10 czeka na T-7.
 
 ## Notatki / blokady
 - Brak.

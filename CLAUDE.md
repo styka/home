@@ -393,7 +393,8 @@ itself survives as the pure `sasiadujacaGrupa`, which a consumer wires where it 
 sideways swipe on a phone). It knows nothing about any module and deliberately never shows the name
 of the group currently being READ — that belongs to the group's own sticky header) (+ a top-level
 `ServiceWorkerRegistration.tsx`). `admin/` now also holds `AuditLogPage.tsx`,
-`SystemHealthPage.tsx` and `FeedbackTriggerButton.tsx`; `shell/` holds
+`SystemHealthPage.tsx`, `SpisNarzedziAdmina.tsx` (110 — the panel's grouped, searchable launcher)
+and `PowrotDoPanelu.tsx` (110 — the one back link to `/admin`); `shell/` holds
 `FeedbackInspector.tsx` (admin element-picker). The authoritative module registry
 (labels/icons/colors/permissions/order) is `src/lib/modules.tsx`.
 Each module typically has a `*Page.tsx` (client entry) and `*HomePage.tsx` (server
@@ -807,11 +808,13 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
   can reorder modules, hide modules (collapsed under "Więcej…"/More, re-enableable),
   and customize the mobile bottom tab bar. `ModuleSidebar` renders only accessible +
   enabled modules in the user's order.
-- The **admin "point-at-element" feedback mode** is a floating, admin-only FAB
-  (`admin/FeedbackTriggerButton.tsx` + `shell/FeedbackInspector.tsx`, event bus
-  `lib/ai/feedbackBus.ts`; also Ctrl+Shift+B) that is z-index-coordinated to sit
-  *above* content modals (so you can report an element inside a modal). See
-  `doświadczenia.md` 2026-06-08 for the modal/FAB layering rules.
+- The **admin "point-at-element" feedback mode** starts from the admin panel's tool list
+  (`admin/SpisNarzedziAdmina.tsx` → `startFeedbackInspector`, event bus `lib/ai/feedbackBus.ts`;
+  also Ctrl+Shift+B and the admin button in the mobile top bar) and is drawn by
+  `shell/FeedbackInspector.tsx`, z-index-coordinated to sit *above* content modals (so you can
+  report an element inside a modal). See `doświadczenia.md` 2026-06-08 for the modal/FAB layering
+  rules. **110 deleted the separate `FeedbackTriggerButton.tsx`** — it had exactly one consumer
+  (the old flat tool list) and rewriting that list would have left it without any.
 
 ### Cross-cutting systems
 
@@ -943,7 +946,15 @@ Stores are graph structures: `Store` → `StoreNode[]` (positions) + `StoreEdge[
 
 ### Admin Panel (`/admin`, gated by `module.admin`)
 
-- **`/admin`** — console: build info (`NEXT_PUBLIC_BUILD_*`), active session, links to tools. (The Omnia→Claude Code clipboard export is an **admin-only per-list button** in the Tasks header — `TaskListClipboardButton`, prompt+copy logic in `src/lib/omniaClipboard.ts` — copying a prompt + JSON of *that list's* active tasks. The prompt now **kicks off the spec-driven pipeline**: pasted into Claude Code it instructs it to run `/specify` with those task titles/descriptions as the feature scope, then the pipeline auto-advances plan→tasks→implement→verify→review.)
+- **`/admin`** — **a grouped, searchable launcher** (110): every panel route as a named card with a
+  one-line description, split into seven groups (Przegląd · Dostęp i bezpieczeństwo · Diagnostyka ·
+  AI i konfiguracja · Treść i wygląd · Dokumentacja projektu · Narzędzia dewelopera), with one search
+  box above them. The registry `src/lib/admin/narzedzia.ts` feeds the list, the search and the
+  **`check:admin-links` gate**, which fails the build when a route under `src/app/admin/` has no
+  entry (or an entry points at a route that does not exist). That gate exists because the hand-kept
+  list had already drifted: `/admin/llm` — LLM providers and model assignment — was linked from
+  **nowhere** in the app. Build info, the eleven counters and the active session moved to
+  **`/admin/przeglad`**, so entering the panel no longer runs eleven counting queries. (The Omnia→Claude Code clipboard export is an **admin-only per-list button** in the Tasks header — `TaskListClipboardButton`, prompt+copy logic in `src/lib/omniaClipboard.ts` — copying a prompt + JSON of *that list's* active tasks. The prompt now **kicks off the spec-driven pipeline**: pasted into Claude Code it instructs it to run `/specify` with those task titles/descriptions as the feature scope, then the pipeline auto-advances plan→tasks→implement→verify→review.)
 - **`/admin/access`** — RBAC manager (`PermissionManager`): permissions, role↔permission grid, user↔role; self-lockout guard.
 - **`/admin/audit`** — audit log viewer (RBAC + config changes; `AuditLog`).
 - **`/admin/health`** — system health dashboard (DB/migrations/API diagnostics; live, no model).

@@ -87,3 +87,16 @@ test("pozycje spoza /admin i akcje nie trafiają do zbioru porównywanego z dysk
   assert.ok(!idki.includes("zglos-blad"), "zgłoszenie błędu jest akcją, nie trasą");
   assert.ok(idki.length >= 20, `spodziewamy się co najmniej dwudziestu tras panelu, jest ${idki.length}`);
 });
+
+test("każda trasa panelu jest chroniona tym samym uprawnieniem co /admin", async () => {
+  // 110: rozbicie panelu na wyrzutnię i przegląd mnoży miejsca do obronienia. Dopasowanie po
+  // prefiksie w `legacyPermissionForPath` obejmuje podścieżki — ten test zapisuje to jako REGUŁĘ,
+  // a nie przypadek: zamiana `startsWith` na porównanie równością odsłoniłaby wszystkie narzędzia
+  // naraz i nie zmieniłaby niczego, co widać na ekranie.
+  const { legacyPermissionForPath, PERMISSIONS } = await import("@/platform/auth/permissions");
+  assert.equal(legacyPermissionForPath("/admin"), PERMISSIONS.ADMIN);
+  assert.equal(legacyPermissionForPath("/admin/przeglad"), PERMISSIONS.ADMIN);
+  for (const id of idNarzedziPodAdmin()) {
+    assert.equal(legacyPermissionForPath(`/admin/${id}`), PERMISSIONS.ADMIN, `trasa /admin/${id}`);
+  }
+});

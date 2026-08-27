@@ -133,11 +133,16 @@ w komentarzu.
   `FeedbackTriggerButton` zamiast odnośnika. Kafelki: na telefonie jedna kolumna, od `sm` dwie; cele
   dotyku ≥ 44 px; kolory wyłącznie ze zmiennych (C-30, C-31).
 - `src/components/admin/PowrotDoPanelu.tsx` — **wspólny odnośnik powrotu** („‹ Panel administratora").
-  Dziś 12 stron panelu ma taki odnośnik napisany ręcznie (wszystkie z `fontSize: 12`), a **11 nie ma
-  go wcale**: `access`, `ai-calls`, `ai-coverage`, `architektura-docelowa`, `audit`, `audyt`,
-  `audyt-podsumowanie`, `health`, `jobs`, `llm`, `user-facts`. Komponent jedzie z konsumentami:
-  wpinamy go w **11 brakujących** i podmieniamy **12 istniejących** (drop-in — ta sama treść i ten sam
-  rozmiar), żeby nie zostały dwa wzorce tej samej rzeczy (C-35).
+  **Korekta z implementacji (C-54):** pierwszy przegląd naliczył „11 stron bez powrotu", bo szukał
+  odnośnika **wyłącznie w plikach tras** (`src/app/admin/<x>/page.tsx`). Trasy panelu to w większości
+  cienkie opakowania, które renderują komponent z `src/components/admin/` — i to **tam** siedzi
+  odnośnik. Ponowny przegląd, obejmujący komponenty renderowane przez trasę, daje: **20 z 24 stron
+  ma powrót**, a brakuje go na **trzech**: `access`, `llm`, `user-facts` (czwarta z listy, `przeglad`,
+  jest nowa i dostaje powrót przez okruszek ramy).
+  Wpinamy więc komponent w **te trzy**, a **pozostałych dwudziestu nie przepisujemy**: ich odnośniki
+  działają, siedzą w dwudziestu różnych plikach, w różnych miejscach układu i pod różnymi etykietami
+  („Admin" / „Panel admina"). Ujednolicanie ich to osobna, świadoma zmiana, nie „przy okazji" (C-53);
+  rozjazd etykiet odnotowany w `verify.md`.
 - `MetricCard` przenosi się razem z licznikami do trasy przeglądu.
 
 **Czego NIE robimy:** nie wpinamy pozostałych 21 stron panelu w `ModuleView` (spec §5 „poza
@@ -165,8 +170,7 @@ przepisywane.
 | `src/components/admin/PowrotDoPanelu.tsx` | nowy | wspólny odnośnik „‹ Panel administratora" |
 | `src/app/admin/page.tsx` | przepisanie | wyrzutnia w ramie widoku (z 408 linii do kilkudziesięciu) |
 | `src/app/admin/przeglad/page.tsx` | nowy | build + jedenaście liczników + sesja, przeniesione 1:1 |
-| 11 stron panelu bez powrotu | edycja | wpięcie `PowrotDoPanelu` |
-| 12 stron panelu z powrotem ręcznym | edycja | podmiana na `PowrotDoPanelu` |
+| 3 strony panelu bez powrotu (`access`, `llm`, `user-facts`) | edycja | wpięcie `PowrotDoPanelu` |
 | `messages/pl.json` | edycja | nazwy grup, nazwy/opisy/hasła 25 pozycji, teksty wyszukiwarki i przeglądu |
 | `e2e/specs/110-panel-admina.spec.ts` | nowy | kryteria akceptacji tego przebiegu |
 | `src/lib/ui/perf-baseline.json` | **może** edycja | tylko jeśli `check:perf` zaprotestuje — z powodem, nigdy po cichu |
@@ -206,9 +210,10 @@ Kolejność: `check:admin-links` → `check:i18n` → `check:ui-contract` → `c
   jednym spojrzeniem.
 - **Ryzyko: nowa trasa bez kontroli dostępu.** → jawne sprawdzenie w `przeglad/page.tsx` + test
   jednostkowy na mapowanie ścieżki.
-- **Ryzyko: podmiana powrotu w 23 plikach coś przesunie.** Odnośniki są uniformne (wszystkie
-  `fontSize: 12`), ale stoją w różnych miejscach układu. → podmieniamy **tylko markup odnośnika**,
-  nie jego miejsce w drzewie; różnice w odstępach przechodzą propem, nie przepisaniem strony.
+- **Ryzyko: przegląd „kto ma powrót" liczy nie to, co trzeba.** Zmaterializowało się: pierwszy
+  przegląd patrzył tylko na pliki tras i naliczył jedenaście braków zamiast trzech, bo odnośnik
+  mieszka w komponencie renderowanym przez trasę. → przegląd musi iść **za renderem**, nie za
+  katalogiem; poprawiony wynik w §5.4.
 - **Ryzyko: bramka `check:admin-links` fałszywie alarmuje na podtrasach.** `/admin/qa/epic` i
   `/admin/qa/story` to podstrony narzędzia, nie osobne narzędzia. → bramka patrzy **wyłącznie na
   pierwszy poziom** katalogów pod `src/app/admin`.
