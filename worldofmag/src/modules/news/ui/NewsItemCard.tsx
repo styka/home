@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { ExternalLink, Check, Sparkles, Loader2, Headphones } from "lucide-react";
+import { ExternalLink, Check, Sparkles, Loader2, Headphones, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
@@ -18,12 +18,22 @@ import {
 export function NewsItemCard({
   item,
   onChanged,
+  onStreszczenie,
   czytaneZdanie,
   czytana = false,
   onSluchaj,
 }: {
   item: NewsItemDTO;
   onChanged: () => void;
+  /**
+   * 111: nowe streszczenie zgłaszamy W GÓRĘ, zamiast trzymać je u siebie.
+   *
+   * Do 111 karta miała własny `useState` na treść, a lektor budował bloki z danych serwera — więc
+   * po zmianie poziomu na ekranie stał jeden tekst, a w uszach drugi (zgłoszenie właściciela).
+   * Jedna treść ma jednego właściciela; tutaj jest nim strumień, bo to najniższe miejsce, które
+   * widzi i kartę, i lektora.
+   */
+  onStreszczenie?: (summary: string, length: SummaryLength, summaryFailed: boolean) => void;
   /** 084 (AC-5): zdanie, które lektor właśnie czyta — podświetlane w treści tej karty. */
   czytaneZdanie?: string | null;
   /** Czy lektor widoku czyta akurat tę pozycję. */
@@ -34,22 +44,31 @@ export function NewsItemCard({
   const t = useTranslations("modules.news.NewsItemCard");
   const { showToast } = useToast();
   const [pending, startTransition] = useTransition();
-  const [summary, setSummary] = useState(item.summary);
-  const [length, setLength] = useState<SummaryLength>(item.summaryLength);
+  // 111: treść i poziom przychodzą PROPSEM — karta ich nie posiada (patrz `onStreszczenie`).
+  const summary = item.summary;
+  const length = item.summaryLength;
   const [resummarizing, setResummarizing] = useState(false);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
 
   const color = sourceColor(item.sourceDescriptor);
 
-  function changeLength(next: SummaryLength) {
-    if (next === length || resummarizing) return;
+  /**
+   * 111: `force` to ręczne „wygeneruj ponownie" — jedyna droga do nadpisania zapamiętanego poziomu.
+   *
+   * Bez `force` powrót na poziom, który już był, wraca do TEGO SAMEGO tekstu, natychmiast i bez
+   * kosztu (`fromMemory`). Właśnie tego brakowało: do 111 każde przełączenie generowało nowy tekst,
+   * więc „średnie" dwa razy z rzędu dawało dwa różne streszczenia.
+   */
+  function streszcz(next: SummaryLength, force = false) {
+    if ((next === length && !force) || resummarizing) return;
     setResummarizing(true);
-    resummarizeItem(item.id, next)
+    resummarizeItem(item.id, next, { force })
       .then((r) => {
-        setSummary(r.summary);
-        setUsage(r.usage);
-        setLength(next);
+        // Tekst z pamięci nic nie kosztował, więc nie pokazujemy przy nim wskaźnika kosztu —
+        // wskaźnik przy darmowym odczycie mówiłby nieprawdę.
+        setUsage(r.fromMemory ? undefined : r.usage);
+        onStreszczenie?.(r.summary, next, false);
       })
       .catch((e) => showToast(e.message ?? "Nie udało się zmienić streszczenia", "error"))
       .finally(() => setResummarizing(false));
@@ -120,7 +139,27 @@ export function NewsItemCard({
           {/* 084 (AC-23): pozycja bez streszczenia MA to powiedzieć. Skrót z kanału bywa poprawnym
               zdaniem, więc bez tego znacznika lista wygląda na kompletną, a nie jest. */}
           {item.summaryFailed && (
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">{t("bezStreszczenia")}</p>
+            /**
+             * 111 (AC-22): sam komunikat to za mało — pozycja bez streszczenia dostaje AKCJĘ.
+             *
+             * Do 111 stało tu samo zdanie „bez streszczenia", a jedynym sposobem, żeby cokolwiek
+             * z tym zrobić, było przełączenie poziomu — czyli obejście, na które użytkownik musiał
+             * wpaść sam. Właściciel opisał dokładnie ten objaw: „czasem nie udaje się streścić,
+             * a jak się zmieni poziom, to jednak znajdujesz treść". Ponowienie sięga teraz po pełną
+             * treść artykułu, więc jest tym, czym przypadkiem bywało przełączenie poziomu.
+             */
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] text-[var(--text-muted)]">{t("bezStreszczenia")}</span>
+              <button
+                type="button"
+                onClick={() => streszcz(length, true)}
+                disabled={resummarizing}
+                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-[var(--accent-blue)] hover:bg-[var(--bg-hover)] disabled:opacity-50"
+              >
+                <RefreshCw size={11} className={resummarizing ? "animate-spin" : ""} />
+                {t("sprobujPonownie")}
+              </button>
+            </div>
           )}
         </>
       )}
@@ -148,7 +187,7 @@ export function NewsItemCard({
           {SUMMARY_LENGTHS.map((l) => (
             <button
               key={l.key}
-              onClick={() => changeLength(l.key)}
+              onClick={() => streszcz(l.key)}
               disabled={resummarizing}
               className={cn(
                 "rounded px-2 py-0.5 text-xs transition-colors",
@@ -160,6 +199,23 @@ export function NewsItemCard({
               {l.label}
             </button>
           ))}
+          {/**
+            * 111 (AC-20): „wygeneruj ponownie" stoi OSOBNO od przełącznika poziomu i celowo wygląda
+            * inaczej. Przełącznik pokazuje zapamiętany tekst (za darmo), a to jest prośba o nowy —
+            * gdyby były jednym przyciskiem, nie dałoby się poprosić o nic konkretnego.
+            */}
+          {!item.summaryFailed && (
+            <button
+              type="button"
+              onClick={() => streszcz(length, true)}
+              disabled={resummarizing}
+              title={t("wygenerujPonownieOpis")}
+              aria-label={t("wygenerujPonownie")}
+              className="ml-1 inline-flex items-center rounded px-1.5 py-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={resummarizing ? "animate-spin" : ""} />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

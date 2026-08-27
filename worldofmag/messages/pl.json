@@ -1674,7 +1674,10 @@
       "NewsItemCard": {
         "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła.",
         "przeczytane": "Przeczytane",
-        "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu."
+        "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu.",
+        "sprobujPonownie": "Spróbuj ponownie",
+        "wygenerujPonownie": "Wygeneruj streszczenie ponownie",
+        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)"
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",

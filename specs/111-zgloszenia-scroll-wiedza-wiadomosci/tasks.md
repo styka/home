@@ -80,10 +80,10 @@
 
 ## Faza 4 — Jeden nośnik treści: karta i lektor (zgłoszenie 5)
 
-- [ ] **T-12** — `NewsStream` przejmuje stan streszczeń (`nadpisania` per pozycja); `readerBlocks`
+- [x] **T-12** — `NewsStream` przejmuje stan streszczeń (`nadpisania` per pozycja); `readerBlocks`
   czyta przez nadpisania i ma je w zależnościach `useMemo` (plan §5.5).
   **Gotowe, gdy:** zmiana poziomu przy grającym lektorze zmienia czytany tekst (AC-24, razem z T-4).
-- [ ] **T-13** — `NewsItemCard` staje się **sterowana**: znika jej `useState` na streszczenie
+- [x] **T-13** — `NewsItemCard` staje się **sterowana**: znika jej `useState` na streszczenie
   (usunięcie drugiego nośnika), dochodzą akcje „Wygeneruj ponownie" (AC-20) i „Spróbuj ponownie"
   przy `summaryFailed` (AC-22). Tekst z pamięci pojawia się bez wskaźnika kosztu — nic nie kosztował.
   **Gotowe, gdy:** karta nie trzyma żadnego stanu treści, a obie nowe akcje są odróżnialne od

@@ -16,6 +16,7 @@ import {
   acknowledgeTopicItems,
   type NewsItemDTO,
   type StreamTopicDTO,
+  type SummaryLength,
 } from "../actions/news";
 
 /**
@@ -116,11 +117,41 @@ export function NewsStream({
   const [czytaneZdanie, setCzytaneZdanie] = useState<string | null>(null);
   const [czytanaPozycja, setCzytanaPozycja] = useState<string | null>(null);
 
+  /**
+   * 111: STRESZCZENIA ZMIENIONE W TEJ SESJI — JEDEN NOŚNIK dla karty i dla lektora.
+   *
+   * Zgłoszenie właściciela: „jeśli wiadomość streszczę na inny poziom, to lektor i tak będzie
+   * czytał ten pierwszy streszczony tekst".
+   *
+   * Przyczyna była podręcznikowa: **ta sama treść żyła w dwóch miejscach**. Karta trzymała nowe
+   * streszczenie we własnym `useState`, a lektor budował bloki z `topics`, czyli z danych
+   * serwera — których nikt po zmianie poziomu nie odświeżał. Na ekranie stał jeden tekst,
+   * w uszach drugi.
+   *
+   * Nadpisania mieszkają więc TUTAJ, o piętro wyżej niż karta, bo to jest najniższe miejsce, które
+   * widzą oboje. Nie sięgamy po `router.refresh()`: przeładowanie całego strumienia po każdej
+   * zmianie poziomu przerwałoby odsłuch i przewinęło listę.
+   */
+  const [nadpisania, setNadpisania] = useState<
+    Record<string, { summary: string; length: SummaryLength; summaryFailed: boolean }>
+  >({});
+  const zStreszczeniem = useCallback(
+    (item: NewsItemDTO): NewsItemDTO => {
+      const n = nadpisania[item.id];
+      return n ? { ...item, summary: n.summary, summaryLength: n.length, summaryFailed: n.summaryFailed } : item;
+    },
+    [nadpisania],
+  );
+
   const totalItems = topics.reduce((n, t) => n + t.items.length, 0);
 
   // ── Lektor ────────────────────────────────────────────────────────────────
   const readerBlocks = useMemo<ReaderBlock[]>(() => {
-    const toBlock = (i: NewsItemDTO): ReaderBlock => ({ title: i.title, text: i.summary });
+    // 111: treść bierzemy PRZEZ nadpisania — to jest cała naprawa „lektor czyta stary tekst".
+    const toBlock = (i: NewsItemDTO): ReaderBlock => {
+      const aktualny = zStreszczeniem(i);
+      return { title: aktualny.title, text: aktualny.summary };
+    };
 
     /**
      * 084 (AC-9): ZAPOWIEDŹ ŹRÓDŁA, ale bez powtarzania.
@@ -156,7 +187,7 @@ export function NewsStream({
       return out;
     }
     return [];
-  }, [reader, topics]);
+  }, [reader, topics, zStreszczeniem]);
 
   /** Pozycje w tej samej kolejności co bloki lektora — po nich przewijamy do czytanej karty. */
   const readerItemIds = useMemo<string[]>(() => {
@@ -387,8 +418,11 @@ export function NewsStream({
                 {topic.items.map((item) => (
                   <div key={item.id} data-news-item={item.id}>
                     <NewsItemCard
-                      item={item}
+                      item={zStreszczeniem(item)}
                       onChanged={onChanged}
+                      onStreszczenie={(summary, length, summaryFailed) =>
+                        setNadpisania((p) => ({ ...p, [item.id]: { summary, length, summaryFailed } }))
+                      }
                       czytaneZdanie={czytanaPozycja === item.id ? czytaneZdanie : null}
                       czytana={reader.kind === "item" && reader.itemId === item.id}
                       onSluchaj={(id) => toggleReader({ kind: "item", itemId: id })}
