@@ -40,7 +40,7 @@ export function SpisUstawien({
   const kafelki = wariant === "kafelki";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: kafelki ? 16 : 10, minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: kafelki ? 16 : 10, minHeight: 0, width: "100%", minWidth: 0 }}>
       {/* Pole szukania — jedno na widok, nad listą. */}
       <div style={{ position: "relative" }}>
         <Search
@@ -108,7 +108,9 @@ export function SpisUstawien({
         </div>
       ) : (
         <nav
-          aria-label={t("etykietaSzukania")}
+          // Punkt orientacyjny nazywa ZBIÓR, a nie pole nad nim — czytnik ekranu zapowiada listę
+          // sekcji, nie „szukaj ustawienia".
+          aria-label={t("etykietaListy")}
           className={kafelki ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-1"}
           style={kafelki ? undefined : { overflowY: "auto", minHeight: 0 }}
         >

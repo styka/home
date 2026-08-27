@@ -308,19 +308,6 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         </div>
       </div>
 
-      {/* Modules — tylko dostępne i włączone, w kolejności użytkownika */}
-      {/**
-       * 085/086 (AC-19): RZĄD CHROMU KONTA — pod nazwą aplikacji, NAD nawigacją.
-       *
-       * 085 postawiło go w stopce panelu, przy dzwonku. Właściciel poprosił o przeniesienie:
-       * „czy nie lepiej by było dać ten pasek z ikonami od razu pod nazwą aplikacji, przed pozycją
-       * strona główna? to takie miejsce na takie rzeczy". Zyskuje na tym spójność z telefonem, gdzie
-       * te same ikony stoją u góry ekranu — czyli ręka szuka ich w tym samym miejscu na obu
-       * szerokościach.
-       *
-       * Cztery ikony: dzwonek, zapis widoku, ściągawka skrótów, tryb administratora. Ściągawka jest
-       * TYLKO tutaj (na telefonie skróty klawiszowe nie mają zastosowania).
-       */}
       {/**
        * 109 (AC-1): STRONA GŁÓWNA JAKO NAZWANY WIERSZ, NAD RZĘDEM IKON KONTA.
        *
@@ -349,14 +336,29 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
         </div>
       )}
 
-      {/* 100: rząd idzie za dominującą ręką (`omnia-chrom-konta` + `html[data-reka]`) — te same
-          ikony, ta sama kolejność względem kciuka co na telefonie.
-          109: ikona domu wyszła stąd do własnego wiersza wyżej; zostają gwiazdka i skróty. */}
+      {/**
+       * 085/086 (AC-19): RZĄD CHROMU KONTA — pod nazwą aplikacji, NAD nawigacją modułów.
+       *
+       * 085 postawiło go w stopce panelu, przy dzwonku. Właściciel poprosił o przeniesienie:
+       * „czy nie lepiej by było dać ten pasek z ikonami od razu pod nazwą aplikacji, przed pozycją
+       * strona główna? to takie miejsce na takie rzeczy". Zyskuje na tym spójność z telefonem, gdzie
+       * te same ikony stoją u góry ekranu — czyli ręka szuka ich w tym samym miejscu na obu
+       * szerokościach.
+       *
+       * 100: rząd idzie za dominującą ręką (`omnia-chrom-konta` + `html[data-reka]`) — ta sama
+       * kolejność względem kciuka co na telefonie.
+       *
+       * 109: zostają DWIE ikony — zapis widoku i ściągawka skrótów. Ikona domu wyszła stąd do
+       * własnego, nazwanego wiersza wyżej; dzwonek i przełącznik trybu administratora mieszkają
+       * w wierszu nazwy aplikacji od 087. Ściągawka jest TYLKO tutaj (na telefonie skróty
+       * klawiszowe nie mają zastosowania).
+       */}
       <div className="omnia-chrom-konta mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
         <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
         <ShortcutsButton />
       </div>
 
+      {/* Moduły — tylko dostępne i włączone, w kolejności użytkownika */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {/* 087 (AC-17): sekcja ulubionych ZNIKA z nawigacji — ulubione mają teraz jedno wejście,
             gwiazdkę w rzędzie chromu, która otwiera pełny dialog z listą i z operacją na bieżącym

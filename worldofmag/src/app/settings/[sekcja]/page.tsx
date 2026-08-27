@@ -17,17 +17,18 @@ import { Aktywnosc } from "@/components/settings/sekcje/Aktywnosc";
 /**
  * 109: TRASA POJEDYNCZEJ SEKCJI USTAWIEŃ.
  *
- * Jedna trasa parametryczna zamiast dziesięciu katalogów (C-53): rama, walidacja segmentu i `404`
- * mają po jednym miejscu. Rozdział danych — właściwy cel podziału — daje nie trasa, tylko osobny
- * komponent serwerowy per sekcja: każdy awaituje WYŁĄCZNIE swoje zapytania, więc wejście w „Wygląd"
- * nie czeka już na `getRecentActivity(30)`.
+ * Jedna trasa parametryczna zamiast dziesięciu katalogów (C-53): rama, walidacja segmentu i obsługa
+ * złego adresu mają po jednym miejscu. Rozdział danych — właściwy cel podziału — daje nie trasa,
+ * tylko osobny komponent serwerowy per sekcja: każdy awaituje WYŁĄCZNIE swoje zapytania, więc
+ * wejście w „Wygląd" nie czeka już na `getRecentActivity(30)`.
  *
  * **Kontrola dostępu stoi tutaj, mimo że `src/middleware.ts` bramkuje wszystko sesją.** Rozbicie
  * jednej chronionej strony na kilka adresów mnoży miejsca do obronienia, a pominięcie kontroli na
  * którymś z nich nie objawia się niczym widocznym w interfejsie.
  *
  * Segment `team` jest trasą STATYCZNĄ (`/settings/team/...`) i ma pierwszeństwo przed tym
- * parametrem; samo `/settings/team` nie jest sekcją, więc daje 404 — dokładnie jak przed 109.
+ * parametrem; samo `/settings/team` nie jest sekcją, więc trafia w widok „nie ma takiej sekcji"
+ * ze spisem — przed 109 ta ścieżka dawała 404, czyli użytkownik dostaje więcej, nie mniej.
  */
 export default async function SekcjaUstawienPage({
   params,
@@ -56,9 +57,12 @@ export default async function SekcjaUstawienPage({
 }
 
 /**
- * Dobór treści sekcji. Świadomie `switch`, a nie mapa id → komponent: mapa na poziomie modułu
- * wciągnęłaby do grafu wszystkie dziesięć komponentów przy wejściu w jeden — ta sama lekcja, którą
- * 050 wyciągnęło z pliku zbiorczego leniwych loaderów.
+ * Dobór treści sekcji.
+ *
+ * Wszystkie dziesięć komponentów jest importowanych statycznie i to jest świadome: są to komponenty
+ * SERWEROWE, więc do przeglądarki i tak trafia wyłącznie to, co renderuje wybrana sekcja. Gdyby
+ * kiedyś zaczęły ciążyć, właściwym narzędziem jest `dynamic()` na konkretnym komponencie, a nie
+ * podmiana `switch`-a na mapę — mapa nie zmienia grafu ani o jeden moduł.
  */
 function tresc(id: string, searchParams?: { drive?: string }) {
   switch (id) {

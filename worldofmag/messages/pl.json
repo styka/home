@@ -822,6 +822,7 @@
       },
       "SpisUstawien": {
         "etykietaSzukania": "Szukaj ustawienia",
+        "etykietaListy": "Sekcje ustawień",
         "placeholderSzukania": "np. skórka, Dysk, język…",
         "brakTrafienTytul": "Nic nie pasuje do tej frazy",
         "brakTrafienOpis": "Spróbuj innego słowa — szukamy w nazwach i opisach sekcji.",
