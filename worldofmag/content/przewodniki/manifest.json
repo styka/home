@@ -1,0 +1,36 @@
+{
+  "$opis": "Rejestr przewodników użytkownika (108). Źródło prawdy dla działu /guide. Treść rozdziałów leży w content/przewodniki/<slug przewodnika>/<slug rozdziału>.md i jest pieczona przez scripts/copy-przewodniki.js do src/generated/przewodniki.ts. Rozdział zadeklarowany tutaj MUSI mieć plik z treścią — inaczej build pada. To różnica wobec książek audytu, gdzie brak pliku znaczy 'rozdział zaplanowany': tamte książki rosną w czasie, przewodnik albo jest kompletny, albo go nie ma.",
+  "przewodniki": [
+    {
+      "slug": "notatki",
+      "moduleId": "notes",
+      "title": "Notatki",
+      "subtitle": "Od listy zakupów po drugi mózg",
+      "summary": "Wszystko, co potrafi moduł notatek: markdown, foldery i tagi, wikilinki, wyszukiwanie, załączniki, wersje, udostępnianie, asystent — plus pomysły, co z tego zbudować.",
+      "rozdzialy": [
+        { "slug": "01-czym-sa-notatki", "title": "Czym są notatki w Omnii", "summary": "Po co ten moduł istnieje, gdzie go szukać i jak zapisać pierwszą myśl w trzy sekundy." },
+        { "slug": "02-pisanie-markdown", "title": "Pisanie: markdown i podgląd", "summary": "Co dokładnie działa w treści notatki, a co zostanie potraktowane jak zwykły tekst." },
+        { "slug": "03-porzadek", "title": "Porządek: foldery, tagi, przypinanie", "summary": "Czym różni się folder od tagu, kiedy używać którego i jak nie utopić się we własnych notatkach." },
+        { "slug": "04-wikilinki", "title": "Wikilinki: notatki, które się znają", "summary": "Podwójny nawias, odnośniki zwrotne i cztery zachowania, które zaskakują za pierwszym razem." },
+        { "slug": "05-szukanie", "title": "Szukanie i pytanie notatek", "summary": "Wyszukiwarka, która rozumie literówki, i asystent, który czyta notatki za Ciebie." },
+        { "slug": "06-zalaczniki-i-wersje", "title": "Załączniki i historia wersji", "summary": "Pliki przy notatce oraz maszyna czasu, która ratuje treść skasowaną przez pomyłkę." },
+        { "slug": "07-wspolpraca", "title": "Udostępnianie i praca w zespole", "summary": "Jak pokazać notatkę innej osobie, co ona wtedy widzi i czym różni się notatka zespołu od udostępnionej." },
+        { "slug": "08-asystent-ai", "title": "Notatki a asystent AI", "summary": "Dyktowanie, dopisywanie i pytania do własnych notatek — bez otwierania modułu." },
+        { "slug": "09-kosz", "title": "Usuwanie, kosz i odzyskiwanie", "summary": "Co się dzieje po naciśnięciu Usuń, ile masz czasu na zmianę zdania i co dzieje się z odnośnikami." },
+        { "slug": "10-skroty", "title": "Skróty klawiszowe i telefon", "summary": "Obsługa z klawiatury bez sięgania po mysz oraz to, co zmienia się na małym ekranie." },
+        { "slug": "11-pomysly", "title": "Pomysły: co z tego zbudować", "summary": "Kilkanaście zastosowań — od hasła do wifi po dziennik decyzji i lekki CRM na wikilinkach." },
+        { "slug": "12-pytania", "title": "Najczęstsze pytania", "summary": "Krótkie odpowiedzi na to, co zwykle wychodzi dopiero w praniu." }
+      ]
+    },
+    {
+      "slug": "asystent",
+      "moduleId": null,
+      "title": "Asystent AI",
+      "subtitle": "Mów albo pisz, resztę zrobi za Ciebie",
+      "summary": "Przykłady komend, które asystent rozumie — zakupy, zadania, notatki i kilka rzeczy naraz w jednym zdaniu.",
+      "rozdzialy": [
+        { "slug": "01-komendy", "title": "Co można powiedzieć asystentowi", "summary": "Gotowe przykłady poleceń dla zakupów, zadań i notatek — oraz jak łączyć je w jedno zdanie." }
+      ]
+    }
+  ]
+}

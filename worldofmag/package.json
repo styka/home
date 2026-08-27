@@ -21,7 +21,7 @@
     "check:module-registry": "node scripts/check-module-registry.js",
     "check:test-types": "tsc --noEmit -p tsconfig.test.json",
     "next:migration": "node scripts/check-migrations.js --next",
-    "build": "node scripts/copy-docs.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/generate-architecture.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-tailwind-content.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-route-gating.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-client-safe.js && node scripts/check-e2e-waits.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js",
+    "build": "node scripts/copy-docs.js && node scripts/copy-przewodniki.js && node scripts/copy-audyt.js && node scripts/copy-audyt-podsumowanie.js && node scripts/copy-architektura.js && node scripts/copy-spec-pipeline.js && node scripts/generate-architecture.js && node scripts/check-action-coverage.js && node scripts/check-ai-coverage.js && node scripts/check-cost-badge.js && node scripts/check-content-memory.js && node scripts/check-migrations.js && node scripts/check-ui-contract.js && node scripts/check-tailwind-content.js && node scripts/check-schema-drift.js && node scripts/check-boundaries.js && node scripts/check-module-registry.js && node scripts/check-workspace-mirror.js && node scripts/check-workspace-fill.js && node scripts/check-workspace-nullable.js && node scripts/check-owner-columns.js && node scripts/check-ownership-scope.js && node scripts/check-grant-mirror.js && node scripts/check-versioning.js && node scripts/check-ai-access.js && node scripts/check-route-gating.js && node scripts/check-pagination.js && node scripts/check-domain.js && node scripts/check-events.js && node scripts/check-subscribers.js && node scripts/check-realtime.js && node scripts/check-logs.js && node scripts/check-client-safe.js && node scripts/check-e2e-waits.js && node scripts/check-i18n.js && tsc --noEmit -p tsconfig.test.json && next lint --dir src && prisma generate && next build && node scripts/check-perf-budget.js && node scripts/migrate.js",
     "start": "next start -H 0.0.0.0",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
@@ -59,7 +59,8 @@
     "check:logs": "node scripts/check-logs.js",
     "check:i18n": "node scripts/check-i18n.js",
     "check:perf": "node scripts/check-perf-budget.js",
-    "gen:architecture": "node scripts/generate-architecture.js"
+    "gen:architecture": "node scripts/generate-architecture.js",
+    "copy:przewodniki": "node scripts/copy-przewodniki.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
