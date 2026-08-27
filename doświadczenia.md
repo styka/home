@@ -4,6 +4,48 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-27 — Trasa, do której nie prowadził żaden odnośnik, i dlaczego pilnuje tego bramka
+**Problem:** Przy porządkowaniu panelu administratora okazało się, że `/admin/llm` — konfiguracja
+dostawców i modeli LLM, jedna z najważniejszych powierzchni administracyjnych — **nie była
+podlinkowana z żadnego miejsca w aplikacji**. Strona działała, tylko trzeba było znać jej adres
+z pamięci. `/admin/qa` prowadziło wyłącznie z modułu QA, nie z panelu. Zgłoszenie właściciela
+mówiło „ciężko jest na to trafić" i miało rację w ostrzejszej postaci, niż zostało napisane.
+
+**Rozwiązanie:** Rejestr narzędzi (`src/lib/admin/narzedzia.ts`) plus bramka
+`scripts/check-admin-links.js` sprawdzająca **w obie strony**: katalog pod `src/app/admin/`
+z `page.tsx` bez wpisu = build pada; wpis prowadzący do trasy, której nie ma = build pada. Bramka
+wywala się też, gdy znajdzie **zero** tras albo zero wpisów — bramka, która przechodzi, bo niczego
+nie znalazła, ogłasza regułę, której nikt nie egzekwuje. Trzy próby mutacyjne potwierdziły, że
+odmawia w każdym z tych trzech przypadków.
+
+**Lekcja:** **Objaw „nie ma odnośnika" jest żaden** — nic nie pada, nic się nie czerwieni, strona
+po prostu nie istnieje dla nikogo, kto nie zna adresu. Takich rzeczy nie pilnuje się dyscypliną ani
+listą przepisywaną ręcznie, bo lista rozjeżdża się po cichu i to właśnie się stało. Gdy „kompletność"
+jest wymaganiem, zapisz ją jako bramkę **liczącą fakty z dysku**, a nie jako punkt w opisie zadania.
+
+## 2026-08-27 — Przegląd „kto ma powrót do panelu" naliczył jedenaście braków zamiast trzech
+**Problem:** Plan zakładał wpięcie wspólnego odnośnika powrotu w **11 stron panelu**, bo tyle
+wyszło z przeglądu. Liczba była nieprawdziwa: przegląd grepował odnośnik **wyłącznie w plikach
+tras** (`src/app/admin/<x>/page.tsx`). Tymczasem trasy panelu to w większości cienkie opakowania,
+które renderują komponent z `src/components/admin/` — i odnośnik siedzi **tam**. Gdybym nie
+sprawdził przed edycją, dziewięć stron dostałoby drugi powrót obok istniejącego.
+
+**Rozwiązanie:** Ponowny przegląd idący **za renderem** (plik trasy plus komponenty, które
+importuje) dał prawdziwy obraz: **20 z 24 stron ma powrót**, brakuje na trzech — `access`, `llm`,
+`user-facts`. Plan i lista zadań poprawione wg C-54, zanim ruszyła implementacja; zamiast dwudziestu
+trzech plików ruszyły trzy.
+
+**Lekcja:** **Grep po katalogu odpowiada na pytanie o katalog, a nie o widok.** W repozytorium,
+w którym trasa jest cienka, a treść mieszka w komponencie, każdy przegląd typu „które strony mają
+X" musi iść za renderem — inaczej mierzy strukturę plików i podaje wynik, jakby mierzył interfejs.
+Tanie zabezpieczenie: zanim zaczniesz edytować N plików wyliczonych z grepa, sprawdź **dwa** z nich
+ręcznie. Tutaj kosztowałoby to minutę i od razu pokazało, że `SystemHealthPage` ma powrót, tylko
+w innym pliku.
+
+Efekt uboczny, wart odnotowania: pomiar pokazał **trzy różne etykiety tego samego powrotu** —
+„Admin" (13 stron), „Panel admina" (5) i „Panel administratora" (2). Ujednolicenie to osobna,
+świadoma zmiana; tutaj zostało zgłoszone, nie zrobione „przy okazji" (C-53).
+
 ## 2026-08-27 — Zgłoszenie opisywało stan sprzed trzech przebiegów, a wina i tak była prawdziwa
 **Problem:** Właściciel zgłosił „zduplikowany link »Strona główna« w menu bocznym", wskazując pozycję
 listy modułów. Tej pozycji **nie było już w kodzie** — 087 usunęło ją stamtąd i zastąpiło ikoną domu

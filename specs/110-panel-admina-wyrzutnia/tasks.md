@@ -1,7 +1,7 @@
 # Zadania: Panel administratora jako pogrupowana wyrzutnia
 
 - **Plan:** ./plan.md (110-panel-admina-wyrzutnia)
-- **Status:** todo
+- **Status:** zaimplementowane
 - **Data:** 2026-08-27
 
 > Kolejność: od najłatwiejszego do najtrudniejszego i zgodna z zależnościami. Rejestr powstaje jako
@@ -125,14 +125,14 @@ czy kosz. `check:actions`, `check:ai-coverage`, `check:cost-badge` sprawdzane w 
       *Gotowe, gdy:* wszystko zielone. Jeśli `check:perf` zaprotestuje — podnieś próg
       w `perf-baseline.json` **z powodem**, nigdy po cichu.
 
-- [ ] **T-15** — Uruchomienie klikacza (`nohup bash scripts/e2e-web.sh …`), w tym **bieg odniesienia
+- [x] **T-15** — Uruchomienie klikacza (`nohup bash scripts/e2e-web.sh …`), w tym **bieg odniesienia
       na kodzie sprzed zmiany**, jeśli pojawią się czerwone testy poza nowym specem — bez niego nie da
       się odróżnić własnej regresji od cudzej (lekcja z 109).
       *Gotowe, gdy:* nowy spec zielony, a liczba czerwonych w pozostałych nie rośnie.
 
 - [ ] **T-16** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
 
-- [ ] **T-17** — Wpis do `doświadczenia.md` (C-51): osierocona trasa `/admin/llm` bez odnośnika
+- [x] **T-17** — Wpis do `doświadczenia.md` (C-51): osierocona trasa `/admin/llm` bez odnośnika
       z żadnego miejsca w aplikacji i lekcja, dlaczego kompletności pilnuje **bramka**, a nie lista
       przepisana ręcznie.
 
