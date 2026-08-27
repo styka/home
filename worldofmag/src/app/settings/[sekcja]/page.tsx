@@ -38,6 +38,11 @@ export default async function SekcjaUstawienPage({
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin");
 
+  // Nieznany segment pokazuje stronę 404 aplikacji. Zmierzone: odpowiedź niesie przy tym status
+  // **200**, a nie 404 — Next ustawia 404 wtedy, gdy to ROUTER nie dopasował trasy; wywołanie
+  // `notFound()` z wnętrza renderu daje już tylko treść. Przestawianie kolejności (walidacja przed
+  // `auth()`) tego nie zmienia — sprawdzone. Dla użytkownika zachowanie jest poprawne, więc test
+  // sprawdza TREŚĆ, a nie status: asercja na status pilnowałaby szczegółu Nexta, nie naszej reguły.
   const sekcja = znajdzSekcje(params.sekcja);
   if (!sekcja) notFound();
 

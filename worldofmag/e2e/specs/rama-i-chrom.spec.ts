@@ -186,7 +186,10 @@ test("[087-AC19 + 109-AC1] uklad wierszy w panelu bocznym", async ({ page }) => 
         (a) => a.getAttribute("href") === "/" && /Strona główna/.test(a.textContent || "") && widoczny(a),
       ) ?? null;
     return {
-      dzwonek: p(znajdz(/Powiadomienia/i)),
+      // 109: wzorzec poprawiony z /Powiadomienia/i. Od 107 dzwonek jest SKRZYNKĄ i jego `aria-label`
+      // brzmi „Skrzynka" — stary wzorzec przestał cokolwiek znajdować, więc ten test był czerwony
+      // od 107, raportując „dzwonek musi być widoczny" o elemencie, który był na ekranie.
+      dzwonek: p(znajdz(/skrzynk|powiadomie/i)),
       tryb: p(znajdz(/tryb administratora/i)),
       dom: p(dom),
       gwiazdka: p(znajdz(/Ulubione/i)),
