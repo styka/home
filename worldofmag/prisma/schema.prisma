@@ -1951,27 +1951,37 @@ model FinanceSettings {
 // 031: ustawienia asystenta AI per UŻYTKOWNIK (widoczne na każdym urządzeniu):
 // stałe preferencje, poziom pracy asystenta i wybór głosu lektora.
 model AssistantPref {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  instructions String   @default("") // stałe preferencje („custom instructions")
-  level        String   @default("standard") // AssistantLevel: "standard" | "economy"
-  voiceKind    String   @default("browser") // AssistantVoiceKind: "browser" | "server"
-  voiceId      String? // id głosu serwerowego (gdy voiceKind = "server")
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  instructions   String    @default("") // stałe preferencje („custom instructions")
+  level          String    @default("standard") // AssistantLevel: "standard" | "economy"
+  voiceKind      String    @default("browser") // AssistantVoiceKind: "browser" | "server"
+  voiceId        String? // id głosu serwerowego (gdy voiceKind = "server")
   // 080 (Z12): sterowanie lektorem. Domyślne odtwarzają dzisiejsze zachowanie — 0.95 to wartość,
   // która była zaszyta w `src/lib/tts.ts`, a lektor zawsze przewijał za czytaniem. Zmieniamy
   // MOŻLIWOŚĆ ustawienia, nie zachowanie kogoś, kto niczego nie ustawi.
-  readerRate   Float    @default(0.95) // prędkość czytania (obie ścieżki: przeglądarka i serwer)
-  readerFollow Boolean  @default(true) // czy widok podąża za czytaną wiadomością
+  readerRate     Float     @default(0.95) // prędkość czytania (obie ścieżki: przeglądarka i serwer)
+  readerFollow   Boolean   @default(true) // czy widok podąża za czytaną wiadomością
   // 041: auto-zatwierdzanie BEZPIECZNYCH akcji asystenta. Akcje niszczące pytają zawsze —
   // klasyfikacja idzie z `DESTRUCTIVE_ACTION_TYPES`, nie z osobnej listy.
-  autoApprove  Boolean  @default(false)
+  autoApprove    Boolean   @default(false)
   // 106: sposób prezentacji asystenta na KOMPUTERZE — AssistantPresentation:
   // "window" (pływające okno) | "content" (w obszarze treści modułu). String + zawężający typ
   // TypeScript, nigdy enum Prisma (C-12). Domyślne "window" odtwarza dotychczasowe zachowanie,
   // a na telefonie pole nie ma znaczenia: tam asystent zawsze jest arkuszem.
-  presentation String   @default("window")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  presentation   String    @default("window")
+  // 111: AUTOMATYCZNE WNIOSKOWANIE WIEDZY O UŻYTKOWNIKU. Do 111 zadanie `user.facts` było
+  // kolejkowane z dokładnie jednego miejsca w aplikacji — przycisku „Poszukaj hipotez" — więc
+  // wiedza nie mogła rosnąć z samego korzystania (zgłoszenie właściciela). Domyślnie WŁĄCZONE:
+  // automat domyślnie wyłączony nie spełniłby zgłoszenia.
+  autoFacts      Boolean   @default(true)
+  // Kiedy przebieg odbył się ostatnio — także wtedy, gdy skończył się bez wołania modelu.
+  factsLastRunAt DateTime?
+  // Odcisk materiału z ostatniego przebiegu. Równy odcisk = nic nie przybyło = model nie jest
+  // wołany. Bez tego automat płaciłby za przebieg w dobie, w której nie ma z czego wnioskować.
+  factsStamp     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user User @relation("UserAssistantPref", fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -2727,13 +2737,44 @@ model NewsItem {
   articleId     String?
   createdAt     DateTime @default(now())
 
-  topic   NewsTopic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  source  NewsSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  article NewsArticle? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  topic     NewsTopic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source    NewsSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  article   NewsArticle?      @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  // 111: streszczenia zapamiętane OSOBNO dla każdego poziomu. `summary`/`summaryLength` wyżej
+  // pozostają wskaźnikiem „który z nich jest teraz pokazywany", a nie drugim nośnikiem treści.
+  summaries NewsItemSummary[]
 
   @@unique([topicId, sourceId, url])
   @@index([topicId, status])
   @@index([articleId])
+}
+
+// 111: STRESZCZENIE PAMIĘTANE OSOBNO DLA KAŻDEGO POZIOMU.
+//
+// Zgłoszenie właściciela: powrót na poziom, który już był wygenerowany, dawał NOWY, wyraźnie
+// dłuższy tekst. `resummarizeItem` nie sprawdzało, czy dany poziom już istnieje — każde
+// przełączenie było płatną generacją, a jej wynik zależał od tego, ile materiału akurat udało się
+// pobrać. Tutaj poziom raz wygenerowany zostaje: powrót do niego jest natychmiastowy i darmowy.
+//
+// Bez `workspaceId` i bez kolumn właściciela — świadomie, jak `NewsItem`: własność płynie przez
+// `NewsTopic.workspaceId`, a nullowalny `workspaceId` uruchomiłby wymóg wyzwalacza z
+// `check:workspace-fill` dla własności, której ta tabela nie niesie.
+model NewsItemSummary {
+  id          String   @id @default(cuid())
+  itemId      String
+  // "short" | "medium" | "long" — String + zawężający typ TS (SummaryLength), nigdy enum (C-12).
+  length      String
+  text        String
+  // Czy powstało z pełnej treści artykułu, czy tylko ze skrótu z kanału. Jedyne miejsce, w którym
+  // widać, dlaczego dwa poziomy tej samej pozycji mogą różnić się szczegółowością.
+  fromArticle Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  item NewsItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, length])
+  @@index([itemId])
 }
 
 model NewsPref {

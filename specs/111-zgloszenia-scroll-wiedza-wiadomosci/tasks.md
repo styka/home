@@ -12,13 +12,13 @@
 
 ## Faza 0 — Fundament danych
 
-- [ ] **T-1** — Migracja `0269_streszczenia_per_poziom_i_automat_wiedzy` (plan §2.3): tabela
+- [x] **T-1** — Migracja `0269_streszczenia_per_poziom_i_automat_wiedzy` (plan §2.3): tabela
   `NewsItemSummary` (+ unikat `[itemId, length]`, indeks, FK `ON DELETE CASCADE`), przeniesienie
   bieżących streszczeń z `NewsItem` (`INSERT … SELECT … ON CONFLICT DO NOTHING`), trzy kolumny
   w `AssistantPref` (`autoFacts` domyślnie `true`, `factsLastRunAt`, `factsStamp`).
   **Gotowe, gdy:** plik istnieje, `grep -E "^(DROP|ALTER TABLE .* DROP)"` na nim jest pusty (C-15),
   `npm run check:migrations` przechodzi.
-- [ ] **T-2** — `schema.prisma`: model `NewsItemSummary`, relacja zwrotna w `NewsItem`, trzy pola
+- [x] **T-2** — `schema.prisma`: model `NewsItemSummary`, relacja zwrotna w `NewsItem`, trzy pola
   w `AssistantPref`. Poziom jako `String` + union TS, **nigdy** enum (C-12).
   **Gotowe, gdy:** `npx prisma generate` czysto i `npm run check:schema-drift` nie zgłasza rozjazdu
   wobec migracji (lokalny Postgres, C-13).
