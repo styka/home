@@ -205,11 +205,18 @@ guardy — **nie poszerzamy niczyjego dostępu** (C-17/C-21).
 
 ### 5.2 Proporcje akcji w pasku — poprawka RAMY (AC-13, AC-16)
 
-- `src/components/ui/view/ViewBar.tsx`: zamiast `[&>*]:flex-1` na wszystkich dzieciach —
-  **rozciąganie na zgłoszenie**. Rama eksportuje stałą `KLASA_AKCJI_ROZCIAGLIWEJ`
-  (`"omnia-akcja-rozciagliwa"`), reguła `.omnia-akcja-rozciagliwa { flex: 1 1 0%; }` poniżej `md`
-  ląduje w `globals.css`; wszystko pozostałe dostaje `flex: none` i zajmuje swoje minimum.
-  Ikony pomocy i ustawień, rysowane przez ramę, klasy nie dostają **nigdy**.
+- `src/components/ui/view/ViewBar.tsx`: **wyjątek jest po stronie IKONY, nie tekstu.** Rama
+  eksportuje `KLASA_AKCJI_IKONOWEJ` (`"omnia-akcja-ikonowa"`, reguła `flex: none` w `globals.css`);
+  domyślne `[&>*]:flex-1` z 087 **zostaje nietknięte**. Ikony pomocy i ustawień, rysowane przez
+  ramę, dostają tę klasę **zawsze** — są ikoną z definicji.
+
+  > **Korekta wobec pierwszej wersji planu (C-54).** Pierwotnie zapisano tu odwrotnie: rozciąganie
+  > „na zgłoszenie", czyli zdjęcie `[&>*]:flex-1` i oznaczanie akcji rozciągliwych. Przy pisaniu
+  > kodu okazało się, że to **cofa poprawkę z 087** we wszystkich widokach, które nowej klasy nie
+  > dostaną — a 087 weszło z własnego zgłoszenia właściciela („dziwnie wygląda z dosuniętymi
+  > akcjami do prawej, zostawiając dużo miejsca z lewej"). Naprawa jednego zgłoszenia kosztem
+  > przywrócenia drugiego nie jest naprawą. Odwrócenie wyjątku daje ten sam wynik w Wiadomościach,
+  > a poza nimi nie zmienia niczego.
 - To jest poszerzenie kontraktu, nie wyjątek w module (C-33): korzysta z niego każdy widok
   z akcjami, a nie tylko Wiadomości. Cele dotyku zostają ≥ 44 px (C-31).
 - `NewsPage`: „Odśwież" dostaje klasę, „Nowy temat" i koło zębate nie. Etykieta „Nowy temat"

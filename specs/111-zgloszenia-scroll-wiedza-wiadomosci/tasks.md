@@ -25,12 +25,11 @@
 
 ## Faza 1 — Rzeczy małe i niezależne (naprawa ramy)
 
-- [ ] **T-3** `[P]` — **Rozciąganie akcji na zgłoszenie** (plan §5.2, przyczyna zgłoszenia 3):
-  w `ViewBar.tsx` zdejmij `[&>*]:flex-1` z całej strefy akcji, wprowadź stałą
-  `KLASA_AKCJI_ROZCIAGLIWEJ` i regułę `.omnia-akcja-rozciagliwa { flex: 1 1 0% }` poniżej `md`
-  w `globals.css`. Ikony pomocy i ustawień rysowane przez ramę **nigdy** jej nie dostają.
-  **Gotowe, gdy:** widok bez żadnej rozciągliwej akcji ma akcje zsunięte do prawej i nie rozpycha
-  paska; komentarz w kodzie mówi, dlaczego rozciąganie jest opt-in.
+- [x] **T-3** `[P]` — **Akcja będąca samą ikoną nie rozciąga się** (plan §5.2, przyczyna
+  zgłoszenia 3): `KLASA_AKCJI_IKONOWEJ` w `ViewBar.tsx` + reguła `.omnia-akcja-ikonowa
+  { flex: none }` w `globals.css`. Domyślne rozciąganie z 087 **zostaje** — wyjątek jest po stronie
+  ikony, żeby nie cofnąć tamtej poprawki (korekta planu, C-54). Ikony ramy dostają klasę zawsze.
+  **Gotowe, gdy:** widoki bez ikonowych akcji wyglądają dokładnie jak przed zmianą.
 - [ ] **T-4** `[P]` — **`blocksKey` z treści, nie z samych tytułów** (`NewsReader.tsx:261`, plan
   §5.5, druga połowa zgłoszenia 5). Osobne zadanie, bo to samodzielna wada: bez niej AC-24 nie
   przejdzie nawet po naprawie nośnika tekstu.
