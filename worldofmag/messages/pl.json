@@ -264,6 +264,17 @@
         "panelAdmina": "Panel admina",
         "tytul": "Biblioteka źródeł RSS",
         "opis": "Systemowy katalog źródeł, z którego użytkownicy dodają gotowe kanały jednym kliknięciem. Wyłączony wpis znika z biblioteki, ale nie rusza źródeł, które ktoś już z niego dodał."
+      },
+      "panel": {
+        "tytul": "Panel administratora",
+        "podtytul": "Wybierz narzędzie albo wpisz jego nazwę."
+      },
+      "przeglad": {
+        "tytul": "Przegląd systemu",
+        "podtytul": "Wersja wdrożenia, liczniki zawartości i aktywna sesja.",
+        "wdrozenie": "Wdrożenie",
+        "metrykiSystem": "Metryki — system",
+        "aktywnaSesja": "Aktywna sesja"
       }
     },
     "auth": {
@@ -615,6 +626,158 @@
         "potwierdzUsuniecie": "Usunąć „{nazwa}” z biblioteki? Źródła, które ktoś już z tego wpisu dodał, zostaną nietknięte — dodanie kopiuje dane.",
         "importGotowy": "Import zakończony: dodano {added}, pominięto {skipped}",
         "wylaczonyWpis": "Wyłączony — niewidoczny dla użytkowników"
+      },
+      "SpisNarzedziAdmina": {
+        "etykietaSzukania": "Szukaj narzędzia",
+        "etykietaListy": "Narzędzia panelu administratora",
+        "placeholderSzukania": "np. skórka, kolejka, uprawnienia…",
+        "brakTrafienTytul": "Nic nie pasuje do tej frazy",
+        "brakTrafienOpis": "Spróbuj innego słowa — szukamy w nazwach i opisach narzędzi.",
+        "wyczysc": "Wyczyść",
+        "grupy": {
+          "przeglad": "Przegląd",
+          "dostep": "Dostęp i bezpieczeństwo",
+          "diagnostyka": "Diagnostyka",
+          "ai": "AI i konfiguracja",
+          "tresc": "Treść i wygląd",
+          "dokumentacja": "Dokumentacja projektu",
+          "deweloper": "Narzędzia dewelopera"
+        },
+        "narzedzia": {
+          "przeglad": {
+            "nazwa": "Przegląd systemu",
+            "opis": "Wersja wdrożenia, liczniki zawartości i dane aktywnej sesji.",
+            "hasla": "build commit wersja licznik statystyki sesja przeglad"
+          },
+          "access": {
+            "nazwa": "Zarządzanie dostępem",
+            "opis": "Role, uprawnienia i przypisania użytkowników.",
+            "hasla": "rbac role uprawnienia dostep permissions uzytkownicy"
+          },
+          "audit": {
+            "nazwa": "Dziennik zmian",
+            "opis": "Historia zmian uprawnień i konfiguracji, ze śladem kto i kiedy.",
+            "hasla": "audyt log historia rbac konfiguracja slad"
+          },
+          "health": {
+            "nazwa": "Stan systemu",
+            "opis": "Diagnostyka bazy, migracji i połączeń zewnętrznych.",
+            "hasla": "zdrowie health baza migracje diagnostyka polaczenia"
+          },
+          "metrics": {
+            "nazwa": "Metryki operacji",
+            "opis": "Czasy odpowiedzi, błędy i konflikty edycji w podziale na moduły.",
+            "hasla": "metryki wydajnosc p95 bledy konflikty pomiary"
+          },
+          "jobs": {
+            "nazwa": "Kolejka zadań",
+            "opis": "Zadania w tle: OCR, odświeżanie wiadomości, generowanie treści.",
+            "hasla": "kolejka joby zadania tlo ocr ai postep"
+          },
+          "ai-calls": {
+            "nazwa": "Wywołania modeli",
+            "opis": "Log zapytań do modeli językowych wraz z kosztem.",
+            "hasla": "ai llm log wywolania koszt diagnostyka rozmowa"
+          },
+          "config": {
+            "nazwa": "Konfiguracja systemowa",
+            "opis": "Klucze API i przełączniki systemowe, szyfrowane w spoczynku.",
+            "hasla": "config klucze api groq brave ustawienia systemowe"
+          },
+          "llm": {
+            "nazwa": "Modele i dostawcy LLM",
+            "opis": "Dostawcy, przypisanie modeli do typów operacji i poziomów pracy.",
+            "hasla": "llm modele dostawcy groq anthropic openai mowa tts cennik"
+          },
+          "ai-coverage": {
+            "nazwa": "Pokrycie akcji przez AI",
+            "opis": "Które akcje użytkownika asystent potrafi wykonać, a których nie.",
+            "hasla": "pokrycie akcje asystent ai manifest"
+          },
+          "user-facts": {
+            "nazwa": "Wiedza o użytkownikach",
+            "opis": "Fakty wywnioskowane z działań, używane w podpowiedziach.",
+            "hasla": "fakty wiedza uzytkownik podpowiedzi kontekst"
+          },
+          "categories": {
+            "nazwa": "Kategorie systemowe",
+            "opis": "Globalny słownik kategorii widoczny dla wszystkich.",
+            "hasla": "kategorie slownik systemowe globalne"
+          },
+          "skins": {
+            "nazwa": "Skórki systemowe",
+            "opis": "Motywy dostępne dla wszystkich kont.",
+            "hasla": "skorka motyw kolory wyglad theme"
+          },
+          "reports": {
+            "nazwa": "Raporty",
+            "opis": "Tworzenie i edycja raportów w markdownie.",
+            "hasla": "raporty markdown dokumenty tresc"
+          },
+          "zrodla-rss": {
+            "nazwa": "Biblioteka źródeł RSS",
+            "opis": "Systemowy katalog kanałów, z którego użytkownicy dodają źródła.",
+            "hasla": "rss zrodla kanaly wiadomosci katalog feed"
+          },
+          "moderacja": {
+            "nazwa": "Moderacja sporów",
+            "opis": "Spory zgłoszone w module Usługi.",
+            "hasla": "moderacja spory uslugi reklamacje"
+          },
+          "docs": {
+            "nazwa": "Dokumentacja projektu",
+            "opis": "Pliki z katalogu docs czytane w aplikacji.",
+            "hasla": "dokumentacja docs instrukcje readme"
+          },
+          "audyt": {
+            "nazwa": "Audyt stanu projektu",
+            "opis": "Analiza projektu wraz z ponumerowanymi wskazaniami.",
+            "hasla": "audyt analiza wskazania ksiazka raport"
+          },
+          "audyt-podsumowanie": {
+            "nazwa": "Audyt — podsumowanie zmian",
+            "opis": "Co zostało wykonane, a co pozostało po audycie.",
+            "hasla": "audyt podsumowanie wykonane pozostale"
+          },
+          "architektura-docelowa": {
+            "nazwa": "Architektura docelowa",
+            "opis": "Opis stanu, jaki ma powstać po przebudowie.",
+            "hasla": "architektura docelowa przebudowa fazy plan"
+          },
+          "architecture": {
+            "nazwa": "Struktura aplikacji",
+            "opis": "Przegląd bieżącego drzewa modułów i tras.",
+            "hasla": "struktura drzewo moduly trasy architektura"
+          },
+          "spec-pipeline": {
+            "nazwa": "Przewodnik po pipelinie",
+            "opis": "Jak powstają nowe funkcje: specyfikacja, plan, zadania, wdrożenie.",
+            "hasla": "pipeline spec plan zadania proces claude"
+          },
+          "playground": {
+            "nazwa": "Galeria komponentów",
+            "opis": "Podgląd wspólnych komponentów i ich stanów brzegowych.",
+            "hasla": "playground galeria komponenty podglad ui"
+          },
+          "e2e": {
+            "nazwa": "Testy klikacze",
+            "opis": "Jak uruchomić testy end-to-end i co sprawdzają.",
+            "hasla": "e2e testy klikacze playwright"
+          },
+          "qa": {
+            "nazwa": "Scenariusze QA",
+            "opis": "Redagowanie epik, historyjek i scenariuszy testowych.",
+            "hasla": "qa scenariusze testy epiki historyjki"
+          },
+          "zglos-blad": {
+            "nazwa": "Zgłoś błąd lub sugestię",
+            "opis": "Wskaż element na ekranie i opisz, co jest z nim nie tak.",
+            "hasla": "zglos blad sugestia feedback wskaz element"
+          }
+        }
+      },
+      "PowrotDoPanelu": {
+        "panelAdministratora": "Panel administratora"
       }
     },
     "assistant": {

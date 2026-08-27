@@ -1,0 +1,4 @@
+{
+  "_opis": "110 — świadome wyjątki bramki check:admin-links: strona panelu, która CELOWO nie ma odnośnika z wyrzutni. Klucz = nazwa katalogu pod src/app/admin, wartość = powód (min. 25 znaków). Martwy wpis wywala build.",
+  "trasy": {}
+}

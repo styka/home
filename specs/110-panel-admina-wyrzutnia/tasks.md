@@ -36,24 +36,24 @@ wywołania (`/admin` → `/admin/przeglad`), nie treść — to część zadania
       *Gotowe, gdy:* istnieje **jedna** definicja `bezOgonkow`/`pasujeDoFrazy` w `src/`, a testy
       rejestru ustawień (7) i wyszukiwarki celów nawigacji (8) przechodzą bez zmian w asercjach.
 
-- [ ] **T-2** — `src/lib/admin/narzedzia.ts`: typy `NarzedzieAdmina` / `GrupaNarzedzi`, stała
+- [x] **T-2** — `src/lib/admin/narzedzia.ts`: typy `NarzedzieAdmina` / `GrupaNarzedzi`, stała
       `GRUPY_NARZEDZI` (7 grup, 24 pozycje + 1 akcja wg tabeli z planu §5.2) i `wszystkieNarzedzia()`.
       **Same klucze tekstów, zero literałów** (C-32). `id` = ostatni segment trasy pod `/admin`
       (klucz dla bramki); `/services/moderation` wchodzi jako `href` bez `id` spod `/admin`.
       *Gotowe, gdy:* rejestr zawiera `llm` i `qa` (dziś bez odnośnika) oraz `przeglad`, a `id` są
       unikalne i ASCII.
 
-- [ ] **T-3** — `messages/pl.json`: nazwy 7 grup, nazwy/opisy/hasła 25 pozycji, teksty wyszukiwarki
+- [x] **T-3** — `messages/pl.json`: nazwy 7 grup, nazwy/opisy/hasła 25 pozycji, teksty wyszukiwarki
       (etykieta, `placeholder`, stan pusty, wyczyść), tytuł panelu i przeglądu, etykieta powrotu.
       *Gotowe, gdy:* każdy klucz z T-2 ma wartość; `npm run check:i18n` przechodzi.
 
-- [ ] **T-4** — `src/lib/admin/__tests__/narzedzia.test.ts`: dla każdej pozycji sprawdź obecność
+- [x] **T-4** — `src/lib/admin/__tests__/narzedzia.test.ts`: dla każdej pozycji sprawdź obecność
       trzech kluczy w `messages/pl.json` oraz nazwy grupy; unikalność `id`; każdy wpis ma `href`.
       To **zastępstwo za bramkę i18n**, która nie widzi kluczy podawanych zmienną (plan §5.2).
       *Gotowe, gdy:* `test:unit` zielony **i** próba mutacyjna (usunięcie jednego klucza) czerwieni
       test z nazwą brakującego klucza. (AC-16)
 
-- [ ] **T-5** — `scripts/check-admin-links.js` + `src/lib/admin/linki-wyjatki.json` (pusty) +
+- [x] **T-5** — `scripts/check-admin-links.js` + `src/lib/admin/linki-wyjatki.json` (pusty) +
       `package.json` (`check:admin-links`, wpięcie w `build`). Bramka w **obie strony**: katalog
       pierwszego poziomu w `src/app/admin/` z `page.tsx` bez wpisu = błąd; wpis na `/admin/<id>` bez
       katalogu = błąd; martwy wyjątek = błąd. **Wywala się przy zerze tras albo zerze wpisów**
@@ -63,7 +63,7 @@ wywołania (`/admin` → `/admin/przeglad`), nie treść — to część zadania
 
 ## Faza 3 — Widoki panelu
 
-- [ ] **T-6** — `src/components/admin/SpisNarzedziAdmina.tsx` (klient): pole szukania + grupy
+- [x] **T-6** — `src/components/admin/SpisNarzedziAdmina.tsx` (klient): pole szukania + grupy
       z nagłówkami; filtr **chowa grupę, z której nic nie zostało**; brak trafień → stan pusty
       z wyjaśnieniem; pozycja z `akcja` renderuje `FeedbackTriggerButton` zamiast odnośnika.
       Kafelki: jedna kolumna na telefonie, dwie od `sm`; cele dotyku ≥ 44 px; kolory wyłącznie ze
@@ -71,19 +71,19 @@ wywołania (`/admin` → `/admin/przeglad`), nie treść — to część zadania
       *Gotowe, gdy:* „skorka" zawęża do jednej pozycji, „qqq" pokazuje stan pusty, a tryb wskazywania
       elementu dalej startuje z panelu. (AC-1, AC-6, AC-7, AC-8, AC-14, AC-15)
 
-- [ ] **T-7** `[P]` — `src/components/admin/PowrotDoPanelu.tsx`: wspólny odnośnik
+- [x] **T-7** `[P]` — `src/components/admin/PowrotDoPanelu.tsx`: wspólny odnośnik
       „‹ Panel administratora" (tekst ze słownika, `fontSize: 12` jak w istniejących), z opcjonalnym
       propem na odstęp — żeby podmiana nie przesuwała układu stron, które go już mają.
       *Gotowe, gdy:* komponent renderuje `a[href="/admin"]` i jest gotowy dla obu grup konsumentów.
 
-- [ ] **T-8** — `src/app/admin/przeglad/page.tsx` (nowa trasa): sesja + **własne** sprawdzenie
+- [x] **T-8** — `src/app/admin/przeglad/page.tsx` (nowa trasa): sesja + **własne** sprawdzenie
       `PERMISSIONS.ADMIN` z `redirect("/")`, jedenaście `count()`, karta buildu, dwie siatki
       liczników, karta sesji i `MetricCard` — treść przeniesiona **1:1** z dzisiejszego `/admin`,
       opakowana w `ModuleView` (`state="ready"`, `breadcrumb` → `/admin`).
       *Gotowe, gdy:* strona pokazuje wszystkie 5 pól buildu, 5 + 6 liczników i 3 pola sesji,
       a użytkownik bez uprawnienia jest odsyłany. (AC-5, AC-10, AC-13)
 
-- [ ] **T-9** — `src/app/admin/page.tsx` — **przepisanie**: sesja + uprawnienie, `ModuleView`
+- [x] **T-9** — `src/app/admin/page.tsx` — **przepisanie**: sesja + uprawnienie, `ModuleView`
       (tytuł „Panel administratora", `state="ready"`) i `SpisNarzedziAdmina`. Znika karta buildu,
       jedenaście `count()`, sekcja konfiguracji, płaska lista, sekcja sesji i ręcznie rysowany `<h1>`.
       *Gotowe, gdy:* `grep` na `prisma.*count(` w tym pliku daje **zero** trafień, a strona ma
