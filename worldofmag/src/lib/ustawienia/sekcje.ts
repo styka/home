@@ -61,25 +61,10 @@ export function znajdzSekcje(id: string): SekcjaUstawien | undefined {
 }
 
 /**
- * Porównanie odporne na brak diakrytyków: „jezyk" ma znaleźć „Język i strefa czasowa".
+ * 110: `bezOgonkow` i `pasujeDoFrazy` wyprowadziły się do `src/lib/ui/szukanie.ts`.
  *
- * Rozkład NFD rozbija „ż" na „z" + znak diakrytyczny, który potem wycinamy — dzięki temu nie
- * potrzeba ani tablicy podmian, ani nowej zależności. `ł` nie jest literą z akcentem (NFD go nie
- * rozkłada), więc dostaje jawną podmianę; bez niej „lacze" nie znalazłoby „Połączenia".
+ * Panel administratora potrzebuje tej samej normalizacji, a funkcje nigdy nie wiedziały nic
+ * o ustawieniach. Re-eksport zostaje, bo importuje je stąd spis ustawień i jego testy — jedno
+ * miejsce definicji, dwa miejsca użycia.
  */
-export function bezOgonkow(tekst: string): string {
-  return tekst
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ł/g, "l")
-    .replace(/Ł/g, "L")
-    .toLocaleLowerCase("pl-PL");
-}
-
-/** Czy sekcja pasuje do frazy — po nazwie, opisie i dodatkowych hasłach. */
-export function pasujeDoFrazy(fraza: string, nazwa: string, opis: string, hasla: string): boolean {
-  const szukane = bezOgonkow(fraza).trim();
-  if (szukane === "") return true;
-  const stog = bezOgonkow(`${nazwa} ${opis} ${hasla}`);
-  return szukane.split(/\s+/).every((slowo) => stog.includes(slowo));
-}
+export { bezOgonkow, pasujeDoFrazy } from "@/lib/ui/szukanie";

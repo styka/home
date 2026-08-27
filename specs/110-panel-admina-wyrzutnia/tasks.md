@@ -24,11 +24,17 @@ wywołania (`/admin` → `/admin/przeglad`), nie treść — to część zadania
 
 ## Faza 2 — Rejestr, wyszukiwanie i bramka
 
-- [ ] **T-1** — `src/lib/ui/szukanie.ts`: przenieś `bezOgonkow` i `pasujeDoFrazy` z
+- [x] **T-1** — `src/lib/ui/szukanie.ts`: przenieś `bezOgonkow` i `pasujeDoFrazy` z
       `src/lib/ustawienia/sekcje.ts` (czyste funkcje, nic nie wiedzą o ustawieniach — plan §5.1).
       `sekcje.ts` importuje je stamtąd; **żadnej kopii**.
-      *Gotowe, gdy:* istniejące testy rejestru ustawień przechodzą bez zmian w asercjach, a `grep`
-      na `normalize("NFD")` daje **jedno** trafienie w `src/`.
+      *Korekta z implementacji (C-54):* w repozytorium była już **druga kopia tej samej funkcji**,
+      pod tą samą nazwą — `bezOgonkow` w `src/lib/nawigacja/szukajCelow.ts` (identyczne ciało,
+      różnica tylko `toLowerCase()` vs `toLocaleLowerCase("pl-PL")`, dla polskiego bez znaczenia).
+      Panel byłby trzecią, więc konsolidujemy obie. Kryterium „jedno trafienie `normalize(\"NFD\")`
+      w `src/`" było błędne — dziewięć innych plików normalizuje NFD w zupełnie innych celach
+      (slugi, klucze tekstu, wyszukiwarka przewodników).
+      *Gotowe, gdy:* istnieje **jedna** definicja `bezOgonkow`/`pasujeDoFrazy` w `src/`, a testy
+      rejestru ustawień (7) i wyszukiwarki celów nawigacji (8) przechodzą bez zmian w asercjach.
 
 - [ ] **T-2** — `src/lib/admin/narzedzia.ts`: typy `NarzedzieAdmina` / `GrupaNarzedzi`, stała
       `GRUPY_NARZEDZI` (7 grup, 24 pozycje + 1 akcja wg tabeli z planu §5.2) i `wszystkieNarzedzia()`.

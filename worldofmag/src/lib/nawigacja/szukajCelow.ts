@@ -1,4 +1,5 @@
 import type { CelGlebiej } from "@/lib/nawigacja/celeModulu";
+import { bezOgonkow } from "@/lib/ui/szukanie";
 
 /** Moduł z jego celami — kształt, na którym pracuje panel szybkiej nawigacji. */
 export interface GalazNawigacji {
@@ -20,29 +21,18 @@ export interface WynikSzukania {
 }
 
 /**
- * 104: dopasowanie frazy **bez znaków diakrytycznych i bez wielkości liter**.
+ * 110: `bezOgonkow` mieszka teraz w `src/lib/ui/szukanie.ts`.
  *
- * To nie jest udogodnienie, tylko warunek działania wyszukiwarki na telefonie. Połowa nazw w Omnii
- * ma ogonki („Zaległe", „Spiżarnia", „Przepływ"), a na klawiaturze telefonu pisze się je dłuższym
- * przytrzymaniem klawisza — więc użytkownik szukający szybko wpisze „zalegle". Porównanie
- * dosłowne dałoby wtedy zero wyników przy nazwie, która jest na ekranie.
+ * Ta sama funkcja istniała w dwóch miejscach naraz — tutaj (dla wyszukiwarki celów nawigacji)
+ * i w rejestrze ustawień z 109. Panel administratora byłby trzecim. Re-eksport zostaje, bo
+ * importują ją stąd konsumenci nawigacji i jej testy.
  *
- * `normalize("NFD")` rozkłada literę na znak bazowy + znak łączący, a zakres `\u0300-\u036f`
- * (blok „Combining Diacritical Marks") te drugie usuwa. Świadomie zakresem, a nie własnością
- * `\p{M}`: ta ostatnia wymaga flagi `u`, której główny `tsconfig` nie dopuszcza przy swoim
- * docelowym standardzie — a zakres pokrywa wszystkie ogonki, jakie mogą wyjść z rozkładu NFD.
- * Polskie „ł" nie ma rozkładu kanonicznego (nie jest „l" z ogonkiem), więc podmieniamy je wprost —
- * bez tego „przeplyw" nie znalazłoby „Przepływ", czyli akurat ten przypadek, dla którego całość
- * powstała.
+ * Powód, dla którego całość powstała, zostaje aktualny: nazwa celu ma ogonki („Zaległe",
+ * „Spiżarnia", „Przepływ"), a na klawiaturze telefonu pisze się je dłuższym przytrzymaniem
+ * klawisza — więc użytkownik szukający szybko wpisze „zalegle", a porównanie dosłowne dałoby zero
+ * wyników przy nazwie, która jest na ekranie.
  */
-export function bezOgonkow(tekst: string): string {
-  return tekst
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ł/g, "l")
-    .replace(/Ł/g, "L")
-    .toLowerCase();
-}
+export { bezOgonkow };
 
 /**
  * Filtruje drzewo nawigacji jedną frazą — **moduły i ich cele naraz**.
