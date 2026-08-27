@@ -130,7 +130,7 @@ czy kosz. `check:actions`, `check:ai-coverage`, `check:cost-badge` sprawdzane w 
       się odróżnić własnej regresji od cudzej (lekcja z 109).
       *Gotowe, gdy:* nowy spec zielony, a liczba czerwonych w pozostałych nie rośnie.
 
-- [ ] **T-16** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
+- [x] **T-16** — Mapowanie każdego AC ze speca na wynik (wejście dla `/verify`).
 
 - [x] **T-17** — Wpis do `doświadczenia.md` (C-51): osierocona trasa `/admin/llm` bez odnośnika
       z żadnego miejsca w aplikacji i lekcja, dlaczego kompletności pilnuje **bramka**, a nie lista
