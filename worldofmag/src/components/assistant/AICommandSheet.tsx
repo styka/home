@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, CheckCircle, XCircle, X, ChevronDown, ChevronUp, ArrowRight, ArrowUp,
-  History, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Brain, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
+  MessagesSquare, Plus, FileText, Trash2, ListChecks, Square, RefreshCw, Copy, Check, Pencil, Wand2, RotateCcw, ImagePlus, Camera, Settings, Volume2, Mic, MicOff, AudioLines, Bug, Brain, Gauge, Zap, Rocket, CornerUpLeft, SlidersHorizontal,
   MoreVertical, Bookmark, BookmarkX, PanelRightOpen, PanelRightClose,
 } from "lucide-react";
 import { SmartTextarea } from "@/components/ui/SmartTextarea";
@@ -1891,7 +1891,10 @@ export function AICommandSheet({
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                 <button onClick={resetConversation} title="Nowa rozmowa" aria-label="Nowa rozmowa" style={headerBtn}><Plus size={16} /></button>
-                <button onClick={() => togglePanel("history")} title={showHistory ? "Zamknij historię (wróć do rozmowy)" : "Historia rozmów"} aria-label={t("historiaRozmow")} aria-expanded={showHistory} style={{ ...headerBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><History size={16} /></button>
+                {/* 107 (AC-30): nazwa NADRZĘDNA wobec obu list. „Historia sesji" nazywała całość nazwą
+                    jednej z dwóch list, które są w środku — a od 106 są tam „Zapisane" i „Historia".
+                    Ikona zegara mówiła to samo co ta myląca nazwa, więc idzie za nią. */}
+                <button onClick={() => togglePanel("history")} title={showHistory ? t("zamknijRozmowy") : t("rozmowy")} aria-label={showHistory ? t("zamknijRozmowy") : t("rozmowy")} aria-expanded={showHistory} style={{ ...headerBtn, color: showHistory ? "var(--accent-blue)" : "var(--text-muted)" }}><MessagesSquare size={16} /></button>
                 <button
                   ref={wiecejBtnRef}
                   onClick={() => {
@@ -2179,7 +2182,17 @@ export function AICommandSheet({
                 jak od dawna robi to historia. Wcześniej wciskały się NAD wątek jako `flex-shrink-0`,
                 więc nie miały własnego przewijania i dłuższa treść była po prostu ucinana. */}
             {showHistory ? (
-              <div className="flex-1 overflow-y-auto px-3 py-3" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              // 107 (AC-29): przełącznik WYCHODZI z obszaru przewijania.
+              //
+              // Do 106 stał w środku listy jako jej pierwsze dziecko, więc przewijał się razem z nią
+              // — przy kilkunastu rozmowach znikał z ekranu, czyli **stan wyboru przestawał być
+              // widoczny dokładnie wtedy, gdy jest potrzebny**. To ta sama wada, którą 100 usunęło
+              // z Wiadomości zamieniając menu ⋮ na segmenty: wtedy stan siedział w zamkniętej
+              // warstwie, tu wyjeżdżał poza ekran. `min-h-0` na opakowaniu jest wymogiem, nie
+              // ozdobą — bez niego dziecko flexboksa ma `min-height: auto` i wewnętrzny kontener
+              // przestaje być kontenerem przewijania (wpis z 2026-08-27 w `doświadczenia.md`).
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex-shrink-0 px-3 pt-3">
                 {/* 106: dwie listy rozmów jako PRZEŁĄCZNIK SEGMENTOWY, nie pozycje w menu.
                     Wprost z przebiegu 100: segment mówi jednocześnie, co jest dostępne (widać obie
                     listy) i co jest wybrane (widać zaznaczenie) — menu nie mówi ani jednego, ani
@@ -2196,8 +2209,9 @@ export function AICommandSheet({
                     { id: "zapisane", etykieta: t("listaZapisane"), licznik: conversations.zapisane.length, wylaczona: false },
                     { id: "historia", etykieta: t("listaHistoria"), licznik: conversations.historia.length, wylaczona: false },
                   ]}
-                  className="mb-2"
                 />
+                </div>
+                <div className="flex-1 overflow-y-auto px-3 pb-3 pt-2" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {widocznaLista.length === 0 && (
                   <p style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center", marginTop: 16, lineHeight: 1.5 }}>
                     {listaRozmow === "zapisane" ? t("brakZapisanychRozmowOpis") : t("brakZapisanychRozmow")}
@@ -2237,6 +2251,7 @@ export function AICommandSheet({
                     <button onClick={() => removeConversation(c.id)} title={t("usun")} aria-label={t("usunRozmowe")} style={{ ...iconBtn, color: "var(--text-muted)" }}><Trash2 size={14} /></button>
                   </div>
                 ))}
+                </div>
               </div>
             ) : headerPanel !== "none" ? null : (
               <div

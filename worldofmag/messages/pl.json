@@ -677,7 +677,9 @@
         "pokazWObszarzeTresci": "Pokaż asystenta w obszarze treści",
         "pokazWOknie": "Pokaż asystenta w oknie",
         "asystentWObszarzeTresci": "Asystent AI — obszar treści",
-        "poziomPracyAsystenta": "Poziom pracy asystenta"
+        "poziomPracyAsystenta": "Poziom pracy asystenta",
+        "rozmowy": "Rozmowy",
+        "zamknijRozmowy": "Zamknij rozmowy (wróć do wątku)"
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",

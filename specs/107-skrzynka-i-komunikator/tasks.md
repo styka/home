@@ -15,7 +15,7 @@
 
 ## Faza 0 — Panel rozmów asystenta (najmniejsza samodzielna całość, zero schematu)
 
-- [ ] **T-1** — `AICommandSheet.tsx`: `PrzelacznikSegmentowy` wychodzi z kontenera
+- [x] **T-1** — `AICommandSheet.tsx`: `PrzelacznikSegmentowy` wychodzi z kontenera
   `flex-1 overflow-y-auto` i staje się nieprzewijanym blokiem nad listą; ikona nagłówka `History` →
   `MessagesSquare`, a jej `title`/`aria-label` idą przez `t()` na nadrzędne **„Rozmowy"**. Teksty
   do `messages/pl.json`.
