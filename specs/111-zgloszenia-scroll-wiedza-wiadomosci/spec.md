@@ -128,8 +128,11 @@ wygenerowane streszczenie — i każe mu tę pracę wykonać ponownie.
 - [ ] **AC-16** — Given ekran szerokości 360 px, when użytkownik otwiera moduł Wiadomości, then żaden
       pasek nie wymusza **poziomego przewijania strony**, a każdy cel dotyku ma co najmniej 44 px
       wysokości.
-- [ ] **AC-17** — Given użytkownik chce zarządzać portalami, when szuka listy źródeł, then znajduje
-      ją w **pasku nawigacji modułu** (obok filtra portali), a nie jako osobną zakładkę widoku.
+- [ ] **AC-17** — Given użytkownik chce zarządzać portalami, when szuka listy źródeł, then dochodzi
+      do niej z **paska nawigacji modułu** — z panelu filtra portali, jednym dotknięciem — a nie
+      z osobnej zakładki widoku. (Doprecyzowane na etapie `/plan`, C-54: zarządzanie mieszka w tym
+      samym panelu, co filtr, bo obie kontrolki dotyczą jednego pojęcia „portale"; drugi przycisk
+      obok filtra powtarzałby to samo słowo.)
 
 **Streszczenia**
 
