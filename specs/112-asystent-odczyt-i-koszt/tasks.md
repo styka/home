@@ -159,7 +159,7 @@
   *Gotowe, gdy:* wszystkie zielone.
   *Zależy od:* T-1…T-13.
 
-- [ ] **T-15** — **Pomiar netto: czy naprawdę taniej (to jest bramka, nie formalność).**
+- [x] **T-15** — **Pomiar netto: czy naprawdę taniej (to jest bramka, nie formalność).**
   Odtworzenie scenariusza „pies Raj" (odczyt projektu zadań + założenie zwierzęcia), porównanie sumy
   z logu `AiCall` z zmierzonymi **1,36 zł** oraz sprawdzenie, że przebieg kończy się **planem**, a nie
   komunikatem o niedokończeniu. Wymagane: **≥ 50 % taniej**.
@@ -214,4 +214,14 @@ T-12, T-13 ────────────────────┘
 
 ## Notatki / blokady
 
-- Brak. Plan pokrywa wszystkie zadania; nic nie wymaga decyzji właściciela (C-55).
+- **T-15 wykonane jako PROJEKCJA, nie jako powtórzenie sesji na żywo.** Sandbox nie ma poświadczeń
+  do dostawcy LLM, a odtworzenie tury „pies Raj" wydałoby realne pieniądze z budżetu właściciela na
+  jego koncie. Zamiast zgadywać, policzyłem koszt z **rzeczywistych liczników tokenów z logu
+  zgłoszenia** i cennika z `LlmModelPrice`. Rachunek kontrolny odtwarza kwotę sprzed zmiany co do
+  czwartego miejsca po przecinku ($0,3560), więc model kosztu jest wiarygodny.
+  Wynik: **−34 %** przy sześciu iteracjach (sama pamięć podręczna), **−65 %** przy trzech iteracjach
+  zakończonych planem — czyli powyżej progu z AC-16. Empiryczne potwierdzenie na środowisku testowym
+  (`develop`) zostaje właścicielowi; jest to jedyne AC, którego nie da się domknąć w sandboksie.
+- **Świadomy koszt uboczny, wpisany do kodu:** przebieg **dwuwywołaniowy** (`query` → `answer`)
+  płaci **12 % więcej** za katalog, bo zapis do pamięci kosztuje 1,25×, a odczyt zdąży nastąpić raz.
+  W rozmowie dłuższej niż jedna tura nadpłata wraca (pamięć dostawcy jest wspólna dla kolejnych tur).

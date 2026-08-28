@@ -24,9 +24,22 @@
  *  - **wywołanie domykające przebieg: NIE.** Po nim nic już nie nastąpi, więc zapłacilibyśmy 1,25×
  *    za pamięć, której nikt nie odczyta. W zgłoszonej sesji tak wyrzucono 11 860 tokenów.
  *
- * Rachunek dla przebiegu 6-wywołaniowego: 6,0× ceny wejścia za katalog → 2,65×
- * (1,0 + 1,25 zapis + 4 × 0,1 odczyt).
+ * Rachunek za katalog, w jednostkach ceny wejścia (zmierzony katalog: 10 584 tokeny):
  *
+ * | wywołań w przebiegu | przed | po   |        |
+ * |---------------------|-------|------|--------|
+ * | 1                   | 1,00  | 1,00 |  bez zmian |
+ * | 2                   | 2,00  | 2,25 | **+12 %** |
+ * | 3                   | 3,00  | 2,35 |  −22 % |
+ * | 6                   | 6,00  | 2,65 |  −56 % |
+ *
+ * **Świadomy koszt: przebieg dwuwywołaniowy (`query` → `answer`) płaci 12 % więcej za katalog** —
+ * zapis kosztuje 1,25×, a odczytać go zdąży tylko raz. Przyjmujemy to, bo (a) przebiegi 3+ są tymi
+ * drogimi i tam oszczędność sięga połowy, (b) pamięć dostawcy żyje ~5 minut i jest wspólna dla
+ * kolejnych TUR tej samej rozmowy, więc zapis z drugiego wywołania odczytuje pierwsze wywołanie
+ * następnej tury — w rozmowie dłuższej niż jedna tura nadpłata wraca.
+ *
+
  * @param numerWywolania numer wywołania modelu w przebiegu, licząc od 1
  * @param czyDomykajace czy to ostatnie wywołanie przebiegu (podsumowanie/dokończenie)
  */
