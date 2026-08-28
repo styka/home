@@ -1,7 +1,7 @@
 # Zadania: Asystent — kompletny odczyt, domknięcie tury i uczciwy koszt
 
 - **Plan:** ./plan.md (112-asystent-odczyt-i-koszt)
-- **Status:** todo
+- **Status:** in-progress
 - **Data:** 2026-08-28
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -138,7 +138,7 @@
 
 ## Faza 4 — Dokumentacja rachunku, bramki, domknięcie
 
-- [ ] **T-12** `[P]` — **Raport z rozbiciem rachunku (migracja danych).**
+- [x] **T-12** `[P]` — **Raport z rozbiciem rachunku (migracja danych).**
   `prisma/migrations/0271_raport_koszt_tury_asystenta/migration.sql` — idempotentny `INSERT INTO
   "Report"` (dollar-quoting, `gen_random_uuid()::text`, `ON CONFLICT ("slug") DO NOTHING`), slug
   **`asystent-koszt-tury-rozbicie`**. Treść: sposób liczenia (wejście / wyjście / zapis 1,25× /
@@ -147,12 +147,12 @@
   *Gotowe, gdy:* `npm run check:migrations` zielony; `grep -E "^(DROP|ALTER)"` na nowej migracji nic
   nie zwraca (C-15); slug nie koliduje z żadnym istniejącym raportem. → **AC-17**
 
-- [ ] **T-13** — **Przegląd diffu pod kątem AC-18.**
+- [x] **T-13** — **Przegląd diffu pod kątem AC-18.**
   Potwierdź, że **nie ruszono** `AiCostBadge`, `visibleUsage` ani `costVisibility` — poprawiamy
   zużycie, nie prezentację kwot.
   *Gotowe, gdy:* `git diff` na tych plikach jest pusty, i to jest zapisane w `verify.md`. → **AC-18**
 
-- [ ] **T-14** — **Bramki (C-50, lokalny Postgres — nigdy prod, C-13).**
+- [x] **T-14** — **Bramki (C-50, lokalny Postgres — nigdy prod, C-13).**
   Kolejno: `check:migrations` · `check:actions` · `check:ai-coverage` · `check:cost-badge` ·
   `check:i18n` · `check:logs` · `test:unit` · `tsc --noEmit -p tsconfig.test.json` ·
   `next lint --dir src` · `next build`. **Zatrzymujemy się przed `scripts/migrate.js`.**
@@ -168,7 +168,7 @@
   (C-54), zamiast zostawić rozjazd „kod robi X, spec mówi Y". → **AC-16**
   *Zależy od:* T-14.
 
-- [ ] **T-16** — **Ślad w dokumentacji projektu.**
+- [x] **T-16** — **Ślad w dokumentacji projektu.**
   `CLAUDE.md` — akapit o 112 w sekcji asystenta (co się zmieniło w budżecie odczytu, pamięci
   podręcznej i domykaniu tury). `doświadczenia.md` — lekcja wg C-51: **dwa zgłoszenia o różnych
   objawach (cena / niedokończone zadanie) miały jedną przyczynę**, a trzy założenia z opisów
