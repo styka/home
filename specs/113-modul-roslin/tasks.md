@@ -1,7 +1,7 @@
 # Zadania: Moduł Rośliny — od parapetu do hektara
 
 - **Plan:** ./plan.md (113-modul-roslin) · **Spec:** ./spec.md · **Badania:** ./badania.md
-- **Status:** done
+- **Status:** in-progress (zawrót z `/verify` — Faza 6)
 - **Data:** 2026-08-28
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami
@@ -204,6 +204,35 @@
 - [x] **T-46** — **Mapowanie AC → wynik** jako wejście do `/verify`.
 - [x] **T-47** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem.
 
+## Faza 6 — Domknięcie braków z weryfikacji (C-54: zawrót z `/verify`)
+
+> **Jedna przyczyna wszystkich dziewięciu pozycji: warstwa serwera jest kompletna, a widoki jej nie
+> wołają.** Osiem guardowanych, sklasyfikowanych funkcji nie ma konsumenta — czyli dla użytkownika
+> nie istnieje (**C-35**: „gotowe znaczy WPIĘTE"). Bramki tego nie złapały, bo pytają o poprawność
+> podłączenia do platformy, nie o dostępność funkcji. Żaden z braków nie wynika z błędnego speca ani
+> planu, więc poprawka idzie wprost w kod.
+
+- [ ] **T-48** — **Harmonogram przy nowej roślinie.** `createPlant` zakłada zadanie opieki
+      (podlewanie) i liczy jego pierwszy termin regułą dziedzinową. → **AC-8**
+      *Gotowe, gdy:* test integracyjny potwierdza, że po dodaniu rośliny istnieje zadanie z terminem
+      i **niepustym uzasadnieniem**.
+- [ ] **T-49** — **Lokalizacja pogodowa przestrzeni.** Wybór lokalizacji (z kontraktu Pogody)
+      w ustawieniach przestrzeni — slot `settings` widoku, nie zakładka (C-33). → **AC-11**
+      *Gotowe, gdy:* zapis ustawia `weatherLocationId`, a agenda pokazuje uzasadnienie z pogodą.
+- [ ] **T-50** `[P]` — **Zdjęcie we wpisie dziennika.** → **AC-13**
+- [ ] **T-51** — **Zbiór i trzy wyjścia.** Formularz zbioru w szczególe rośliny + przyciski „do
+      spiżarni", „zapisz koszt", „dopisz do zakupów". → **AC-15**
+      *Gotowe, gdy:* każdy przycisk woła kontrakt obcego modułu, a druga próba wysłania do spiżarni
+      nie tworzy drugiej pozycji.
+- [ ] **T-52** `[P]` — **Własny gatunek** w widoku katalogu. → **AC-17**
+- [ ] **T-53** — **Rozpoznanie ze zdjęcia + „zaplanuj zalecany zabieg".** Przyjęcie propozycji
+      wypełnia gatunek rośliny; zalecenie z `zabieg` zakłada zadanie opieki. → **AC-18, AC-19**
+- [ ] **T-54** — **Plan sezonu → Zadania**, formularz zabiegu z polami ewidencji, ostrzeżenie
+      płodozmianowe przy zakładaniu uprawy. → **AC-20, AC-24, AC-26**
+      *Gotowe, gdy:* pozycja planu tworzy zadanie przez kontrakt Zadań (usuwa też rozjazd wobec
+      planu §6.3), zapis zabiegu zwraca listę braków, a ostrzeżenie jest OSTRZEŻENIEM, nie blokadą.
+- [ ] **T-55** — Ponowny przebieg bramek + testów, aktualizacja `verify.md`.
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania
@@ -211,20 +240,20 @@
 | AC | Zadania | AC | Zadania |
 |---|---|---|---|
 | AC-1 | T-11, T-23 | AC-16 | T-16, T-27 |
-| AC-2 | T-7, T-24 | AC-17 | T-16, T-27 |
-| AC-3 | T-7, T-24 | AC-18 | T-33 |
-| AC-4 | T-12 | AC-19 | T-33 |
-| AC-5 | T-12, T-25 | AC-20 | T-34 |
+| AC-2 | T-7, T-24 | AC-17 | T-16, T-27, **T-52** |
+| AC-3 | T-7, T-24 | AC-18 | T-33, **T-53** |
+| AC-4 | T-12 | AC-19 | T-33, **T-53** |
+| AC-5 | T-12, T-25 | AC-20 | T-34, **T-54** |
 | AC-6 | T-12, T-25 | AC-21 | T-34 |
 | AC-7 | T-13 | AC-22 | T-35 |
-| AC-8 | T-5, T-14 | AC-23 | T-36, T-37, T-43 |
-| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28 |
+| AC-8 | T-5, T-14, **T-48** | AC-23 | T-36, T-37, T-43 |
+| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, **T-54** |
 | AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28 |
-| AC-11 | T-5, T-14 | AC-26 | T-6 |
+| AC-11 | T-5, T-14, **T-49** | AC-26 | T-6, **T-54** |
 | AC-12 | T-38, T-39 | AC-27 | T-21 |
-| AC-13 | T-15, T-25 | AC-28 | T-10, T-29, T-42 |
+| AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42 |
 | AC-14 | T-15, T-25 | AC-29 | T-40 |
-| AC-15 | T-17 | AC-30 | T-44 |
+| AC-15 | T-17, **T-51** | AC-30 | T-44 |
 
 **Żaden AC nie został bez pokrycia.**
 
