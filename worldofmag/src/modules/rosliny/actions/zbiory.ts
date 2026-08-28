@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
-import { addPantryItem } from "@/modules/kitchen/contract";
+import { addPantryItem, deletePantryItem } from "@/modules/kitchen/contract";
 import { resolveOrCreateList, addItemStructured } from "@/modules/shopping/contract";
 import { bookAutoExpense } from "@/modules/portfel/contract";
 import { zakresPrzestrzeni } from "../lib/sharingGuard";
@@ -121,6 +121,13 @@ export async function recordHarvest(data: {
  *
  * Idempotentnie po `pantryItemId`: drugie kliknięcie nie tworzy drugiej pozycji. Bez tego
  * przypadkowy dublet trzeba by odkręcać w innym module niż ten, w którym powstał.
+ *
+ * **Sam odczyt `pantryItemId` na to nie wystarcza** — sprawdzenie i zapis to dwa kroki, a między
+ * nimi mieści się drugie kliknięcie (podwójny tap na telefonie, dwie otwarte karty). Oba przeszłyby
+ * warunek i oba założyłyby pozycję w spiżarni. Zajęcie zbioru robimy więc **warunkowym UPDATE**
+ * (`updateMany` z `pantryItemId: null`), czyli operacją, którą baza rozstrzyga atomowo: przegrany
+ * wątek dostaje `count === 0`, **sprząta swoją nadmiarową pozycję** i zwraca tę, która wygrała.
+ * Bez tego sprzątania idempotencja byłaby pozorna — dublet zostałby w Kuchni, tylko bez wskaźnika.
  */
 export async function harvestToPantry(
   eventId: string,
@@ -152,10 +159,23 @@ export async function harvestToPantry(
     expiresAt: opts?.expiresAt ?? null,
   });
 
-  await prisma.plantCareEvent.update({
-    where: { id: eventId },
+  const zajete = await prisma.plantCareEvent.updateMany({
+    where: { id: eventId, pantryItemId: null },
     data: { pantryItemId: pozycja.id },
   });
+
+  if (zajete.count === 0) {
+    // Ktoś zdążył pierwszy. Nasza pozycja jest zbędna — kasujemy ją i zwracamy tę zapisaną,
+    // żeby wywołujący dostał identyfikator, który naprawdę wisi przy tym zbiorze.
+    await deletePantryItem(pozycja.id).catch(() => {});
+    const aktualne = await prisma.plantCareEvent.findUnique({
+      where: { id: eventId },
+      select: { pantryItemId: true },
+    });
+    revalidatePath("/kitchen/pantry");
+    if (!aktualne?.pantryItemId) throw new Error("Nie udało się zapisać zbioru w spiżarni");
+    return { pantryItemId: aktualne.pantryItemId };
+  }
 
   revalidatePath(`/rosliny/${zdarzenie.spaceId}`);
   revalidatePath("/kitchen/pantry");

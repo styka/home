@@ -20,7 +20,7 @@ import {
 } from "../actions/analiza";
 import { updatePlant } from "../actions/rosliny";
 import { addSpeciesFromCatalog } from "../actions/gatunki";
-import { addToShoppingList, bookCareCost, harvestToPantry, recordHarvest } from "../actions/zbiory";
+import { addToShoppingList, bookCareCost, harvestToPantry, recordHarvest, type ZbiorDTO } from "../actions/zbiory";
 import type { ZdarzenieDTO } from "../actions/opieka";
 import { etykietaFazy } from "../lib/fenologia";
 import type { RodzajPomiaru, StatusRosliny, TrybPrzestrzeni } from "../lib/typy";
@@ -41,12 +41,14 @@ export function RoslinaSzczegol({
   dziennik: poczatkowyDziennik,
   pomiary: poczatkowePomiary,
   zdarzenia,
+  zbiory: poczatkoweZbiory,
   tryb,
 }: {
   roslina: RoslinaSzczegolDTO;
   dziennik: WpisDziennikaDTO[];
   pomiary: PomiarDTO[];
   zdarzenia: ZdarzenieDTO[];
+  zbiory: ZbiorDTO[];
   tryb: TrybPrzestrzeni;
 }) {
   const t = useTranslations("modules.rosliny.RoslinaSzczegol");
@@ -67,8 +69,16 @@ export function RoslinaSzczegol({
   const [zdjecieWpisu, setZdjecieWpisu] = useState("");
   const [plon, setPlon] = useState("");
   const [jednostkaPlonu, setJednostkaPlonu] = useState("kg");
-  const [koszt, setKoszt] = useState("");
-  const [ostatniZbior, setOstatniZbior] = useState<{ id: string; wSpizarni: boolean } | null>(null);
+  /**
+   * Koszt i „do spiżarni" przypięte do KONKRETNEJ pozycji listy, nie do stanu sesji.
+   *
+   * Wcześniej obie akcje działały wyłącznie na zbiorze zapisanym w tej samej wizycie: po odświeżeniu
+   * strony nie było czego wysłać do spiżarni, choć zbiory leżały w bazie. Widok pokazywał wtedy
+   * funkcję, która istniała tylko dla świeżo wpisanego wiersza — a to jest gorsze niż jej brak, bo
+   * użytkownik dowiaduje się o ograniczeniu dopiero wtedy, gdy funkcja mu znika.
+   */
+  const [koszt, setKoszt] = useState<Record<string, string>>({});
+  const [zbiory, setZbiory] = useState<ZbiorDTO[]>(poczatkoweZbiory);
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [blad, setBlad] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -136,28 +146,38 @@ export function RoslinaSzczegol({
     if (!Number.isFinite(ilosc) || ilosc <= 0) return;
     startTransition(async () => {
       const { id } = await recordHarvest({ plantId: roslina.id, quantity: ilosc, quantityUnit: jednostkaPlonu });
-      setOstatniZbior({ id, wSpizarni: false });
+      setZbiory((lista) => [
+        {
+          id,
+          occurredAt: new Date().toISOString(),
+          plantId: roslina.id,
+          plantName: roslina.name,
+          quantity: ilosc,
+          quantityUnit: jednostkaPlonu,
+          note: null,
+          wSpizarni: false,
+        },
+        ...lista,
+      ]);
       setPlon("");
       setKomunikat(t("zbiorZapisany"));
     });
   }
 
-  function doSpizarni() {
-    if (!ostatniZbior) return;
+  function doSpizarni(id: string) {
     startTransition(async () => {
-      await harvestToPantry(ostatniZbior.id);
-      setOstatniZbior({ ...ostatniZbior, wSpizarni: true });
+      await harvestToPantry(id);
+      setZbiory((lista) => lista.map((z) => (z.id === id ? { ...z, wSpizarni: true } : z)));
       setKomunikat(t("wSpizarni"));
     });
   }
 
-  function zapiszKoszt() {
-    if (!ostatniZbior) return;
-    const kwota = Number(koszt.replace(",", "."));
+  function zapiszKoszt(id: string) {
+    const kwota = Number((koszt[id] ?? "").replace(",", "."));
     if (!Number.isFinite(kwota) || kwota <= 0) return;
     startTransition(async () => {
-      await bookCareCost({ eventId: ostatniZbior.id, amount: kwota });
-      setKoszt("");
+      await bookCareCost({ eventId: id, amount: kwota });
+      setKoszt((k) => ({ ...k, [id]: "" }));
       setKomunikat(t("kosztZapisany"));
     });
   }
@@ -530,25 +550,40 @@ export function RoslinaSzczegol({
             {t("zapiszZbior")}
           </button>
         </div>
-        {ostatniZbior && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Trzy wyjścia z modułu — każde przez kontrakt innego modułu, żadne zbudowane u siebie. */}
-            <button type="button" style={przycisk} onClick={doSpizarni} disabled={pending || ostatniZbior.wSpizarni}>
-              {ostatniZbior.wSpizarni ? t("juzWSpizarni") : t("doSpizarni")}
-            </button>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={koszt}
-              onChange={(e) => setKoszt(e.target.value)}
-              placeholder={t("kosztPlaceholder")}
-              aria-label={t("kosztEtykieta")}
-              style={{ ...pole, flex: "0 1 110px" }}
-            />
-            <button type="button" style={przycisk} onClick={zapiszKoszt} disabled={pending || !koszt.trim()}>
-              {t("zapiszKoszt")}
-            </button>
-          </div>
+        {zbiory.length > 0 && (
+          <ul style={{ listStyle: "none", margin: "0 0 8px", padding: 0, display: "grid", gap: 10 }}>
+            {zbiory.map((z) => (
+              <li key={z.id} style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 13, color: "var(--text-primary)" }}>
+                  <span style={drobny}>{z.occurredAt.slice(0, 10)}</span>{" "}
+                  {z.quantity ?? "?"} {z.quantityUnit ?? ""}
+                </span>
+                {/* Trzy wyjścia z modułu — każde przez kontrakt innego modułu, żadne zbudowane u siebie. */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <button type="button" style={przycisk} onClick={() => doSpizarni(z.id)} disabled={pending || z.wSpizarni}>
+                    {z.wSpizarni ? t("juzWSpizarni") : t("doSpizarni")}
+                  </button>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={koszt[z.id] ?? ""}
+                    onChange={(e) => setKoszt((k) => ({ ...k, [z.id]: e.target.value }))}
+                    placeholder={t("kosztPlaceholder")}
+                    aria-label={t("kosztEtykieta")}
+                    style={{ ...pole, flex: "0 1 110px" }}
+                  />
+                  <button
+                    type="button"
+                    style={przycisk}
+                    onClick={() => zapiszKoszt(z.id)}
+                    disabled={pending || !(koszt[z.id] ?? "").trim()}
+                  >
+                    {t("zapiszKoszt")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
         <button type="button" style={{ ...przycisk, marginTop: 8 }} onClick={naZakupy} disabled={pending}>
           {t("naZakupy")}
