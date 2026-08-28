@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { roslinaNaDTO, type WierszRosliny } from "../roslina";
+import { bladZmianyStanu, powodWymagany, roslinaNaDTO, statusZakonczony, type WierszRosliny } from "../roslina";
 
 const wiersz = (over: Partial<WierszRosliny> = {}): WierszRosliny => ({
   id: "p1",
@@ -60,4 +60,33 @@ test("liczność przechodzi bez zmiany — także dla partii i powierzchni", () 
 test("nazwa miejsca jest spłaszczana, a jej brak nie wywraca przepisania", () => {
   assert.equal(roslinaNaDTO(wiersz({ place: { name: "Parapet południowy" } })).placeName, "Parapet południowy");
   assert.equal(roslinaNaDTO(wiersz()).placeName, null);
+});
+
+// ─── Zmiana stanu ────────────────────────────────────────────────────────────
+
+test("powodu wymaga WYŁĄCZNIE „padła” — sprzedaż i zbiór mówią same za siebie", () => {
+  assert.equal(powodWymagany("DEAD"), true);
+  assert.equal(powodWymagany("SOLD"), false);
+  assert.equal(powodWymagany("HARVESTED"), false);
+  assert.equal(powodWymagany("ARCHIVED"), false);
+  assert.equal(powodWymagany("ACTIVE"), false);
+});
+
+test("puste i białe znaki nie są przyczyną", () => {
+  assert.ok(bladZmianyStanu("DEAD", null));
+  assert.ok(bladZmianyStanu("DEAD", ""));
+  assert.ok(bladZmianyStanu("DEAD", "   "));
+  assert.equal(bladZmianyStanu("DEAD", "przelana"), null);
+});
+
+test("komunikat mówi, PO CO ta przyczyna — nie tylko że jest wymagana", () => {
+  const komunikat = bladZmianyStanu("DEAD", null);
+  assert.match(String(komunikat), /za rok/);
+});
+
+test("stany zakończone znikają z listy aktywnych, ACTIVE nie", () => {
+  assert.equal(statusZakonczony("ACTIVE"), false);
+  for (const s of ["SOLD", "HARVESTED", "DEAD", "ARCHIVED"] as const) {
+    assert.equal(statusZakonczony(s), true, `${s} powinien być stanem zakończonym`);
+  }
 });

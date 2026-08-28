@@ -1,0 +1,32 @@
+{
+  "wlasciciel": {
+    "przestrzen wlasna: odczyt": "dozwolone",
+    "przestrzen wlasna: edycja": "dozwolone",
+    "roslina wlasna: odczyt": "dozwolone",
+    "roslina wlasna: edycja": "dozwolone",
+    "przestrzen zespolowa: odczyt": "dozwolone",
+    "przestrzen zespolowa: edycja": "dozwolone",
+    "roslina zespolowa: odczyt": "dozwolone",
+    "roslina zespolowa: edycja": "dozwolone"
+  },
+  "czlonek zespolu wlasciciela": {
+    "przestrzen wlasna: odczyt": "odmowa",
+    "przestrzen wlasna: edycja": "odmowa",
+    "roslina wlasna: odczyt": "odmowa",
+    "roslina wlasna: edycja": "odmowa",
+    "przestrzen zespolowa: odczyt": "dozwolone",
+    "przestrzen zespolowa: edycja": "dozwolone",
+    "roslina zespolowa: odczyt": "dozwolone",
+    "roslina zespolowa: edycja": "dozwolone"
+  },
+  "obcy": {
+    "przestrzen wlasna: odczyt": "odmowa",
+    "przestrzen wlasna: edycja": "odmowa",
+    "roslina wlasna: odczyt": "odmowa",
+    "roslina wlasna: edycja": "odmowa",
+    "przestrzen zespolowa: odczyt": "odmowa",
+    "przestrzen zespolowa: edycja": "odmowa",
+    "roslina zespolowa: odczyt": "odmowa",
+    "roslina zespolowa: edycja": "odmowa"
+  }
+}

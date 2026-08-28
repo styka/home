@@ -1,7 +1,7 @@
 # Zadania: Moduł Rośliny — od parapetu do hektara
 
 - **Plan:** ./plan.md (113-modul-roslin) · **Spec:** ./spec.md · **Badania:** ./badania.md
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-28
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami
@@ -187,11 +187,11 @@
 
 ## Faza 5 — Bramki i domknięcie
 
-- [ ] **T-42** — **Tabela prawdy udostępniania** (wzorzec `pets/__tests__/truthTablePets`) dla
+- [x] **T-42** — **Tabela prawdy udostępniania** (wzorzec `pets/__tests__/truthTablePets`) dla
       `rosliny.space` i `rosliny.plant`, porównana komórka po komórce (**C-17**). → **AC-28**
-- [ ] **T-43** — **Test „bypass" asystenta** (wzorzec `assistantBypassPets`) — akcje modułu nie
+- [x] **T-43** — **Test „bypass" asystenta** (wzorzec `assistantBypassPets`) — akcje modułu nie
       omijają guardu. → **AC-23**
-- [ ] **T-44** — **Pełna sekwencja bramek** na lokalnym Postgresie (**C-13 — nigdy prod DB**),
+- [x] **T-44** — **Pełna sekwencja bramek** na lokalnym Postgresie (**C-13 — nigdy prod DB**),
       zatrzymana **przed** `scripts/migrate.js`: `check:migrations`, `check:schema-drift`,
       `check:module-registry`, `check:boundaries`, `check:ui-contract`, `check:route-gating`,
       `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`,
@@ -199,10 +199,10 @@
       (**musi raportować tyle samo tabel co przed zmianą — 4; nowe tabele mają przestrzeń wymaganą,
       więc nie wchodzą do tej listy**), `check:tailwind`, `check:test-types`,
       `tsc --noEmit`, `next lint`, `next build`. → **AC-30**
-- [ ] **T-45** — **Aktualizacja `CLAUDE.md`** — wiersz modułu w tabeli, blok Route Structure, lista
+- [x] **T-45** — **Aktualizacja `CLAUDE.md`** — wiersz modułu w tabeli, blok Route Structure, lista
       uprawnień, sekcja schematu bazy. („Keep this table honest.")
-- [ ] **T-46** — **Mapowanie AC → wynik** jako wejście do `/verify`.
-- [ ] **T-47** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem.
+- [x] **T-46** — **Mapowanie AC → wynik** jako wejście do `/verify`.
+- [x] **T-47** — **Wpis do `doświadczenia.md`** (C-51), jeśli po drodze wyszedł nieoczywisty problem.
 
 ---
 

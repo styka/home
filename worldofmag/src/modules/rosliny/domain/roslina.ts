@@ -1,4 +1,5 @@
 import type { JednostkaLicznosci, StatusRosliny } from "../lib/typy";
+import { STATUSY_ZAKONCZONE } from "../lib/typy";
 
 /**
  * 113 — PRZEPISANIE WIERSZA ROŚLINY NA KSZTAŁT, KTÓRY DOSTAJE PRZEGLĄDARKA.
@@ -75,4 +76,34 @@ export function roslinaNaDTO(r: WierszRosliny): RoslinaDTO {
     photoUrl: r.photoUrl,
     notes: r.notes,
   };
+}
+
+/**
+ * Czy zmiana stanu na `status` wymaga podania powodu.
+ *
+ * **Tylko `DEAD`** — i to jest różnica merytoryczna, nie formalna. „Sprzedana" i „zebrana" mówią
+ * same za siebie; „padła" bez powodu nie mówi nic, a rejestr porażek jest jedyną funkcją w tym
+ * module, która POPRAWIA użytkownika, zamiast tylko go obsługiwać. To z tych powodów powstają
+ * wnioski w rodzaju „trzy razy przelałeś sukulenty".
+ */
+export function powodWymagany(status: StatusRosliny): boolean {
+  return status === "DEAD";
+}
+
+/** Czy stan oznacza byt zakończony — znika z listy aktywnych, zostaje w historii miejsca. */
+export function statusZakonczony(status: StatusRosliny): boolean {
+  return STATUSY_ZAKONCZONE.includes(status);
+}
+
+/**
+ * Sprawdza komplet danych zmiany stanu. Zwraca komunikat błędu albo `null`, gdy jest w porządku.
+ *
+ * Zwracamy KOMUNIKAT, a nie `boolean`: użytkownik ma się dowiedzieć, czego brakuje i po co, a nie
+ * tylko że „nie wolno".
+ */
+export function bladZmianyStanu(status: StatusRosliny, reason: string | null | undefined): string | null {
+  if (powodWymagany(status) && !reason?.trim()) {
+    return "Podaj przyczynę — bez niej wpis nie powie nic, gdy wrócisz do niego za rok";
+  }
+  return null;
 }

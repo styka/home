@@ -8,9 +8,8 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
-import { roslinaNaDTO, type RoslinaDTO } from "../domain/roslina";
+import { bladZmianyStanu, roslinaNaDTO, statusZakonczony, type RoslinaDTO } from "../domain/roslina";
 import type { JednostkaLicznosci, StatusRosliny } from "../lib/typy";
-import { STATUSY_ZAKONCZONE } from "../lib/typy";
 
 /**
  * 113 — BYT ROŚLINNY.
@@ -221,16 +220,15 @@ export async function setPlantStatus(
   const user = await requireAuth();
   await assertPlantAccess(id, user.id, true);
 
-  if (status === "DEAD" && !reason?.trim()) {
-    throw new Error("Podaj przyczynę — bez niej wpis nie powie nic, gdy wrócisz do niego za rok");
-  }
+  const blad = bladZmianyStanu(status, reason);
+  if (blad) throw new Error(blad);
 
   const roslina = await prisma.plant.update({
     where: { id },
     data: {
       status,
       statusReason: reason?.trim() || null,
-      statusAt: STATUSY_ZAKONCZONE.includes(status) ? new Date() : null,
+      statusAt: statusZakonczony(status) ? new Date() : null,
     },
     select: { spaceId: true },
   });
