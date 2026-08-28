@@ -1,13 +1,27 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { ClipboardList, Download, AlertTriangle, Plus } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
-import { exportTreatmentRegister, recordTreatment, type PozycjaRejestruDTO } from "../actions/ewidencja";
+import {
+  exportTreatmentRegister,
+  getTreatmentRegister,
+  recordTreatment,
+  type PozycjaRejestruDTO,
+} from "../actions/ewidencja";
+import { getPlaces } from "../actions/miejsca";
+import { getPlants } from "../actions/rosliny";
 import type { PrzestrzenDTO } from "../actions/przestrzenie";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
+
+/** Dzisiejsza data w formacie pola `<input type="date">` — w strefie użytkownika, nie w UTC. */
+function dzisiaj(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 /**
  * 113 — rejestr zabiegów środkami ochrony roślin (AC-24, AC-25).
@@ -18,6 +32,10 @@ import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "
  *
  * Eksport nie pobiera pliku sam z siebie: zwraca treść, którą użytkownik zapisuje świadomym
  * kliknięciem. Plik startujący automatycznie po wejściu na widok byłby zaskoczeniem, a nie funkcją.
+ *
+ * **Okres jest JEDEN dla widoku i dla eksportu.** Dwa osobne zakresy — jeden do oglądania, drugi do
+ * pobrania — dawałyby plik niezgodny z tym, co użytkownik przed chwilą przeglądał, a to jest właśnie
+ * ten rodzaj rozjazdu, którego przy dokumencie dla kontroli nikt nie zauważy na czas.
  */
 export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: PozycjaRejestruDTO[]; przestrzenie: PrzestrzenDTO[] }) {
   const t = useTranslations("modules.rosliny.Ewidencja");
@@ -25,8 +43,14 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [pozycje, setPozycje] = useState(poczatkowe);
   const [formularz, setFormularz] = useState(false);
+  const [okres, setOkres] = useState<{ od: string; do: string }>({ od: "", do: "" });
+  const [uprawy, setUprawy] = useState<{ id: string; name: string }[]>([]);
+  const [miejsca, setMiejsca] = useState<{ id: string; name: string }[]>([]);
   const [f, setF] = useState({
     spaceId: przestrzenie[0]?.id ?? "",
+    occurredAt: dzisiaj(),
+    plantId: "",
+    placeId: "",
     productName: "",
     permitNumber: "",
     applicationKind: "opryskiwanie",
@@ -40,7 +64,53 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
     withdrawalDays: "",
   });
 
+  const rokBiezacy = new Date().getFullYear();
+  // Pusty wynik ZAWĘŻONEGO okresu to nie jest pusty rejestr: gdyby widok schodził wtedy do stanu
+  // „pusto", zniknąłby wybór okresu i nie byłoby jak z niego wyjść.
+  const pustyRejestr = pozycje.length === 0 && !okres.od && !okres.do;
   const niekompletne = pozycje.filter((p) => p.braki.length > 0).length;
+
+  /**
+   * Uprawy i miejsca wybranej przestrzeni — bez nich kolumny „Uprawa / roślina" i „Miejsce" były
+   * strukturalnie niewypełnialne, a wpis bez przedmiotu zabiegu pokazywał się jako kompletny.
+   *
+   * Pobieramy je dopiero po otwarciu formularza: to dwa zapytania, których widok samego rejestru
+   * nie potrzebuje.
+   */
+  useEffect(() => {
+    if (!formularz || !f.spaceId) return;
+    let aktualne = true;
+    void (async () => {
+      const [r, m] = await Promise.all([getPlants({ spaceId: f.spaceId }), getPlaces(f.spaceId)]);
+      if (!aktualne) return;
+      setUprawy(r.map((x) => ({ id: x.id, name: x.name })));
+      setMiejsca(m.map((x) => ({ id: x.id, name: x.name })));
+    })();
+    return () => {
+      // Przełączenie przestrzeni w trakcie pobierania nie może nadpisać listy nowszym-starszym
+      // wynikiem: użytkownik zobaczyłby uprawy z przestrzeni, której już nie wybrał.
+      aktualne = false;
+    };
+  }, [formularz, f.spaceId]);
+
+  /** Zakres jako daty — pusty koniec obejmuje cały ostatni dzień, nie jego północ. */
+  function zakres(): { od?: Date; do?: Date } {
+    const od = okres.od ? new Date(`${okres.od}T00:00:00`) : undefined;
+    const doo = okres.do ? new Date(`${okres.do}T23:59:59.999`) : undefined;
+    return { ...(od ? { od } : {}), ...(doo ? { do: doo } : {}) };
+  }
+
+  function pokazOkres(od: string, doo: string) {
+    setOkres({ od, do: doo });
+    startTransition(async () => {
+      const z = {
+        ...(od ? { od: new Date(`${od}T00:00:00`) } : {}),
+        ...(doo ? { do: new Date(`${doo}T23:59:59.999`) } : {}),
+      };
+      setPozycje(await getTreatmentRegister(z));
+      setKomunikat(null);
+    });
+  }
 
   function ustaw(klucz: keyof typeof f, wartosc: string) {
     setF((s) => ({ ...s, [klucz]: wartosc }));
@@ -58,6 +128,11 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
     startTransition(async () => {
       const wynik = await recordTreatment({
         spaceId: f.spaceId,
+        // Data zabiegu, a nie data wpisania: oprysk wpisany dwa dni później musi wejść do dokumentu
+        // z dniem, w którym został wykonany.
+        occurredAt: f.occurredAt ? new Date(`${f.occurredAt}T12:00:00`) : undefined,
+        plantId: f.plantId || null,
+        placeId: f.placeId || null,
         productName: f.productName.trim() || null,
         permitNumber: f.permitNumber.trim() || null,
         applicationKind: f.applicationKind.trim() || null,
@@ -73,10 +148,12 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
       setPozycje((lista) => [
         {
           id: wynik.id,
-          occurredAt: new Date().toISOString(),
+          // Data i nazwy pochodzą z ODPOWIEDZI serwera — lista pokazuje wtedy to, co naprawdę
+          // zapisano, a nie to, co widok sobie złożył z własnych pól.
+          occurredAt: wynik.occurredAt,
           spaceName: przestrzenie.find((p) => p.id === f.spaceId)?.name ?? "",
-          plantName: null,
-          placeName: null,
+          plantName: wynik.plantName,
+          placeName: wynik.placeName,
           productName: f.productName.trim() || null,
           permitNumber: f.permitNumber.trim() || null,
           applicationKind: f.applicationKind.trim() || null,
@@ -101,7 +178,7 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
 
   function eksportuj() {
     startTransition(async () => {
-      const wynik = await exportTreatmentRegister();
+      const wynik = await exportTreatmentRegister(zakres());
       const blob = new Blob([wynik.csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -123,7 +200,7 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
           {t("wroc")}
         </Link>
       }
-      state={pozycje.length === 0 ? "empty" : "ready"}
+      state={pustyRejestr ? "empty" : "ready"}
       empty={{ title: t("pustoTytul"), description: t("pustoOpis"), icon: <ClipboardList size={22} /> }}
       actions={
         <>
@@ -143,10 +220,29 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
       {formularz && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>{t("nowyZabieg")}</h2>
-          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("formularzOpis")}</p>
+          <p style={{ ...drobny, margin: "0 0 4px" }}>{t("formularzOpis")}</p>
+          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("uprawaMiejsceOpis")}</p>
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
-            <select value={f.spaceId} onChange={(e) => ustaw("spaceId", e.target.value)} aria-label={t("przestrzenEtykieta")} style={pole}>
+            <select
+              value={f.spaceId}
+              onChange={(e) => {
+                // Zmiana przestrzeni unieważnia wskazania: roślina z poprzedniej przestrzeni nie
+                // należy do tej i serwer i tak by ją odrzucił.
+                setF((st) => ({ ...st, spaceId: e.target.value, plantId: "", placeId: "" }));
+              }}
+              aria-label={t("przestrzenEtykieta")}
+              style={pole}
+            >
               {przestrzenie.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+            </select>
+            <input type="date" value={f.occurredAt} onChange={(e) => ustaw("occurredAt", e.target.value)} aria-label={t("dataEtykieta")} style={pole} />
+            <select value={f.plantId} onChange={(e) => ustaw("plantId", e.target.value)} aria-label={t("uprawaEtykieta")} style={pole}>
+              <option value="">{t("uprawaBrak")}</option>
+              {uprawy.map((r) => (<option key={r.id} value={r.id}>{r.name}</option>))}
+            </select>
+            <select value={f.placeId} onChange={(e) => ustaw("placeId", e.target.value)} aria-label={t("miejsceEtykieta")} style={pole}>
+              <option value="">{t("miejsceBrak")}</option>
+              {miejsca.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
             </select>
             <input type="text" value={f.productName} onChange={(e) => ustaw("productName", e.target.value)} placeholder={t("srodekPlaceholder")} aria-label={t("srodekEtykieta")} style={pole} />
             <input type="text" value={f.permitNumber} onChange={(e) => ustaw("permitNumber", e.target.value)} placeholder={t("zezwoleniePlaceholder")} aria-label={t("zezwolenieEtykieta")} style={pole} />
@@ -165,6 +261,43 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
           </button>
         </section>
       )}
+
+      <section style={sekcja}>
+        <h2 style={naglowekSekcji}>{t("okresTytul")}</h2>
+        <p style={{ ...drobny, margin: "0 0 10px" }}>{t("okresOpis")}</p>
+        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
+          <input
+            type="date"
+            value={okres.od}
+            onChange={(e) => pokazOkres(e.target.value, okres.do)}
+            aria-label={t("okresOd")}
+            style={pole}
+          />
+          <input
+            type="date"
+            value={okres.do}
+            onChange={(e) => pokazOkres(okres.od, e.target.value)}
+            aria-label={t("okresDo")}
+            style={pole}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          {[rokBiezacy, rokBiezacy - 1].map((rok) => (
+            <button
+              key={rok}
+              type="button"
+              style={przycisk}
+              onClick={() => pokazOkres(`${rok}-01-01`, `${rok}-12-31`)}
+              disabled={pending}
+            >
+              {t("okresRok", { rok })}
+            </button>
+          ))}
+          <button type="button" style={przycisk} onClick={() => pokazOkres("", "")} disabled={pending}>
+            {t("okresWyczysc")}
+          </button>
+        </div>
+      </section>
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>{t("obowiazekTytul")}</h2>

@@ -2311,7 +2311,20 @@
         "karencjaEtykieta": "Karencja w dniach",
         "zapiszZabieg": "Zapisz zabieg",
         "zapisanoKompletnie": "Zabieg zapisany — wpis jest kompletny.",
-        "zapisanoZBrakami": "Zabieg zapisany. Do uzupełnienia: {pola}."
+        "zapisanoZBrakami": "Zabieg zapisany. Do uzupełnienia: {pola}.",
+        "okresTytul": "Okres",
+        "okresOpis": "Eksport obejmuje dokładnie ten zakres, a nazwa pliku go powtarza — dokument nie może mówić czego innego niż jego zawartość.",
+        "okresOd": "Od dnia",
+        "okresDo": "Do dnia",
+        "okresRok": "Cały rok {rok}",
+        "okresWyczysc": "Cały rejestr",
+        "okresZastosuj": "Pokaż okres",
+        "dataEtykieta": "Data zabiegu",
+        "uprawaEtykieta": "Uprawa / roślina",
+        "uprawaBrak": "— bez wskazania rośliny —",
+        "miejsceEtykieta": "Miejsce",
+        "miejsceBrak": "— bez wskazania miejsca —",
+        "uprawaMiejsceOpis": "Wskaż uprawę albo miejsce — bez tego dokument ma zabieg bez przedmiotu i kontrola uzna wpis za niekompletny."
       }
     },
     "services": {

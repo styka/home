@@ -257,8 +257,8 @@
       semantyka w trzech miejscach: seed, reguła, test. → **U-4, AC-8**
       *Gotowe, gdy:* gatunek z `winter: 0` nie dostaje w styczniu zadania „podlej za 14 dni",
       a test sprawdza REGUŁĘ z migracji, nie powtarza implementacji.
-- [ ] **T-60** — **Eksport ewidencji za wybrany okres**, z nazwą pliku z faktycznego zakresu. → **U-5, AC-25**
-- [ ] **T-61** — **Formularz zabiegu: data, uprawa i miejsce**; `brakiEwidencji` zgłasza brak
+- [x] **T-60** — **Eksport ewidencji za wybrany okres**, z nazwą pliku z faktycznego zakresu. → **U-5, AC-25**
+- [x] **T-61** — **Formularz zabiegu: data, uprawa i miejsce**; `brakiEwidencji` zgłasza brak
       uprawy/miejsca. → **U-6, AC-24**
 - [ ] **T-62** — **Zawężenie kluczy obcych podanych przez klienta.** `placeId` musi należeć do
       `spaceId`; `speciesId`/`parentId`/`plantId` do zakresu wołającego; `diagnosePlant` zawęża

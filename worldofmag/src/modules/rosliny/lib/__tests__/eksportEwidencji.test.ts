@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { brakiEwidencji, ewidencjaDoCsv, KOLUMNY_EWIDENCJI, type WierszEwidencji } from "../eksportEwidencji";
+import {
+  brakiEwidencji,
+  ewidencjaDoCsv,
+  nazwaPlikuEwidencji,
+  KOLUMNY_EWIDENCJI,
+  type WierszEwidencji,
+} from "../eksportEwidencji";
 
 const wiersz = (over: Partial<WierszEwidencji> = {}): WierszEwidencji => ({
   occurredAt: new Date("2026-05-12T09:30:00Z"),
@@ -39,6 +45,13 @@ test("pozostałe wymagane pola też są zgłaszane", () => {
   for (const pole of ["nazwa środka", "dawka", "powierzchnia", "wykonujący"]) {
     assert.ok(braki.includes(pole), `brak zgłoszenia dla: ${pole}`);
   }
+});
+
+test("zabieg bez uprawy I bez miejsca jest niekompletny — dokument nie zna wtedy przedmiotu zabiegu", () => {
+  assert.ok(brakiEwidencji(wiersz({ plantName: null, placeName: null })).includes("uprawa lub miejsce"));
+  // Jedno z dwojga wystarcza: oprysk całej grządki nazywa uprawę miejscem.
+  assert.deepEqual(brakiEwidencji(wiersz({ plantName: null })), []);
+  assert.deepEqual(brakiEwidencji(wiersz({ placeName: null })), []);
 });
 
 test("dawka zero i puste ciągi liczą się jako brak, nie jako wypełnienie", () => {
@@ -111,4 +124,35 @@ test("pusty rejestr daje sam nagłówek, a nie pusty plik", () => {
 test("brakujące pola zostają puste, a nie jako „null”", () => {
   const csv = ewidencjaDoCsv([wiersz({ permitNumber: null, withdrawalDays: null })]);
   assert.doesNotMatch(csv, /null|undefined/);
+});
+
+// ─── Nazwa pliku ─────────────────────────────────────────────────────────────
+
+test("nazwa pliku bierze się z ZAKRESU podanego przez użytkownika", () => {
+  assert.equal(
+    nazwaPlikuEwidencji({ od: new Date(2026, 3, 1), do: new Date(2026, 3, 30) }, [wiersz()]),
+    "ewidencja-zabiegow-2026-04-01_2026-04-30.csv",
+  );
+});
+
+test("pełny rok kalendarzowy skraca się do samego roku — tak nazywa go wymóg", () => {
+  assert.equal(
+    nazwaPlikuEwidencji({ od: new Date(2026, 0, 1), do: new Date(2026, 11, 31) }, [wiersz()]),
+    "ewidencja-zabiegow-2026.csv",
+  );
+});
+
+test("bez filtra nazwa opisuje daty skrajne WYEKSPORTOWANYCH wierszy, a nie rok bieżący", () => {
+  // To jest ten błąd, przez który w 2028 rolnik dostawał „ewidencja-zabiegow-2028.csv"
+  // z zabiegami z trzech lat.
+  const nazwa = nazwaPlikuEwidencji(undefined, [
+    wiersz({ occurredAt: new Date(2026, 4, 12) }),
+    wiersz({ occurredAt: new Date(2028, 6, 3) }),
+    wiersz({ occurredAt: new Date(2027, 1, 20) }),
+  ]);
+  assert.equal(nazwa, "ewidencja-zabiegow-2026-05-12_2028-07-03.csv");
+});
+
+test("pusty eksport nie zmyśla zakresu", () => {
+  assert.equal(nazwaPlikuEwidencji(undefined, []), "ewidencja-zabiegow-brak-zabiegow.csv");
 });

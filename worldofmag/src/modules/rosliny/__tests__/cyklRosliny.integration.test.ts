@@ -138,7 +138,10 @@ test(
         });
         const { brakiEwidencji } = await import("../lib/eksportEwidencji");
         const zapis = await prisma.plantCareEvent.findUnique({ where: { id: zabieg.id } });
-        assert.deepEqual(brakiEwidencji(zapis!), []);
+        // Nazwę miejsca dokładamy tak, jak robi to akcja: wiersz bazy zna `placeId`, a kompletność
+        // dokumentu rozstrzyga kolumna „Miejsce", czyli nazwa.
+        assert.deepEqual(brakiEwidencji({ ...zapis!, placeName: miejsce.name }), []);
+        assert.deepEqual(brakiEwidencji(zapis!), ["uprawa lub miejsce"]);
         assert.equal(zapis?.withdrawalDays, 35);
       });
 

@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { zakresPrzestrzeni } from "../lib/sharingGuard";
+import { sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
-import { brakiEwidencji, ewidencjaDoCsv, type WierszEwidencji } from "../lib/eksportEwidencji";
+import { brakiEwidencji, ewidencjaDoCsv, nazwaPlikuEwidencji, type WierszEwidencji } from "../lib/eksportEwidencji";
 import { TRYBY_ZAWODOWE } from "../lib/typy";
 
 /**
@@ -31,6 +31,11 @@ export interface ZapisEwidencjiWynik {
   id: string;
   /** Pola, których brakuje do kompletności wobec wymogu. Pusta lista = wpis kompletny. */
   braki: string[];
+  /** Data zabiegu tak, jak została ZAPISANA — nie ta, którą wywołujący sobie założył. */
+  occurredAt: string;
+  /** Nazwy rozstrzygnięte po stronie serwera, żeby lista nie zgadywała, co kryje się pod `plantId`. */
+  plantName: string | null;
+  placeName: string | null;
 }
 
 export async function recordTreatment(data: {
@@ -53,6 +58,9 @@ export async function recordTreatment(data: {
 }): Promise<ZapisEwidencjiWynik> {
   const user = await requireAuth();
   await assertSpaceAccess(data.spaceId, user.id, true);
+  // `plantId`/`placeId` przychodzą z klienta, a klucz obcy sprawdza istnienie wiersza, nie jego
+  // właściciela — bez tego cudza roślina trafiłaby do MOJEJ ewidencji i do dokumentu dla kontroli.
+  await sprawdzWskazania(user.id, { spaceId: data.spaceId, plantId: data.plantId, placeId: data.placeId });
 
   const zdarzenie = await prisma.plantCareEvent.create({
     data: {
@@ -77,13 +85,26 @@ export async function recordTreatment(data: {
       withdrawalDays: data.withdrawalDays ?? null,
       note: data.note ?? null,
     },
-    select: { id: true },
+    // Nazwy czytamy TU, jednym zapytaniem, zamiast kazać widokowi odgadywać je z `plantId`:
+    // to od nich zależy, czy wpis jest kompletny, więc widok pokazujący własną wersję tych nazw
+    // mógłby pokazać „kompletny" tam, gdzie dokument ma pustą kolumnę.
+    select: { id: true, occurredAt: true, plant: { select: { name: true } }, place: { select: { name: true } } },
   });
 
   revalidatePath("/rosliny/ewidencja");
   revalidatePath(`/rosliny/${data.spaceId}`);
 
-  return { id: zdarzenie.id, braki: brakiEwidencji(data as Partial<WierszEwidencji>) };
+  return {
+    id: zdarzenie.id,
+    occurredAt: zdarzenie.occurredAt.toISOString(),
+    plantName: zdarzenie.plant?.name ?? null,
+    placeName: zdarzenie.place?.name ?? null,
+    braki: brakiEwidencji({
+      ...(data as Partial<WierszEwidencji>),
+      plantName: zdarzenie.plant?.name ?? null,
+      placeName: zdarzenie.place?.name ?? null,
+    }),
+  };
 }
 
 export interface PozycjaRejestruDTO {
@@ -178,6 +199,8 @@ export async function getTreatmentRegister(opts?: {
     withdrawalDays: z.withdrawalDays,
     note: z.note,
     braki: brakiEwidencji({
+      plantName: z.plant?.name ?? null,
+      placeName: z.place?.name ?? null,
       productName: z.productName,
       permitNumber: z.permitNumber,
       applicationKind: z.applicationKind,
@@ -223,10 +246,8 @@ export async function exportTreatmentRegister(opts?: {
     note: p.note,
   }));
 
-  const rok = opts?.od ? opts.od.getFullYear() : new Date().getFullYear();
-
   return {
-    nazwaPliku: `ewidencja-zabiegow-${rok}.csv`,
+    nazwaPliku: nazwaPlikuEwidencji(opts, wiersze),
     csv: ewidencjaDoCsv(wiersze),
     liczbaZabiegow: wiersze.length,
     liczbaNiekompletnych: pozycje.filter((p) => p.braki.length > 0).length,
