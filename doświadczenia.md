@@ -4,6 +4,44 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Stan `empty` w `ModuleView` zjada `children`, czyli formularz, którym miało się wyjść z pustego stanu
+**Problem:** Widok ewidencji zabiegów miał `state={pustyRejestr ? "empty" : "ready"}`, przycisk
+„Nowy zabieg" w `actions` (pasek rysuje się zawsze) i formularz w `children`. Konto bez ani jednego
+zabiegu klikało przycisk, `formularz` przechodziło na `true` — **i na ekranie nie zmieniało się
+nic**. `ModuleView` w stanie `empty` renderuje `ViewEmpty` ZAMIAST `children`. Funkcja była więc
+nieosiągalna dokładnie dla tego, kto miał jej użyć jako pierwszy, a bramki i testy tego nie widzą,
+bo kod jest poprawnie wpięty.
+
+**Rozwiązanie:** Warunek stanu pustego uwzględnia otwarty formularz (`&& !formularz`), a `empty`
+dostało `action` prowadzące do tego formularza — stan pusty musi mieć wyjście do jedynej czynności,
+która go usuwa.
+
+**Lekcja:** Zanim ustawisz `state="empty"`, sprawdź, **co jeszcze siedzi w `children`**. Jeżeli
+mieszka tam jakakolwiek droga wyjścia ze stanu pustego (formularz, wybór okresu, filtr), stan pusty
+ją ukryje. Reguła praktyczna: przełącznik widoczności czegoś z `children` musi wchodzić do warunku
+`empty`, a `empty.action` ma uruchamiać dokładnie to, czym użytkownik wychodzi z pustki.
+
+---
+
+## 2026-08-28 — `include: { plants: true }` nie zabiera tego, co wisi pod rośliną — a kaskada zabiera
+**Problem:** Migawka kasowanej przestrzeni roślinnej brała `plants: true`, czyli same wiersze
+`Plant`. Kaskada FK usuwała przy tym również `PlantJournalEntry`, `PlantMeasurement`
+i `PlantHealthEvent` (przez `Plant.space → Cascade`). Pętla przywracająca dzieci czytała wtedy
+`roslina.journal === undefined`, mapowała trzy puste tablice i **nie robiła nic** — no-op, który
+w kodzie wygląda jak pokrycie. Ścieżka „usuń roślinę → przywróć" była naprawiona, ścieżka „usuń
+przestrzeń → przywróć" gubiła rok zdjęć i pomiarów, a wpis kosza — jedyna kopia — jest po
+przywróceniu kasowany.
+
+**Rozwiązanie:** `plants: { include: { journal: true, measurements: true, healthEvents: true } }`.
+
+**Lekcja:** Zasięg migawki dobiera się **od kaskady, nie od nazw relacji, które przyszły do głowy**.
+Przy każdym `recordTrash` przejdź w `schema.prisma` wszystkie `onDelete: Cascade` schodzące od
+kasowanego wiersza — także te dwa poziomy niżej — i sprawdź, czy każdy z nich jest w `include`.
+I druga połowa tej samej lekcji: naprawiając zgłoszony błąd, sprawdź, **czy tej samej dziury nie ma
+piętro wyżej**; poprawka pisana pod listę braków domyka dokładnie to, co na liście stoi.
+
+---
+
 ## 2026-08-28 — Weryfikacja, która sprawdza listę z poprzedniego przebiegu, potwierdza własną poprawkę
 **Problem:** W module Rośliny przebieg weryfikacji nr 1 znalazł osiem guardowanych funkcji bez
 konsumenta w interfejsie (naruszenie C-35). Przebieg nr 2 zaliczył tę regułę jako naprawioną —
