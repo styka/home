@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { addPantryItem } from "@/modules/kitchen/contract";
 import { resolveOrCreateList, addItemStructured } from "@/modules/shopping/contract";
 import { bookAutoExpense } from "@/modules/portfel/contract";
+import { zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertPlantAccess } from "./rosliny";
 import { assertSpaceAccess } from "./przestrzenie";
 
@@ -50,7 +51,7 @@ export async function getHarvests(opts: { spaceId?: string; plantId?: string; li
       kind: "HARVEST",
       ...(opts.plantId ? { plantId: opts.plantId } : {}),
       ...(opts.spaceId ? { spaceId: opts.spaceId } : {}),
-      space: { is: await ownedWhereAsync(user.id) },
+      space: { is: await zakresPrzestrzeni(user.id) },
     },
     select: {
       id: true,

@@ -253,7 +253,7 @@
       `getCareHistory`, `getHarvests` unionują `idZasobowNadanychMi` (wzorzec Notatek). → **U-3, AC-28**
       *Gotowe, gdy:* **tabela prawdy dostaje czwartą osobę — z nadaniem `editor`** — i pokazuje,
       że widzi ona przestrzeń na liście ORAZ jej rośliny.
-- [ ] **T-59** — **Zero w wymaganiach wodnych znaczy „nie planuj podlewania w tej porze".** Jedna
+- [x] **T-59** — **Zero w wymaganiach wodnych znaczy „nie planuj podlewania w tej porze".** Jedna
       semantyka w trzech miejscach: seed, reguła, test. → **U-4, AC-8**
       *Gotowe, gdy:* gatunek z `winter: 0` nie dostaje w styczniu zadania „podlej za 14 dni",
       a test sprawdza REGUŁĘ z migracji, nie powtarza implementacji.

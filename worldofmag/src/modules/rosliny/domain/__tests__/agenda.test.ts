@@ -35,11 +35,25 @@ test("uszkodzony JSON nie wywraca agendy, tylko wraca do domyślnych", () => {
 });
 
 test("brakujące albo bezsensowne pole bierze zapas, nie psując pozostałych", () => {
-  const w = czytajWymaganiaWodne(JSON.stringify({ summer: 3, winter: 0, spring: "abc" }));
+  const w = czytajWymaganiaWodne(JSON.stringify({ summer: 3, spring: "abc", autumn: -4 }));
   assert.equal(w.summer, 3);
-  assert.equal(w.winter, WYMAGANIA_WODNE_DOMYSLNE.winter);
   assert.equal(w.spring, WYMAGANIA_WODNE_DOMYSLNE.spring);
+  // Wartość ujemna to nie „nie podlewamy”, tylko dane bez sensu — stąd zapas.
   assert.equal(w.autumn, WYMAGANIA_WODNE_DOMYSLNE.autumn);
+  assert.equal(w.winter, WYMAGANIA_WODNE_DOMYSLNE.winter);
+});
+
+test("zero jest wartością POPRAWNĄ i przechodzi nietknięte", () => {
+  // Tak zapisuje katalog warzywa jednoroczne: zimą nie rosną, więc nie ma czego planować.
+  // Podstawienie tu wartości domyślnej dawało pomidorowi w styczniu zadanie „podlej za 14 dni”
+  // z uzasadnieniem, które brzmiało wiarygodnie i było zmyślone.
+  const warzywo = czytajWymaganiaWodne(JSON.stringify({ winter: 0, spring: 4, summer: 3, autumn: 5 }));
+  assert.deepEqual(warzywo, { winter: 0, spring: 4, summer: 3, autumn: 5 });
+
+  // Zboża i uprawy polowe mają zera we wszystkich porach — nawadnianie jest tam decyzją
+  // agrotechniczną, a nie odstępem między podlaniami.
+  const zboze = czytajWymaganiaWodne(JSON.stringify({ winter: 0, spring: 0, summer: 0, autumn: 0 }));
+  assert.deepEqual(zboze, { winter: 0, spring: 0, summer: 0, autumn: 0 });
 });
 
 test("poprawny komplet przechodzi bez zmian", () => {

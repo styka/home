@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
 import { assertPlantAccess } from "./rosliny";
 import { przeliczTermin } from "../lib/terminy";
@@ -59,7 +60,7 @@ export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): 
     where: {
       active: true,
       nextDueAt: { lte: horyzont },
-      space: { is: { ...(await ownedWhereAsync(user.id)), ...(opts?.spaceId ? { id: opts.spaceId } : {}) } },
+      space: { is: { ...(await zakresPrzestrzeni(user.id)), ...(opts?.spaceId ? { id: opts.spaceId } : {}) } },
     },
     select: {
       id: true,
@@ -105,6 +106,10 @@ export async function createCareTask(data: {
 
   const tytul = data.title?.trim();
   if (!tytul) throw new Error("Tytuł zadania jest wymagany");
+
+  // Bez tego dałoby się założyć zadanie we WŁASNEJ przestrzeni wskazujące CUDZĄ roślinę, a przez nie
+  // dopisać zdarzenie z jej `plantId` — które trafiłoby potem do kontekstu diagnozy ofiary.
+  await sprawdzWskazania(user.id, { spaceId: data.spaceId, plantId: data.plantId, placeId: data.placeId });
 
   const zadanie = await prisma.plantCareTask.create({
     data: {
@@ -241,7 +246,7 @@ export async function getCareHistory(opts: { spaceId?: string; plantId?: string;
     where: {
       ...(opts.plantId ? { plantId: opts.plantId } : {}),
       ...(opts.spaceId ? { spaceId: opts.spaceId } : {}),
-      space: { is: await ownedWhereAsync(user.id) },
+      space: { is: await zakresPrzestrzeni(user.id) },
     },
     select: {
       id: true,

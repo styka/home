@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
-import { requireRoslinyAccess } from "../lib/sharingGuard";
+import { requireRoslinyAccess, sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
 import { bladZmianyStanu, roslinaNaDTO, statusZakonczony, type RoslinaDTO } from "../domain/roslina";
 import { zalozHarmonogramPodlewania } from "../lib/terminy";
@@ -72,7 +72,10 @@ export async function getPlants(opts?: {
   const rosliny = await prisma.plant.findMany({
     take: SUFIT_LISTY,
     where: {
-      ...(await ownedWhereAsync(user.id)),
+      // Zakres idzie przez PRZESTRZEŃ, nie przez własność rośliny: przestrzeń udostępniona niesie
+      // ze sobą swoje rośliny (dziedziczenie z deklaracji zasobu), a pytanie o własność rośliny
+      // pokazywałoby obdarowanej osobie pustą przestrzeń.
+      space: { is: await zakresPrzestrzeni(user.id) },
       ...(opts?.spaceId ? { spaceId: opts.spaceId } : {}),
       ...(opts?.placeId ? { placeId: opts.placeId } : {}),
       ...(opts?.includeInactive ? {} : { status: "ACTIVE" }),
@@ -136,6 +139,15 @@ export async function createPlant(data: {
   const nazwa = data.name?.trim();
   if (!nazwa) throw new Error("Nazwa rośliny jest wymagana");
 
+  // Wskazania podane przez klienta muszą należeć do jego zakresu — klucz obcy sprawdza istnienie
+  // wiersza, nie właściciela.
+  await sprawdzWskazania(user.id, {
+    spaceId: data.spaceId,
+    placeId: data.placeId,
+    speciesId: data.speciesId,
+    plantId: data.parentId,
+  });
+
   // Liczność nigdy nie schodzi do zera ani poniżej: „zero sztuk" nie jest bytem, tylko usunięciem
   // wyrażonym po cichu inną drogą.
   const ilosc = data.quantity !== undefined && data.quantity > 0 ? data.quantity : 1;
@@ -189,6 +201,7 @@ export async function updatePlant(
 ): Promise<void> {
   const user = await requireAuth();
   await assertPlantAccess(id, user.id, true);
+  await sprawdzWskazania(user.id, { placeId: data.placeId, speciesId: data.speciesId });
 
   const roslina = await prisma.plant.update({
     where: { id },
@@ -310,7 +323,9 @@ export async function deletePlant(id: string): Promise<void> {
   const roslina = await prisma.plant.findUnique({
     where: { id },
     include: {
-      // paginacja: kompletny — snapshot do kosza musi zawierać wszystko, co kaskada usunie.
+      // paginacja: kompletny — migawka musi zawierać wszystko, co kaskada usunie. Dziennik jest tu
+      // treścią, nie metadanymi: to seria zdjęć w czasie, czyli rzecz, dla której użytkownik wraca
+      // do modułu. Wpis kosza kasuje się po przywróceniu, więc czego tu nie ma, tego nie będzie.
       journal: true,
       measurements: true,
       healthEvents: true,

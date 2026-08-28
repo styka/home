@@ -65,6 +65,33 @@ export async function przeliczTermin(taskId: string, od: Date): Promise<WynikTer
 }
 
 /**
+ * Termin podlewania policzony **z danych rośliny**, bez istniejącego zadania opieki.
+ *
+ * Ta sama reguła i ten sam zestaw faktów co w `przeliczTermin` — różni się wyłącznie tym, skąd
+ * bierze gatunek, miejsce i przestrzeń. Istnieje, żeby dało się zapytać „czy ten gatunek jest teraz
+ * w ogóle podlewany na cykl" PRZED założeniem zadania.
+ */
+export async function terminPodlewaniaRosliny(plantId: string, od = new Date()): Promise<WynikTerminu | null> {
+  const roslina = await prisma.plant.findUnique({
+    where: { id: plantId },
+    select: {
+      space: { select: { kind: true, weatherLocationId: true } },
+      place: { select: { sun: true } },
+      species: { select: { waterJson: true } },
+    },
+  });
+  if (!roslina) return null;
+
+  return terminPodlewania({
+    od,
+    wymagania: czytajWymaganiaWodne(roslina.species?.waterJson),
+    naslonecznienie: (roslina.place?.sun as Naslonecznienie) ?? "unknown",
+    prognoza: await prognozaDlaPrzestrzeni(roslina.space.weatherLocationId),
+    podDachem: roslina.space.kind === "home",
+  });
+}
+
+/**
  * Zakłada pierwszy harmonogram podlewania dla nowo dodanej rośliny (AC-8).
  *
  * **Domyślnie podlewanie i tylko ono.** Nawożenie, przycinanie czy przesadzanie zależą od gatunku
@@ -74,6 +101,12 @@ export async function przeliczTermin(taskId: string, od: Date): Promise<WynikTer
  *
  * Cichy brak zamiast wyjątku: nieudane założenie harmonogramu nie może cofnąć **dodania rośliny**,
  * bo to użytkownik właśnie zrobił. Roślina bez harmonogramu jest w porządku; brak rośliny nie.
+ *
+ * **Gatunek, który w tej porze nie jest podlewany na cykl, nie dostaje zadania w ogóle.** Reguła
+ * mówi to wprost (`pomijac`), a my liczymy termin PRZED utworzeniem wiersza — inaczej pomidor dodany
+ * w styczniu albo pszenica dodana kiedykolwiek zaczynałaby życie od zadania „Podlewanie", które
+ * użytkownik musi ręcznie usunąć. Zadanie zakłada się wtedy z chwilą pierwszego odnotowanego
+ * podlania, tą samą ścieżką co każde inne.
  */
 export async function zalozHarmonogramPodlewania(plantId: string): Promise<void> {
   try {
@@ -83,21 +116,23 @@ export async function zalozHarmonogramPodlewania(plantId: string): Promise<void>
     });
     if (!roslina) return;
 
-    const zadanie = await prisma.plantCareTask.create({
+    // Termin liczymy z danych rośliny, zanim powstanie wiersz zadania: `przeliczTermin` potrzebuje
+    // wyłącznie gatunku, miejsca i przestrzeni, a utworzenie zadania „na próbę" i skasowanie go po
+    // odczytaniu `pomijac` zostawiałoby dziurę w numeracji i ślad w dzienniku zmian.
+    const wynik = await terminPodlewaniaRosliny(plantId);
+    if (!wynik || wynik.pomijac) return;
+
+    await prisma.plantCareTask.create({
       data: {
         spaceId: roslina.spaceId,
         plantId,
         placeId: roslina.placeId,
         kind: "WATERING",
         title: "Podlewanie",
+        nextDueAt: wynik.termin,
+        reason: wynik.uzasadnienie,
       },
       select: { id: true },
-    });
-
-    const wynik = await przeliczTermin(zadanie.id, new Date());
-    await prisma.plantCareTask.update({
-      where: { id: zadanie.id },
-      data: { nextDueAt: wynik.termin, reason: wynik.uzasadnienie },
     });
   } catch {
     /* patrz nagłówek: brak harmonogramu jest dopuszczalny, brak rośliny nie */

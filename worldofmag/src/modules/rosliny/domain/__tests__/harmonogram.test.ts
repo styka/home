@@ -9,6 +9,9 @@ import {
   PROG_UPALU_C,
   type PrognozaDobowa,
 } from "../harmonogram";
+import fs from "node:fs";
+import path from "node:path";
+import { czytajWymaganiaWodne } from "../agenda";
 import type { WymaganiaWodne } from "../../lib/typy";
 
 const WYMAGANIA: WymaganiaWodne = { winter: 16, spring: 8, summer: 4, autumn: 12 };
@@ -180,4 +183,88 @@ test("odstęp nigdy nie schodzi do zera ani poniżej", () => {
   });
   assert.ok(wynik.termin.getTime() > od.getTime());
   assert.equal(odstep(od, terminCykliczny(od, 0).termin), 1);
+});
+
+// ─── Zero w wymaganiach wodnych = pora bez cyklu podlewania ──────────────────
+
+test("gatunek z zerem w tej porze nie dostaje terminu podlewania, tylko datę wznowienia", () => {
+  // Pomidor w styczniu. Wcześniej dostawał tu „podlej za 14 dni” — odstęp wzięty z wartości
+  // domyślnych, bo zero traktowano jak brak danych.
+  const od = new Date("2026-01-10");
+  const wynik = terminPodlewania({ od, wymagania: { winter: 0, spring: 4, summer: 3, autumn: 5 } });
+
+  assert.equal(wynik.pomijac, true);
+  // Wznawiamy z początkiem wiosny, a nie „za 14 dni”.
+  assert.equal(wynik.termin.getFullYear(), 2026);
+  assert.equal(wynik.termin.getMonth(), 2);
+  assert.match(wynik.uzasadnienie, /nie jest teraz podlewany/);
+  assert.match(wynik.uzasadnienie, /wiosn/);
+});
+
+test("po jesieni z zerem wznowienie przechodzi na wiosnę NASTĘPNEGO roku", () => {
+  const wynik = terminPodlewania({
+    od: new Date("2026-10-05"),
+    wymagania: { winter: 0, spring: 4, summer: 3, autumn: 0 },
+  });
+  assert.equal(wynik.pomijac, true);
+  assert.equal(wynik.termin.getFullYear(), 2027);
+  assert.equal(wynik.termin.getMonth(), 2);
+});
+
+test("gatunek bez cyklu w żadnej porze mówi to wprost, zamiast wskazywać pustą porę", () => {
+  // Zboża i uprawy polowe: 20 wpisów katalogu ma zera we wszystkich czterech porach.
+  const wynik = terminPodlewania({
+    od: new Date("2026-05-10"),
+    wymagania: { winter: 0, spring: 0, summer: 0, autumn: 0 },
+  });
+  assert.equal(wynik.pomijac, true);
+  assert.match(wynik.uzasadnienie, /decyzją agrotechniczną/);
+});
+
+test("normalny odstęp nie jest oznaczany do pominięcia", () => {
+  assert.equal(terminPodlewania({ od: new Date("2026-07-10"), wymagania: WYMAGANIA }).pomijac, false);
+  assert.equal(terminCykliczny(new Date("2026-07-10"), 14).pomijac, false);
+});
+
+test("ostrzeżenie o przymrozku przechodzi także wtedy, gdy podlewanie pomijamy", () => {
+  const wynik = terminPodlewania({
+    od: new Date("2026-01-10"),
+    wymagania: { winter: 0, spring: 4, summer: 3, autumn: 5 },
+    prognoza: [dzien({ date: "2026-01-11", tMin: -6 })],
+  });
+  assert.equal(wynik.pomijac, true);
+  assert.match(String(wynik.ostrzezenie), /Przymrozek/);
+});
+
+// ─── Reguła kontra dane z migracji ───────────────────────────────────────────
+
+test("każdy wpis katalogu z migracji 0273 daje albo dodatni odstęp, albo jawne pominięcie", () => {
+  // Test celowo czyta DANE Z MIGRACJI zamiast powtarzać je w stałej: gdyby ktoś dopisał do katalogu
+  // gatunek z zerem, a reguła wróciła do podstawiania wartości domyślnej, ten test padnie — a wersja
+  // z własną tablicą przypadków przeszłaby, bo sprawdzałaby wyłącznie samą siebie.
+  const sql = fs.readFileSync(
+    path.join(process.cwd(), "prisma/migrations/0273_katalog_gatunkow/migration.sql"),
+    "utf8",
+  );
+  const wpisy = sql.match(/\{"winter":[^}]*\}/g) ?? [];
+  assert.ok(wpisy.length > 100, `katalog powinien mieć komplet wpisów, znaleziono ${wpisy.length}`);
+
+  let pominiete = 0;
+  for (const wpis of wpisy) {
+    const wymagania = czytajWymaganiaWodne(wpis);
+    for (const miesiac of [0, 4, 6, 9]) {
+      const od = new Date(2026, miesiac, 10);
+      const wynik = terminPodlewania({ od, wymagania });
+      if (wynik.pomijac) {
+        pominiete++;
+        // Nawet pomijając, oddajemy datę w przyszłości — inaczej agenda pokazałaby zaległość.
+        assert.ok(wynik.termin.getTime() > od.getTime(), `${wpis}: termin wznowienia musi być w przyszłości`);
+      } else {
+        assert.ok(wynik.termin.getTime() > od.getTime(), `${wpis}: termin musi być w przyszłości`);
+      }
+    }
+  }
+
+  // Zera w katalogu są regułą, nie pojedynczym wyjątkiem — gdyby ich zabrakło, ten test straciłby sens.
+  assert.ok(pominiete > 0, "katalog powinien zawierać gatunki bez cyklu podlewania w części pór");
 });

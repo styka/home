@@ -61,6 +61,15 @@ export interface WynikTerminu {
   uzasadnienie: string;
   /** Ostrzeżenie niezależne od terminu (np. przymrozek). `null`, gdy nie ma o czym mówić. */
   ostrzezenie: string | null;
+  /**
+   * Czy w tej porze roku gatunek **nie jest podlewany na cykl** (odstęp = 0 w wymaganiach).
+   *
+   * Wywołujący ma wtedy nie zakładać zadania podlewania, a nie „zaplanować je na kiedyś": zboże
+   * nie ma odstępu między podlaniami w ogóle, a warzywo jednoroczne zimą nie rośnie. `termin`
+   * wskazuje wtedy **początek najbliższej pory, w której podlewanie ma sens** — żeby harmonogram
+   * dało się wznowić bez zgadywania daty.
+   */
+  pomijac: boolean;
 }
 
 const DZIEN_MS = 24 * 60 * 60 * 1000;
@@ -95,6 +104,37 @@ const NAZWA_PORY: Record<PoraRoku, string> = {
   summer: "lato",
   autumn: "jesień",
 };
+
+/** Kolejność pór w roku — do wyznaczenia najbliższej, w której podlewanie ma sens. */
+const KOLEJNOSC: PoraRoku[] = ["winter", "spring", "summer", "autumn"];
+
+/** Pierwszy dzień pory roku w danym roku kalendarzowym (podział kwartalny, zgodny z `poraRoku`). */
+function poczatekPory(pora: PoraRoku, rok: number): Date {
+  const miesiac: Record<PoraRoku, number> = { winter: 11, spring: 2, summer: 5, autumn: 8 };
+  return new Date(rok, miesiac[pora], 1);
+}
+
+/**
+ * Najbliższa pora po `od`, w której gatunek ma dodatni odstęp podlewania — razem z jej datą startu.
+ * `null`, gdy gatunek nie jest podlewany na cykl w ŻADNEJ porze (zboża, uprawy polowe).
+ */
+function najblizszaPoraZPodlewaniem(
+  od: Date,
+  wymagania: WymaganiaWodne,
+): { pora: PoraRoku; start: Date } | null {
+  const biezaca = KOLEJNOSC.indexOf(poraRoku(od));
+  for (let krok = 1; krok <= KOLEJNOSC.length; krok++) {
+    const pora = KOLEJNOSC[(biezaca + krok) % KOLEJNOSC.length];
+    if (wymagania[pora] > 0) {
+      // Zima zaczyna się w grudniu, więc wypadając „po" jesieni należy do tego samego roku;
+      // pozostałe pory po przekroczeniu granicy roku trafiają do następnego.
+      const przekroczylismyRok = KOLEJNOSC.indexOf(pora) <= biezaca && pora !== "winter";
+      const start = poczatekPory(pora, od.getFullYear() + (przekroczylismyRok ? 1 : 0));
+      return { pora, start: start > od ? start : poczatekPory(pora, od.getFullYear() + 1) };
+    }
+  }
+  return null;
+}
 
 /**
  * Mnożnik odstępu wynikający z nasłonecznienia MIEJSCA.
@@ -145,8 +185,25 @@ function dzienPrzymrozku(wejscie: WejscieTerminu): PrognozaDobowa | null {
 export function terminPodlewania(wejscie: WejscieTerminu): WynikTerminu {
   const wymagania = wejscie.wymagania ?? WYMAGANIA_WODNE_DOMYSLNE;
   const pora = poraRoku(wejscie.od);
-  const bazowy = Math.max(1, wymagania[pora] ?? WYMAGANIA_WODNE_DOMYSLNE[pora]);
+  const zadeklarowany = wymagania[pora] ?? WYMAGANIA_WODNE_DOMYSLNE[pora];
 
+  // Zero = ten gatunek nie jest w tej porze podlewany na cykl. Zwracamy to wprost, zamiast
+  // podstawiać wartość domyślną i wymyślać termin, którego nikt nie deklarował.
+  if (zadeklarowany <= 0) {
+    const nastepna = najblizszaPoraZPodlewaniem(wejscie.od, wymagania);
+    return {
+      termin: nastepna?.start ?? new Date(wejscie.od.getTime() + 30 * DZIEN_MS),
+      uzasadnienie: nastepna
+        ? `${NAZWA_PORY[pora]} — ten gatunek nie jest teraz podlewany na cykl; wracamy do tego na ${NAZWA_PORY[nastepna.pora]}`
+        : "ten gatunek nie ma cyklu podlewania — nawadnianie jest decyzją agrotechniczną, nie odstępem",
+      ostrzezenie: dzienPrzymrozku(wejscie)
+        ? `Przymrozek ${dzienPrzymrozku(wejscie)!.date} (${Math.round(dzienPrzymrozku(wejscie)!.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`
+        : null,
+      pomijac: true,
+    };
+  }
+
+  const bazowy = Math.max(1, zadeklarowany);
   const powody: string[] = [`${NAZWA_PORY[pora]} — odstęp podstawowy ${bazowy} dni`];
 
   let dni = bazowy * mnoznikSwiatla(wejscie.naslonecznienie);
@@ -179,6 +236,7 @@ export function terminPodlewania(wejscie: WejscieTerminu): WynikTerminu {
     ostrzezenie: mroz
       ? `Przymrozek ${mroz.date} (${Math.round(mroz.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`
       : null,
+    pomijac: false,
   };
 }
 
@@ -197,5 +255,6 @@ export function terminCykliczny(od: Date, coIleDni: number, wejscie?: Pick<Wejsc
     ostrzezenie: mroz
       ? `Przymrozek ${mroz.date} (${Math.round(mroz.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`
       : null,
+    pomijac: false,
   };
 }

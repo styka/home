@@ -177,7 +177,9 @@ export async function diagnosePlant(data: { plantId: string; zdjecieUrl?: string
   const [zdarzenia, prognoza] = await Promise.all([
     prisma.plantCareEvent.findMany({
       take: 10,
-      where: { plantId: data.plantId },
+      // Zawężenie przestrzenią, a nie samym `plantId`: zdarzenie z tym identyfikatorem mogło zostać
+      // dopisane spoza przestrzeni rośliny, a jego treść wchodzi do promptu diagnozy.
+      where: { plantId: data.plantId, spaceId: roslina.spaceId },
       select: { kind: true, occurredAt: true, outcome: true, productName: true },
       orderBy: { occurredAt: "desc" },
     }),

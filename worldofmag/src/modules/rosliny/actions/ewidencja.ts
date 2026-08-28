@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth } from "@/platform/auth/serverUtils";
+import { zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
 import { brakiEwidencji, ewidencjaDoCsv, type WierszEwidencji } from "../lib/eksportEwidencji";
 import { TRYBY_ZAWODOWE } from "../lib/typy";
@@ -133,7 +134,7 @@ export async function getTreatmentRegister(opts?: {
         ? { occurredAt: { ...(opts.od ? { gte: opts.od } : {}), ...(opts.do ? { lte: opts.do } : {}) } }
         : {}),
       space: {
-        is: { ...(await ownedWhereAsync(user.id)), kind: { in: TRYBY_ZAWODOWE } },
+        is: { ...(await zakresPrzestrzeni(user.id)), kind: { in: TRYBY_ZAWODOWE } },
       },
     },
     select: {

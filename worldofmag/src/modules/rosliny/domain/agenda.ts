@@ -34,10 +34,17 @@ export function kubelekAgendy(nextDueAt: Date | null, teraz: Date): KubelekAgend
 /**
  * Wymagania wodne gatunku zapisane jako JSON → cztery liczby.
  *
- * **Uszkodzony wpis traktujemy jak brak danych, nie jak błąd.** Wartości domyślne dadzą sensowny
- * termin, a wywalenie CAŁEJ agendy przez jeden zepsuty wiersz byłoby znacznie gorsze niż odstęp
- * policzony z domyślnych. Pojedyncze pole spoza zakresu też się nie przenosi na pozostałe — każde
- * ma własny zapas.
+ * **ZERO ZNACZY „nie planuj podlewania w tej porze roku" i jest wartością POPRAWNĄ, nie śmieciem.**
+ * Tak zapisuje je katalog: zboża i rośliny polowe mają zera we wszystkich porach (ich nawadnianie
+ * jest decyzją agrotechniczną, nie odstępem między podlaniami), a warzywa jednoroczne mają zero
+ * w zimie, bo wtedy po prostu nie rosną. 125 ze 182 wpisów katalogu ma zero w co najmniej jednej
+ * porze — traktowanie ich jak błędu (i podstawianie 14 dni) sprawiało, że pomidor dodany w styczniu
+ * dostawał zadanie „podlej za dwa tygodnie" z uzasadnieniem, które brzmiało wiarygodnie i było
+ * zmyślone.
+ *
+ * Rozróżniamy więc trzy stany: **liczba dodatnia** (odstęp), **zero** (nie podlewamy w tej porze)
+ * i **brak danych** (wartość domyślna). Uszkodzony JSON to brak danych, nie błąd — wywalenie całej
+ * agendy przez jeden zepsuty wiersz byłoby znacznie gorsze niż odstęp policzony z domyślnych.
  */
 export function czytajWymaganiaWodne(waterJson: string | null | undefined): WymaganiaWodne {
   if (!waterJson) return WYMAGANIA_WODNE_DOMYSLNE;
@@ -45,7 +52,8 @@ export function czytajWymaganiaWodne(waterJson: string | null | undefined): Wyma
     const parsed = JSON.parse(waterJson) as Partial<Record<keyof WymaganiaWodne, unknown>>;
     const liczba = (v: unknown, zapas: number) => {
       const n = Number(v);
-      return Number.isFinite(n) && n > 0 ? n : zapas;
+      // Zero przechodzi. Wartości ujemne i nieliczby to brak danych.
+      return Number.isFinite(n) && n >= 0 ? n : zapas;
     };
     return {
       winter: liczba(parsed.winter, WYMAGANIA_WODNE_DOMYSLNE.winter),

@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
-import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { requireAuth } from "@/platform/auth/serverUtils";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { getLocations } from "@/modules/weather/contract";
 import { logEvent } from "@/platform/observability/log";
-import { requireRoslinyAccess } from "../lib/sharingGuard";
+import { requireRoslinyAccess, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { trybLubDomyslny } from "../domain/agenda";
 import type { TrybPrzestrzeni } from "../lib/typy";
 
@@ -36,7 +36,9 @@ export async function getSpaces(): Promise<PrzestrzenDTO[]> {
   const user = await requireAuth();
   const spaces = await prisma.plantSpace.findMany({
     take: SUFIT_LISTY,
-    where: await ownedWhereAsync(user.id),
+    // Zakres obejmuje przestrzenie NADANE, nie tylko własne — inaczej udostępniona przestrzeń
+    // nie pojawia się na liście, mimo że guard wpuszcza do jej widoku (AC-28).
+    where: await zakresPrzestrzeni(user.id),
     include: {
       workspace: { select: { team: { select: { id: true, name: true } } } },
       _count: { select: { places: true } },
@@ -169,10 +171,18 @@ export async function deleteSpace(id: string): Promise<void> {
   const space = await prisma.plantSpace.findUnique({
     where: { id },
     include: {
-      // paginacja: kompletny — snapshot do kosza musi zawierać WSZYSTKO, co kaskada usunie;
-      // ucięta lista dałaby przywrócenie, które po cichu gubi rośliny.
+      // paginacja: kompletny — migawka musi zawierać WSZYSTKO, co kaskada usunie. Ucięta lista
+      // dałaby przywrócenie, które po cichu gubi dane, a wpis kosza jest po przywróceniu kasowany,
+      // więc drugiej szansy nie ma.
+      //
+      // **`careEvents` jest tu najważniejsze i najłatwiejsze do przeoczenia**: to w nich siedzi
+      // ewidencja zabiegów środkami ochrony roślin. `retention.ts` wyłącza ją z automatycznego
+      // usuwania jako dokumentację o wymogu ustawowym — a bez tej linii jedno kliknięcie
+      // „usuń przestrzeń" niszczyłoby ją skuteczniej niż jakikolwiek automat.
       places: true,
       plants: true,
+      careTasks: true,
+      careEvents: true,
     },
   });
   if (!space) throw new Error("Przestrzeń nie istnieje");
