@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { runJob } from "@/platform/jobs/client";
+import { getAssistantPrefs, updateAssistantPrefs } from "@/actions/assistantPrefs";
 import {
   getUserFacts,
   confirmUserFact,
@@ -37,6 +38,8 @@ export function UserFactsSection() {
   const [editing, setEditing] = useState<UserFactDTO | null>(null);
   const [creating, setCreating] = useState(false);
   const [inferring, setInferring] = useState(false);
+  const [autoFacts, setAutoFacts] = useState(true);
+  const [automatBusy, setAutomatBusy] = useState(false);
   const [busy, startBusy] = useTransition();
 
   const load = useCallback(() => {
@@ -47,12 +50,34 @@ export function UserFactsSection() {
 
   useEffect(() => {
     load();
+    getAssistantPrefs()
+      .then((p) => setAutoFacts(p.autoFacts))
+      // Brak ustawień to nie błąd — domyślne (automat włączony) już stoi w stanie.
+      .catch(() => {});
   }, [load]);
 
-  /** Szukanie hipotez to zadanie w tle — potrafi trwać kilkanaście sekund i woła model. */
+  function zmienAutomat(wlaczony: boolean) {
+    // Optymistycznie: przełącznik ma odpowiedzieć od razu, a nie po podróży do serwera.
+    setAutoFacts(wlaczony);
+    setAutomatBusy(true);
+    updateAssistantPrefs({ autoFacts: wlaczony })
+      .catch((e) => {
+        setAutoFacts(!wlaczony);
+        showToast(e?.message ?? "Nie udało się zapisać ustawienia", "error");
+      })
+      .finally(() => setAutomatBusy(false));
+  }
+
+  /**
+   * Szukanie hipotez to zadanie w tle — potrafi trwać kilkanaście sekund i woła model.
+   *
+   * 111: `force` omija odcisk materiału. Przebieg automatyczny kończy się bez wołania modelu, gdy
+   * od poprzedniego razu nic nie przybyło — ale kliknięcie JEST wyraźną prośbą, więc ma dać wynik,
+   * a nie ciche „nic nowego" wynikające z mechaniki, o której użytkownik nie wie.
+   */
   function infer() {
     setInferring(true);
-    runJob<{ added: number }>("user.facts", {})
+    runJob<{ added: number }>("user.facts", { force: true })
       .then((r) => {
         showToast(
           r?.added ? `Nowych hipotez: ${r.added}` : "Nie znaleziono nic nowego",
@@ -94,9 +119,11 @@ export function UserFactsSection() {
           <Brain size={16} className="text-[var(--accent-purple)]" /> Co system o Tobie wie
         </span>
         <div className="flex gap-2">
-          {/* Wnioskowanie odpala się WYŁĄCZNIE stąd, jawnym kliknięciem. Automatyczne dopisywanie
-              hipotez w tle sprawiłoby, że lista rośnie bez wiedzy użytkownika — a cały ten ekran
-              jest po to, żeby tak się nie działo. */}
+          {/* 111: wnioskowanie odpala się TAKŻE samo — na prośbę właściciela, żeby wiedza rosła
+              z korzystania z aplikacji, a nie tylko z klikania tutaj. Obawa, która stała za
+              poprzednim brzmieniem tego komentarza („lista rośnie bez wiedzy użytkownika"), jest
+              adresowana inaczej: każda hipoteza nadal wymaga POTWIERDZENIA, cała lista jest jawna
+              na tym ekranie, a automat ma widoczny wyłącznik obok. */}
           <Button variant="ghost" size="sm" onClick={infer} disabled={inferring}>
             {inferring ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {inferring ? "Szukam…" : "Poszukaj hipotez"}
@@ -106,9 +133,28 @@ export function UserFactsSection() {
           </Button>
         </div>
       </div>
-      <p className="mb-3 text-xs text-[var(--text-muted)]">
+      <p className="mb-2 text-xs text-[var(--text-muted)]">
         {t("teInformacjeTrafiajaDo")}
       </p>
+
+      {/**
+        * 111 (AC-9): WYŁĄCZNIK AUTOMATU stoi przy liście, której dotyczy, a nie w osobnych
+        * ustawieniach. Automat, o którym nie wiadomo, że chodzi, jest gorszy od jego braku —
+        * a to jedyne miejsce, w którym widać JEGO WYNIK.
+        */}
+      <label className="mb-3 flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+        <input
+          type="checkbox"
+          checked={autoFacts}
+          onChange={(e) => zmienAutomat(e.target.checked)}
+          disabled={automatBusy}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--accent-blue)]"
+        />
+        <span>
+          <span className="text-[var(--text-primary)]">{t("samSzukajHipotez")}</span>
+          <span className="block text-[var(--text-muted)]">{t("samSzukajHipotezOpis")}</span>
+        </span>
+      </label>
 
       {facts === null ? (
         <div className="flex justify-center py-6">

@@ -6,6 +6,7 @@
 import { claimNext, completeJob, failJob, failJobPermanent, cleanupOldJobs, setJobProgress, type JobRecord } from "@/platform/jobs/queue";
 import { posprzatajLimity } from "@/platform/rateLimit";
 import { retencjaJesliCzas } from "@/platform/retention/harmonogram";
+import { przemiecWiedzeJesliCzas } from "@/platform/wiedza/harmonogram";
 import { wZakresieOperacji } from "@/platform/sharing/cache";
 import { logEvent, wKontekscieLogu } from "@/platform/observability/log";
 import { czyPrzetwarzaZadania, czyWykonujeOkresowe, rolaNierozpoznana } from "@/platform/runtime/rola";
@@ -159,5 +160,17 @@ export function startJobWorker(): void {
     if (politykiRetencji) {
       void retencjaJesliCzas(politykiRetencji).catch((e) => reportServerError(e, { kind: "retention" }));
     }
+    /**
+     * 111: WIEDZA O UŻYTKOWNIKU PRZYRASTA SAMA.
+     *
+     * Do 111 zadanie `user.facts` kolejkował wyłącznie przycisk „Poszukaj hipotez" w ustawieniach —
+     * czyli wiedza nie mogła rosnąć z korzystania z aplikacji (zgłoszenie właściciela). Jedzie
+     * tym samym tyknięciem co retencja i z tego samego powodu: to jest warunek „proces obsługujący
+     * zadania żyje", a prawo do przebiegu odbierane jest atomowo, więc mimo wielu instancji
+     * przemiecenie wykona się raz.
+     *
+     * Osobny `catch`: błąd przemiatania nie może wyglądać jak błąd przetwarzania zadań.
+     */
+    void przemiecWiedzeJesliCzas().catch((e) => reportServerError(e, { kind: "userFactsSweep" }));
   }, CLEANUP_EVERY_MS);
 }

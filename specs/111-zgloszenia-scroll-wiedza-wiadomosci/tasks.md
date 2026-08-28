@@ -105,27 +105,27 @@
 
 ## Faza 6 — Wiedza o użytkowniku (zgłoszenie 2)
 
-- [ ] **T-18** — `userFacts.ts`: poszerzone sygnały (plan §3.5) — nawyki, projekty zadań i ich grupy,
+- [x] **T-18** — `userFacts.ts`: poszerzone sygnały (plan §3.5) — nawyki, projekty zadań i ich grupy,
   tagi przepisów i książki kucharskie, talie językowe, warsztaty, `UserActivity` — **wyłącznie
   metadane**. W komentarzu wypisz, co jest **świadomie pominięte** (notatki, zdrowie, leki, finanse,
   kontakty, wiadomości) — AC-8. Próg „za mało materiału" liczony po wszystkich sygnałach (≥ 5).
   **Gotowe, gdy:** każde nowe `findMany` ma `take` (`check:pagination` jest regułą bezwzględną),
   a `check:owner-columns` przechodzi.
-- [ ] **T-19** — Odcisk materiału + `force` w payloadzie: bez `force` i przy równym `factsStamp`
+- [x] **T-19** — Odcisk materiału + `force` w payloadzie: bez `force` i przy równym `factsStamp`
   handler kończy `added: 0` **przed** wywołaniem modelu i bumpuje `factsLastRunAt` (AC-6).
   **Gotowe, gdy:** test z atrapą modelu potwierdza **zero** wywołań przy niezmienionym odcisku.
-- [ ] **T-20** — `src/platform/wiedza/harmonogram.ts`: atomowe odebranie prawa
+- [x] **T-20** — `src/platform/wiedza/harmonogram.ts`: atomowe odebranie prawa
   (`user_facts_last_sweep`, wzorzec retencji) + kolejkowanie do 20 kont z `dedupeKey`.
   **Gotowe, gdy:** test z 5 równoległymi wywołaniami przyznaje prawo **dokładnie raz** (AC-5).
-- [ ] **T-21** — Wpięcie przemiatania w `platform/jobs/worker.ts` (interwał okresowy, obok retencji).
+- [x] **T-21** — Wpięcie przemiatania w `platform/jobs/worker.ts` (interwał okresowy, obok retencji).
   **Gotowe, gdy:** błąd przemiatania nie wygląda jak błąd przetwarzania zadań (osobny `catch`).
-- [ ] **T-22** — `assistantPrefs`: `autoFacts` w odczycie + `setAutoFacts` z `revalidatePath`;
+- [x] **T-22** — `assistantPrefs`: `autoFacts` w odczycie + `setAutoFacts` z `revalidatePath`;
   przełącznik w `UserFactsSection` nad „Poszukaj hipotez", z jednym zdaniem o tym, co system czyta,
   a czego nie. Ręczne szukanie woła teraz `{ force: true }` (AC-9, AC-7).
 
 ## Faza 7 — Bramki i domknięcie
 
-- [ ] **T-23** — Teksty: wszystkie nowe napisy do `messages/pl.json`, czytane przez
+- [x] **T-23** — Teksty: wszystkie nowe napisy do `messages/pl.json`, czytane przez
   `useTranslations`. **Gotowe, gdy:** `npm run check:i18n` zielone (od 097 reguła bezwzględna).
 - [ ] **T-24** — Testy jednostkowe zebrane i zielone: `przewijanie`, `dlugoscStreszczenia`,
   `harmonogram` wiedzy, `blocksKey`, akcja streszczeń. `npx tsc --noEmit -p tsconfig.test.json`.

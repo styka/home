@@ -978,7 +978,9 @@
         "zgadzaSie": "Zgadza się",
         "usun": "Usuń",
         "tresc": "Treść",
-        "npLubiWycieczkiGorskie": "np. Lubi wycieczki górskie, ale nie w upały"
+        "npLubiWycieczkiGorskie": "np. Lubi wycieczki górskie, ale nie w upały",
+        "samSzukajHipotez": "Sam szukaj hipotez z mojej aktywności",
+        "samSzukajHipotezOpis": "Raz na dobę, gdy przybędzie nowego materiału. System patrzy wyłącznie na NAZWY tego, co prowadzisz (nawyki, projekty, tematy, przepisy, talie, warsztaty) i na to, których modułów używasz — nie czyta treści notatek, zdrowia, leków, finansów ani kontaktów. Każdą hipotezę i tak potwierdzasz sam."
       },
       "WorkspaceLocaleSection": {
         "ustawieniaZespoluZmieniaJego": "Ustawienia zespołu zmienia jego właściciel lub administrator."
