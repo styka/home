@@ -1700,7 +1700,9 @@
         "edytujTemat": "Edytuj temat",
         "ustawieniaModulu": "Ustawienia modułu",
         "trybCzytania": "Tryb czytania — schowaj wszystko poza wiadomościami",
-        "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania"
+        "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania",
+        "ostatnieOdswiezanie": "Ostatnie odświeżanie: {kiedy}",
+        "szczegolyPrzebiegu": "źródeł: {zrodel} · nowych materiałów: {nowych} · pozycji: {pozycji} · faktów na osi: {faktow}"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",

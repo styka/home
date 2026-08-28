@@ -30,7 +30,7 @@ import {
   instrukcjaDlugosci,
   materialUbogi,
   poziomStreszczenia,
-  LIMIT_MATERIALU,
+  LIMIT_MATERIALU_WSAD,
 } from "../lib/dlugoscStreszczenia";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
@@ -498,7 +498,7 @@ async function summarizeItems(
       ctx.progress?.(attempt === 1 ? `${postep}…` : `${postep}, podejście ${attempt}…`);
 
       const blocks = batch
-        .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.material.slice(0, LIMIT_MATERIALU) || "(brak)"}`)
+        .map((it, i) => `${i}. Tytuł: ${it.title}\n   Materiał: ${it.material.slice(0, LIMIT_MATERIALU_WSAD) || "(brak)"}`)
         .join("\n");
 
       const out = await llmJson<{ summaries?: Array<{ index: number; title?: string; summary: string }> }>(

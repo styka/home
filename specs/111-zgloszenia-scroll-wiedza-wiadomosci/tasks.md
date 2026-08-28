@@ -145,6 +145,22 @@
   klucz odświeżania liczony z tytułów zamiast z treści.
 - [x] **T-28** — Mapowanie AC → dowód (wejście do `/verify`).
 
+
+## Faza 8 — poprawki z recenzji (R-1..R-10, W-1..W-3)
+
+- [x] **T-29** — R-1: normalizacja starego adresu przez `replace`, nie `push` (pułapka na „wstecz").
+- [x] **T-30** — R-2: klucz przewijania czytany w momencie użycia + własny nasłuch `popstate` w hooku.
+- [x] **T-31** — R-3: `summaryFailed` tylko wtedy, gdy pozycja nie ma ŻADNEGO streszczenia.
+- [x] **T-32** — R-4: przy wyjątku zapisujemy sam czas przebiegu (bez odcisku) — koniec pętli godzinowej.
+- [x] **T-33** — R-5: osobny, mniejszy limit materiału dla ścieżki wsadowej.
+- [x] **T-34** — R-6: migracja `0270` kasująca surowe skróty RSS wpisane do pamięci przez backfill.
+- [x] **T-35** — R-7: bloki lektora przez `ref`, nie w zależnościach efektu.
+- [x] **T-36** — R-8: stopka „Zarządzaj źródłami" tylko wtedy, gdy konsument poda `onZarzadzaj`.
+- [x] **T-37** — R-9: teksty paska stanu przeniesione do `messages/pl.json`.
+- [x] **T-38** — R-10: przywrócone końcowe znaki nowej linii w trzech plikach JSON.
+- [x] **T-39** — W-1/W-2/W-3 (recenzja własna): konta bez ustawień w przemiataniu, jedna normalizacja
+  poziomu w przebiegu, sprzątanie hooka zapisujące zapamiętaną liczbę zamiast odczytu z DOM-u.
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania

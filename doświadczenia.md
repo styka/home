@@ -38,6 +38,40 @@ definicja długości streszczenia dla obu ścieżek + tabela `NewsItemSummary` (
 length]`) + materiał zawsze źródłowy. Nadpisania streszczeń podniesione z karty do strumienia
 i `blocksKey` liczony z tytułu **i** treści.
 
+**Czwarta rzecz, dołożona po recenzji — najważniejsza z całego przebiegu.** Świeże oko znalazło
+w tej zmianie **sześć poważnych usterek**, których nie zobaczył ani komplet 1318 testów
+jednostkowych, ani klikacz na prawdziwej przeglądarce. Cztery z nich mają wspólny kształt:
+**poprawka psuła dokładnie tę rzecz, którą naprawiała.**
+
+- Kod dbający o to, żeby stare ulubione (`?tresc=timeline`) dalej działały, dokładał wpis do
+  historii przy każdym wejściu — a ponieważ cofnięcie odtwarzało stary adres, efekt odpalał się
+  znowu. **Z takiej strony nie dało się wyjść „wstecz"**: mechanizm naprawiający zgłoszenie
+  o zgodności ulubionych łamał zgłoszenie o przycisku „wstecz", z tego samego przebiegu.
+- Przywracanie pozycji przewijania zużywało flagę powrotu tylko przy zmianie **ścieżki**, a stan
+  widoku w Omnii żyje w `?query`. Flaga zostawała zapalona i zużywała ją **następna zwykła
+  nawigacja** — przywracając pozycję tam, gdzie nikt o to nie prosił, czyli łamiąc regułę „tylko
+  przy powrocie", którą sama miała egzekwować.
+- Pamięć streszczeń per poziom dostała backfill odsiewający pozycje po fladze `summaryFailed` —
+  a ta flaga znaczy „ponowienia zawiodły", nie „nie ma streszczenia". Pozycje z przebiegu, który
+  skończył się przed etapem streszczania, miały w `summary` surowy skrót z kanału i opuszczoną
+  flagę, więc **pamięć utrwaliła nie-streszczenia jako streszczenia** — i żaden rewert kodu by tego
+  nie odkręcił, bo dane już są.
+- Automat wnioskowania zapisywał znacznik czasu wyłącznie po **udanym** przebiegu, a kandydatem
+  było też konto bez wiersza ustawień (który ten zapis dopiero tworzy). Konto z niedziałającym
+  modelem wracało więc do kolejki **co godzinę zamiast raz na dobę** — a przy awarii za wywołaniem
+  modelu każda próba byłaby płatna.
+
+**Lekcja:** testy odpowiadają na pytanie „czy to działa". Żaden z tych czterech błędów nie
+odpowiadał na nie źle — wszystkie przechodziły. Znalazło je dopiero czytanie kodu pod innym
+pytaniem: **„co ta zmiana psuje"**. Przy poprawce warto przejść osobno: czego ten kod dotyka poza
+swoim celem, co robi przy **wyjątku**, co zapisuje **nieodwracalnie** (migracja danych!) i czy jego
+własna reguła nie ma dziury w przypadku, którego akurat nie ma w teście. Druga para oczu na diffie
+jest tania; sześć takich usterek na produkcji nie jest.
+
+**Lekcja towarzysząca, o samej recenzji:** pierwszy szkic raportu powstał, zanim recenzent zwrócił
+wynik, i twierdził, że wyniku nie było. Recenzent wrócił — z werdyktem „zmiany wymagane". Raport
+napisany na zapas, przed danymi, opisuje życzenie, a nie stan.
+
 **Trzy rzeczy dołożone po tym, jak klikacz obalił dwie „gotowe" poprawki:**
 
 **(a) `popstate` to POŁOWA powrotu.** Pierwsza wersja przywracania pozycji rozpoznawała powrót

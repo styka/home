@@ -268,6 +268,16 @@ export function NewsReader({
   // i lektor czytał dalej zdania sprzed zmiany. Podpis nazywał się „podpisem TREŚCI", a treści
   // nie obejmował — to jest cała usterka.
   const blocksKey = useMemo(() => podpisBlokow(blocks), [blocks]);
+  /**
+   * 111 (recenzja): bloki czytamy z REF-a, nie z zależności efektu.
+   *
+   * Efekt niżej zaczyna się od `silence()`, więc każde jego zbędne uruchomienie **przerywa
+   * czytanie**. Wpisanie tam `blocks` przywracałoby dokładnie to, przed czym broni `blocksKey`:
+   * zależność od TOŻSAMOŚCI tablicy, którą konsument tworzy przy każdym renderze. Dziś ratuje to
+   * `useMemo` u jedynego konsumenta — czyli ciche uzależnienie od cudzego szczegółu implementacji.
+   */
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
   /** Treść zdania czytanego ostatnio — po zmianie zestawu szukamy go w nowej liście. */
   const ostatnieZdanie = useRef<string | null>(null);
   /** Tytuł bloku, w którym byliśmy — ratunek, gdy zdanie zniknęło, ale wiadomość została. */
@@ -310,9 +320,9 @@ export function NewsReader({
      * Rozróżniamy je po tytule bloku: tytuł przeżywa zmianę poziomu i ginie razem z wiadomością.
      */
     if (!tytul) return;
-    const j = sentences.findIndex((x) => blocks[x.block]?.title === tytul);
+    const j = sentences.findIndex((x) => blocksRef.current[x.block]?.title === tytul);
     if (j >= 0) playFromRef.current?.(j);
-  }, [blocksKey, sentences, blocks, silence]);
+  }, [blocksKey, sentences, silence]);
 
   const playFrom = useCallback(
     (index: number) => {
@@ -327,7 +337,7 @@ export function NewsReader({
       ostatnieZdanie.current = sentences[index].text;
       // 111: zapamiętujemy też, w KTÓREJ wiadomości jesteśmy — po zmianie poziomu streszczenia
       // zdania już nie będzie, a tytuł zostanie i po nim wracamy do tej samej wiadomości.
-      ostatniTytul.current = blocks[sentences[index].block]?.title ?? null;
+      ostatniTytul.current = blocksRef.current[sentences[index].block]?.title ?? null;
       // Zgłaszamy się jako jedyny grający lektor — każdy inny zostaje uciszony (patrz `claimSpeech`).
       claimSpeech(silence);
       setCurrent(index);
@@ -368,7 +378,7 @@ export function NewsReader({
       if (granica) window.setTimeout(powiedz, PRZERWA_MIEDZY_WIADOMOSCIAMI_MS);
       else powiedz();
     },
-    [sentences, blocks, silence, t]
+    [sentences, silence, t]
   );
   /**
    * Efekt zmiany zestawu jest zadeklarowany WYŻEJ, więc sięga po tę funkcję przez ref. Wpięcie jej

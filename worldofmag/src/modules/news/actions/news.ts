@@ -754,10 +754,21 @@ export async function resummarizeItem(
   const zArtykulu = (article.text ?? "").trim();
   const material = zArtykulu || (item.article?.description ?? "").trim();
   if (!material) {
-    // Brak materiału to nie jest awaria modelu i nie wolno go zapisać jako streszczenia —
-    // utrwaliłoby to nieudaną generację jako „streszczenie poziomu X" (AC-22).
-    await prisma.newsItem.update({ where: { id: itemId }, data: { summaryFailed: true } });
-    revalidatePath("/wiadomosci");
+    /**
+     * Brak materiału to nie jest awaria modelu i nie wolno go zapisać jako streszczenia.
+     *
+     * 111 (recenzja): znacznika „bez streszczenia" NIE stawiamy, gdy pozycja ma już jakikolwiek
+     * zapamiętany poziom. `NewsArticle` kasuje retencja (relacja `SetNull`), a `fetchArticle`
+     * zwraca pustkę przy paywallu — więc próba dołożenia CZWARTEGO poziomu do pozycji, która ma
+     * poprawne trzy, przekreślałaby je wszystkie. Karta pisałaby wtedy „bez streszczenia" nad
+     * tekstem, który streszczeniem JEST, a stan bazy przeczyłby sam sobie.
+     */
+    const maJakiekolwiek =
+      (await prisma.newsItemSummary.count({ where: { itemId } })) > 0 || item.summary.trim().length > 0;
+    if (!maJakiekolwiek) {
+      await prisma.newsItem.update({ where: { id: itemId }, data: { summaryFailed: true } });
+      revalidatePath("/wiadomosci");
+    }
     throw new Error("Nie udało się pobrać treści artykułu — spróbuj ponownie za chwilę.");
   }
 

@@ -31,6 +31,17 @@ export type PoziomStreszczenia = "short" | "medium" | "long";
  */
 export const LIMIT_MATERIALU = 4000;
 
+/**
+ * Limit materiału na pozycję w przebiegu WSADOWYM — mniejszy, bo w jednym wywołaniu jedzie
+ * kilkanaście pozycji.
+ *
+ * 111 (recenzja): `LIMIT_MATERIALU` jest policzony dla JEDNEJ pozycji. Zastosowany w partii
+ * dziesięciu (`SUMMARY_BATCH`) dałby do 40 kB promptu — po dociągnięciu pełnych artykułów realnie
+ * przekraczałby okno kontekstu modelu, a wtedy pada CAŁA partia, ponawia się trzykrotnie (płacąc
+ * za każdym razem) i wszystkie jej pozycje lądują jako „bez streszczenia".
+ */
+export const LIMIT_MATERIALU_WSAD = 1200;
+
 /** Twardy pułap słów dla każdego poziomu — ta sama liczba, która stoi w instrukcji dla modelu. */
 const PULAP_SLOW: Record<PoziomStreszczenia, number> = {
   short: 25,

@@ -160,17 +160,22 @@ export function SourceFilter({
           * słowem („Portale" i „Źródła") kazałyby zgadywać, czym się różnią — dokładnie ten zarzut
           * właściciel postawił w 086 liście tematów obok zakładki „Tematy".
           */}
+        {/* Bez `onZarzadzaj` nie rysujemy stopki: martwy przycisk to gotowa pułapka dla drugiego
+            konsumenta tego komponentu (recenzja 111). */}
+        {(onZarzadzaj || !wszystkie) && (
         <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-3 py-2">
+          {onZarzadzaj && (
           <button
             type="button"
             onClick={() => {
               setOtwarty(false);
-              onZarzadzaj?.();
+              onZarzadzaj();
             }}
             className="py-1 text-xs text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
           >
             {t("zarzadzajZrodlami")}
           </button>
+          )}
           {!wszystkie && (
             <button
               type="button"
@@ -181,6 +186,7 @@ export function SourceFilter({
             </button>
           )}
         </div>
+        )}
       </AnchoredLayer>
     </div>
   );

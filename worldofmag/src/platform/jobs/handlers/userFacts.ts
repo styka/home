@@ -80,6 +80,34 @@ export async function userFactsHandler(
   const ownerId = ctx.ownerId;
   const force = Boolean((payload as UserFactsPayload | null)?.force);
 
+  /**
+   * 111 (recenzja): CZAS PRZEBIEGU ZAPISUJEMY TAKŻE WTEDY, GDY PRZEBIEG PADNIE.
+   *
+   * Odstęp doby stoi na `factsLastRunAt`, a kandydatem jest też konto **bez wiersza ustawień**
+   * (bo brak wiersza znaczy „automat włączony"). Gdyby znacznik powstawał wyłącznie po udanym
+   * przebiegu, konto z niedziałającym modelem wracałoby do kolejki **co godzinę** — a gdy awaria
+   * jest ZA wywołaniem modelu (nieparsowalna odpowiedź), każda próba byłaby płatna.
+   *
+   * Zapisujemy sam czas, **bez odcisku**: odcisk znaczy „ten materiał został przerobiony", a nie
+   * został. Następny przebieg ma więc spróbować ponownie, tylko nie wcześniej niż za dobę.
+   */
+  try {
+    // Ścieżki powodzenia zapisują znacznik same (`zapiszZnacznik`: czas **i** odcisk).
+    return await wnioskuj(ownerId, force, ctx);
+  } catch (e) {
+    // Awaria: sam czas, żeby nie zapętlić kolejki — bez odciskania materiału, bo nie został
+    // przerobiony i następny przebieg ma go zobaczyć jako nowy. Błąd zapisu znacznika nie może
+    // przesłonić błędu właściwego.
+    await zapiszCzasPrzebiegu(ownerId).catch(() => {});
+    throw e;
+  }
+}
+
+async function wnioskuj(
+  ownerId: string,
+  force: boolean,
+  ctx: JobContext
+): Promise<UserFactsResult> {
   ctx.progress?.("Zbieram zachowania…");
   // 079: zadanie w tle nie ma sesji, więc przestrzeń wyliczamy z właściciela zadania.
   const moje = await filtrMoichRekordow(ownerId);
@@ -342,6 +370,14 @@ async function czyMaterialBezZmian(userId: string, odcisk: string): Promise<bool
  * Gdyby zapis szedł wyłącznie po udanym wnioskowaniu, konto z materiałem poniżej progu byłoby
  * wybierane do przemiatania w każdej dobie i za każdym razem liczyło te same zapytania na darmo.
  */
+async function zapiszCzasPrzebiegu(userId: string): Promise<void> {
+  await prisma.assistantPref.upsert({
+    where: { userId },
+    create: { userId, factsLastRunAt: new Date() },
+    update: { factsLastRunAt: new Date() },
+  });
+}
+
 async function zapiszZnacznik(userId: string, odcisk: string): Promise<void> {
   await prisma.assistantPref.upsert({
     where: { userId },

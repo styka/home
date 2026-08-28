@@ -156,7 +156,15 @@ export function NewsPage({
    */
   useEffect(() => {
     if (viewState.tresc === "timeline" && view === "feed") {
-      setViewState({ widok: "timeline", tresc: "items" });
+      /**
+       * `replace`, nie `push` — inaczej to jest PUŁAPKA NA „WSTECZ", a nie zgodność.
+       *
+       * Domyślnie `setViewState` dokłada wpis do historii. Wejście ze starego ulubionego dawałoby
+       * więc historię [stary adres, nowy adres]; cofnięcie wraca do starego, ten efekt odpala się
+       * ponownie i znów dokłada wpis — z takiej strony nie da się wyjść wstecz. Podmiana wpisu
+       * usuwa stary adres z historii, co jest tu właściwym zachowaniem: on już nie istnieje.
+       */
+      setViewState({ widok: "timeline", tresc: "items" }, { replace: true });
     }
   }, [viewState.tresc, view, setViewState]);
   const wybraneZrodla = viewState.zrodla;
@@ -898,14 +906,18 @@ function RefreshStatus({ state, running }: { state: NewsRefreshState | null; run
    * czytnika ekranu. Skróceniu podlega WYŁĄCZNIE opis udanego przebiegu — „trwa" i „nie powiodło
    * się" zostają w pełnej postaci, bo tam każde słowo jest potrzebne od razu.
    */
-  const szczegoly =
-    `źródeł: ${r.sources} · nowych materiałów: ${r.fetched} · pozycji: ${r.assigned} · ` +
-    `faktów na osi: ${r.timelineAdded}`;
+  const szczegoly = t("szczegolyPrzebiegu", {
+    zrodel: r.sources,
+    nowych: r.fetched,
+    pozycji: r.assigned,
+    faktow: r.timelineAdded,
+  });
+  const kiedy = t("ostatnieOdswiezanie", { kiedy: formatWhen(state.startedAt) });
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
-      <span title={szczegoly} aria-label={`Ostatnie odświeżanie: ${formatWhen(state.startedAt)} — ${szczegoly}`}>
-        Ostatnie odświeżanie: {formatWhen(state.startedAt)}
+      <span title={szczegoly} aria-label={`${kiedy} — ${szczegoly}`}>
+        {kiedy}
       </span>
       {r.llmUnconfigured && (
         <span className="text-[var(--accent-amber)]">{t("modelNieskonfigurowanyMaterialPobrany")}</span>
