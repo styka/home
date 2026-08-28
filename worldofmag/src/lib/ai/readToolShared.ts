@@ -28,11 +28,18 @@ export function clampLimit(n: unknown, def = 25): number {
  * dwóch (zgłoszenie „pies Raj"). Kolejne porcje wolno dobrać tylko wtedy, gdy jest czym: stąd ten
  * argument, wskazywany wprost w znaczniku obcięcia.
  *
- * Ujemne i nieliczbowe wartości traktujemy jak brak przesunięcia — narzędzie nigdy nie może
- * odpowiedzieć błędem na argument, który model poda „na wszelki wypadek".
+ * Ujemne wartości traktujemy jak brak przesunięcia — narzędzie nigdy nie może odpowiedzieć błędem
+ * na argument, który model poda „na wszelki wypadek".
+ *
+ * **Liczba w cudzysłowie jest akceptowana i to nie jest pobłażliwość, tylko ochrona przed pętlą.**
+ * Model buduje argumenty jako JSON i regularnie zapisuje liczby jako tekst (`"offset": "40"`).
+ * Gdyby taka wartość cicho stała się zerem, narzędzie oddawałoby w kółko tę samą pierwszą porcję,
+ * a komunikat znów kazałby pobrać „kolejne od 40" — czyli powstałaby dokładnie ta pętla, którą to
+ * stronicowanie ma zlikwidować, tyle że trudniejsza do zauważenia niż pierwotna.
  */
 export function offsetOf(v: unknown): number {
-  const n = typeof v === "number" && Number.isFinite(v) ? Math.floor(v) : 0;
+  const raw = typeof v === "string" ? Number(v.trim()) : v;
+  const n = typeof raw === "number" && Number.isFinite(raw) ? Math.floor(raw) : 0;
   return Math.max(0, n);
 }
 

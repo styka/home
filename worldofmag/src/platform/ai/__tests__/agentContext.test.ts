@@ -150,3 +150,24 @@ test("czyCachowacKatalog: wywołanie DOMYKAJĄCE nigdy nie cache'uje — nikt te
   assert.equal(czyCachowacKatalog(0, true), false);
   assert.equal(czyCachowacKatalog(7, true), false, "nawet jako siódme wywołanie w przebiegu");
 });
+
+// ── 112 (recenzja): bezpiecznik znakowy nie może zgłaszać FAŁSZYWEGO obcięcia ────────────────────
+//
+// Znaleziono w recenzji własnego diffu: gdy blok przekraczał budżet znaków, ścieżka awaryjna
+// dokładała znacznik „pokazano N z N — pobierz kolejne przez offset" do KAŻDEGO narzędzia w
+// iteracji, także temu, którego wynik był kompletny. Model dostawał polecenie pobrania danych,
+// których nie ma — czyli tę samą pętlę, którą ten przebieg likwiduje, tylko wywołaną z drugiej
+// strony. Sprawdzone na czerwono: bez warunku `data.length > ile` ten test pada.
+
+test("wynik KOMPLETNY nie dostaje znacznika, nawet gdy blok przekracza budżet znaków", () => {
+  const results: ToolResult[] = [
+    // to narzędzie wypycha blok ponad budżet…
+    { tool: "list_notes", args: {}, data: Array.from({ length: 200 }, (_, i) => ({ id: `n${i}`, a: "y".repeat(650) })) },
+    // …a to ma wynik kompletny i musi zostać nietknięte
+    { tool: "list_projects", args: {}, data: [{ id: "p1", name: "Raj" }, { id: "p2", name: "Dom" }] },
+  ];
+  const parsed = JSON.parse(compactToolResults(results)) as Array<{ tool: string; data: unknown[]; truncated?: string }>;
+  const projekty = parsed.find((r) => r.tool === "list_projects");
+  assert.equal(projekty?.data.length, 2, "kompletna lista zostaje w całości");
+  assert.equal(projekty?.truncated, undefined, "brak fałszywego 'pobierz kolejne' dla kompletnego wyniku");
+});

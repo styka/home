@@ -64,3 +64,19 @@ test("próg liczy się po przycięciu białych znaków, a granica jest włączna
   assert.equal(wartoKlasyfikowac(`   ${dokladnieProg}   `), true, "dokładnie próg = jeszcze klasyfikujemy");
   assert.equal(wartoKlasyfikowac("a".repeat(MAX_DLUGOSC_KLASYFIKACJI + 1)), false);
 });
+
+// ── 112 (recenzja): offset podany jako TEKST ─────────────────────────────────────────────────────
+//
+// Model buduje argumenty jako JSON i regularnie zapisuje liczby w cudzysłowie. Gdyby `"40"` cicho
+// stało się zerem, narzędzie oddawałoby w kółko tę samą pierwszą porcję, a komunikat znów kazałby
+// pobrać „kolejne od 40" — pętla identyczna z tą, którą stronicowanie ma zlikwidować.
+
+test("offsetOf przyjmuje liczbę zapisaną jako tekst (ochrona przed pętlą stronicowania)", async () => {
+  const { offsetOf } = await import("@/lib/ai/readToolShared");
+  assert.equal(offsetOf(40), 40);
+  assert.equal(offsetOf("40"), 40, "liczba w cudzysłowie musi działać");
+  assert.equal(offsetOf(" 80 "), 80);
+  assert.equal(offsetOf("abc"), 0, "tekst bez liczby → brak przesunięcia, nie błąd");
+  assert.equal(offsetOf(-5), 0, "wartość ujemna → brak przesunięcia");
+  assert.equal(offsetOf(undefined), 0);
+});

@@ -163,7 +163,11 @@ function ograniczDoBudzetu(results: ToolResult[]): string {
   while (ile >= 0) {
     const zmniejszone = results.map((r) => {
       const data = trimLongStrings(r.data);
-      if (Array.isArray(data)) return zRekordami(r, data, Math.min(ile, data.length), data.length);
+      // Znacznik dokładamy WYŁĄCZNIE wtedy, gdy naprawdę coś obcinamy. Bez tego warunku wynik
+      // kompletny (np. 5 rekordów z drugiego narzędzia w tej samej iteracji) dostawał komunikat
+      // „pokazano 5 z 5 — pobierz kolejne przez offset: 5", czyli fałszywy alarm wysyłający model
+      // po dane, których nie ma. To dokładnie ten rodzaj pętli, który ten przebieg usuwa.
+      if (Array.isArray(data) && data.length > ile) return zRekordami(r, data, ile, data.length);
       return { ...r, data };
     });
     ostatni = JSON.stringify(zmniejszone);
