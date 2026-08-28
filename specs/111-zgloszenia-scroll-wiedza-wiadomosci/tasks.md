@@ -1,7 +1,7 @@
 # Zadania: Powrót do miejsca czytania, rosnąca wiedza o użytkowniku i uporządkowane Wiadomości
 
 - **Plan:** ./plan.md (111-zgloszenia-scroll-wiedza-wiadomosci)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-27
 
 ## Legenda
@@ -143,7 +143,7 @@
   wartą zapamiętania — kontener przewijania niewidoczny dla przywracania przeglądarki, rozciąganie
   nałożone na wszystkie dzieci paska, dwie ścieżki streszczania o różnym materiale wejściowym,
   klucz odświeżania liczony z tytułów zamiast z treści.
-- [ ] **T-28** — Mapowanie AC → dowód (wejście do `/verify`).
+- [x] **T-28** — Mapowanie AC → dowód (wejście do `/verify`).
 
 ---
 
