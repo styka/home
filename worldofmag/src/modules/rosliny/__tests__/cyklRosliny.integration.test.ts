@@ -184,6 +184,40 @@ test(
         assert.ok(typeof addSpeciesFromCatalog === "function");
       });
 
+      await t.test("dwie uprawy tego samego gatunku to DWIE kopie, nie jedna", async () => {
+        // Recenzja: katalog ma dziewięć par wpisów dzielących nazwę łacińską, bo to różne UPRAWY
+        // tego samego gatunku. Przy unikalności po nazwie dodanie dyni zwracało cukinię — przycisk
+        // wyglądał, jakby nie zadziałał, a roślina dostawała cudze wymagania wodne.
+        const cukinia = await prisma.plantSpeciesCatalog.findUnique({ where: { key: "cukinia" } });
+        const dynia = await prisma.plantSpeciesCatalog.findUnique({ where: { key: "dynia" } });
+        assert.ok(cukinia && dynia);
+        assert.equal(cukinia.nameLatin, dynia.nameLatin, "test straciłby sens, gdyby nazwy się różniły");
+
+        const a = await prisma.plantSpecies.create({
+          data: { ...wlasnosc, catalogKey: cukinia.key, origin: "system", namePl: cukinia.namePl, nameLatin: cukinia.nameLatin },
+        });
+        const b = await prisma.plantSpecies.create({
+          data: { ...wlasnosc, catalogKey: dynia.key, origin: "system", namePl: dynia.namePl, nameLatin: dynia.nameLatin },
+        });
+        assert.notEqual(a.id, b.id);
+        assert.equal(a.nameLatin, b.nameLatin);
+
+        // Ten sam wpis katalogu drugi raz — indeks musi go odrzucić.
+        await assert.rejects(() =>
+          prisma.plantSpecies.create({
+            data: { ...wlasnosc, catalogKey: cukinia.key, origin: "system", namePl: cukinia.namePl, nameLatin: cukinia.nameLatin },
+          }),
+        );
+
+        // Wpisy WŁASNE (catalogKey NULL) indeks przepuszcza — NULL-e są w PostgreSQL różne.
+        await prisma.plantSpecies.create({
+          data: { ...wlasnosc, origin: "user", namePl: "Moja tykwa", nameLatin: "Lagenaria siceraria" },
+        });
+        await prisma.plantSpecies.create({
+          data: { ...wlasnosc, origin: "user", namePl: "Druga tykwa", nameLatin: "Lagenaria vulgaris" },
+        });
+      });
+
       await t.test("AC-7: kasowanie przestrzeni zabiera jej zawartość — dlatego migawka musi być pełna", async () => {
         const doKasacji = await prisma.plantSpace.create({
           data: { name: `Tymczasowa-${rnd()}`, kind: "home", ...wlasnosc },

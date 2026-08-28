@@ -3733,7 +3733,12 @@ model PlantSpecies {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   plants      Plant[]
 
-  @@unique([workspaceId, nameLatin])
+  /// 113 (recenzja): tożsamość kopii daje KLUCZ WPISU KATALOGU, nie nazwa łacińska. Cukinia, dynia
+  /// i kabaczek to trzy różne uprawy tego samego gatunku (`Cucurbita pepo`) — indeks po nazwie
+  /// łacińskiej sprawiał, że dodanie drugiej z nich po cichu zwracało pierwszą. Wpisy własne mają
+  /// `catalogKey IS NULL`, a NULL-e w indeksie unikalnym są w PostgreSQL różne, więc ten indeks
+  /// ich nie ogranicza — ich duplikaty odsiewa akcja (migracja 0274).
+  @@unique([workspaceId, catalogKey])
   @@index([workspaceId])
 }
 

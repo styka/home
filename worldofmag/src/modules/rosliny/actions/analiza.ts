@@ -73,12 +73,16 @@ Jeśli zdjęcie nie pozwala rozpoznać rośliny, zwróć jedną propozycję z "p
 i uzasadnieniem, czego brakuje na zdjęciu. NIE zgaduj na siłę.`;
 
 export async function identifyPlant(zdjecieUrl: string): Promise<WynikIdentyfikacji> {
-  await requireAuth();
+  const user = await requireAuth();
   if (!zdjecieUrl) throw new Error("Podaj zdjęcie rośliny");
 
   const r = await chatComplete({
     op: "vision",
     json: true,
+    // `userId` jest tu OBOWIĄZKOWE, nie kosmetyczne: bez niego wywołanie omija miesięczny budżet AI
+    // użytkownika i jego limit zapytań. Rozpoznawanie ze zdjęcia jest operacją, którą łatwo powtórzyć
+    // dziesięć razy pod rząd, więc akurat ono nie może stać poza kontrolą kosztu.
+    userId: user.id,
     messages: [
       { role: "system", content: PROMPT_IDENTYFIKACJA },
       {

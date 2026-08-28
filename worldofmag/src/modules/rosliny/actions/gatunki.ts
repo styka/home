@@ -129,8 +129,8 @@ export async function getSpeciesList(): Promise<GatunekDTO[]> {
  * Kopiuje wpis z katalogu systemowego do przestrzeni użytkownika.
  *
  * Idempotentnie: ponowne wywołanie zwraca istniejącą kopię zamiast tworzyć drugą. Widok pokazuje
- * „już mam", ale dwie karty otwarte obok siebie potrafią kliknąć to samo dwa razy, a `@@unique`
- * na `(workspaceId, nameLatin)` zamieniłby to w błąd, którego użytkownik nie zrozumie.
+ * „już mam", ale dwie karty otwarte obok siebie potrafią kliknąć to samo dwa razy, a indeks
+ * unikalny zamieniłby to w błąd, którego użytkownik nie zrozumie.
  */
 export async function addSpeciesFromCatalog(key: string): Promise<{ id: string }> {
   const user = await requireAuth();
@@ -139,8 +139,11 @@ export async function addSpeciesFromCatalog(key: string): Promise<{ id: string }
   const zrodlo = await prisma.plantSpeciesCatalog.findUnique({ where: { key } });
   if (!zrodlo) throw new Error("Nie ma takiego gatunku w katalogu");
 
+  // Tożsamość kopii to KLUCZ WPISU KATALOGU. Szukanie po nazwie łacińskiej zwracałoby cukinię przy
+  // próbie dodania dyni — obie to `Cucurbita pepo`, ale dla użytkownika to dwie różne uprawy
+  // o różnych wymaganiach (migracja 0274).
   const istniejacy = await prisma.plantSpecies.findUnique({
-    where: { workspaceId_nameLatin: { workspaceId: wlasnosc.workspaceId, nameLatin: zrodlo.nameLatin } },
+    where: { workspaceId_catalogKey: { workspaceId: wlasnosc.workspaceId, catalogKey: zrodlo.key } },
     select: { id: true },
   });
   if (istniejacy) return istniejacy;
@@ -187,8 +190,12 @@ export async function createSpecies(data: {
   const lat = data.nameLatin?.trim();
   if (!pl || !lat) throw new Error("Podaj nazwę polską i łacińską");
 
-  const istniejacy = await prisma.plantSpecies.findUnique({
-    where: { workspaceId_nameLatin: { workspaceId: wlasnosc.workspaceId, nameLatin: lat } },
+  // Duplikaty WPISÓW WŁASNYCH odsiewamy tutaj, bo indeks unikalny ich nie obejmuje: mają
+  // `catalogKey IS NULL`, a NULL-e w indeksie unikalnym są w PostgreSQL różne. Szukamy wyłącznie
+  // wśród wpisów własnych — wpis skopiowany z katalogu o tej samej nazwie łacińskiej to inna uprawa
+  // i nie powinien blokować dodania własnego.
+  const istniejacy = await prisma.plantSpecies.findFirst({
+    where: { workspaceId: wlasnosc.workspaceId, catalogKey: null, nameLatin: lat },
     select: { id: true },
   });
   if (istniejacy) return istniejacy;
