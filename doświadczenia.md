@@ -4,6 +4,135 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Poprawka pod listę braków ma własne skutki uboczne: trzy z ośmiu ustaleń następnej recenzji
+**Problem:** Moduł Rośliny przeszedł trzy rundy recenzji świeżym okiem. Za każdym razem część
+nowych ustaleń dotyczyła **poprawek z rundy poprzedniej**, a nie oryginalnego kodu. Trzy przykłady
+z ostatniej rundy: (1) naprawa „lista faz BBCH pokazuje się w mieszkaniu" ustawiła warunek na sam
+tryb, przez co w mieszkaniu i ogrodzie pola **nie dało się już odsłonić** — jedno naruszenie
+kryterium zamienione na drugie; (2) naprawa „nazwa pliku ewidencji liczona w złej strefie"
+przeliczyła nazwę, ale nie kolumnę „Data zabiegu" w tym samym pliku, więc w jednej funkcji zostały
+dwie różne reguły strefy; (3) zmiana znaczenia flagi `pomijac` dotarła do jednego czytelnika
+(zakładanie harmonogramu), ale nie do drugiego (`createCareTask`), któremu ta sama runda właśnie
+dorobiła wejście z interfejsu.
+
+**Rozwiązanie:** Każde ustalenie naprawione osobno, a po każdej rundzie **nowa recenzja świeżym
+okiem tylko na diff tej rundy** — aż runda przyszła bez ustaleń blokujących.
+
+**Lekcja:** Kiedy poprawiasz listę braków ze zgłoszenia, sprawdź trzy rzeczy, o które lista nie
+prosi: **(a)** czy zmiana znaczenia pola dotarła do WSZYSTKICH jego czytelników (`grep` po nazwie
+pola, nie po miejscu, które zgłoszono), **(b)** czy tekst interfejsu i komentarze nadal mówią prawdę
+o kodzie po zmianie, **(c)** czy nie usunąłeś jednego naruszenia kryterium kosztem drugiego —
+zwłaszcza gdy kryteria są parą („domyślnie schowane" + „ale dostępne na żądanie"). I nie zakładaj,
+że jedna runda recenzji wystarczy: recenzja czyta kod, który przed chwilą powstał pod presją listy,
+więc jej własny wynik też wymaga recenzji.
+
+---
+
+## 2026-08-28 — Stan `empty` w `ModuleView` zjada `children`, czyli formularz, którym miało się wyjść z pustego stanu
+**Problem:** Widok ewidencji zabiegów miał `state={pustyRejestr ? "empty" : "ready"}`, przycisk
+„Nowy zabieg" w `actions` (pasek rysuje się zawsze) i formularz w `children`. Konto bez ani jednego
+zabiegu klikało przycisk, `formularz` przechodziło na `true` — **i na ekranie nie zmieniało się
+nic**. `ModuleView` w stanie `empty` renderuje `ViewEmpty` ZAMIAST `children`. Funkcja była więc
+nieosiągalna dokładnie dla tego, kto miał jej użyć jako pierwszy, a bramki i testy tego nie widzą,
+bo kod jest poprawnie wpięty.
+
+**Rozwiązanie:** Warunek stanu pustego uwzględnia otwarty formularz (`&& !formularz`), a `empty`
+dostało `action` prowadzące do tego formularza — stan pusty musi mieć wyjście do jedynej czynności,
+która go usuwa.
+
+**Lekcja:** Zanim ustawisz `state="empty"`, sprawdź, **co jeszcze siedzi w `children`**. Jeżeli
+mieszka tam jakakolwiek droga wyjścia ze stanu pustego (formularz, wybór okresu, filtr), stan pusty
+ją ukryje. Reguła praktyczna: przełącznik widoczności czegoś z `children` musi wchodzić do warunku
+`empty`, a `empty.action` ma uruchamiać dokładnie to, czym użytkownik wychodzi z pustki.
+
+---
+
+## 2026-08-28 — `include: { plants: true }` nie zabiera tego, co wisi pod rośliną — a kaskada zabiera
+**Problem:** Migawka kasowanej przestrzeni roślinnej brała `plants: true`, czyli same wiersze
+`Plant`. Kaskada FK usuwała przy tym również `PlantJournalEntry`, `PlantMeasurement`
+i `PlantHealthEvent` (przez `Plant.space → Cascade`). Pętla przywracająca dzieci czytała wtedy
+`roslina.journal === undefined`, mapowała trzy puste tablice i **nie robiła nic** — no-op, który
+w kodzie wygląda jak pokrycie. Ścieżka „usuń roślinę → przywróć" była naprawiona, ścieżka „usuń
+przestrzeń → przywróć" gubiła rok zdjęć i pomiarów, a wpis kosza — jedyna kopia — jest po
+przywróceniu kasowany.
+
+**Rozwiązanie:** `plants: { include: { journal: true, measurements: true, healthEvents: true } }`.
+
+**Lekcja:** Zasięg migawki dobiera się **od kaskady, nie od nazw relacji, które przyszły do głowy**.
+Przy każdym `recordTrash` przejdź w `schema.prisma` wszystkie `onDelete: Cascade` schodzące od
+kasowanego wiersza — także te dwa poziomy niżej — i sprawdź, czy każdy z nich jest w `include`.
+I druga połowa tej samej lekcji: naprawiając zgłoszony błąd, sprawdź, **czy tej samej dziury nie ma
+piętro wyżej**; poprawka pisana pod listę braków domyka dokładnie to, co na liście stoi.
+
+---
+
+## 2026-08-28 — Weryfikacja, która sprawdza listę z poprzedniego przebiegu, potwierdza własną poprawkę
+**Problem:** W module Rośliny przebieg weryfikacji nr 1 znalazł osiem guardowanych funkcji bez
+konsumenta w interfejsie (naruszenie C-35). Przebieg nr 2 zaliczył tę regułę jako naprawioną —
+`grep` po tych ośmiu (plus trzech dołożonych) pokazał komplet konsumentów. Recenzja świeżym okiem
+znalazła **cztery kolejne** funkcje bez żadnego wejścia z interfejsu (`deleteSpace`, `updatePlace`,
+`deletePlace`, `updateCareTask`) i jeden pomocnik bez konsumenta (`listaFaz`). Jedna z nich stała
+za kryterium akceptacji zaliczonym na ✅: „użytkownik może usunąć przestrzeń".
+
+**Rozwiązanie:** Dowód liczony **od eksportów modułu**, a nie od listy braków z poprzedniego
+przebiegu: dla każdej eksportowanej akcji szukamy konsumenta w `ui/` i `app/`. Cztery brakujące
+wejścia dorobione (T-64), a `verify.md` poprawiony tak, żeby mówił, w którym przebiegu kryterium
+zostało naprawdę spełnione.
+
+**Lekcja:** Sprawdzanie „czy poprzednie braki zniknęły" nie jest weryfikacją — to potwierdzenie
+własnej poprawki. Zbiór do sprawdzenia musi za każdym razem powstawać **z kodu** (wszystkie
+eksporty), nie z notatki z poprzedniej rundy. Ten sam błąd metody dotknął dowodu na udostępnianie:
+tabela prawdy dowodziła, że guard mówi „wolno", a listy szły przez „moje rekordy", więc obdarowana
+osoba wchodziła do pustego widoku — dowód na dostęp musi obejmować także **zakres list**, nie tylko
+decyzję guardu.
+
+---
+
+## 2026-08-28 — Zero w danych to wartość, a nie brak danych
+**Problem:** Wymagania wodne gatunku (`waterJson`) trzymają cztery liczby — odstęp podlewania na
+każdą porę roku. Katalog zapisuje **zero** tam, gdzie gatunek nie jest w danej porze podlewany na
+cykl: warzywa jednoroczne mają zero zimą, zboża i uprawy polowe we wszystkich porach (125 ze 182
+wpisów ma zero w co najmniej jednej porze). Funkcja czytająca odsiewała wartości przez
+`Number.isFinite(n) && n > 0`, więc zero szło do gałęzi „brak danych" i było zastępowane wartością
+domyślną. Skutek: pomidor dodany w styczniu dostawał zadanie „podlej za 14 dni" z uzasadnieniem,
+które brzmiało wiarygodnie i było zmyślone. Test utrwalał ten błąd — sprawdzał wprost, że
+`{ winter: 0 }` „bierze zapas".
+
+**Rozwiązanie:** Trzy stany zamiast dwóch: liczba dodatnia (odstęp), zero (nie podlewamy w tej
+porze), brak/śmieć (wartość domyślna). Reguła terminu zwraca `pomijac: true` i datę **początku
+najbliższej pory z dodatnim odstępem**, a zakładanie harmonogramu liczy termin przed utworzeniem
+zadania i przy `pomijac` nie tworzy go wcale. Nowy test czyta wymagania wodne **wprost z migracji
+0273**, więc sprawdza regułę wobec danych, a nie samego siebie.
+
+**Lekcja:** `> 0` w walidacji liczby to decyzja produktowa, nie techniczna — sprawdź, czy zero coś
+w tej dziedzinie **znaczy**, zanim wrzucisz je do worka z `null` i `"abc"`. Gdy znaczy: potrzebne są
+trzy gałęzie, a wywołujący musi dostać sygnał („pomiń"), a nie podstawioną liczbę. I jeszcze jedno:
+test, który powtarza implementację, zamiast czytać dane wejściowe z ich prawdziwego źródła
+(migracji, seeda), utrwala błąd zamiast go łapać.
+
+---
+
+## 2026-08-28 — Akcja użytkownika o nazwie `resolve…` cicho wypada z bramki pokrycia AI
+**Problem:** W nowym module Rośliny akcja `resolveHealthEvent` („czy zalecenie pomogło") nie
+pojawiła się na liście kandydatów `check:ai-coverage`, a wpis dodany dla niej w manifeście został
+zgłoszony jako **przestarzały** („akcja już nie istnieje"). Akcja istniała, była wyeksportowana
+z pliku `"use server"` i miała guard.
+
+**Rozwiązanie:** Bramka odsiewa pomocniki wewnętrzne regexpem
+`^(assert|ensure|find|preview|describe|has|is|count|resolve|read)` — a `resolveHealthEvent` zaczyna
+się od `resolve`. Nazwa została zmieniona na `markHealthOutcome`, przez co akcja wróciła do
+klasyfikacji. Powód zapisany w komentarzu przy funkcji, żeby nikt nie „poprawił" nazwy z powrotem.
+
+**Lekcja:** Heurystyka po przedrostku nazwy jest tania i skuteczna, ale ma cichy tryb porażki:
+akcja NIE zgłasza się jako niesklasyfikowana, tylko **znika z listy kandydatów**. Objaw jest więc
+odwrotny do intuicji — zamiast błędu „brakuje wpisu" dostajemy ostrzeżenie „wpis jest zbędny".
+Przy nazywaniu nowych Server Actions unikaj przedrostków z tej listy dla operacji, które są
+**działaniem użytkownika**; `resolve`, `read` i `find` zarezerwuj dla prawdziwych pomocników.
+Gdy manifest mówi „akcja już nie istnieje", a ty ją widzisz w kodzie — to jest sygnał, że wpadła
+w ten filtr, a nie że masz literówkę.
+
+---
+
 ## 2026-08-28 — Dwa zgłoszenia o różnych objawach, jedna przyczyna: prompt płacony od nowa w każdej iteracji
 **Problem:** Właściciel zgłosił dwie rzeczy, które wyglądały na niezwiązane. Raz: asystent nie
 potrafił założyć psa w module Zwierzęta na podstawie zadań — wykonał **11 odczytów w 6 iteracjach**

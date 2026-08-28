@@ -2,9 +2,10 @@
   "_opis": "084 (zadanie 28) — zapadka audytu N+1. Progi zmierzone testem nplusjeden.integration.test.ts na fixture z danymi (3 zadania z terminem, 2 pojazdy, 3 nadania dostępu o dwóch rodzajach podmiotu). Pomiar biegnie w ZAKRESIE OPERACJI, czyli w tych samych warunkach memoizacji co prawdziwe żądanie.",
   "_jak_czytac": "„zapytan\" to łączna liczba zapytań na jedno złożenie powierzchni; rośnie także wtedy, gdy dochodzi nowy, uzasadniony wkład modułu. „powtorzenia\" to największa liczba wykonań TEGO SAMEGO SQL-a — i to jest właściwy sygnał N+1: wartość powyżej 1 znaczy, że coś pyta w pętli. Wyjątek: „nadania\" to DWIE listy (mnie / przeze mnie), więc zapytanie o nazwy podmiotów wykonuje się raz na listę.",
   "_gdy_pada": "Wzrost = znajdź nowe zapytanie, zanim podniesiesz próg. Spadek = obniż próg w tym pliku, inaczej zapas ukryje następny regres.",
+  "_historia": "113: kalendarz 14 → 15 — jeden nowy wkład modułu Rośliny (agenda opieki). 15 → 16 po drugiej recenzji: wkład Roślin pyta o zakres przez `zakresPrzestrzeni` (przestrzenie moje ORAZ mi udostępnione) zamiast przez samo `ownedOrAsync`, więc dochodzi jedno zapytanie o nadania. Powtórzenia w obu krokach zostały na 1, więc to nie jest N+1 — to cena za to, że opiekun widzi w kalendarzu te same zabiegi co w agendzie.",
   "progi": {
     "pulpit": { "zapytan": 11, "powtorzenia": 1 },
-    "kalendarz": { "zapytan": 14, "powtorzenia": 1 },
+    "kalendarz": { "zapytan": 16, "powtorzenia": 1 },
     "nadania": { "zapytan": 10, "powtorzenia": 2 }
   }
 }

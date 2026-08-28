@@ -89,6 +89,18 @@ export interface DashboardSnapshot {
   healthUpcoming: HealthUpcoming[];
   storageLowStock: number;
   storageExpiring: number;
+  /** 113: ile zabiegów w module Rośliny jest zaległych albo wypada dziś. */
+  plantCareDue: number;
+  plantAgenda: PlantAgendaItem[];
+}
+
+/** 113: pozycja agendy roślinnej na pulpicie — nazwa zabiegu, roślina i adres, pod który prowadzi. */
+export interface PlantAgendaItem {
+  id: string;
+  title: string;
+  plantName: string | null;
+  href: string;
+  bucket: "OVERDUE" | "TODAY" | "SOON";
 }
 
 /**
@@ -114,6 +126,8 @@ export const EMPTY_SNAPSHOT: DashboardSnapshot = {
   languageDecks: [],
   healthUpcomingCount: 0,
   healthUpcoming: [],
+  plantCareDue: 0,
+  plantAgenda: [],
   storageLowStock: 0,
   storageExpiring: 0,
 };

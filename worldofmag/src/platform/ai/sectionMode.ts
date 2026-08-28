@@ -32,6 +32,10 @@ export const AI_SECTION_KINDS: AiContentKind[] = [
   "storage.insights",
   "pets.insights",
   "kitchen.planWeek",
+  // 113: obie sekcje Roślin POKAZUJĄ SIĘ przy wejściu na widok przestrzeni, więc podlegają trybowi
+  // odświeżania — inaczej otwarcie przestrzeni kosztowałoby wywołanie modelu za każdym razem.
+  "rosliny.planSezonu",
+  "rosliny.wnioski",
 ];
 
 /** Nazwy sekcji po polsku (C-32) — do ustawień użytkownika i administratora. */
@@ -46,6 +50,8 @@ export const AI_SECTION_LABELS: Record<AiContentKind, string> = {
   // w `AI_SECTION_KINDS` i to jest świadome: tryb odświeżania dotyczy sekcji, która pokazuje się
   // sama przy wejściu na stronę, a streszczenie filmu powstaje wyłącznie po kliknięciu długości.
   "youtube.streszczenie": "YouTube — streszczenie filmu",
+  "rosliny.planSezonu": "Rośliny — plan sezonu",
+  "rosliny.wnioski": "Rośliny — wnioski o przestrzeni",
 };
 
 /** Etykiety trybów wraz z wyjaśnieniem, bo sama nazwa nie mówi, co się stanie z kosztem. */

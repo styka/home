@@ -20,7 +20,8 @@ export type AIActionModule =
   | "weather"
   | "contacts"
   | "reports"
-  | "youtube";
+  | "youtube"
+  | "rosliny";
 
 export interface AIAction {
   id: string;

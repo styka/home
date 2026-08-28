@@ -1,10 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
 import { SUFIT_LISTY } from "@/platform/pagination";
+// Odczyt migawki rośliny jest REGUŁĄ modułu Rośliny (co wolno uzupełnić domyślną, a czego nie),
+// więc bierzemy go z jego kontraktu razem z testem, który tam mieszka — zamiast przepisywać
+// dwadzieścia pól w pliku `"use server"`, gdzie nic tego nie sprawdzi.
+import { wierszRoslinyZMigawki } from "@/modules/rosliny/contract";
 import {
   przestrzenOsobista,
   przestrzenZespoluBezKontroliDostepu,
@@ -49,6 +54,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   else if (item.module === "weather") await restoreWeatherIdea(data);
   else if (item.module === "youtube") await restoreYoutubeChannel(data);
   else if (item.module === "czat") await restoreChatMessage(data, item.userId);
+  else if (item.module === "rosliny") await restoreRosliny(data);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
@@ -57,6 +63,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   revalidatePath("/tasks");
   revalidatePath("/pogoda/pomysly");
   revalidatePath("/youtube/kanaly");
+  revalidatePath("/rosliny");
 }
 
 export async function purgeTrashItem(id: string): Promise<void> {
@@ -323,4 +330,226 @@ async function restoreChatMessage(d: Record<string, unknown>, userId: string): P
     where: { id, autorId: userId },
     data: { deletedAt: null },
   });
+}
+
+
+
+/**
+ * 113: dziecko rośliny przywracane z migawki — dziennik, pomiary i zdarzenia zdrowotne.
+ *
+ * **Bez tego przywrócenie oddawało pusty wiersz.** `deletePlant` zbiera te trzy kolekcje właśnie
+ * dlatego, że kaskada je kasuje; pominięcie ich przy odtwarzaniu znaczyło, że użytkownik odzyskuje
+ * nazwę rośliny i traci rok zdjęć — a wpis kosza, jedyną kopię, kasujemy zaraz potem.
+ */
+async function przywrocDzieciRosliny(
+  tx: Prisma.TransactionClient,
+  p: Record<string, unknown>,
+): Promise<void> {
+  const wpisy = (p.journal as Record<string, unknown>[]) ?? [];
+  const pomiary = (p.measurements as Record<string, unknown>[]) ?? [];
+  const zdrowie = (p.healthEvents as Record<string, unknown>[]) ?? [];
+
+  if (wpisy.length > 0) {
+    await tx.plantJournalEntry.createMany({
+      data: wpisy.map((w) => ({
+        id: w.id as string,
+        plantId: w.plantId as string,
+        occurredAt: asDate(w.occurredAt) ?? new Date(),
+        text: (w.text as string | null) ?? null,
+        photoUrl: (w.photoUrl as string | null) ?? null,
+      })),
+      skipDuplicates: true,
+    });
+  }
+  if (pomiary.length > 0) {
+    await tx.plantMeasurement.createMany({
+      data: pomiary.map((m) => ({
+        id: m.id as string,
+        plantId: m.plantId as string,
+        measuredAt: asDate(m.measuredAt) ?? new Date(),
+        kind: (m.kind as string) ?? "OTHER",
+        value: (m.value as number) ?? 0,
+        unit: (m.unit as string) ?? "",
+        source: (m.source as string) ?? "manual",
+        note: (m.note as string | null) ?? null,
+      })),
+      skipDuplicates: true,
+    });
+  }
+  if (zdrowie.length > 0) {
+    await tx.plantHealthEvent.createMany({
+      data: zdrowie.map((z) => ({
+        id: z.id as string,
+        plantId: z.plantId as string,
+        occurredAt: asDate(z.occurredAt) ?? new Date(),
+        source: (z.source as string) ?? "manual",
+        symptom: (z.symptom as string | null) ?? null,
+        diagnosis: (z.diagnosis as string | null) ?? null,
+        confidence: (z.confidence as string | null) ?? null,
+        recommendationJson: (z.recommendationJson as string | null) ?? null,
+        photoUrl: (z.photoUrl as string | null) ?? null,
+        resolvedAt: asDate(z.resolvedAt),
+        outcome: (z.outcome as string | null) ?? null,
+      })),
+      skipDuplicates: true,
+    });
+  }
+}
+
+
+/**
+ * 113 — PRZYWRÓCENIE Z MODUŁU ROŚLINY.
+ *
+ * Migawka niesie `rodzaj`, bo kosz przyjmuje z tego modułu **dwa różne byty**: przestrzeń (razem
+ * z jej miejscami i roślinami — kaskada FK usuwa je fizycznie, więc przywrócenie samej nazwy byłoby
+ * przywróceniem pustej przestrzeni) albo pojedynczą roślinę.
+ *
+ * Identyfikatory z migawki odtwarzamy **jawnie**, a nie generujemy nowe. To jest różnica, która ma
+ * konsekwencje: zdarzenia opieki przeżyły usunięcie rośliny (`plantId` poszedł na `SET NULL`), więc
+ * roślina wracająca z tym samym `id` mogłaby swoją historię odzyskać. Nowe `id` skazywałoby ją na
+ * pustą oś czasu, mimo że wiersze wciąż leżą w bazie.
+ */
+async function restoreRosliny(d: Record<string, unknown>): Promise<void> {
+  const rodzaj = d.rodzaj as string;
+
+  if (rodzaj === "plantSpace") {
+    const space = d.space as Record<string, unknown> | undefined;
+    if (!space?.id) throw new Error("Uszkodzona migawka przestrzeni roślinnej");
+    const miejsca = (space.places as Record<string, unknown>[]) ?? [];
+    const rosliny = (space.plants as Record<string, unknown>[]) ?? [];
+
+    await prisma.$transaction(async (tx) => {
+      await tx.plantSpace.createMany({
+        data: [
+          {
+            id: space.id as string,
+            workspaceId: space.workspaceId as string,
+            name: (space.name as string) ?? "Przywrócona przestrzeń",
+            kind: (space.kind as string) ?? "home",
+            weatherLocationId: (space.weatherLocationId as string | null) ?? null,
+            notes: (space.notes as string | null) ?? null,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (miejsca.length > 0) {
+        await tx.plantPlace.createMany({
+          data: miejsca.map((m) => ({
+            id: m.id as string,
+            spaceId: m.spaceId as string,
+            name: (m.name as string) ?? "",
+            kind: (m.kind as string) ?? "windowsill",
+            sun: (m.sun as string) ?? "unknown",
+            soil: (m.soil as string | null) ?? null,
+            areaValue: (m.areaValue as number | null) ?? null,
+            areaUnit: (m.areaUnit as string | null) ?? null,
+            notes: (m.notes as string | null) ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      if (rosliny.length > 0) {
+        // Rodzic (`parentId`) świadomie NIE wraca: roślina-matka mogła nie należeć do tej
+        // przestrzeni i wtedy klucz obcy odrzuciłby cały zapis. Rodowód jest ozdobą przywróconego
+        // rekordu, a nie jego treścią — utrata całej przestrzeni byłaby ceną nieproporcjonalną.
+        await tx.plant.createMany({
+          data: rosliny.map((r) => wierszRoslinyZMigawki(r, (r.placeId as string | null) ?? null)),
+          skipDuplicates: true,
+        });
+      }
+
+      // Zadania opieki i zdarzenia. **Zdarzenia są tu ważniejsze niż zadania**: to w nich siedzi
+      // ewidencja zabiegów środkami ochrony roślin, czyli dokumentacja, której `retention.ts` nie
+      // pozwala usuwać nawet automatowi. Bez tej części „usuń i przywróć" kasowałoby ją na stałe.
+      const zadania = (space.careTasks as Record<string, unknown>[]) ?? [];
+      const zdarzenia = (space.careEvents as Record<string, unknown>[]) ?? [];
+      const idRoslin = new Set(rosliny.map((r) => r.id as string));
+      const idMiejsc = new Set(miejsca.map((m) => m.id as string));
+      /** Wskazanie wraca tylko wtedy, gdy cel też wrócił — inaczej klucz obcy odrzuciłby cały zapis. */
+      const jesli = (zbior: Set<string>, id: unknown) =>
+        typeof id === "string" && zbior.has(id) ? id : null;
+
+      if (zadania.length > 0) {
+        await tx.plantCareTask.createMany({
+          data: zadania.map((z) => ({
+            id: z.id as string,
+            spaceId: z.spaceId as string,
+            plantId: jesli(idRoslin, z.plantId),
+            placeId: jesli(idMiejsc, z.placeId),
+            kind: (z.kind as string) ?? "WATERING",
+            title: (z.title as string) ?? "",
+            recurring: (z.recurring as string | null) ?? null,
+            lastDoneAt: asDate(z.lastDoneAt),
+            nextDueAt: asDate(z.nextDueAt),
+            reason: (z.reason as string | null) ?? null,
+            active: (z.active as boolean) ?? true,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      if (zdarzenia.length > 0) {
+        const idZadan = new Set(zadania.map((z) => z.id as string));
+        await tx.plantCareEvent.createMany({
+          data: zdarzenia.map((z) => ({
+            id: z.id as string,
+            spaceId: z.spaceId as string,
+            plantId: jesli(idRoslin, z.plantId),
+            placeId: jesli(idMiejsc, z.placeId),
+            taskId: jesli(idZadan, z.taskId),
+            kind: (z.kind as string) ?? "WATERING",
+            occurredAt: asDate(z.occurredAt) ?? new Date(),
+            outcome: (z.outcome as string) ?? "DONE",
+            note: (z.note as string | null) ?? null,
+            productName: (z.productName as string | null) ?? null,
+            permitNumber: (z.permitNumber as string | null) ?? null,
+            applicationKind: (z.applicationKind as string | null) ?? null,
+            doseValue: (z.doseValue as number | null) ?? null,
+            doseUnit: (z.doseUnit as string | null) ?? null,
+            areaValue: (z.areaValue as number | null) ?? null,
+            areaUnit: (z.areaUnit as string | null) ?? null,
+            locationText: (z.locationText as string | null) ?? null,
+            operator: (z.operator as string | null) ?? null,
+            conditions: (z.conditions as string | null) ?? null,
+            withdrawalDays: (z.withdrawalDays as number | null) ?? null,
+            quantity: (z.quantity as number | null) ?? null,
+            quantityUnit: (z.quantityUnit as string | null) ?? null,
+            pantryItemId: (z.pantryItemId as string | null) ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      for (const r of rosliny) await przywrocDzieciRosliny(tx, r);
+    });
+    return;
+  }
+
+  if (rodzaj === "plant") {
+    const p = d.plant as Record<string, unknown> | undefined;
+    if (!p?.id) throw new Error("Uszkodzona migawka rośliny");
+    // Przestrzeń mogła zniknąć razem z rośliną (kaskada) — wtedy przywrócenie jest bezprzedmiotowe
+    // i mówimy o tym wprost, zamiast wywalać się kluczem obcym.
+    const przestrzen = await prisma.plantSpace.findUnique({
+      where: { id: p.spaceId as string },
+      select: { id: true },
+    });
+    if (!przestrzen) throw new Error("Przestrzeń tej rośliny już nie istnieje — przywróć najpierw przestrzeń");
+
+    const miejsce = p.placeId
+      ? await prisma.plantPlace.findUnique({ where: { id: p.placeId as string }, select: { id: true } })
+      : null;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.plant.createMany({
+        // Miejsce mogło zostać usunięte osobno — wtedy roślina wraca bez miejsca zamiast nie wracać
+        // wcale.
+        data: [wierszRoslinyZMigawki(p, miejsce?.id ?? null)],
+        skipDuplicates: true,
+      });
+      await przywrocDzieciRosliny(tx, p);
+    });
+    return;
+  }
+
+  throw new Error("Nieznany rodzaj migawki modułu Rośliny");
 }

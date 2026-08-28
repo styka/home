@@ -19,7 +19,7 @@ export interface PrzegladArchitektury {
 }
 
 export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
-  "wygenerowano": "2026-08-27T12:39:17.125Z",
+  "wygenerowano": "2026-08-28T16:33:08.282Z",
   "zdolnosciPlatformy": [
     "admin",
     "ai",
@@ -49,6 +49,7 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "trash",
     "ui",
     "viewState",
+    "wiedza",
     "workspaces"
   ],
   "moduly": [
@@ -68,6 +69,7 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "portfel",
     "qa",
     "reports",
+    "rosliny",
     "services",
     "shopping",
     "tasks",
@@ -78,6 +80,7 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
   ],
   "bramki": [
     "check-action-coverage",
+    "check-admin-links",
     "check-ai-access",
     "check-ai-coverage",
     "check-boundaries",
@@ -116,8 +119,8 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "copy-spec-pipeline",
     "generate-architecture"
   ],
-  "liczbaModeli": 167,
-  "liczbaMigracji": 281,
+  "liczbaModeli": 178,
+  "liczbaMigracji": 287,
   "modeleZWersja": [
     "ShoppingList",
     "Note",
@@ -179,12 +182,15 @@ export const PRZEGLAD_ARCHITEKTURY: PrzegladArchitektury = {
     "YoutubeChannel",
     "YoutubeVideo",
     "YoutubePref",
-    "ChatConversation"
+    "ChatConversation",
+    "PlantSpecies",
+    "PlantSpace",
+    "Plant"
   ],
   "zapadki": [
     {
       "nazwa": "Najcięższa trasa (bajty JS)",
-      "wartosc": 1201339,
+      "wartosc": 1207739,
       "bramka": "check:perf"
     }
   ]

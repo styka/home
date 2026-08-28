@@ -175,12 +175,12 @@
     "reason": "internal",
     "access": "self"
   },
-  "aiConversations:setAiConversationSaved": {
+  "aiConversations:saveConversationDraft": {
     "status": "excluded",
     "reason": "internal",
     "access": "self"
   },
-  "aiConversations:saveConversationDraft": {
+  "aiConversations:setAiConversationSaved": {
     "status": "excluded",
     "reason": "internal",
     "access": "self"
@@ -211,6 +211,43 @@
     "status": "excluded",
     "reason": "settings",
     "access": "self"
+  },
+  "analiza:diagnosePlant": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:getSeasonPlan": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:getSpaceInsights": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:identifyPlant": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:markHealthOutcome": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:planToTask": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:scheduleRecommendedCare": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   },
   "assistantPrefs:getAssistantLevelConfig": {
     "kind": "read",
@@ -455,6 +492,49 @@
     "reason": "settings",
     "access": "self"
   },
+  "dziennik:addJournalEntry": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "dziennik:addMeasurement": {
+    "status": "ai",
+    "action": "add_plant_measurement",
+    "access": "owner"
+  },
+  "dziennik:deleteJournalEntry": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "dziennik:getJournal": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "dziennik:getMeasurements": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "ewidencja:exportTreatmentRegister": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner",
+    "guardedVia": "getTreatmentRegister"
+  },
+  "ewidencja:getTreatmentRegister": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "ewidencja:recordTreatment": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "favoriteViews:addFavoriteView": {
     "status": "excluded",
     "reason": "settings",
@@ -574,6 +654,28 @@
   },
   "flota:updateVehicle": {
     "status": "ai",
+    "access": "owner"
+  },
+  "gatunki:addSpeciesFromCatalog": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "gatunki:createSpecies": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "gatunki:getSpeciesList": {
+    "kind": "read",
+    "status": "pending",
+    "access": "owner"
+  },
+  "gatunki:searchCatalog": {
+    "kind": "read",
+    "status": "pending",
+    "access": "owner"
+  },
+  "gatunki:updateSpecies": {
+    "status": "pending",
     "access": "owner"
   },
   "habits:createHabit": {
@@ -1172,6 +1274,31 @@
     "reason": "settings",
     "access": "admin"
   },
+  "miejsca:createPlace": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "miejsca:deletePlace": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "miejsca:getPlaceHistory": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "miejsca:getPlaces": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "miejsca:updatePlace": {
+    "status": "pending",
+    "access": "owner"
+  },
   "news:acknowledgeAllItems": {
     "status": "excluded",
     "reason": "interactive",
@@ -1419,6 +1546,37 @@
     "status": "excluded",
     "reason": "internal",
     "access": "self"
+  },
+  "opieka:createCareTask": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "opieka:getCareAgenda": {
+    "kind": "read",
+    "status": "ai",
+    "action": "plant_care_agenda",
+    "access": "owner"
+  },
+  "opieka:getCareHistory": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "opieka:getPlantCareTasks": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "opieka:recordCare": {
+    "status": "ai",
+    "action": "log_plant_care",
+    "access": "owner"
+  },
+  "opieka:updateCareTask": {
+    "status": "pending",
+    "access": "owner"
   },
   "pantry:addPantryItem": {
     "status": "ai",
@@ -1948,6 +2106,38 @@
     "reason": "admin",
     "access": "admin"
   },
+  "przestrzenie:createSpace": {
+    "status": "ai",
+    "action": "create_plant_space",
+    "access": "owner"
+  },
+  "przestrzenie:deleteSpace": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "przestrzenie:getSpace": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "przestrzenie:getSpaces": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_plant_spaces",
+    "access": "owner"
+  },
+  "przestrzenie:getWeatherOptions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "przestrzenie:updateSpace": {
+    "status": "pending",
+    "access": "owner"
+  },
   "qa:createEpic": {
     "status": "excluded",
     "reason": "admin",
@@ -2188,6 +2378,79 @@
     "status": "excluded",
     "reason": "admin",
     "access": "admin"
+  },
+  "rosliny:createPlant": {
+    "status": "ai",
+    "action": "create_plant",
+    "access": "owner"
+  },
+  "rosliny:deletePlant": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rosliny:getPlant": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rosliny:getPlants": {
+    "kind": "read",
+    "status": "ai",
+    "action": "list_plants",
+    "access": "owner"
+  },
+  "rosliny:propagatePlant": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "rosliny:setPlantStatus": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "rosliny:updatePlant": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "rozmowy:getLicznikNieprzeczytanych": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowa": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowcy": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:getRozmowy": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:otworzRozmowePrywatna": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:oznaczPrzeczytane": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "rozmowy:zglosPisanie": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   },
   "sharing:getResourceGrants": {
     "kind": "read",
@@ -3046,6 +3309,34 @@
     "action": "update_watcher",
     "access": "owner"
   },
+  "wiadomosci:edytujWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner",
+    "guardedVia": "assertAutor"
+  },
+  "wiadomosci:getWiadomosci": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "wiadomosci:przelaczReakcje": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "wiadomosci:usunWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner",
+    "guardedVia": "assertAutor"
+  },
+  "wiadomosci:wyslijWiadomosc": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "workspaceSettings:getWorkspaceLocaleSettings": {
     "kind": "read",
     "status": "excluded",
@@ -3057,71 +3348,28 @@
     "reason": "settings",
     "access": "owner"
   },
-  "rozmowy:getRozmowy": {
+  "zbiory:addToShoppingList": {
+    "status": "pending",
+    "access": "owner"
+  },
+  "zbiory:bookCareCost": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "zbiory:getHarvests": {
     "kind": "read",
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
   },
-  "rozmowy:getRozmowa": {
-    "kind": "read",
+  "zbiory:harvestToPantry": {
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
   },
-  "rozmowy:getRozmowcy": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:getLicznikNieprzeczytanych": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:otworzRozmowePrywatna": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:oznaczPrzeczytane": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:zglosPisanie": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "wiadomosci:getWiadomosci": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "wiadomosci:wyslijWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "wiadomosci:edytujWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner",
-    "guardedVia": "assertAutor"
-  },
-  "wiadomosci:usunWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner",
-    "guardedVia": "assertAutor"
-  },
-  "wiadomosci:przelaczReakcje": {
-    "status": "excluded",
-    "reason": "interactive",
+  "zbiory:recordHarvest": {
+    "status": "pending",
     "access": "owner"
   }
 }

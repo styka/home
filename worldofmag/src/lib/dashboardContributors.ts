@@ -45,6 +45,7 @@ export const DASHBOARD_CONTRIBUTORS: Record<
   notes: () => import("@/modules/notes/dashboard"),
   pets: () => import("@/modules/pets/dashboard"),
   portfel: () => import("@/modules/portfel/dashboard"),
+  rosliny: () => import("@/modules/rosliny/dashboard"),
   reports: () => import("@/modules/reports/dashboard"),
   shopping: () => import("@/modules/shopping/dashboard"),
   tasks: () => import("@/modules/tasks/dashboard"),
