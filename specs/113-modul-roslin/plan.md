@@ -100,8 +100,9 @@ rozdzielenie ułatwia czytanie i ewentualny rollback):
 instrukcje tej zmiany — kontrola: `grep -E "^(DROP|ALTER)" ` na obu plikach musi zwrócić tylko nasze
 `ALTER TABLE … ADD CONSTRAINT`.
 
-**Bez triggera `omnia_fill_workspace`** — patrz §2.1(a); `check:workspace-fill` musi dalej raportować
-dokładnie pięć tabel.
+**Bez triggera `omnia_fill_workspace`** — patrz §2.1(a). `check:workspace-fill` liczy wyłącznie tabele
+z *nullowalnym* `workspaceId`, więc po tej zmianie musi raportować **tyle samo co przed nią** (dziś: 4);
+pojawienie się tam którejkolwiek nowej tabeli oznaczałoby, że przestrzeń wyszła nullowalna.
 
 ---
 

@@ -16,21 +16,21 @@
 
 ## Faza 0 — Fundament danych (blokuje wszystko)
 
-- [ ] **T-1** — **Uniony i typy modułu.** `src/modules/rosliny/lib/typy.ts`: `TrybPrzestrzeni`,
+- [x] **T-1** — **Uniony i typy modułu.** `src/modules/rosliny/lib/typy.ts`: `TrybPrzestrzeni`,
       `RodzajMiejsca`, `Naslonecznienie`, `JednostkaLicznosci`, `StatusRosliny`, `RodzajZabiegu`,
       `WynikZabiegu`, `RodzajPomiaru`, `ZrodloPomiaru`, `PewnoscDiagnozy`, `PochodzenieGatunku`,
       `KategoriaGatunku`. Wyłącznie `String` + union TS (**C-12**).
       *Gotowe, gdy:* `tsc --noEmit` czysto; plik nie importuje Prismy.
-- [ ] **T-2** — **Migracja `0272_modul_roslin`** (plan §2.3): `CREATE TABLE` dla 10 modeli, indeksy,
+- [x] **T-2** — **Migracja `0272_modul_roslin`** (plan §2.3): `CREATE TABLE` dla 10 modeli, indeksy,
       FK (dzieci `ON DELETE CASCADE`, `Plant.parentId` → `SET NULL`, `workspaceId` → `Workspace`
       `CASCADE`) + idempotentny seed uprawnienia `module.rosliny` i nadanie go roli administratora.
       **`workspaceId` WYMAGANY, bez `dbgenerated()`, bez triggera** (plan §2.1a).
       *Gotowe, gdy:* `npm run check:migrations` przechodzi; `grep -E "^(DROP|ALTER)"` pokazuje
       wyłącznie `ALTER TABLE … ADD CONSTRAINT` (**C-15**).
-- [ ] **T-3** — **`schema.prisma`** — 10 modeli zgodnie z migracją + relacja zwrotna w `Workspace`.
+- [x] **T-3** — **`schema.prisma`** — 10 modeli zgodnie z migracją + relacja zwrotna w `Workspace`.
       *Gotowe, gdy:* `npx prisma generate` czysto i `npm run check:schema-drift` nie zgłasza rozjazdu
       (lokalny Postgres, **C-13**).
-- [ ] **T-4** — **Migracja `0273_katalog_gatunkow`** — seed `PlantSpeciesCatalog`, 150–250 pozycji
+- [x] **T-4** — **Migracja `0273_katalog_gatunkow`** — seed `PlantSpeciesCatalog`, 150–250 pozycji
       (doniczkowe, warzywa, zioła, owoce, zboża), dollar-quoting, `ON CONFLICT ("key") DO NOTHING`.
       *Gotowe, gdy:* `migrate deploy` na lokalnej bazie przechodzi dwa razy z rzędu bez błędu
       (dowód idempotencji) i tabela ma ≥150 wierszy.
@@ -194,7 +194,8 @@
       `check:module-registry`, `check:boundaries`, `check:ui-contract`, `check:route-gating`,
       `check:actions`, `check:ai-coverage`, `check:cost-badge`, `check:content-memory`,
       `check:pagination`, `check:i18n`, `check:owner-columns`, `check:logs`, `check:workspace-fill`
-      (**musi dalej raportować dokładnie pięć tabel**), `check:tailwind`, `check:test-types`,
+      (**musi raportować tyle samo tabel co przed zmianą — 4; nowe tabele mają przestrzeń wymaganą,
+      więc nie wchodzą do tej listy**), `check:tailwind`, `check:test-types`,
       `tsc --noEmit`, `next lint`, `next build`. → **AC-30**
 - [ ] **T-45** — **Aktualizacja `CLAUDE.md`** — wiersz modułu w tabeli, blok Route Structure, lista
       uprawnień, sekcja schematu bazy. („Keep this table honest.")

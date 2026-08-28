@@ -3335,6 +3335,9 @@ model Workspace {
   youtubeVideos         YoutubeVideo[]
   youtubePrefs          YoutubePref[]
   chatConversations     ChatConversation[]
+  plantSpaces           PlantSpace[]
+  plants                Plant[]
+  plantSpecies          PlantSpecies[]
 
   @@index([kind])
 }
@@ -3665,4 +3668,290 @@ model ChatReaction {
   // tylko ochroną przed duplikatem.
   @@unique([messageId, userId, emoji])
   @@index([messageId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 113 — MODUŁ ROŚLINY (spec 113-modul-roslin, migracje 0272/0273)
+//
+// Dziesięć modeli obsługujących ten sam byt w czterech skalach: kwiatek na parapecie, ogród,
+// partia w kwiaciarni i uprawa na hektarach. Trzy decyzje modelowania, których nie widać
+// z samych nazw pól — pełne uzasadnienie stoi w nagłówku migracji 0272:
+//
+//   1. `workspaceId` jest WYMAGANY i bez `@default(dbgenerated())`. Nullowalna przestrzeń na nowej
+//      tabeli jest nieprzeprowadzalna przez `check:workspace-fill` (żąda wyzwalacza, którego ta
+//      sama bramka nie wpuszcza poza pięcioma tabelami wyjątków z 079).
+//   2. Katalog gatunków to DWA modele: `PlantSpeciesCatalog` (systemowy, bez przestrzeni) i
+//      `PlantSpecies` (kopia w przestrzeni użytkownika). Wzorzec `NewsSourceCatalog`/`NewsSource`.
+//   3. `PlantCareEvent` niesie podlanie, oprysk z ewidencją i zbiór — jedna tabela, bo ewidencja
+//      i oś czasu rośliny muszą mieć jedno źródło.
+//
+// Statusy i rodzaje to `String` + union TS z `src/modules/rosliny/lib/typy.ts` (C-12).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Systemowy katalog gatunków — bez właściciela i bez przestrzeni, zaseedowany migracją 0273
+/// i widoczny dla każdego zalogowanego (jak `NewsSourceCatalog`).
+model PlantSpeciesCatalog {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  namePl        String
+  nameLatin     String
+  family        String? // rodzina botaniczna — wejście reguły płodozmianu
+  category      String   @default("other") // houseplant|vegetable|herb|fruit|cereal|ornamental|other
+  light         String? // full|partial|shade
+  waterJson     String? // JSON WymaganiaWodne — odstęp w dniach PER PORA ROKU, nie jedna liczba
+  soil          String?
+  tempMinC      Float?
+  phenologyJson String? // JSON: kody BBCH istotne dla gatunku
+  notes         String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([category])
+}
+
+/// Gatunek w przestrzeni użytkownika: kopia wpisu z katalogu albo wpis własny.
+/// `origin` odpowiada na „skąd to wiem" — bez tego pola nikt po pół roku nie odróżni faktu
+/// botanicznego od treści zaproponowanej przez model (ta sama lekcja co `UserFact.origin`).
+model PlantSpecies {
+  id         String   @id @default(cuid())
+  catalogKey String? // z którego wiersza katalogu skopiowano
+  origin     String   @default("user") // system|user|ai
+  namePl     String
+  nameLatin  String
+  family     String?
+  category   String   @default("other")
+  light      String?
+  waterJson  String?
+  soil       String?
+  tempMinC   Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plants      Plant[]
+
+  @@unique([workspaceId, nameLatin])
+  @@index([workspaceId])
+}
+
+/// Przestrzeń roślinna. Jedno konto ma ich wiele (kwiaciarnia i prywatny ogród jednocześnie),
+/// więc tryb siedzi TUTAJ, a nie w ustawieniach użytkownika — wzorzec Dom/Pro z Magazynu nie
+/// uniósłby tego przypadku.
+model PlantSpace {
+  id                String   @id @default(cuid())
+  name              String
+  kind              String   @default("home") // home|garden|production|field
+  weatherLocationId String? // lokalizacja z modułu Pogoda — bez FK, moduł czyta ją kontraktem
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  workspaceId String
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  places      PlantPlace[]
+  plants      Plant[]
+  careTasks   PlantCareTask[]
+  careEvents  PlantCareEvent[]
+
+  @@index([workspaceId])
+}
+
+/// Miejsce w przestrzeni — parapet, grządka, sektor albo pole. To ono niesie warunki
+/// (nasłonecznienie, gleba, powierzchnia) i historię, z której liczy się płodozmian.
+model PlantPlace {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  kind      String   @default("windowsill") // windowsill|room|balcony|greenhouse|bed|zone|sector|field
+  sun       String   @default("unknown") // full|partial|shade|unknown
+  soil      String?
+  areaValue Float?
+  areaUnit  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  space      PlantSpace       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  plants     Plant[]
+  careTasks  PlantCareTask[]
+  careEvents PlantCareEvent[]
+
+  @@index([spaceId])
+}
+
+/// Byt roślinny. `quantity` + `quantityUnit` to cała różnica między egzemplarzem, partią stu sztuk
+/// i uprawą na 4,2 ha — trzy osobne tabele rozbiłyby ewidencję, agendę i oś czasu na trzy źródła.
+model Plant {
+  id            String    @id @default(cuid())
+  spaceId       String
+  placeId       String?
+  speciesId     String?
+  name          String
+  customSpecies String? // gdy użytkownik nie wybrał gatunku ze słownika
+  quantity      Float     @default(1)
+  quantityUnit  String    @default("szt") // szt|m2|ha
+  stage         String? // kod fazy BBCH, np. "65"
+  status        String    @default("ACTIVE") // ACTIVE|SOLD|HARVESTED|DEAD|ARCHIVED
+  statusReason  String? // „przelana", „sprzedana klientowi" — najcenniejsza dana zwrotna modułu
+  statusAt      DateTime?
+  sownAt        DateTime?
+  acquiredAt    DateTime?
+  parentId      String? // roślina-matka (rozmnażanie); fundament pod genetykę z etapu 3
+  photoUrl      String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  space        PlantSpace          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  place        PlantPlace?         @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  species      PlantSpecies?       @relation(fields: [speciesId], references: [id], onDelete: SetNull)
+  parent       Plant?              @relation("PlantParent", fields: [parentId], references: [id], onDelete: SetNull)
+  offspring    Plant[]             @relation("PlantParent")
+  careTasks    PlantCareTask[]
+  careEvents   PlantCareEvent[]
+  journal      PlantJournalEntry[]
+  measurements PlantMeasurement[]
+  healthEvents PlantHealthEvent[]
+
+  @@index([workspaceId, status])
+  @@index([spaceId])
+  @@index([placeId])
+  @@index([speciesId])
+  @@index([parentId])
+}
+
+/// Harmonogram opieki. `reason` niesie jednozdaniowe UZASADNIENIE terminu — aplikacja, która każe,
+/// jest posłuszna raz; aplikacja, która tłumaczy, uczy (AC-9).
+model PlantCareTask {
+  id         String    @id @default(cuid())
+  spaceId    String
+  plantId    String?
+  placeId    String?
+  kind       String    @default("WATERING")
+  title      String
+  recurring  String? // JSON RecurringRule — wspólny mechanizm z `src/lib/recurrence.ts`
+  lastDoneAt DateTime?
+  nextDueAt  DateTime?
+  reason     String?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  space  PlantSpace       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  plant  Plant?           @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  place  PlantPlace?      @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  events PlantCareEvent[]
+
+  @@index([spaceId])
+  @@index([plantId])
+  @@index([placeId])
+  @@index([nextDueAt])
+}
+
+/// Zdarzenie-zabieg: podlanie w mieszkaniu, oprysk na polu i zbiór — jedna tabela.
+/// Zdarzenia PRZEŻYWAJĄ skasowanie rośliny (`SetNull`), bo są historią miejsca, a w trybie
+/// zawodowym — ewidencją, której prawo każe nie kasować.
+model PlantCareEvent {
+  id         String   @id @default(cuid())
+  spaceId    String
+  plantId    String?
+  placeId    String?
+  taskId     String?
+  kind       String   @default("WATERING")
+  occurredAt DateTime @default(now())
+  outcome    String   @default("DONE") // DONE|SKIPPED|POSTPONED
+  note       String?
+
+  // Ewidencja stosowania środków ochrony roślin. `applicationKind`, `permitNumber` i
+  // `locationText` to trzy pola, które doszły do obowiązku od 1 stycznia 2026 (AC-24).
+  productName     String?
+  permitNumber    String?
+  applicationKind String?
+  doseValue       Float?
+  doseUnit        String?
+  areaValue       Float?
+  areaUnit        String?
+  locationText    String?
+  operator        String?
+  conditions      String?
+  /// Karencja. Funkcja („nie zbieraj przed") jest etapem 2, pole zakładamy teraz, żeby etap 2
+  /// nie był migracją na zapełnionej tabeli.
+  withdrawalDays  Int?
+
+  // Zbiór jako rodzaj zdarzenia, nie osobna tabela.
+  quantity     Float?
+  quantityUnit String?
+  pantryItemId String? // ślad wysłania do spiżarni Kuchni (bez FK — inny moduł)
+
+  createdAt DateTime @default(now())
+
+  space PlantSpace     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  plant Plant?         @relation(fields: [plantId], references: [id], onDelete: SetNull)
+  place PlantPlace?    @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  task  PlantCareTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([spaceId, occurredAt])
+  @@index([plantId])
+  @@index([placeId])
+  @@index([taskId])
+}
+
+/// Dziennik rośliny. Zdjęcie tego samego ujęcia co tydzień jest jedynym sposobem, w jaki
+/// użytkownik WIDZI, że jego opieka działa.
+model PlantJournalEntry {
+  id         String   @id @default(cuid())
+  plantId    String
+  occurredAt DateTime @default(now())
+  text       String?
+  photoUrl   String?
+  createdAt  DateTime @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId, occurredAt])
+}
+
+/// Pomiar z rodzajem i jednostką — jeden byt zamiast kolumny na każdą wielkość.
+/// `source` jest szwem pod sensory z etapu 2: urządzenie ma tylko dopisywać do TEJ tabeli.
+model PlantMeasurement {
+  id         String   @id @default(cuid())
+  plantId    String
+  measuredAt DateTime @default(now())
+  kind       String   @default("HEIGHT_CM")
+  value      Float
+  unit       String   @default("cm")
+  source     String   @default("manual") // manual|sensor
+  note       String?
+  createdAt  DateTime @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId, measuredAt])
+}
+
+/// Zdarzenie zdrowotne. `outcome` odpowiada na „czy pomogło" — bez tego cała diagnostyka
+/// jest jednorazowa i niczego nie uczy.
+model PlantHealthEvent {
+  id                 String    @id @default(cuid())
+  plantId            String
+  occurredAt         DateTime  @default(now())
+  source             String    @default("manual") // ai|manual
+  symptom            String?
+  diagnosis          String?
+  confidence         String? // low|medium|high|unknown — „nie wiem" jest dozwoloną odpowiedzią
+  recommendationJson String? // JSON: zalecenia w kolejności naturalne → biologiczne → chemiczne
+  photoUrl           String?
+  resolvedAt         DateTime?
+  outcome            String? // helped|no_change|worse
+  createdAt          DateTime  @default(now())
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId, occurredAt])
 }
