@@ -11,11 +11,17 @@ import { hashInputs, rememberedContent } from "@/platform/ai/contentMemory";
 import { resolveSectionMode } from "@/platform/ai/sectionModeResolver";
 import { buildUserContext, userContextStamp } from "@/lib/userContext";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { createTask } from "@/modules/tasks/contract";
 import { assertPlantAccess } from "./rosliny";
 import { assertSpaceAccess } from "./przestrzenie";
 import { prognozaDlaPrzestrzeni } from "../lib/pogoda";
 import { etykietaFazy } from "../lib/fenologia";
-import type { PewnoscDiagnozy, TrybPrzestrzeni } from "../lib/typy";
+import type { PewnoscDiagnozy, RodzajZabiegu, TrybPrzestrzeni } from "../lib/typy";
+
+/** Rodzaje zabiegu, które model może zaproponować w zaleceniu — sprawdzane przed zapisem. */
+const RODZAJE_ZABIEGU = [
+  "WATERING", "FERTILIZING", "PRUNING", "REPOTTING", "SPRAYING", "MULCHING", "SOWING", "HARVEST", "CUSTOM",
+] as const;
 
 /**
  * 113 — CZTERY ZASTOSOWANIA MODELU W MODULE ROŚLINY.
@@ -479,4 +485,67 @@ export async function getSpaceInsights(spaceId: string, force = false): Promise<
     mode,
     usage: (await visibleUsage(wynik.usage)) ?? null,
   };
+}
+
+
+// ─── Wyjścia z treści AI do reszty aplikacji ─────────────────────────────────
+
+/**
+ * Wysyła pozycję planu sezonu do Zadań (AC-20).
+ *
+ * Idzie przez **kontrakt Zadań**, tą samą drogą, którą Pogoda dopisuje swoje pomysły — moduł nie
+ * zna ani projektów, ani reguły ich wyboru. Bez tego plan byłby tekstem do przeczytania i zapomnienia:
+ * pozycja, której nie da się nigdzie zapisać, nie zmienia niczyjego tygodnia.
+ */
+export async function planToTask(spaceId: string, pozycja: PozycjaPlanu): Promise<void> {
+  const user = await requireAuth();
+  await assertSpaceAccess(spaceId, user.id);
+
+  const tytul = pozycja.tytul?.trim();
+  if (!tytul) throw new Error("Pozycja planu nie ma tytułu");
+
+  await createTask({
+    title: tytul,
+    // Miesiąc zostaje w opisie, a nie staje się terminem: plan mówi „w marcu", a nie „1 marca",
+    // i zamiana tego na konkretną datę byłaby zmyśleniem precyzji, której model nie podał.
+    description: [pozycja.miesiac ? `Plan sezonu — ${pozycja.miesiac}` : null, pozycja.opis]
+      .filter(Boolean)
+      .join("\n\n"),
+  });
+
+  revalidatePath("/tasks");
+}
+
+/**
+ * Zakłada zabieg opieki wynikający z zalecenia diagnozy (AC-19).
+ *
+ * Diagnoza kończąca się samym tekstem jest poradą; diagnoza kończąca się zaplanowanym zabiegiem
+ * jest działaniem. `rodzajZabiegu` bierzemy z odpowiedzi modelu, ale **sprawdzamy go wobec unii** —
+ * model potrafi zwrócić nazwę spoza listy, a wtedy lądujemy na „inny zabieg" zamiast rzucać.
+ */
+export async function scheduleRecommendedCare(data: {
+  plantId: string;
+  rodzajZabiegu?: string | null;
+  tytul: string;
+}): Promise<{ id: string }> {
+  const user = await requireAuth();
+  await assertPlantAccess(data.plantId, user.id, true);
+
+  const roslina = await prisma.plant.findUnique({
+    where: { id: data.plantId },
+    select: { spaceId: true },
+  });
+  if (!roslina) throw new Error("Roślina nie istnieje");
+
+  const { createCareTask } = await import("./opieka");
+  const rodzaj = (RODZAJE_ZABIEGU as readonly string[]).includes(data.rodzajZabiegu ?? "")
+    ? (data.rodzajZabiegu as RodzajZabiegu)
+    : "CUSTOM";
+
+  return createCareTask({
+    spaceId: roslina.spaceId,
+    plantId: data.plantId,
+    kind: rodzaj,
+    title: data.tytul.trim() || "Zabieg z zalecenia",
+  });
 }

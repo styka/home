@@ -3,15 +3,16 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Sprout, Plus, MapPin, Settings2, Wand2, Share2 } from "lucide-react";
+import { Sprout, Plus, MapPin, Settings2, Wand2, Share2, ListPlus, CloudSun, AlertTriangle } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
-import type { PrzestrzenDTO } from "../actions/przestrzenie";
+import { updateSpace, type PrzestrzenDTO } from "../actions/przestrzenie";
 import type { MiejsceDTO } from "../actions/miejsca";
 import { createPlace } from "../actions/miejsca";
 import { createPlant, type RoslinaDTO } from "../actions/rosliny";
-import { getSeasonPlan, getSpaceInsights, type PozycjaPlanu, type TrescAI, type WnioskiPrzestrzeni } from "../actions/analiza";
+import { getSeasonPlan, getSpaceInsights, planToTask, type PozycjaPlanu, type TrescAI, type WnioskiPrzestrzeni } from "../actions/analiza";
+import { getPlaceHistory, type HistoriaMiejscaDTO } from "../actions/miejsca";
 import { domyslnaJednostka, poleWidoczne } from "../lib/tryb";
 import { etykietaFazy } from "../lib/fenologia";
 import type { JednostkaLicznosci } from "../lib/typy";
@@ -31,12 +32,14 @@ export function PrzestrzenPage({
   rosliny: poczatkoweRosliny,
   plan: poczatkowyPlan,
   wnioski: poczatkoweWnioski,
+  lokalizacje,
 }: {
   przestrzen: PrzestrzenDTO;
   miejsca: MiejsceDTO[];
   rosliny: RoslinaDTO[];
   plan: TrescAI<PozycjaPlanu[]>;
   wnioski: TrescAI<WnioskiPrzestrzeni>;
+  lokalizacje: { id: string; label: string }[];
 }) {
   const t = useTranslations("modules.rosliny.PrzestrzenPage");
   const [miejsca, setMiejsca] = useState(poczatkoweMiejsca);
@@ -44,6 +47,11 @@ export function PrzestrzenPage({
   const [zaawansowane, setZaawansowane] = useState(false);
   const [formularz, setFormularz] = useState<"roslina" | "miejsce" | null>(null);
   const [udostepnianie, setUdostepnianie] = useState(false);
+  const [ustawienia, setUstawienia] = useState(false);
+  const [lokalizacja, setLokalizacja] = useState(przestrzen.weatherLocationId ?? "");
+  const [wyslane, setWyslane] = useState<string[]>([]);
+  const [ostrzezenie, setOstrzezenie] = useState<HistoriaMiejscaDTO["ostrzezenie"]>(null);
+  const [komunikat, setKomunikat] = useState<string | null>(null);
   const [plan, setPlan] = useState(poczatkowyPlan);
   const [wnioski, setWnioski] = useState(poczatkoweWnioski);
   const [pending, startTransition] = useTransition();
@@ -96,6 +104,41 @@ export function PrzestrzenPage({
     });
   }
 
+  /**
+   * AC-26: ostrzeżenie płodozmianowe SPRAWDZAMY W CHWILI WYBORU MIEJSCA, a nie po zapisie.
+   * Po zapisie byłoby to wyrzutem sumienia, a nie ostrzeżeniem — użytkownik ma dowiedzieć się,
+   * zanim posadzi. Nadal jest to OSTRZEŻENIE: formularz działa dalej, nic nie jest blokowane.
+   */
+  function sprawdzMiejsce(id: string) {
+    setMiejsceId(id);
+    setOstrzezenie(null);
+    if (!id) return;
+    startTransition(async () => {
+      try {
+        const rodzina = rosliny.find((r) => r.placeId === id)?.rodzina ?? null;
+        const historia = await getPlaceHistory(id, rodzina);
+        setOstrzezenie(historia.ostrzezenie);
+      } catch {
+        /* brak historii nie może zablokować dodania rośliny */
+      }
+    });
+  }
+
+  function zapiszLokalizacje(id: string) {
+    setLokalizacja(id);
+    startTransition(async () => {
+      await updateSpace(przestrzen.id, { weatherLocationId: id || null });
+      setKomunikat(id ? t("lokalizacjaZapisana") : t("lokalizacjaUsunieta"));
+    });
+  }
+
+  function doZadan(p: PozycjaPlanu, i: number) {
+    startTransition(async () => {
+      await planToTask(przestrzen.id, p);
+      setWyslane((w) => [...w, String(i)]);
+    });
+  }
+
   function odswiezPlan() {
     startTransition(async () => setPlan(await getSeasonPlan(przestrzen.id, true)));
   }
@@ -114,6 +157,7 @@ export function PrzestrzenPage({
         </Link>
       }
       state="ready"
+      settings={{ onClick: () => setUstawienia((v) => !v), active: ustawienia, label: t("ustawienia") }}
       actions={
         <>
           <button type="button" style={przycisk} onClick={() => setUdostepnianie(true)}>
@@ -154,6 +198,33 @@ export function PrzestrzenPage({
         />
       )}
 
+      {ustawienia && (
+        <section style={sekcja}>
+          <h2 style={naglowekSekcji}>
+            <CloudSun size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+            {t("lokalizacjaTytul")}
+          </h2>
+          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("lokalizacjaOpis")}</p>
+          {lokalizacje.length === 0 ? (
+            <p style={{ ...drobny, margin: 0 }}>{t("brakLokalizacji")}</p>
+          ) : (
+            <select
+              value={lokalizacja}
+              onChange={(e) => zapiszLokalizacje(e.target.value)}
+              aria-label={t("lokalizacjaEtykieta")}
+              style={{ ...pole, maxWidth: 280 }}
+              disabled={pending}
+            >
+              <option value="">{t("bezLokalizacji")}</option>
+              {lokalizacje.map((l) => (
+                <option key={l.id} value={l.id}>{l.label}</option>
+              ))}
+            </select>
+          )}
+          {komunikat && <p style={{ ...drobny, margin: "8px 0 0", color: "var(--accent-green)" }}>{komunikat}</p>}
+        </section>
+      )}
+
       {formularz === "roslina" && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>{t("nowaRoslina")}</h2>
@@ -168,7 +239,7 @@ export function PrzestrzenPage({
               style={{ ...pole, flex: "1 1 200px" }}
             />
             {miejsca.length > 0 && (
-              <select value={miejsceId} onChange={(e) => setMiejsceId(e.target.value)} aria-label={t("miejsceEtykieta")} style={{ ...pole, flex: "0 1 160px" }}>
+              <select value={miejsceId} onChange={(e) => sprawdzMiejsce(e.target.value)} aria-label={t("miejsceEtykieta")} style={{ ...pole, flex: "0 1 160px" }}>
                 <option value="">{t("bezMiejsca")}</option>
                 {miejsca.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
@@ -196,6 +267,18 @@ export function PrzestrzenPage({
               {t("dodaj")}
             </button>
           </div>
+          {ostrzezenie && (
+            <p
+              style={{
+                fontSize: 12,
+                margin: "10px 0 0",
+                color: ostrzezenie.poziom === "warn" ? "var(--accent-amber)" : "var(--text-secondary)",
+              }}
+            >
+              <AlertTriangle size={12} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+              {ostrzezenie.tresc}
+            </p>
+          )}
         </section>
       )}
 
@@ -283,6 +366,20 @@ export function PrzestrzenPage({
                   <li key={i} style={{ fontSize: 13, color: "var(--text-primary)" }}>
                     <strong>{p.miesiac}</strong> — {p.tytul}
                     <span style={{ ...drobny, display: "block" }}>{p.opis}</span>
+                    {/* AC-20: bez tego plan byłby tekstem do przeczytania i zapomnienia. */}
+                    {wyslane.includes(String(i)) ? (
+                      <span style={drobny}>{t("wZadaniach")}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{ ...przycisk, padding: "3px 8px", minHeight: 0, fontSize: 12, marginTop: 4 }}
+                        onClick={() => doZadan(p, i)}
+                        disabled={pending}
+                      >
+                        <ListPlus size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                        {t("doZadan")}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ol>

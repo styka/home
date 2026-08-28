@@ -6,10 +6,9 @@ import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { assertSpaceAccess } from "./przestrzenie";
 import { assertPlantAccess } from "./rosliny";
-import { prognozaDlaPrzestrzeni } from "../lib/pogoda";
-import { terminCykliczny, terminPodlewania, type PrognozaDobowa } from "../domain/harmonogram";
-import { czytajWymaganiaWodne, kubelekAgendy } from "../domain/agenda";
-import type { Naslonecznienie, RodzajZabiegu, WynikZabiegu } from "../lib/typy";
+import { przeliczTermin } from "../lib/terminy";
+import { kubelekAgendy } from "../domain/agenda";
+import type { RodzajZabiegu, WynikZabiegu } from "../lib/typy";
 
 /**
  * 113 — HARMONOGRAM OPIEKI I ZDARZENIA-ZABIEGI.
@@ -90,70 +89,6 @@ export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): 
     reason: z.reason,
     bucket: kubelekAgendy(z.nextDueAt, teraz),
   }));
-}
-
-/** Kontekst potrzebny regule terminu: gatunek, miejsce, tryb przestrzeni, prognoza. */
-async function kontekstTerminu(taskId: string) {
-  const zadanie = await prisma.plantCareTask.findUnique({
-    where: { id: taskId },
-    select: {
-      id: true,
-      kind: true,
-      spaceId: true,
-      recurring: true,
-      space: { select: { kind: true, weatherLocationId: true } },
-      place: { select: { sun: true } },
-      plant: {
-        select: {
-          place: { select: { sun: true } },
-          species: { select: { waterJson: true } },
-        },
-      },
-    },
-  });
-  if (!zadanie) throw new Error("Zadanie opieki nie istnieje");
-
-  const naslonecznienie: Naslonecznienie =
-    (zadanie.place?.sun as Naslonecznienie) ?? (zadanie.plant?.place?.sun as Naslonecznienie) ?? "unknown";
-
-  const prognoza: PrognozaDobowa[] = await prognozaDlaPrzestrzeni(zadanie.space.weatherLocationId);
-
-  return {
-    zadanie,
-    naslonecznienie,
-    prognoza,
-    // Deszcz nie podleje rośliny stojącej w mieszkaniu — to jedyne miejsce, w którym tryb
-    // przestrzeni wpływa na regułę, a nie tylko na wygląd.
-    podDachem: zadanie.space.kind === "home",
-    wymagania: czytajWymaganiaWodne(zadanie.plant?.species?.waterJson),
-  };
-}
-
-/** Termin i uzasadnienie dla zadania, liczone od podanej chwili. */
-async function przeliczTermin(taskId: string, od: Date) {
-  const k = await kontekstTerminu(taskId);
-
-  if (k.zadanie.kind === "WATERING") {
-    return terminPodlewania({
-      od,
-      wymagania: k.wymagania,
-      naslonecznienie: k.naslonecznienie,
-      prognoza: k.prognoza,
-      podDachem: k.podDachem,
-    });
-  }
-
-  // Zabieg niebędący podlewaniem: odstęp bierzemy z reguły powtarzalności, a gdy jej nie ma —
-  // z 14 dni, bo to najczęstszy rytm nawożenia i przeglądu.
-  let coIle = 14;
-  try {
-    const rec = k.zadanie.recurring ? (JSON.parse(k.zadanie.recurring) as { interval?: number }) : null;
-    if (rec?.interval && rec.interval > 0) coIle = rec.interval;
-  } catch {
-    /* uszkodzona reguła = wartość domyślna, nie awaria agendy */
-  }
-
-  return terminCykliczny(od, coIle, { prognoza: k.prognoza, podDachem: k.podDachem });
 }
 
 export async function createCareTask(data: {

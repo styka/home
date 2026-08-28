@@ -239,6 +239,16 @@
     "reason": "interactive",
     "access": "owner"
   },
+  "analiza:planToTask": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "analiza:scheduleRecommendedCare": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "assistantPrefs:getAssistantLevelConfig": {
     "kind": "read",
     "status": "excluded",
@@ -2110,6 +2120,12 @@
     "kind": "read",
     "status": "ai",
     "action": "list_plant_spaces",
+    "access": "owner"
+  },
+  "przestrzenie:getWeatherOptions": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
     "access": "owner"
   },
   "przestrzenie:updateSpace": {

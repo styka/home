@@ -212,22 +212,22 @@
 > podłączenia do platformy, nie o dostępność funkcji. Żaden z braków nie wynika z błędnego speca ani
 > planu, więc poprawka idzie wprost w kod.
 
-- [ ] **T-48** — **Harmonogram przy nowej roślinie.** `createPlant` zakłada zadanie opieki
+- [x] **T-48** — **Harmonogram przy nowej roślinie.** `createPlant` zakłada zadanie opieki
       (podlewanie) i liczy jego pierwszy termin regułą dziedzinową. → **AC-8**
       *Gotowe, gdy:* test integracyjny potwierdza, że po dodaniu rośliny istnieje zadanie z terminem
       i **niepustym uzasadnieniem**.
-- [ ] **T-49** — **Lokalizacja pogodowa przestrzeni.** Wybór lokalizacji (z kontraktu Pogody)
+- [x] **T-49** — **Lokalizacja pogodowa przestrzeni.** Wybór lokalizacji (z kontraktu Pogody)
       w ustawieniach przestrzeni — slot `settings` widoku, nie zakładka (C-33). → **AC-11**
       *Gotowe, gdy:* zapis ustawia `weatherLocationId`, a agenda pokazuje uzasadnienie z pogodą.
-- [ ] **T-50** `[P]` — **Zdjęcie we wpisie dziennika.** → **AC-13**
-- [ ] **T-51** — **Zbiór i trzy wyjścia.** Formularz zbioru w szczególe rośliny + przyciski „do
+- [x] **T-50** `[P]` — **Zdjęcie we wpisie dziennika.** → **AC-13**
+- [x] **T-51** — **Zbiór i trzy wyjścia.** Formularz zbioru w szczególe rośliny + przyciski „do
       spiżarni", „zapisz koszt", „dopisz do zakupów". → **AC-15**
       *Gotowe, gdy:* każdy przycisk woła kontrakt obcego modułu, a druga próba wysłania do spiżarni
       nie tworzy drugiej pozycji.
-- [ ] **T-52** `[P]` — **Własny gatunek** w widoku katalogu. → **AC-17**
-- [ ] **T-53** — **Rozpoznanie ze zdjęcia + „zaplanuj zalecany zabieg".** Przyjęcie propozycji
+- [x] **T-52** `[P]` — **Własny gatunek** w widoku katalogu. → **AC-17**
+- [x] **T-53** — **Rozpoznanie ze zdjęcia + „zaplanuj zalecany zabieg".** Przyjęcie propozycji
       wypełnia gatunek rośliny; zalecenie z `zabieg` zakłada zadanie opieki. → **AC-18, AC-19**
-- [ ] **T-54** — **Plan sezonu → Zadania**, formularz zabiegu z polami ewidencji, ostrzeżenie
+- [x] **T-54** — **Plan sezonu → Zadania**, formularz zabiegu z polami ewidencji, ostrzeżenie
       płodozmianowe przy zakładaniu uprawy. → **AC-20, AC-24, AC-26**
       *Gotowe, gdy:* pozycja planu tworzy zadanie przez kontrakt Zadań (usuwa też rozjazd wobec
       planu §6.3), zapis zabiegu zwraca listę braków, a ostrzeżenie jest OSTRZEŻENIEM, nie blokadą.

@@ -9,6 +9,7 @@ import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
 import { bladZmianyStanu, roslinaNaDTO, statusZakonczony, type RoslinaDTO } from "../domain/roslina";
+import { zalozHarmonogramPodlewania } from "../lib/terminy";
 import type { JednostkaLicznosci, StatusRosliny } from "../lib/typy";
 
 /**
@@ -159,7 +160,13 @@ export async function createPlant(data: {
     select: { id: true },
   });
 
+  // AC-8: nowa roślina od razu dostaje harmonogram, a jego pierwszy termin liczy się TĄ SAMĄ regułą
+  // co każdy następny — razem z uzasadnieniem. Roślina dodana bez harmonogramu wymagałaby od
+  // użytkownika drugiego kroku, o którym nikt mu nie powie.
+  await zalozHarmonogramPodlewania(roslina.id);
+
   revalidatePath("/rosliny");
+  revalidatePath("/rosliny/opieka");
   revalidatePath(`/rosliny/${data.spaceId}`);
   return roslina;
 }
@@ -281,6 +288,8 @@ export async function propagatePlant(
     },
     select: { id: true },
   });
+
+  await zalozHarmonogramPodlewania(sadzonka.id);
 
   revalidatePath(`/rosliny/${rodzic.spaceId}`);
   revalidatePath(`/rosliny/${rodzic.spaceId}/roslina/${parentId}`);

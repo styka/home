@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { BookOpen, Plus, Search } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
-import { addSpeciesFromCatalog, searchCatalog, type GatunekDTO, type GatunekKatalogDTO } from "../actions/gatunki";
+import { addSpeciesFromCatalog, createSpecies, searchCatalog, type GatunekDTO, type GatunekKatalogDTO } from "../actions/gatunki";
 import type { KategoriaGatunku } from "../lib/typy";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
 
@@ -30,6 +30,12 @@ export function KatalogGatunkow({
   const [moje, setMoje] = useState(poczatkoweMoje);
   const [fraza, setFraza] = useState("");
   const [kategoria, setKategoria] = useState<KategoriaGatunku | "">("");
+  const [wlasny, setWlasny] = useState(false);
+  const [nowyPl, setNowyPl] = useState("");
+  const [nowyLat, setNowyLat] = useState("");
+  const [nowaRodzina, setNowaRodzina] = useState("");
+  const [nowaKategoria, setNowaKategoria] = useState<KategoriaGatunku>("other");
+  const [blad, setBlad] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function szukaj() {
@@ -54,6 +60,48 @@ export function KatalogGatunkow({
     });
   }
 
+  /**
+   * AC-17: własny gatunek.
+   *
+   * **Rodzina botaniczna nie jest polem ozdobnym** — to na niej stoi ostrzeżenie płodozmianowe,
+   * więc podpowiadamy ją wprost, zamiast chować pod „więcej pól". Wpis bez rodziny po prostu nie
+   * wywoła ostrzeżenia i to jest w porządku; ukrycie pola sprawiłoby, że nikt by go nie wypełnił.
+   */
+  function dodajWlasny() {
+    const pl = nowyPl.trim();
+    const lat = nowyLat.trim();
+    if (!pl || !lat) {
+      setBlad(t("nazwyWymagane"));
+      return;
+    }
+    setBlad(null);
+    startTransition(async () => {
+      try {
+        const { id } = await createSpecies({
+          namePl: pl,
+          nameLatin: lat,
+          family: nowaRodzina.trim() || null,
+          category: nowaKategoria,
+        });
+        setMoje((m) =>
+          m.some((x) => x.id === id)
+            ? m
+            : [...m, {
+                id, catalogKey: null, origin: "user", namePl: pl, nameLatin: lat,
+                family: nowaRodzina.trim() || null, category: nowaKategoria,
+                light: null, waterJson: null, soil: null, tempMinC: null, notes: null,
+              }],
+        );
+        setNowyPl("");
+        setNowyLat("");
+        setNowaRodzina("");
+        setWlasny(false);
+      } catch (e) {
+        setBlad(e instanceof Error ? e.message : t("bladOgolny"));
+      }
+    });
+  }
+
   return (
     <ModuleView
       icon={<BookOpen size={18} />}
@@ -65,6 +113,12 @@ export function KatalogGatunkow({
         </Link>
       }
       state="ready"
+      actions={
+        <button type="button" style={przyciskGlowny} onClick={() => setWlasny((v) => !v)}>
+          <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          {t("wlasnyGatunek")}
+        </button>
+      }
       filters={
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
@@ -94,6 +148,24 @@ export function KatalogGatunkow({
         </div>
       }
     >
+      {wlasny && (
+        <section style={sekcja}>
+          <h2 style={naglowekSekcji}>{t("wlasnyGatunek")}</h2>
+          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("wlasnyOpis")}</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input type="text" value={nowyPl} onChange={(e) => setNowyPl(e.target.value)} placeholder={t("nazwaPlPlaceholder")} aria-label={t("nazwaPlEtykieta")} style={{ ...pole, flex: "1 1 180px" }} />
+            <input type="text" value={nowyLat} onChange={(e) => setNowyLat(e.target.value)} placeholder={t("nazwaLatPlaceholder")} aria-label={t("nazwaLatEtykieta")} style={{ ...pole, flex: "1 1 180px" }} />
+            <input type="text" value={nowaRodzina} onChange={(e) => setNowaRodzina(e.target.value)} placeholder={t("rodzinaPlaceholder")} aria-label={t("rodzinaEtykieta")} style={{ ...pole, flex: "1 1 150px" }} />
+            <select value={nowaKategoria} onChange={(e) => setNowaKategoria(e.target.value as KategoriaGatunku)} aria-label={t("kategoriaEtykieta")} style={{ ...pole, flex: "0 1 160px" }}>
+              {KATEGORIE.map((k) => (<option key={k} value={k}>{t(`kategoria.${k}`)}</option>))}
+            </select>
+            <button type="button" style={przyciskGlowny} onClick={dodajWlasny} disabled={pending}>{t("zapisz")}</button>
+          </div>
+          <p style={{ ...drobny, margin: "8px 0 0" }}>{t("rodzinaPodpowiedz")}</p>
+          {blad && <p style={{ fontSize: 12, color: "var(--accent-red)", margin: "8px 0 0" }}>{blad}</p>}
+        </section>
+      )}
+
       {moje.length > 0 && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>{t("mojeTytul", { ile: moje.length })}</h2>

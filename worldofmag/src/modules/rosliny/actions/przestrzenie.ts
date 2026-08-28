@@ -6,6 +6,8 @@ import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
+import { getLocations } from "@/modules/weather/contract";
+import { logEvent } from "@/platform/observability/log";
 import { requireRoslinyAccess } from "../lib/sharingGuard";
 import { trybLubDomyslny } from "../domain/agenda";
 import type { TrybPrzestrzeni } from "../lib/typy";
@@ -186,4 +188,24 @@ export async function deleteSpace(id: string): Promise<void> {
 
   revalidatePath("/rosliny");
   revalidatePath("/trash");
+}
+
+/**
+ * Lokalizacje pogodowe do wyboru przy przestrzeni (AC-11).
+ *
+ * **Passthrough przez kontrakt Pogody, nie własna lista.** Moduł nie zna ani tabeli lokalizacji, ani
+ * sposobu ich zakładania — pyta ten moduł, który je ma. Gdy Pogoda jest niedostępna albo użytkownik
+ * nie ma tam żadnej lokalizacji, wracamy z pustą listą: brak lokalizacji ma wyłączyć korektę
+ * pogodową, a nie zablokować ustawienia przestrzeni.
+ */
+export async function getWeatherOptions(): Promise<{ id: string; label: string }[]> {
+  await requireAuth();
+  try {
+    return (await getLocations()).map((l) => ({ id: l.id, label: l.label }));
+  } catch (e) {
+    logEvent("warn", "rosliny/lokalizacje.niedostepne", {
+      powod: e instanceof Error ? e.message : "nieznany",
+    });
+    return [];
+  }
 }

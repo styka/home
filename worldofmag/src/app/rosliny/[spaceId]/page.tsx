@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import { getSpace } from "@/modules/rosliny/actions/przestrzenie";
+import { getSpace, getWeatherOptions } from "@/modules/rosliny/actions/przestrzenie";
 import { getPlaces } from "@/modules/rosliny/actions/miejsca";
 import { getPlants } from "@/modules/rosliny/actions/rosliny";
 import { getSeasonPlan, getSpaceInsights } from "@/modules/rosliny/actions/analiza";
@@ -11,12 +11,22 @@ export default async function PrzestrzenRootPage({ params }: { params: { spaceId
   const przestrzen = await getSpace(params.spaceId);
   if (!przestrzen) notFound();
 
-  const [miejsca, rosliny, plan, wnioski] = await Promise.all([
+  const [miejsca, rosliny, plan, wnioski, lokalizacje] = await Promise.all([
     getPlaces(params.spaceId),
     getPlants({ spaceId: params.spaceId }),
     getSeasonPlan(params.spaceId),
     getSpaceInsights(params.spaceId),
+    getWeatherOptions(),
   ]);
 
-  return <PrzestrzenPage przestrzen={przestrzen} miejsca={miejsca} rosliny={rosliny} plan={plan} wnioski={wnioski} />;
+  return (
+    <PrzestrzenPage
+      przestrzen={przestrzen}
+      miejsca={miejsca}
+      rosliny={rosliny}
+      plan={plan}
+      wnioski={wnioski}
+      lokalizacje={lokalizacje}
+    />
+  );
 }

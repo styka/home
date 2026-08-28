@@ -56,6 +56,22 @@ test(
         assert.ok(egzemplarz.id);
       });
 
+      await t.test("AC-8: nowa roślina dostaje harmonogram z terminem I uzasadnieniem", async () => {
+        const { zalozHarmonogramPodlewania } = await import("../lib/terminy");
+        const roslina = await prisma.plant.create({
+          data: { name: `Zharmonogramem-${rnd()}`, spaceId: przestrzen.id, placeId: miejsce.id, ...wlasnosc },
+        });
+        await zalozHarmonogramPodlewania(roslina.id);
+
+        const zadanie = await prisma.plantCareTask.findFirst({ where: { plantId: roslina.id } });
+        assert.ok(zadanie, "roślina powstała bez harmonogramu — użytkownik musiałby zrobić drugi krok");
+        assert.equal(zadanie?.kind, "WATERING");
+        assert.ok(zadanie?.nextDueAt, "harmonogram bez terminu nie pojawi się w agendzie");
+        // Uzasadnienie jest częścią wyniku reguły, nie ozdobą (AC-9) — musi być od pierwszego dnia.
+        assert.ok(zadanie?.reason && zadanie.reason.length > 0, "brak uzasadnienia terminu");
+        assert.ok(zadanie!.nextDueAt!.getTime() > Date.now(), "termin nie może wypadać w przeszłości");
+      });
+
       await t.test("AC-5: sadzonka wskazuje rodzica, a rodzic widzi potomstwo", async () => {
         const matka = await prisma.plant.create({
           data: { name: `Matka-${rnd()}`, spaceId: przestrzen.id, ...wlasnosc },
