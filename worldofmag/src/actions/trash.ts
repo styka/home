@@ -49,6 +49,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   else if (item.module === "weather") await restoreWeatherIdea(data);
   else if (item.module === "youtube") await restoreYoutubeChannel(data);
   else if (item.module === "czat") await restoreChatMessage(data, item.userId);
+  else if (item.module === "rosliny") await restoreRosliny(data);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
@@ -57,6 +58,7 @@ export async function restoreTrashItem(id: string): Promise<void> {
   revalidatePath("/tasks");
   revalidatePath("/pogoda/pomysly");
   revalidatePath("/youtube/kanaly");
+  revalidatePath("/rosliny");
 }
 
 export async function purgeTrashItem(id: string): Promise<void> {
@@ -323,4 +325,128 @@ async function restoreChatMessage(d: Record<string, unknown>, userId: string): P
     where: { id, autorId: userId },
     data: { deletedAt: null },
   });
+}
+
+
+/**
+ * 113 — PRZYWRÓCENIE Z MODUŁU ROŚLINY.
+ *
+ * Migawka niesie `rodzaj`, bo kosz przyjmuje z tego modułu **dwa różne byty**: przestrzeń (razem
+ * z jej miejscami i roślinami — kaskada FK usuwa je fizycznie, więc przywrócenie samej nazwy byłoby
+ * przywróceniem pustej przestrzeni) albo pojedynczą roślinę.
+ *
+ * Identyfikatory z migawki odtwarzamy **jawnie**, a nie generujemy nowe. To jest różnica, która ma
+ * konsekwencje: zdarzenia opieki przeżyły usunięcie rośliny (`plantId` poszedł na `SET NULL`), więc
+ * roślina wracająca z tym samym `id` mogłaby swoją historię odzyskać. Nowe `id` skazywałoby ją na
+ * pustą oś czasu, mimo że wiersze wciąż leżą w bazie.
+ */
+async function restoreRosliny(d: Record<string, unknown>): Promise<void> {
+  const rodzaj = d.rodzaj as string;
+
+  if (rodzaj === "plantSpace") {
+    const space = d.space as Record<string, unknown> | undefined;
+    if (!space?.id) throw new Error("Uszkodzona migawka przestrzeni roślinnej");
+    const miejsca = (space.places as Record<string, unknown>[]) ?? [];
+    const rosliny = (space.plants as Record<string, unknown>[]) ?? [];
+
+    await prisma.$transaction(async (tx) => {
+      await tx.plantSpace.createMany({
+        data: [
+          {
+            id: space.id as string,
+            workspaceId: space.workspaceId as string,
+            name: (space.name as string) ?? "Przywrócona przestrzeń",
+            kind: (space.kind as string) ?? "home",
+            weatherLocationId: (space.weatherLocationId as string | null) ?? null,
+            notes: (space.notes as string | null) ?? null,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (miejsca.length > 0) {
+        await tx.plantPlace.createMany({
+          data: miejsca.map((m) => ({
+            id: m.id as string,
+            spaceId: m.spaceId as string,
+            name: (m.name as string) ?? "",
+            kind: (m.kind as string) ?? "windowsill",
+            sun: (m.sun as string) ?? "unknown",
+            soil: (m.soil as string | null) ?? null,
+            areaValue: (m.areaValue as number | null) ?? null,
+            areaUnit: (m.areaUnit as string | null) ?? null,
+            notes: (m.notes as string | null) ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      if (rosliny.length > 0) {
+        // Rodzic (`parentId`) świadomie NIE wraca: roślina-matka mogła nie należeć do tej
+        // przestrzeni i wtedy klucz obcy odrzuciłby cały zapis. Rodowód jest ozdobą przywróconego
+        // rekordu, a nie jego treścią — utrata całej przestrzeni byłaby ceną nieproporcjonalną.
+        await tx.plant.createMany({
+          data: rosliny.map((r) => ({
+            id: r.id as string,
+            workspaceId: r.workspaceId as string,
+            spaceId: r.spaceId as string,
+            placeId: (r.placeId as string | null) ?? null,
+            speciesId: (r.speciesId as string | null) ?? null,
+            name: (r.name as string) ?? "",
+            customSpecies: (r.customSpecies as string | null) ?? null,
+            quantity: (r.quantity as number) ?? 1,
+            quantityUnit: (r.quantityUnit as string) ?? "szt",
+            stage: (r.stage as string | null) ?? null,
+            status: (r.status as string) ?? "ACTIVE",
+            statusReason: (r.statusReason as string | null) ?? null,
+            notes: (r.notes as string | null) ?? null,
+            photoUrl: (r.photoUrl as string | null) ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
+    return;
+  }
+
+  if (rodzaj === "plant") {
+    const p = d.plant as Record<string, unknown> | undefined;
+    if (!p?.id) throw new Error("Uszkodzona migawka rośliny");
+    // Przestrzeń mogła zniknąć razem z rośliną (kaskada) — wtedy przywrócenie jest bezprzedmiotowe
+    // i mówimy o tym wprost, zamiast wywalać się kluczem obcym.
+    const przestrzen = await prisma.plantSpace.findUnique({
+      where: { id: p.spaceId as string },
+      select: { id: true },
+    });
+    if (!przestrzen) throw new Error("Przestrzeń tej rośliny już nie istnieje — przywróć najpierw przestrzeń");
+
+    const miejsce = p.placeId
+      ? await prisma.plantPlace.findUnique({ where: { id: p.placeId as string }, select: { id: true } })
+      : null;
+
+    await prisma.plant.createMany({
+      data: [
+        {
+          id: p.id as string,
+          workspaceId: p.workspaceId as string,
+          spaceId: p.spaceId as string,
+          // Miejsce mogło zostać usunięte osobno — wtedy roślina wraca bez miejsca zamiast nie
+          // wracać wcale.
+          placeId: miejsce?.id ?? null,
+          speciesId: (p.speciesId as string | null) ?? null,
+          name: (p.name as string) ?? "",
+          customSpecies: (p.customSpecies as string | null) ?? null,
+          quantity: (p.quantity as number) ?? 1,
+          quantityUnit: (p.quantityUnit as string) ?? "szt",
+          stage: (p.stage as string | null) ?? null,
+          status: (p.status as string) ?? "ACTIVE",
+          statusReason: (p.statusReason as string | null) ?? null,
+          notes: (p.notes as string | null) ?? null,
+          photoUrl: (p.photoUrl as string | null) ?? null,
+        },
+      ],
+      skipDuplicates: true,
+    });
+    return;
+  }
+
+  throw new Error("Nieznany rodzaj migawki modułu Rośliny");
 }

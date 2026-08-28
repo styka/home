@@ -1,0 +1,358 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/platform/db/prisma";
+import { requireAuth, ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { SUFIT_LISTY } from "@/platform/pagination";
+import { assertSpaceAccess } from "./przestrzenie";
+import { assertPlantAccess } from "./rosliny";
+import { prognozaDlaPrzestrzeni } from "../lib/pogoda";
+import { terminCykliczny, terminPodlewania, type PrognozaDobowa } from "../domain/harmonogram";
+import { WYMAGANIA_WODNE_DOMYSLNE, type Naslonecznienie, type RodzajZabiegu, type WymaganiaWodne, type WynikZabiegu } from "../lib/typy";
+
+/**
+ * 113 — HARMONOGRAM OPIEKI I ZDARZENIA-ZABIEGI.
+ *
+ * Wzorzec wprost ze Zwierząt (`PetCareTask` + `PetCareLog`): harmonogram mówi „co i kiedy",
+ * zdarzenie mówi „co się faktycznie stało". Różnica wobec Zwierząt jest jedna, ale istotna:
+ * **termin nie jest tu stałą z reguły powtarzalności, tylko wynikiem reguły dziedzinowej**
+ * (`domain/harmonogram`), która bierze pod uwagę gatunek, miejsce, porę roku i prognozę — i zwraca
+ * termin RAZEM z uzasadnieniem.
+ *
+ * **Termin przelicza się od FAKTYCZNEGO wykonania, nie od planowanego.** Inaczej roślina podlana
+ * trzy dni po terminie dostawałaby kolejny termin już za dzień — i harmonogram po tygodniu
+ * składałby się wyłącznie z zaległości, czyli przestałby być czytany (AC-10).
+ */
+
+export interface PozycjaAgendy {
+  id: string;
+  spaceId: string;
+  spaceName: string;
+  plantId: string | null;
+  plantName: string | null;
+  placeName: string | null;
+  kind: RodzajZabiegu;
+  title: string;
+  nextDueAt: string | null;
+  /** Jednozdaniowe uzasadnienie terminu (AC-9). */
+  reason: string | null;
+  /** `OVERDUE` | `TODAY` | `SOON` — do grupowania w widoku. */
+  bucket: "OVERDUE" | "TODAY" | "SOON";
+}
+
+const MS_DZIEN = 86_400_000;
+
+function kubelek(nextDueAt: Date | null, teraz: Date): "OVERDUE" | "TODAY" | "SOON" {
+  if (!nextDueAt) return "SOON";
+  const koniecDnia = new Date(teraz);
+  koniecDnia.setHours(23, 59, 59, 999);
+  if (nextDueAt.getTime() < teraz.getTime() - MS_DZIEN) return "OVERDUE";
+  if (nextDueAt.getTime() <= koniecDnia.getTime()) return "TODAY";
+  return "SOON";
+}
+
+/**
+ * Agenda opieki ze WSZYSTKICH przestrzeni użytkownika.
+ *
+ * Zakres bierzemy przez własność przestrzeni, a nie przez własność zadania: `PlantCareTask` nie ma
+ * własnej przestrzeni (wisi na `PlantSpace`), więc pytanie o nią byłoby pytaniem o kolumnę, której
+ * ta tabela nie ma — dokładnie ten błąd łapie bramka `check:owner-columns`.
+ */
+export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): Promise<PozycjaAgendy[]> {
+  const user = await requireAuth();
+  const teraz = new Date();
+  const horyzont = new Date(teraz.getTime() + (opts?.dni ?? 7) * MS_DZIEN);
+
+  const zadania = await prisma.plantCareTask.findMany({
+    take: SUFIT_LISTY,
+    where: {
+      active: true,
+      nextDueAt: { lte: horyzont },
+      space: { is: { ...(await ownedWhereAsync(user.id)), ...(opts?.spaceId ? { id: opts.spaceId } : {}) } },
+    },
+    select: {
+      id: true,
+      spaceId: true,
+      plantId: true,
+      kind: true,
+      title: true,
+      nextDueAt: true,
+      reason: true,
+      space: { select: { name: true } },
+      plant: { select: { name: true } },
+      place: { select: { name: true } },
+    },
+    orderBy: [{ nextDueAt: "asc" }],
+  });
+
+  return zadania.map((z) => ({
+    id: z.id,
+    spaceId: z.spaceId,
+    spaceName: z.space.name,
+    plantId: z.plantId,
+    plantName: z.plant?.name ?? null,
+    placeName: z.place?.name ?? null,
+    kind: z.kind as RodzajZabiegu,
+    title: z.title,
+    nextDueAt: z.nextDueAt?.toISOString() ?? null,
+    reason: z.reason,
+    bucket: kubelek(z.nextDueAt, teraz),
+  }));
+}
+
+/** Wymagania wodne gatunku rośliny — z jej kopii gatunku w przestrzeni, z zapasem domyślnym. */
+function czytajWymagania(waterJson: string | null | undefined): WymaganiaWodne {
+  if (!waterJson) return WYMAGANIA_WODNE_DOMYSLNE;
+  try {
+    const parsed = JSON.parse(waterJson) as Partial<WymaganiaWodne>;
+    return {
+      winter: Number(parsed.winter) || WYMAGANIA_WODNE_DOMYSLNE.winter,
+      spring: Number(parsed.spring) || WYMAGANIA_WODNE_DOMYSLNE.spring,
+      summer: Number(parsed.summer) || WYMAGANIA_WODNE_DOMYSLNE.summer,
+      autumn: Number(parsed.autumn) || WYMAGANIA_WODNE_DOMYSLNE.autumn,
+    };
+  } catch {
+    // Uszkodzony JSON traktujemy jak brak danych — wartości domyślne dadzą sensowny termin,
+    // a wywalenie agendy przez jeden zepsuty wiersz byłoby znacznie gorsze.
+    return WYMAGANIA_WODNE_DOMYSLNE;
+  }
+}
+
+/** Kontekst potrzebny regule terminu: gatunek, miejsce, tryb przestrzeni, prognoza. */
+async function kontekstTerminu(taskId: string) {
+  const zadanie = await prisma.plantCareTask.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      kind: true,
+      spaceId: true,
+      recurring: true,
+      space: { select: { kind: true, weatherLocationId: true } },
+      place: { select: { sun: true } },
+      plant: {
+        select: {
+          place: { select: { sun: true } },
+          species: { select: { waterJson: true } },
+        },
+      },
+    },
+  });
+  if (!zadanie) throw new Error("Zadanie opieki nie istnieje");
+
+  const naslonecznienie: Naslonecznienie =
+    (zadanie.place?.sun as Naslonecznienie) ?? (zadanie.plant?.place?.sun as Naslonecznienie) ?? "unknown";
+
+  const prognoza: PrognozaDobowa[] = await prognozaDlaPrzestrzeni(zadanie.space.weatherLocationId);
+
+  return {
+    zadanie,
+    naslonecznienie,
+    prognoza,
+    // Deszcz nie podleje rośliny stojącej w mieszkaniu — to jedyne miejsce, w którym tryb
+    // przestrzeni wpływa na regułę, a nie tylko na wygląd.
+    podDachem: zadanie.space.kind === "home",
+    wymagania: czytajWymagania(zadanie.plant?.species?.waterJson),
+  };
+}
+
+/** Termin i uzasadnienie dla zadania, liczone od podanej chwili. */
+async function przeliczTermin(taskId: string, od: Date) {
+  const k = await kontekstTerminu(taskId);
+
+  if (k.zadanie.kind === "WATERING") {
+    return terminPodlewania({
+      od,
+      wymagania: k.wymagania,
+      naslonecznienie: k.naslonecznienie,
+      prognoza: k.prognoza,
+      podDachem: k.podDachem,
+    });
+  }
+
+  // Zabieg niebędący podlewaniem: odstęp bierzemy z reguły powtarzalności, a gdy jej nie ma —
+  // z 14 dni, bo to najczęstszy rytm nawożenia i przeglądu.
+  let coIle = 14;
+  try {
+    const rec = k.zadanie.recurring ? (JSON.parse(k.zadanie.recurring) as { interval?: number }) : null;
+    if (rec?.interval && rec.interval > 0) coIle = rec.interval;
+  } catch {
+    /* uszkodzona reguła = wartość domyślna, nie awaria agendy */
+  }
+
+  return terminCykliczny(od, coIle, { prognoza: k.prognoza, podDachem: k.podDachem });
+}
+
+export async function createCareTask(data: {
+  spaceId: string;
+  title: string;
+  kind?: RodzajZabiegu;
+  plantId?: string | null;
+  placeId?: string | null;
+  recurring?: string | null;
+  startAt?: Date | null;
+}): Promise<{ id: string }> {
+  const user = await requireAuth();
+  await assertSpaceAccess(data.spaceId, user.id, true);
+
+  const tytul = data.title?.trim();
+  if (!tytul) throw new Error("Tytuł zadania jest wymagany");
+
+  const zadanie = await prisma.plantCareTask.create({
+    data: {
+      spaceId: data.spaceId,
+      plantId: data.plantId ?? null,
+      placeId: data.placeId ?? null,
+      kind: data.kind ?? "WATERING",
+      title: tytul,
+      recurring: data.recurring ?? null,
+    },
+    select: { id: true },
+  });
+
+  // Pierwszy termin liczymy tą samą regułą co każdy następny — inaczej zadanie zakładane w lipcu
+  // dostałoby zimowy odstęp, i to bez uzasadnienia, które by to wyjaśniło.
+  const wynik = await przeliczTermin(zadanie.id, data.startAt ?? new Date());
+  await prisma.plantCareTask.update({
+    where: { id: zadanie.id },
+    data: { nextDueAt: wynik.termin, reason: wynik.uzasadnienie },
+  });
+
+  revalidatePath("/rosliny/opieka");
+  revalidatePath(`/rosliny/${data.spaceId}`);
+  return zadanie;
+}
+
+export async function updateCareTask(
+  id: string,
+  data: { title?: string; kind?: RodzajZabiegu; recurring?: string | null; active?: boolean },
+): Promise<void> {
+  const user = await requireAuth();
+  const zadanie = await prisma.plantCareTask.findUnique({ where: { id }, select: { spaceId: true } });
+  if (!zadanie) throw new Error("Zadanie opieki nie istnieje");
+  await assertSpaceAccess(zadanie.spaceId, user.id, true);
+
+  await prisma.plantCareTask.update({
+    where: { id },
+    data: {
+      ...(data.title !== undefined ? { title: data.title.trim() } : {}),
+      ...(data.kind !== undefined ? { kind: data.kind } : {}),
+      ...(data.recurring !== undefined ? { recurring: data.recurring } : {}),
+      ...(data.active !== undefined ? { active: data.active } : {}),
+    },
+  });
+
+  revalidatePath("/rosliny/opieka");
+  revalidatePath(`/rosliny/${zadanie.spaceId}`);
+}
+
+/**
+ * Odnotowuje, co się stało z zaplanowanym zabiegiem, i wyznacza następny termin.
+ *
+ * `SKIPPED` i `POSTPONED` **nie są wariantami niepowodzenia** — są tym, co ratuje harmonogram przed
+ * zamienieniem się w listę zaległości. Różnica między nimi jest w punkcie odniesienia: pominięcie
+ * przesuwa cykl (liczymy od dziś, tak jakby zabieg się odbył), odłożenie przesuwa TERMIN o kilka dni
+ * i zostawia cykl w spokoju.
+ */
+export async function recordCare(data: {
+  taskId: string;
+  outcome: WynikZabiegu;
+  occurredAt?: Date;
+  note?: string | null;
+  odlozOIle?: number;
+}): Promise<void> {
+  const user = await requireAuth();
+  const zadanie = await prisma.plantCareTask.findUnique({
+    where: { id: data.taskId },
+    select: { spaceId: true, plantId: true, placeId: true, kind: true, nextDueAt: true },
+  });
+  if (!zadanie) throw new Error("Zadanie opieki nie istnieje");
+  await assertSpaceAccess(zadanie.spaceId, user.id, true);
+
+  const kiedy = data.occurredAt ?? new Date();
+
+  await prisma.plantCareEvent.create({
+    data: {
+      spaceId: zadanie.spaceId,
+      plantId: zadanie.plantId,
+      placeId: zadanie.placeId,
+      taskId: data.taskId,
+      kind: zadanie.kind,
+      occurredAt: kiedy,
+      outcome: data.outcome,
+      note: data.note ?? null,
+    },
+  });
+
+  if (data.outcome === "POSTPONED") {
+    const odKtorej = zadanie.nextDueAt ?? kiedy;
+    const oIle = data.odlozOIle && data.odlozOIle > 0 ? data.odlozOIle : 2;
+    await prisma.plantCareTask.update({
+      where: { id: data.taskId },
+      data: {
+        nextDueAt: new Date(odKtorej.getTime() + oIle * MS_DZIEN),
+        reason: `odłożone o ${oIle} dni na Twoją prośbę`,
+      },
+    });
+  } else {
+    const wynik = await przeliczTermin(data.taskId, kiedy);
+    await prisma.plantCareTask.update({
+      where: { id: data.taskId },
+      data: {
+        // Pominięcie NIE jest wykonaniem, więc `lastDoneAt` zostaje nietknięte — inaczej historia
+        // mówiłaby, że roślina była podlana, a nie była.
+        ...(data.outcome === "DONE" ? { lastDoneAt: kiedy } : {}),
+        nextDueAt: wynik.termin,
+        reason: wynik.uzasadnienie,
+      },
+    });
+  }
+
+  revalidatePath("/rosliny/opieka");
+  revalidatePath(`/rosliny/${zadanie.spaceId}`);
+  revalidatePath("/");
+}
+
+export interface ZdarzenieDTO {
+  id: string;
+  kind: RodzajZabiegu;
+  outcome: WynikZabiegu;
+  occurredAt: string;
+  note: string | null;
+  plantName: string | null;
+  productName: string | null;
+}
+
+export async function getCareHistory(opts: { spaceId?: string; plantId?: string; limit?: number }): Promise<ZdarzenieDTO[]> {
+  const user = await requireAuth();
+  if (opts.plantId) await assertPlantAccess(opts.plantId, user.id);
+  else if (opts.spaceId) await assertSpaceAccess(opts.spaceId, user.id);
+
+  const zdarzenia = await prisma.plantCareEvent.findMany({
+    take: Math.min(opts.limit ?? 100, SUFIT_LISTY),
+    where: {
+      ...(opts.plantId ? { plantId: opts.plantId } : {}),
+      ...(opts.spaceId ? { spaceId: opts.spaceId } : {}),
+      space: { is: await ownedWhereAsync(user.id) },
+    },
+    select: {
+      id: true,
+      kind: true,
+      outcome: true,
+      occurredAt: true,
+      note: true,
+      productName: true,
+      plant: { select: { name: true } },
+    },
+    orderBy: { occurredAt: "desc" },
+  });
+
+  return zdarzenia.map((z) => ({
+    id: z.id,
+    kind: z.kind as RodzajZabiegu,
+    outcome: z.outcome as WynikZabiegu,
+    occurredAt: z.occurredAt.toISOString(),
+    note: z.note,
+    plantName: z.plant?.name ?? null,
+    productName: z.productName,
+  }));
+}

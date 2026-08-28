@@ -60,47 +60,49 @@
 
 ## Faza 2 — Warstwa serwera
 
-- [ ] **T-10** — **Guard i granica.** `lib/sharingGuard.ts` (woła `requireAccess` z **własnym**
+- [x] **T-10** — **Guard i granica.** `lib/sharingGuard.ts` (woła `requireAccess` z **własnym**
       katalogiem — nie przez korzeń kompozycji), `sharing.ts` (zasoby `rosliny.space` i
       `rosliny.plant` z rodzicem), wpięcie w `src/lib/sharingResources.ts` i wpis w
       `src/lib/sharing-classification.json`. → **AC-28**
-      *Gotowe, gdy:* `npm run check:module-registry` przechodzi (wpięcie sprawdzane w obie strony).
-- [ ] **T-11** — **`actions/przestrzenie.ts` + `actions/miejsca.ts`** — CRUD przestrzeni i miejsc,
+      *Gotowe, gdy:* deklaracja i guard istnieją oraz są wpięte. **Bramka `check:module-registry`
+      zamyka się dopiero po T-20** i to nie jest usterka: sprawdza ona wpięcie w obie strony wobec
+      listy ZADEKLAROWANYCH modułów, a moduł staje się zadeklarowany dopiero z `module.ts`.
+- [x] **T-11** — **`actions/przestrzenie.ts` + `actions/miejsca.ts`** — CRUD przestrzeni i miejsc,
       własność przez `wlasnoscDoZapisu`, odczyt przez `ownedWhereAsync`, `revalidatePath`.
       → **AC-1**
       *Gotowe, gdy:* test integracyjny zakłada przestrzeń i miejsce; `check:owner-columns`
       i `check:pagination` przechodzą.
-- [ ] **T-12** — **`actions/rosliny.ts`** — `getPlants`/`getPlant`/`createPlant`/`updatePlant`/
+- [x] **T-12** — **`actions/rosliny.ts`** — `getPlants`/`getPlant`/`createPlant`/`updatePlant`/
       `setPlantStatus`/`propagatePlant`/`deletePlant` + `assertPlantAccess` (cienka nakładka na dwie
       operacje deklaracji). Liczność, status z powodem, relacja rodzic → potomstwo.
       → **AC-4, AC-5, AC-6**
       *Gotowe, gdy:* testy: byt o liczności `100 szt` i `4.2 ha` zapisuje się jako jeden rekord;
       sadzonka wskazuje rodzica; zakończenie zostawia byt w historii miejsca.
-- [ ] **T-13** — **Kosz (C-24).** `TrashModule` += `"rosliny"`, `recordTrash` przy usuwaniu rośliny
+- [x] **T-13** — **Kosz (C-24).** `TrashModule` += `"rosliny"`, `recordTrash` przy usuwaniu rośliny
       i przestrzeni, gałąź przywracania w `src/actions/trash.ts` + `revalidatePath`. → **AC-7**
       *Gotowe, gdy:* test: usunięcie → wiersz w `TrashItem` → przywrócenie odtwarza byt.
-- [ ] **T-14** — **`actions/opieka.ts`** — agenda, CRUD zadań opieki, `completeCare`/`skipCare`/
+- [x] **T-14** — **`actions/opieka.ts`** — agenda, CRUD zadań opieki, `completeCare`/`skipCare`/
       `postponeCare` (zapis `PlantCareEvent`, przeliczenie `nextDueAt` przez `domain/harmonogram`),
       historia. Termin liczony w strefie użytkownika (`userTime.ts`). → **AC-8..AC-11**
       *Gotowe, gdy:* test: wykonanie przesuwa następny termin; pominięcie nie gubi zadania.
-- [ ] **T-15** `[P]` — **`actions/dziennik.ts`** — wpisy ze zdjęciem, pomiary z rodzajem i jednostką
+- [x] **T-15** `[P]` — **`actions/dziennik.ts`** — wpisy ze zdjęciem, pomiary z rodzajem i jednostką
       (`source: "manual"`). → **AC-13, AC-14**
-- [ ] **T-16** `[P]` — **`actions/gatunki.ts`** — wyszukiwanie w katalogu systemowym, kopiowanie do
+- [x] **T-16** `[P]` — **`actions/gatunki.ts`** — wyszukiwanie w katalogu systemowym, kopiowanie do
       przestrzeni (`origin`), własny gatunek, edycja kopii. → **AC-16, AC-17**
       *Gotowe, gdy:* test: kopia ma `catalogKey` i `origin: "system"`, a edycja kopii **nie rusza**
       wiersza katalogu.
-- [ ] **T-17** — **`actions/zbiory.ts`** — `recordHarvest` (zdarzenie `kind: "HARVEST"`),
+- [x] **T-17** — **`actions/zbiory.ts`** — `recordHarvest` (zdarzenie `kind: "HARVEST"`),
       `harvestToPantry` (kontrakt Kuchni), księgowanie kosztu (`bookAutoExpense`, `sourceModule:
       "rosliny"`), dopisanie do listy zakupów (kontrakt Zakupów). → **AC-15**
       *Gotowe, gdy:* test z zamockowanymi kontraktami potwierdza trzy wywołania; **żadna z tych
       rzeczy nie jest budowana w module** (granica ze spec §5).
-- [ ] **T-18** — **`actions/ewidencja.ts`** — `recordTreatment` z kompletem pól wymaganych od
+- [x] **T-18** — **`actions/ewidencja.ts`** — `recordTreatment` z kompletem pól wymaganych od
       2026‑01‑01 (rodzaj zastosowania, numer zezwolenia, dokładna lokalizacja, dawka, powierzchnia,
       wykonujący, warunki, karencja), rejestr za okres, `exportTreatmentRegister` +
       `lib/eksportEwidencji.ts`. → **AC-24, AC-25**
       *Gotowe, gdy:* test: zapis kompletu pól; eksport za okres zawiera **wszystkie** kolumny
       i tylko zdarzenia z przestrzeni `production`/`field`.
-- [ ] **T-19** — **`contract.ts`** — wyłącznie to, czego potrzebują konsumenci (pulpit, kalendarz,
+- [x] **T-19** — **`contract.ts`** — wyłącznie to, czego potrzebują konsumenci (pulpit, kalendarz,
       read-toole i egzekutor asystenta, test izolacji najemcy). Nie „wszystko na wszelki wypadek".
       *Gotowe, gdy:* `npm run check:boundaries` przechodzi.
 

@@ -10,7 +10,10 @@ const RETENTION_DAYS = 30;
 // 102: „youtube" = obserwowany kanał (filmy znikają kaskadą i dobiorą się przy odświeżeniu).
 // 107: „czat" = własna wiadomość. Usunięcie jest MIĘKKIE (wiersz zostaje, bo wiszą na nim cytaty
 // w cudzych odpowiedziach), więc przywrócenie zdejmuje znacznik usunięcia zamiast tworzyć rekord.
-export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat";
+// 113: „rosliny" = przestrzeń roślinna albo pojedyncza roślina. Snapshot przestrzeni niesie także
+// jej miejsca i rośliny, bo kaskada FK usunie je fizycznie — przywrócenie samej nazwy byłoby
+// przywróceniem pustej przestrzeni.
+export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat" | "rosliny";
 
 /**
  * 066 (zadanie 16) — WERSJA ROBOCZA ODRZUCONA PRZY KONFLIKCIE.
