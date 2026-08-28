@@ -4,6 +4,61 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Pięć zgłoszeń, z których każde miało przyczynę w innym miejscu niż objaw
+**Problem:** Właściciel zgłosił pięć usterek z trybu „wskaż element". Cztery z nich wyglądały na
+drobiazgi UI, a wszystkie miały przyczynę o piętro niżej niż miejsce, które wskazał.
+
+1. **Powrót „wstecz" pokazywał stronę od góry.** Bo w Omnii **nie przewija się okno**: rama widoku
+   (`ModuleView`) trzyma treść we własnym kontenerze z `overflow-y: auto`, a `<main>` powyżej ma
+   `overflow: hidden`. Przywracanie pozycji przez przeglądarkę i przez Next dotyczy **okna**, więc
+   dla tego kontenera po prostu nie istniało — i nic w aplikacji jego pozycji nie zapisywało.
+2. **„Wiedza o Tobie" nie rosła z korzystania.** Zadanie `user.facts` było kolejkowane z **dokładnie
+   jednego miejsca w całej aplikacji** — przycisku „Poszukaj hipotez". Do tego czytało trzy sygnały
+   z dwóch modułów przy progu wejścia równym trzy, więc konto nieużywające akurat tych dwóch
+   modułów nie miało jak go przekroczyć, choćby pracowało codziennie.
+3. **Wiersz akcji nad Wiadomościami wyglądał na pusty.** `ViewBar` od 087 nakładał poniżej `md`
+   `flex: 1` na **wszystkie** dzieci strefy akcji. Ikona, przycisk z tekstem i koło zębate
+   dostawały po jednej trzeciej szerokości — ikona nie ma czym wypełnić 120 px.
+4. **Ten sam poziom streszczenia dawał dwa różne teksty.** Streszczenia powstają w dwóch miejscach
+   i każde widziało **inną ilość materiału**: przebieg odświeżania streszcza wsadowo ze skrótu RSS
+   (600 znaków), a zmiana poziomu dociąga pełny artykuł (4000). Instrukcja długości była przy tym
+   **zduplikowana w dwóch plikach**. Osobno: akcja nigdy nie sprawdzała, czy dany poziom już
+   istnieje, a przy nieudanym pobraniu artykułu streszczała `item.summary`, czyli **poprzednie
+   streszczenie**.
+5. **Lektor czytał tekst sprzed zmiany poziomu.** Dwie niezależne przyczyny naraz: treść żyła
+   w dwóch miejscach (karta trzymała nową w `useState`, lektor budował bloki z danych serwera),
+   a `blocksKey` — w kodzie nazwany „podpisem TREŚCI" — liczył się **z samych tytułów**. Tytuł przy
+   zmianie poziomu się nie zmienia, więc efekt uciszający lektora się nie budził.
+
+**Rozwiązanie:** Pamięć pozycji przewijania wpięta w kontener ramy (obejmuje wszystkie moduły
+i `/admin`), przywracana wyłącznie po `popstate`. Poszerzone sygnały wiedzy + automat na wzór
+retencji (prawo do przebiegu odbierane atomowo warunkowym `UPDATE`) z odciskiem materiału, żeby nie
+płacić za przebieg bez nowych danych. Wyjątek `flex: none` **po stronie ikony**, nie tekstu. Jedna
+definicja długości streszczenia dla obu ścieżek + tabela `NewsItemSummary` (unikat `[itemId,
+length]`) + materiał zawsze źródłowy. Nadpisania streszczeń podniesione z karty do strumienia
+i `blocksKey` liczony z tytułu **i** treści.
+
+**Lekcja:** **Gdy coś „nie działa jak w innych aplikacjach", najpierw sprawdź, czy rzecz, na której
+opiera się mechanizm przeglądarki, jest tam, gdzie przeglądarka jej szuka.** Przywracanie pozycji,
+`bfcache` i `scrollRestoration` znają jeden scroller — okno. Aplikacja, która przewijanie przeniosła
+do własnego `div`-a, traci je bez jednego błędu w konsoli.
+
+Drugi wniosek, powtórzony tu **dwa razy w jednym przebiegu**: **ta sama informacja w dwóch
+nośnikach zawsze rozjedzie się w tę stronę, która boli.** Raz było to streszczenie (karta vs. dane
+serwera), raz instrukcja długości (dwie kopie w dwóch plikach) — i za każdym razem objaw był
+opisany jako „dziwne zachowanie", a nie jako niespójność.
+
+Trzeci, najbardziej podstępny: **komentarz może kłamać, a wtedy kłamie przez lata.** `blocksKey`
+miał nad sobą akapit tłumaczący, że jest „PODPISEM TREŚCI, nie tożsamości tablicy" — i przez ten
+akapit nikt go nie sprawdził, choć treści nie obejmował. Przy poprawianiu podejrzanego miejsca
+czytaj **kod**, a komentarz traktuj jak hipotezę do zweryfikowania.
+
+Czwarty, o naprawianiu: **poprawka nie może cofać poprzedniej poprawki.** Pierwsza wersja fixu na
+puste akcje zdejmowała domyślne rozciąganie i kazała je deklarować — co przywróciłoby zgłoszenie
+z 087 („akcje dosunięte do prawej z pustą lewą połową") we wszystkich widokach, które nowej klasy by
+nie dostały. Gdy wyjątek da się postawić po jednej albo po drugiej stronie, wybierz tę, która
+zostawia dotychczasowe zachowanie nietknięte.
+
 ## 2026-08-27 — Trasa, do której nie prowadził żaden odnośnik, i dlaczego pilnuje tego bramka
 **Problem:** Przy porządkowaniu panelu administratora okazało się, że `/admin/llm` — konfiguracja
 dostawców i modeli LLM, jedna z najważniejszych powierzchni administracyjnych — **nie była

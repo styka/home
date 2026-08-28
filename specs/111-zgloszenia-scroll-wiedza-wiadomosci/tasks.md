@@ -127,19 +127,19 @@
 
 - [x] **T-23** — Teksty: wszystkie nowe napisy do `messages/pl.json`, czytane przez
   `useTranslations`. **Gotowe, gdy:** `npm run check:i18n` zielone (od 097 reguła bezwzględna).
-- [ ] **T-24** — Testy jednostkowe zebrane i zielone: `przewijanie`, `dlugoscStreszczenia`,
+- [x] **T-24** — Testy jednostkowe zebrane i zielone: `przewijanie`, `dlugoscStreszczenia`,
   `harmonogram` wiedzy, `blocksKey`, akcja streszczeń. `npx tsc --noEmit -p tsconfig.test.json`.
 - [ ] **T-25** — Klikacz e2e wg mapowania z planu §8 — **bez `networkidle`** (`check:e2e-waits`):
   powrót wstecz (AC-1/AC-2), trzy zakładki i stary adres (AC-10..AC-12), pasek przy 360 px
   (AC-13/AC-16), krótki pasek stanu (AC-14), źródła z panelu filtra (AC-17), ponowienie przy
   nieudanym streszczeniu (AC-22).
-- [ ] **T-26** — Komplet bramek: `check:migrations`, `check:schema-drift`, `check:actions`,
+- [x] **T-26** — Komplet bramek: `check:migrations`, `check:schema-drift`, `check:actions`,
   `check:ai-coverage`, `check:cost-badge`, `check:content-memory`, `check:ui-contract`,
   `check:boundaries`, `check:module-registry`, `check:owner-columns`, `check:pagination`,
   `check:logs`, `check:i18n`, `check:client-safe`, `check:tailwind`, `check:e2e-waits`,
   `next lint`, `next build`. **Lokalny Postgres, nigdy prod DB (C-13)** — zatrzymujemy się przed
   `migrate.js`.
-- [ ] **T-27** — Wpis do `doświadczenia.md` (C-51): pięć zgłoszeń, z czego cztery mają przyczynę
+- [x] **T-27** — Wpis do `doświadczenia.md` (C-51): pięć zgłoszeń, z czego cztery mają przyczynę
   wartą zapamiętania — kontener przewijania niewidoczny dla przywracania przeglądarki, rozciąganie
   nałożone na wszystkie dzieci paska, dwie ścieżki streszczania o różnym materiale wejściowym,
   klucz odświeżania liczony z tytułów zamiast z treści.
