@@ -19,10 +19,11 @@ import {
   type WynikDiagnozy,
 } from "../actions/analiza";
 import { updatePlant } from "../actions/rosliny";
+import { poleWidoczne } from "../lib/tryb";
 import { addSpeciesFromCatalog } from "../actions/gatunki";
 import { addToShoppingList, bookCareCost, harvestToPantry, recordHarvest, type ZbiorDTO } from "../actions/zbiory";
 import type { ZdarzenieDTO } from "../actions/opieka";
-import { etykietaFazy } from "../lib/fenologia";
+import { etykietaFazy, listaFaz } from "../lib/fenologia";
 import type { RodzajPomiaru, StatusRosliny, TrybPrzestrzeni } from "../lib/typy";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
 
@@ -79,6 +80,7 @@ export function RoslinaSzczegol({
    */
   const [koszt, setKoszt] = useState<Record<string, string>>({});
   const [zbiory, setZbiory] = useState<ZbiorDTO[]>(poczatkoweZbiory);
+  const [faza, setFaza] = useState(roslina.stage ?? "");
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [blad, setBlad] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -138,6 +140,26 @@ export function RoslinaSzczegol({
     startTransition(async () => {
       await scheduleRecommendedCare({ plantId: roslina.id, rodzajZabiegu: rodzaj, tytul: tresc.slice(0, 80) });
       setZaplanowane((z) => [...z, String(indeks)]);
+    });
+  }
+
+  /**
+   * Faza rozwojowa (BBCH) — jedyny konsument `listaFaz`.
+   *
+   * Pole istniało w danych i w prompcie diagnozy, a **nie dało się go ustawić**: kod fazy
+   * decyduje o tym, czy zalecenie jest wykonalne (oprysku nie robi się w kwitnieniu), więc pole,
+   * którego użytkownik nie może wypełnić, obniża jakość każdej rady, jaką moduł wydaje.
+   *
+   * Zapisujemy od razu po wyborze — to jedno pole, a przycisk „zapisz" przy jednym polu jest
+   * krokiem, który nic nie wnosi poza możliwością zapomnienia o nim.
+   */
+  function zapiszFaze(kod: string) {
+    setFaza(kod);
+    startTransition(async () => {
+      await updatePlant(roslina.id, { stage: kod || null });
+      // `etykietaFazy` w trybie hobbystycznym może nie znać nazwy — wtedy wystarczy sam kod,
+      // bo użytkownik dopiero co go wybrał z listy.
+      setKomunikat(kod ? t("fazaZapisana", { nazwa: etykietaFazy(kod, tryb) ?? kod }) : t("fazaUsunieta"));
     });
   }
 
@@ -295,6 +317,23 @@ export function RoslinaSzczegol({
           <span>{t(`status.${status}`)}</span>
         </p>
         {roslina.statusReason && <p style={{ ...drobny, margin: "6px 0 0" }}>{roslina.statusReason}</p>}
+        {poleWidoczne(tryb, "faza", true) && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+            <label htmlFor="faza-rozwojowa" style={drobny}>{t("fazaEtykieta")}</label>
+            <select
+              id="faza-rozwojowa"
+              value={faza}
+              onChange={(e) => zapiszFaze(e.target.value)}
+              style={{ ...pole, flex: "0 1 240px" }}
+              disabled={pending}
+            >
+              <option value="">{t("bezFazy")}</option>
+              {listaFaz().map((f) => (
+                <option key={f.kod} value={f.kod}>{f.nazwa}</option>
+              ))}
+            </select>
+          </div>
+        )}
         {status === "ACTIVE" && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
             <button type="button" style={przycisk} onClick={() => zakoncz("HARVESTED")} disabled={pending}>{t("zebrana")}</button>

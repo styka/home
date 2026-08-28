@@ -42,6 +42,12 @@ export type RodzajMiejsca =
 
 export type Naslonecznienie = "full" | "partial" | "shade" | "unknown";
 
+/**
+ * Lista do wyboru w interfejsie. Wyprowadzona obok typu, bo unia z `String`+union (C-12) nie da się
+ * wyliczyć w czasie wykonania — a przepisana ręcznie w widoku rozjechałaby się przy pierwszej zmianie.
+ */
+export const NASLONECZNIENIA: Naslonecznienie[] = ["full", "partial", "shade", "unknown"];
+
 export type JednostkaLicznosci = "szt" | "m2" | "ha";
 
 /**

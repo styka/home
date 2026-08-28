@@ -267,7 +267,7 @@
       i cudzego `plantId`.
 - [x] **T-63** — **Lista zbiorów z akcjami.** `getHarvests` wyrenderowane; „do spiżarni" i „zapisz
       koszt" przypięte do pozycji listy, nie do stanu sesji. → **U-8, AC-15**
-- [ ] **T-64** — **Usunięcie przestrzeni dostępne z interfejsu** + edycja i usunięcie miejsca,
+- [x] **T-64** — **Usunięcie przestrzeni dostępne z interfejsu** + edycja i usunięcie miejsca,
       wyłączenie zadania opieki, edytor fazy rozwojowej (konsument `listaFaz`). → **U-9, AC-7**
 - [ ] **T-65** — **Przyczyna śmierci bez `window.prompt`** — pole w widoku. → **U-10, C-34, C-32**
 - [ ] **T-66** `[P]` — **Kubełek agendy w strefie użytkownika** (`userTime`), nie serwera. → **U-11**

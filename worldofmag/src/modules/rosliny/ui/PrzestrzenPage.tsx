@@ -3,20 +3,22 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Sprout, Plus, MapPin, Settings2, Wand2, Share2, ListPlus, CloudSun, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Sprout, Plus, MapPin, Settings2, Wand2, Share2, ListPlus, CloudSun, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
-import { updateSpace, type PrzestrzenDTO } from "../actions/przestrzenie";
+import { deleteSpace, updateSpace, type PrzestrzenDTO } from "../actions/przestrzenie";
 import type { MiejsceDTO } from "../actions/miejsca";
-import { createPlace } from "../actions/miejsca";
+import { createPlace, deletePlace, updatePlace } from "../actions/miejsca";
 import { createPlant, type RoslinaDTO } from "../actions/rosliny";
 import { getSeasonPlan, getSpaceInsights, planToTask, type PozycjaPlanu, type TrescAI, type WnioskiPrzestrzeni } from "../actions/analiza";
 import { getPlaceHistory, type HistoriaMiejscaDTO } from "../actions/miejsca";
 import type { GatunekDTO } from "../actions/gatunki";
 import { domyslnaJednostka, poleWidoczne } from "../lib/tryb";
 import { etykietaFazy } from "../lib/fenologia";
-import type { JednostkaLicznosci } from "../lib/typy";
+import { NASLONECZNIENIA, type JednostkaLicznosci, type Naslonecznienie } from "../lib/typy";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
 
 /**
@@ -45,6 +47,8 @@ export function PrzestrzenPage({
   gatunki: GatunekDTO[];
 }) {
   const t = useTranslations("modules.rosliny.PrzestrzenPage");
+  const confirmDialog = useConfirm();
+  const router = useRouter();
   const [miejsca, setMiejsca] = useState(poczatkoweMiejsca);
   const [rosliny, setRosliny] = useState(poczatkoweRosliny);
   const [zaawansowane, setZaawansowane] = useState(false);
@@ -65,6 +69,8 @@ export function PrzestrzenPage({
   const [miejsceId, setMiejsceId] = useState("");
   const [gatunekId, setGatunekId] = useState("");
   const [nazwaMiejsca, setNazwaMiejsca] = useState("");
+  /** Które miejsce jest właśnie edytowane i jego brudnopis — edycja w miejscu, bez osobnej trasy. */
+  const [edytowane, setEdytowane] = useState<{ id: string; name: string; sun: Naslonecznienie } | null>(null);
 
   const pokazLicznosc = poleWidoczne(przestrzen.kind, "licznosc", zaawansowane);
   const pokazFaze = poleWidoczne(przestrzen.kind, "faza", zaawansowane);
@@ -148,6 +154,49 @@ export function PrzestrzenPage({
   function wybierzGatunek(id: string) {
     setGatunekId(id);
     sprawdzPlodozmian(miejsceId, id);
+  }
+
+  /**
+   * AC-7: przestrzeń da się usunąć Z INTERFEJSU.
+   *
+   * Akcja istniała od pierwszego dnia i była **nieosiągalna** — kryterium akceptacji spełnione
+   * w kodzie, a nie u użytkownika. Potwierdzenie jest jawnie niszczące (C-34), bo znika cała
+   * zawartość przestrzeni; kasowanie idzie do kosza, więc treść komunikatu to mówi.
+   */
+  function usunPrzestrzen() {
+    startTransition(async () => {
+      if (!(await confirmDialog({ title: t("usunPytanie", { nazwa: przestrzen.name }), destructive: true }))) return;
+      await deleteSpace(przestrzen.id);
+      // Po usunięciu nie ma czego pokazywać pod tym adresem — wracamy na listę, zamiast zostawiać
+      // widok, który przy odświeżeniu skończy się błędem.
+      router.push("/rosliny");
+      router.refresh();
+    });
+  }
+
+  function zapiszMiejsce() {
+    if (!edytowane) return;
+    const nazwa = edytowane.name.trim();
+    if (!nazwa) return;
+    const { id, sun } = edytowane;
+    startTransition(async () => {
+      await updatePlace(id, { name: nazwa, sun });
+      setMiejsca((lista) => lista.map((m) => (m.id === id ? { ...m, name: nazwa, sun } : m)));
+      setEdytowane(null);
+    });
+  }
+
+  /**
+   * Usunięcie miejsca nie zabiera roślin — `placeId` idzie na `SET NULL`. Potwierdzenie mówi to
+   * wprost, bo pytanie „usunąć grządkę?" bez tej informacji brzmi jak pytanie o usunięcie uprawy.
+   */
+  function usunMiejsce(m: MiejsceDTO) {
+    startTransition(async () => {
+      if (!(await confirmDialog({ title: t("usunMiejscePytanie", { nazwa: m.name }), destructive: true }))) return;
+      await deletePlace(m.id);
+      setMiejsca((lista) => lista.filter((x) => x.id !== m.id));
+      setRosliny((lista) => lista.map((r) => (r.placeId === m.id ? { ...r, placeId: null, placeName: null } : r)));
+    });
   }
 
   function zapiszLokalizacje(id: string) {
@@ -248,6 +297,13 @@ export function PrzestrzenPage({
             </select>
           )}
           {komunikat && <p style={{ ...drobny, margin: "8px 0 0", color: "var(--accent-green)" }}>{komunikat}</p>}
+
+          <h2 style={{ ...naglowekSekcji, marginTop: 18 }}>{t("usunTytul")}</h2>
+          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("usunOpis")}</p>
+          <button type="button" style={przycisk} onClick={usunPrzestrzen} disabled={pending}>
+            <Trash2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            {t("usunPrzestrzen")}
+          </button>
         </section>
       )}
 
@@ -366,10 +422,57 @@ export function PrzestrzenPage({
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
             {miejsca.map((m) => (
               <li key={m.id} style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                {m.name}
-                <span style={{ ...drobny, marginLeft: 8 }}>{t("miejsceLicznik", { ile: m.liczbaRoslin })}</span>
-                {poleWidoczne(przestrzen.kind, "powierzchnia", zaawansowane) && m.areaValue && (
-                  <span style={{ ...drobny, marginLeft: 8 }}>{m.areaValue} {m.areaUnit ?? "m²"}</span>
+                {edytowane?.id === m.id ? (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={edytowane.name}
+                      onChange={(e) => setEdytowane({ ...edytowane, name: e.target.value })}
+                      onKeyDown={(e) => { if (e.key === "Enter") zapiszMiejsce(); }}
+                      aria-label={t("nazwaMiejscaEtykieta")}
+                      style={{ ...pole, flex: "1 1 180px" }}
+                    />
+                    <select
+                      value={edytowane.sun}
+                      onChange={(e) => setEdytowane({ ...edytowane, sun: e.target.value as Naslonecznienie })}
+                      aria-label={t("naslonecznienieEtykieta")}
+                      style={{ ...pole, flex: "0 1 170px" }}
+                    >
+                      {NASLONECZNIENIA.map((n) => (
+                        <option key={n} value={n}>{t(`naslonecznienie.${n}`)}</option>
+                      ))}
+                    </select>
+                    <button type="button" style={przyciskGlowny} onClick={zapiszMiejsce} disabled={pending}>
+                      {t("zapisz")}
+                    </button>
+                    <button type="button" style={przycisk} onClick={() => setEdytowane(null)} disabled={pending}>
+                      {t("anuluj")}
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <span>{m.name}</span>
+                    <span style={drobny}>{t("miejsceLicznik", { ile: m.liczbaRoslin })}</span>
+                    {/* Nasłonecznienie nie jest ozdobnikiem: to ono mnoży odstęp podlewania, więc
+                        użytkownik musi móc je poprawić tam, gdzie miejsce widzi. */}
+                    <span style={drobny}>{t(`naslonecznienie.${m.sun}`)}</span>
+                    {poleWidoczne(przestrzen.kind, "powierzchnia", zaawansowane) && m.areaValue && (
+                      <span style={drobny}>{m.areaValue} {m.areaUnit ?? "m²"}</span>
+                    )}
+                    <button
+                      type="button"
+                      style={{ ...przycisk, marginLeft: "auto" }}
+                      onClick={() => setEdytowane({ id: m.id, name: m.name, sun: m.sun })}
+                      disabled={pending}
+                    >
+                      <Pencil size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      {t("edytuj")}
+                    </button>
+                    <button type="button" style={przycisk} onClick={() => usunMiejsce(m)} disabled={pending}>
+                      <Trash2 size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      {t("usun")}
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

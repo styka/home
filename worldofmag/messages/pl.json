@@ -2104,7 +2104,23 @@
         "doZadan": "Do zadań",
         "wZadaniach": "w zadaniach",
         "gatunekEtykieta": "Gatunek",
-        "bezGatunku": "Bez gatunku"
+        "bezGatunku": "Bez gatunku",
+        "edytuj": "Edytuj",
+        "zapisz": "Zapisz",
+        "anuluj": "Anuluj",
+        "usun": "Usuń",
+        "usunTytul": "Usunięcie przestrzeni",
+        "usunOpis": "Przestrzeń razem z miejscami, roślinami i historią opieki trafia do kosza — można ją stamtąd przywrócić.",
+        "usunPrzestrzen": "Usuń przestrzeń",
+        "usunPytanie": "Usunąć przestrzeń „{nazwa}” razem z jej roślinami i historią? Trafi do kosza.",
+        "usunMiejscePytanie": "Usunąć miejsce „{nazwa}”? Rośliny zostaną — stracą tylko przypisanie do niego.",
+        "naslonecznienieEtykieta": "Nasłonecznienie",
+        "naslonecznienie": {
+          "full": "pełne słońce",
+          "partial": "półcień",
+          "shade": "cień",
+          "unknown": "nieokreślone"
+        }
       },
       "AgendaOpieki": {
         "tytul": "Opieka",
@@ -2118,7 +2134,9 @@
           "OVERDUE": "Zaległe",
           "TODAY": "Na dziś",
           "SOON": "Wkrótce"
-        }
+        },
+        "wylacz": "Nie przypominaj",
+        "wylaczPytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie."
       },
       "RoslinaSzczegol": {
         "wroc": "← Wróć do przestrzeni",
@@ -2229,7 +2247,11 @@
         "zapiszKoszt": "Zapisz koszt",
         "kosztZapisany": "Koszt zapisany w Portfelu.",
         "naZakupy": "Dopisz do listy zakupów",
-        "naLiscieZakupow": "Dodano do listy zakupów."
+        "naLiscieZakupow": "Dodano do listy zakupów.",
+        "fazaEtykieta": "Faza rozwojowa",
+        "bezFazy": "— nie określono —",
+        "fazaZapisana": "Zapisano fazę: {nazwa}.",
+        "fazaUsunieta": "Faza rozwojowa wyczyszczona."
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",

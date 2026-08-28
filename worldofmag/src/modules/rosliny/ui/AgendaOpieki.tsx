@@ -3,9 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { CalendarCheck, Check, SkipForward, Clock } from "lucide-react";
+import { CalendarCheck, Check, SkipForward, Clock, BellOff } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
-import { recordCare, type PozycjaAgendy } from "../actions/opieka";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { recordCare, updateCareTask, type PozycjaAgendy } from "../actions/opieka";
 import { drobny, kolorKubelka, przycisk, sekcja } from "./style";
 
 /**
@@ -15,13 +16,15 @@ import { drobny, kolorKubelka, przycisk, sekcja } from "./style";
  * Aplikacja, która każe, jest posłuszna raz; aplikacja, która tłumaczy, uczy — a użytkownik, który
  * rozumie powód, przestaje pytać asystenta o to samo (realna oszczędność, nie tylko lepszy UX).
  *
- * **Trzy przyciski, nie jeden.** „Pomiń" i „Odłóż" istnieją, bo harmonogram, którego nie da się
+ * **Cztery przyciski, nie jeden.** „Pomiń" i „Odłóż" istnieją, bo harmonogram, którego nie da się
  * odłożyć, po tygodniu składa się wyłącznie z zaległości i przestaje być czytany. Różnica między
  * nimi jest realna: pominięcie przesuwa CYKL (liczymy od dziś), odłożenie przesuwa TERMIN o kilka
- * dni i cykl zostawia w spokoju.
+ * dni i cykl zostawia w spokoju. Czwarty — „Nie przypominaj" — jest jedynym WYJŚCIEM z cyklu:
+ * bez niego zadanie założone raz wracało na agendę na zawsze.
  */
 export function AgendaOpieki({ pozycje: poczatkowe }: { pozycje: PozycjaAgendy[] }) {
   const t = useTranslations("modules.rosliny.AgendaOpieki");
+  const confirmDialog = useConfirm();
   const [pozycje, setPozycje] = useState(poczatkowe);
   const [pending, startTransition] = useTransition();
 
@@ -30,6 +33,24 @@ export function AgendaOpieki({ pozycje: poczatkowe }: { pozycje: PozycjaAgendy[]
       await recordCare({ taskId: p.id, outcome });
       // Pozycja znika z listy „na teraz" niezależnie od wyniku — jej następny termin właśnie się
       // przesunął. Zostawienie jej na ekranie sugerowałoby, że kliknięcie nic nie zrobiło.
+      setPozycje((lista) => lista.filter((x) => x.id !== p.id));
+    });
+  }
+
+  /**
+   * Wyłączenie zadania — jedyne wyjście z cyklu, którego nie da się już wznowić „samo".
+   *
+   * Bez tego zadanie założone raz (np. podlewanie rośliny, która poszła do znajomych) wracało na
+   * agendę co kilka dni na zawsze, a jedyną obroną było odkładanie go w nieskończoność. To jest
+   * dokładnie ten mechanizm, przez który lista zaległości przestaje być czytana.
+   *
+   * Pytamy o potwierdzenie, ale **nie jest to akcja niszcząca** (C-34): historia zabiegów zostaje,
+   * znika tylko planowanie na przyszłość.
+   */
+  function wylacz(p: PozycjaAgendy) {
+    startTransition(async () => {
+      if (!(await confirmDialog({ title: t("wylaczPytanie", { tytul: p.title }) }))) return;
+      await updateCareTask(p.id, { active: false });
       setPozycje((lista) => lista.filter((x) => x.id !== p.id));
     });
   }
@@ -83,6 +104,10 @@ export function AgendaOpieki({ pozycje: poczatkowe }: { pozycje: PozycjaAgendy[]
                   <button type="button" style={przycisk} disabled={pending} onClick={() => wykonaj(p, "SKIPPED")}>
                     <SkipForward size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
                     {t("pomin")}
+                  </button>
+                  <button type="button" style={przycisk} disabled={pending} onClick={() => wylacz(p)}>
+                    <BellOff size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    {t("wylacz")}
                   </button>
                 </div>
               </li>
