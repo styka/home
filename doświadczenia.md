@@ -4,6 +4,52 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Weryfikacja, która sprawdza listę z poprzedniego przebiegu, potwierdza własną poprawkę
+**Problem:** W module Rośliny przebieg weryfikacji nr 1 znalazł osiem guardowanych funkcji bez
+konsumenta w interfejsie (naruszenie C-35). Przebieg nr 2 zaliczył tę regułę jako naprawioną —
+`grep` po tych ośmiu (plus trzech dołożonych) pokazał komplet konsumentów. Recenzja świeżym okiem
+znalazła **cztery kolejne** funkcje bez żadnego wejścia z interfejsu (`deleteSpace`, `updatePlace`,
+`deletePlace`, `updateCareTask`) i jeden pomocnik bez konsumenta (`listaFaz`). Jedna z nich stała
+za kryterium akceptacji zaliczonym na ✅: „użytkownik może usunąć przestrzeń".
+
+**Rozwiązanie:** Dowód liczony **od eksportów modułu**, a nie od listy braków z poprzedniego
+przebiegu: dla każdej eksportowanej akcji szukamy konsumenta w `ui/` i `app/`. Cztery brakujące
+wejścia dorobione (T-64), a `verify.md` poprawiony tak, żeby mówił, w którym przebiegu kryterium
+zostało naprawdę spełnione.
+
+**Lekcja:** Sprawdzanie „czy poprzednie braki zniknęły" nie jest weryfikacją — to potwierdzenie
+własnej poprawki. Zbiór do sprawdzenia musi za każdym razem powstawać **z kodu** (wszystkie
+eksporty), nie z notatki z poprzedniej rundy. Ten sam błąd metody dotknął dowodu na udostępnianie:
+tabela prawdy dowodziła, że guard mówi „wolno", a listy szły przez „moje rekordy", więc obdarowana
+osoba wchodziła do pustego widoku — dowód na dostęp musi obejmować także **zakres list**, nie tylko
+decyzję guardu.
+
+---
+
+## 2026-08-28 — Zero w danych to wartość, a nie brak danych
+**Problem:** Wymagania wodne gatunku (`waterJson`) trzymają cztery liczby — odstęp podlewania na
+każdą porę roku. Katalog zapisuje **zero** tam, gdzie gatunek nie jest w danej porze podlewany na
+cykl: warzywa jednoroczne mają zero zimą, zboża i uprawy polowe we wszystkich porach (125 ze 182
+wpisów ma zero w co najmniej jednej porze). Funkcja czytająca odsiewała wartości przez
+`Number.isFinite(n) && n > 0`, więc zero szło do gałęzi „brak danych" i było zastępowane wartością
+domyślną. Skutek: pomidor dodany w styczniu dostawał zadanie „podlej za 14 dni" z uzasadnieniem,
+które brzmiało wiarygodnie i było zmyślone. Test utrwalał ten błąd — sprawdzał wprost, że
+`{ winter: 0 }` „bierze zapas".
+
+**Rozwiązanie:** Trzy stany zamiast dwóch: liczba dodatnia (odstęp), zero (nie podlewamy w tej
+porze), brak/śmieć (wartość domyślna). Reguła terminu zwraca `pomijac: true` i datę **początku
+najbliższej pory z dodatnim odstępem**, a zakładanie harmonogramu liczy termin przed utworzeniem
+zadania i przy `pomijac` nie tworzy go wcale. Nowy test czyta wymagania wodne **wprost z migracji
+0273**, więc sprawdza regułę wobec danych, a nie samego siebie.
+
+**Lekcja:** `> 0` w walidacji liczby to decyzja produktowa, nie techniczna — sprawdź, czy zero coś
+w tej dziedzinie **znaczy**, zanim wrzucisz je do worka z `null` i `"abc"`. Gdy znaczy: potrzebne są
+trzy gałęzie, a wywołujący musi dostać sygnał („pomiń"), a nie podstawioną liczbę. I jeszcze jedno:
+test, który powtarza implementację, zamiast czytać dane wejściowe z ich prawdziwego źródła
+(migracji, seeda), utrwala błąd zamiast go łapać.
+
+---
+
 ## 2026-08-28 — Akcja użytkownika o nazwie `resolve…` cicho wypada z bramki pokrycia AI
 **Problem:** W nowym module Rośliny akcja `resolveHealthEvent` („czy zalecenie pomogło") nie
 pojawiła się na liście kandydatów `check:ai-coverage`, a wpis dodany dla niej w manifeście został

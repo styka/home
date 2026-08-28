@@ -58,7 +58,7 @@ Legenda: ✅ spełnione. Wszystkie 30 kryteriów spełnione; dowód przy każdym
 | **AC-4** | Jeden model `Plant`. Test: 1 szt., 100 szt. i 4,2 ha w jednej tabeli. |
 | **AC-5** | `propagatePlant` + relacja `PlantParent`; test: rodzic widzi dwoje potomstwa, skasowanie matki nie kasuje sadzonek. Przycisk w szczególe. |
 | **AC-6** | `domain/roslina.ts` `bladZmianyStanu` — powodu wymaga wyłącznie `DEAD`; test domenowy + integracyjny (zakończona zostaje w historii miejsca). |
-| **AC-7** | `recordTrash` + `restoreRosliny`; test potwierdza, że kasowanie przestrzeni zabiera zawartość — stąd pełna migawka. |
+| **AC-7** | `recordTrash` + `restoreRosliny`; test potwierdza, że kasowanie przestrzeni zabiera zawartość — stąd pełna migawka. **Korekta po przebiegu 3:** w przebiegu 2 to kryterium było zaliczone na podstawie samej akcji — a `deleteSpace` nie miała wtedy ŻADNEGO wejścia z interfejsu (recenzja, U-9). Dowód uzupełniony w T-64: przycisk „Usuń przestrzeń" w slocie `settings` widoku przestrzeni, z potwierdzeniem niszczącym. Migawka objęła też zadania i zdarzenia opieki (T-56), bo bez nich usunięcie i przywrócenie kasowało ewidencję ŚOR na stałe. |
 
 ### Opieka i harmonogram
 
@@ -109,7 +109,7 @@ Legenda: ✅ spełnione. Wszystkie 30 kryteriów spełnione; dowód przy każdym
 | AC | Dowód |
 |---|---|
 | **AC-27** | Bramka w `layout.tsx`; `check:route-gating` liczy 22 trasy. |
-| **AC-28** | Deklaracja dwóch zasobów z `parent`; `ShareDialog`. Tabela prawdy z jawnym sprawdzeniem, że decyzja o roślinie **zawsze** równa się decyzji o jej przestrzeni. |
+| **AC-28** | Deklaracja dwóch zasobów z `parent`; `ShareDialog`. Tabela prawdy z jawnym sprawdzeniem, że decyzja o roślinie **zawsze** równa się decyzji o jej przestrzeni. **Korekta po przebiegu 3:** tabela prawdy dowodziła wyłącznie, że guard mówi „wolno" — a listy szły przez `ownedWhereAsync`, więc obdarowana osoba wchodziła do **pustego widoku**, co wygląda jak awaria danych, nie jak brak dostępu. Uzupełnione w T-58 (`zakresPrzestrzeni`/`idPrzestrzeniNadanychMi` w `getSpaces`, `getPlants`, `getCareAgenda`, `getCareHistory`, `getHarvests`, `getTreatmentRegister`). |
 | **AC-29** | `dashboard.ts` + wpis w korzeniu; `src/app/page.tsx` nietknięta. |
 | **AC-30** | Sekwencja z §1. |
 
@@ -127,7 +127,7 @@ Legenda: ✅ spełnione. Wszystkie 30 kryteriów spełnione; dowód przy każdym
 | C-17, C-21 | ✅ dostęp rozstrzyga platforma z katalogiem modułu, własność przez helpery przestrzeni, tabela prawdy |
 | C-20, C-22..C-25 | ✅ `revalidatePath`, slug w migracji, egzekutory, kosz |
 | C-30..C-34 | ✅ zmienne CSS, cele dotyku 40 px, teksty przez `t()`, `ModuleView` ze `state` i slotem `settings`, `confirmDialog({destructive:true})` |
-| **C-35** | ✅ **naprawiona wobec pierwszego przebiegu** — każda z jedenastu funkcji ma dziś dokładnie jednego konsumenta w UI (sprawdzone `grep`-em po `ui/` i `app/rosliny/`) |
+| **C-35** | ✅ **dopiero po przebiegu 3.** W przebiegu 2 napisano tu „naprawiona" na podstawie `grep`-a po jedenastu funkcjach z listy z przebiegu 1 — a recenzja znalazła cztery kolejne bez konsumenta (`deleteSpace`, `updatePlace`/`deletePlace`, `updateCareTask`, `listaFaz`). Błąd był w METODZIE, nie w liczbie: sprawdzano listę zamkniętą z poprzedniego przebiegu, a nie wszystkie eksporty modułu. Domknięte w T-64. |
 | C-40, C-41 | ✅ model i provider z konfiguracji, zero kluczy w kodzie |
 | C-51 | ✅ jedna lekcja dopisana do `doświadczenia.md` (cichy filtr bramki pokrycia AI) |
 | C-53 | ✅ zero nowych zależności; `ImageUrlInput` użyty zamiast pisania własnego uploadu; brak drugiego magazynu i drugiej księgowości |
@@ -171,7 +171,8 @@ reguła milczy — tak samo jak milczy dla wpisu bez rodziny.
 | Przebieg | Werdykt | Co ustalił |
 |---|---|---|
 | 1 | ⛔ DO POPRAWY | 19 ✅ / 7 ⚠️ / 4 ❌. Warstwa serwera kompletna, warstwa widoku jej nie wołała: osiem guardowanych funkcji bez konsumenta (naruszenie C-35). **Wszystkie bramki były wtedy zielone** — bo pytają, czy kod jest poprawnie podłączony do platformy, a nie czy da się z niego skorzystać. |
-| 2 | ✅ GOTOWE | 30 ✅. Braki domknięte (T-48…T-54), przy okazji wykryty i naprawiony defekt z §5. |
+| 2 | ✅ GOTOWE | 30 ✅. Braki domknięte (T-48…T-54), przy okazji wykryty i naprawiony defekt z §5. **Werdykt był przedwczesny** — patrz przebieg 3. |
+| 3 | ⛔ ZMIANY WYMAGANE (recenzja) | 12 ustaleń (U-1…U-12), wszystkie potwierdzone w kodzie przed przyjęciem. Dwa twierdzenia z przebiegu 2 obalone: „C-35 naprawiona" (sprawdzano listę zamkniętą z przebiegu 1, nie eksporty modułu) i dowody AC-7/AC-28 (akcja bez wejścia z interfejsu; guard bez zakresu list). Do tego: wyciek przez `parentId`/`plantId` podane wprost do Server Action, zero w wymaganiach wodnych czytane jak brak danych, eksport ewidencji bez okresu, formularz zabiegu bez daty i przedmiotu, `window.prompt`, kubełek agendy w strefie serwera, wyścig w `harvestToPantry`. Domknięte w T-56…T-68. |
 
 **Wniosek do zapamiętania:** komplet zielonych bramek nie jest miarą kompletności funkcji. Bramki
 tego repozytorium pilnują *wpięcia w mechanizmy platformy*; „czy użytkownik ma jak z tego
@@ -179,7 +180,25 @@ skorzystać" sprawdza dopiero przejście AC po AC z `grep`-em po konsumentach.
 
 ---
 
-## 7. Werdykt końcowy: ✅ GOTOWE
+**Druga lekcja, z przebiegu 3:** dowód na spełnienie kryterium **nie może pochodzić z listy
+sporządzonej w poprzednim przebiegu**. Weryfikacja, która sprawdza tylko to, co poprzednio było
+zepsute, potwierdza wyłącznie własną poprawkę — i dokładnie tak przeszły cztery akcje bez wejścia
+z interfejsu oraz guard, który wpuszczał do pustego widoku.
 
-Wszystkie 30 kryteriów akceptacji spełnione z dowodem, wszystkie bramki zielone, `next build`
-przechodzi, 94 testy modułu zielone, regresji nie wykryto. Feature gotowy do recenzji.
+---
+
+## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 3)
+
+Wszystkie 30 kryteriów akceptacji spełnione z dowodem — dwa z nich (**AC-7**, **AC-28**) dopiero po
+korekcie opisanej wyżej. Bramki: komplet zielony, w tym `check:domain`, `check:owner-columns`,
+`check:route-gating`, `check:pagination`, `check:i18n` i budżet wydajnościowy. `next build`
+przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1464 testy jednostkowe
+i integracyjne zielone**, dwie zapadki podniesione świadomie (rejestr modułów 23 → 24, kalendarz
+14 → 15 zapytań przy `powtorzenia: 1`, czyli nowe źródło w agregacie, a nie N+1).
+
+**Odnotowane, świadomie poza zakresem:** `scripts/migrate.js` przy seedowaniu domyślnych przypisań
+LLM woła `llmAssignment.findUnique({ where: { operationType } })`, choć od 034 kluczem głównym jest
+para `(operationType, level)`. Na świeżej bazie kończy się to ostrzeżeniem „Failed to seed LLM
+defaults" — build przechodzi, ale domyślne przypisania nie powstają. Defekt jest **starszy niż ten
+feature** i nie dotyka modułu Rośliny; naprawa poszerzyłaby zakres o cudzy plik, więc zostaje
+zgłoszona, a nie doklejona (C-53).
