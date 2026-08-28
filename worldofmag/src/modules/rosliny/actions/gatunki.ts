@@ -142,14 +142,16 @@ export async function addSpeciesFromCatalog(key: string): Promise<{ id: string }
   // Tożsamość kopii to KLUCZ WPISU KATALOGU. Szukanie po nazwie łacińskiej zwracałoby cukinię przy
   // próbie dodania dyni — obie to `Cucurbita pepo`, ale dla użytkownika to dwie różne uprawy
   // o różnych wymaganiach (migracja 0274).
-  const istniejacy = await prisma.plantSpecies.findUnique({
+  //
+  // `upsert`, a nie `sprawdź i utwórz`: to dwa osobne kroki, a widok pokazuje „dodaj do swoich" aż
+  // do odświeżenia, więc dwie karty obok siebie potrafią kliknąć jednocześnie. Drugi zapis odbiłby
+  // się wtedy od indeksu błędem Prismy, którego użytkownik nie zrozumie.
+  const kopia = await prisma.plantSpecies.upsert({
     where: { workspaceId_catalogKey: { workspaceId: wlasnosc.workspaceId, catalogKey: zrodlo.key } },
-    select: { id: true },
-  });
-  if (istniejacy) return istniejacy;
-
-  const kopia = await prisma.plantSpecies.create({
-    data: {
+    // Istniejącej kopii NIE nadpisujemy — użytkownik mógł zmienić w niej parametry pielęgnacji,
+    // a ponowne kliknięcie „dodaj" nie jest prośbą o przywrócenie wartości katalogowych.
+    update: {},
+    create: {
       ...wlasnosc,
       catalogKey: zrodlo.key,
       origin: "system",

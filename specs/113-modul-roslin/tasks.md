@@ -1,7 +1,7 @@
 # Zadania: Moduł Rośliny — od parapetu do hektara
 
 - **Plan:** ./plan.md (113-modul-roslin) · **Spec:** ./spec.md · **Badania:** ./badania.md
-- **Status:** done (weryfikacja: GOTOWE, drugi przebieg)
+- **Status:** in-progress (zawrót z `/review` — Faza 7)
 - **Data:** 2026-08-28
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami
@@ -233,6 +233,48 @@
       planu §6.3), zapis zabiegu zwraca listę braków, a ostrzeżenie jest OSTRZEŻENIEM, nie blokadą.
 - [x] **T-55** — Ponowny przebieg bramek + testów, aktualizacja `verify.md`.
 
+## Faza 7 — Ustalenia recenzji (C-54: zawrót z `/review`)
+
+> Recenzja świeżym okiem znalazła cztery ustalenia blokujące i sześć dotykających kryteriów
+> akceptacji. **Wspólny mianownik dwóch najgorszych: weryfikacja zaliczyła kryterium na podstawie
+> OBECNOŚCI mechanizmu, a nie jego SKUTKU** — `ShareDialog` istnieje, więc uznałem udostępnianie za
+> działające; `deleteSpace` istnieje, więc uznałem usuwanie przestrzeni za dostępne. Pełny opis
+> w `review.md`.
+
+- [ ] **T-56** — **Migawka kosza obejmuje ewidencję.** `deleteSpace` zapisuje `careTasks`
+      i `careEvents`; `restoreRosliny` je odtwarza. → **U-1, AC-7, AC-24**
+      *Gotowe, gdy:* test kasuje przestrzeń z zabiegiem ŚOR i po przywróceniu **odzyskuje wpis
+      ewidencji z numerem zezwolenia**.
+- [ ] **T-57** — **Przywrócenie rośliny odtwarza jej historię i daty.** Dziennik, pomiary, zdarzenia
+      zdrowotne oraz `sownAt`/`acquiredAt`/`statusAt`/`parentId`. → **U-2, AC-7**
+      *Gotowe, gdy:* test: roślina z wpisami i datą siewu wraca kompletna, a rok w historii miejsca
+      się nie zmienia.
+- [ ] **T-58** — **Listy uwzględniają nadania.** `getSpaces`, `getPlants`, `getCareAgenda`,
+      `getCareHistory`, `getHarvests` unionują `idZasobowNadanychMi` (wzorzec Notatek). → **U-3, AC-28**
+      *Gotowe, gdy:* **tabela prawdy dostaje czwartą osobę — z nadaniem `editor`** — i pokazuje,
+      że widzi ona przestrzeń na liście ORAZ jej rośliny.
+- [ ] **T-59** — **Zero w wymaganiach wodnych znaczy „nie planuj podlewania w tej porze".** Jedna
+      semantyka w trzech miejscach: seed, reguła, test. → **U-4, AC-8**
+      *Gotowe, gdy:* gatunek z `winter: 0` nie dostaje w styczniu zadania „podlej za 14 dni",
+      a test sprawdza REGUŁĘ z migracji, nie powtarza implementacji.
+- [ ] **T-60** — **Eksport ewidencji za wybrany okres**, z nazwą pliku z faktycznego zakresu. → **U-5, AC-25**
+- [ ] **T-61** — **Formularz zabiegu: data, uprawa i miejsce**; `brakiEwidencji` zgłasza brak
+      uprawy/miejsca. → **U-6, AC-24**
+- [ ] **T-62** — **Zawężenie kluczy obcych podanych przez klienta.** `placeId` musi należeć do
+      `spaceId`; `speciesId`/`parentId`/`plantId` do zakresu wołającego; `diagnosePlant` zawęża
+      zapytanie o zdarzenia. → **U-7 (security)**
+      *Gotowe, gdy:* test rozszerza `asystentBezObejscia` o próbę wstrzyknięcia cudzego `parentId`
+      i cudzego `plantId`.
+- [ ] **T-63** — **Lista zbiorów z akcjami.** `getHarvests` wyrenderowane; „do spiżarni" i „zapisz
+      koszt" przypięte do pozycji listy, nie do stanu sesji. → **U-8, AC-15**
+- [ ] **T-64** — **Usunięcie przestrzeni dostępne z interfejsu** + edycja i usunięcie miejsca,
+      wyłączenie zadania opieki, edytor fazy rozwojowej (konsument `listaFaz`). → **U-9, AC-7**
+- [ ] **T-65** — **Przyczyna śmierci bez `window.prompt`** — pole w widoku. → **U-10, C-34, C-32**
+- [ ] **T-66** `[P]` — **Kubełek agendy w strefie użytkownika** (`userTime`), nie serwera. → **U-11**
+- [ ] **T-67** `[P]` — **`harvestToPantry` idempotentne wobec wyścigu.** → **U-12**
+- [ ] **T-68** — **Korekta `verify.md`** (C-54): dwa twierdzenia obalone przez recenzję — „C-35
+      naprawiona" i dowód AC-28/AC-7. Ponowny przebieg bramek i testów.
+
 ---
 
 ## Mapowanie kryteriów akceptacji → zadania
@@ -245,15 +287,15 @@
 | AC-4 | T-12 | AC-19 | T-33, **T-53** |
 | AC-5 | T-12, T-25 | AC-20 | T-34, **T-54** |
 | AC-6 | T-12, T-25 | AC-21 | T-34 |
-| AC-7 | T-13 | AC-22 | T-35 |
-| AC-8 | T-5, T-14, **T-48** | AC-23 | T-36, T-37, T-43 |
-| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, **T-54** |
+| AC-7 | T-13, **T-56, T-57, T-64** | AC-22 | T-35 |
+| AC-8 | T-5, T-14, T-48, **T-59** | AC-23 | T-36, T-37, T-43 |
+| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, T-54, **T-56, T-61** |
 | AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28 |
 | AC-11 | T-5, T-14, **T-49** | AC-26 | T-6, **T-54** |
 | AC-12 | T-38, T-39 | AC-27 | T-21 |
-| AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42 |
+| AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42, **T-58** |
 | AC-14 | T-15, T-25 | AC-29 | T-40 |
-| AC-15 | T-17, **T-51** | AC-30 | T-44 |
+| AC-15 | T-17, T-51, **T-63** | AC-30 | T-44 |
 
 **Żaden AC nie został bez pokrycia.**
 
