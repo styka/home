@@ -241,15 +241,15 @@
 > działające; `deleteSpace` istnieje, więc uznałem usuwanie przestrzeni za dostępne. Pełny opis
 > w `review.md`.
 
-- [ ] **T-56** — **Migawka kosza obejmuje ewidencję.** `deleteSpace` zapisuje `careTasks`
+- [x] **T-56** — **Migawka kosza obejmuje ewidencję.** `deleteSpace` zapisuje `careTasks`
       i `careEvents`; `restoreRosliny` je odtwarza. → **U-1, AC-7, AC-24**
       *Gotowe, gdy:* test kasuje przestrzeń z zabiegiem ŚOR i po przywróceniu **odzyskuje wpis
       ewidencji z numerem zezwolenia**.
-- [ ] **T-57** — **Przywrócenie rośliny odtwarza jej historię i daty.** Dziennik, pomiary, zdarzenia
+- [x] **T-57** — **Przywrócenie rośliny odtwarza jej historię i daty.** Dziennik, pomiary, zdarzenia
       zdrowotne oraz `sownAt`/`acquiredAt`/`statusAt`/`parentId`. → **U-2, AC-7**
       *Gotowe, gdy:* test: roślina z wpisami i datą siewu wraca kompletna, a rok w historii miejsca
       się nie zmienia.
-- [ ] **T-58** — **Listy uwzględniają nadania.** `getSpaces`, `getPlants`, `getCareAgenda`,
+- [x] **T-58** — **Listy uwzględniają nadania.** `getSpaces`, `getPlants`, `getCareAgenda`,
       `getCareHistory`, `getHarvests` unionują `idZasobowNadanychMi` (wzorzec Notatek). → **U-3, AC-28**
       *Gotowe, gdy:* **tabela prawdy dostaje czwartą osobę — z nadaniem `editor`** — i pokazuje,
       że widzi ona przestrzeń na liście ORAZ jej rośliny.
@@ -260,7 +260,7 @@
 - [x] **T-60** — **Eksport ewidencji za wybrany okres**, z nazwą pliku z faktycznego zakresu. → **U-5, AC-25**
 - [x] **T-61** — **Formularz zabiegu: data, uprawa i miejsce**; `brakiEwidencji` zgłasza brak
       uprawy/miejsca. → **U-6, AC-24**
-- [ ] **T-62** — **Zawężenie kluczy obcych podanych przez klienta.** `placeId` musi należeć do
+- [x] **T-62** — **Zawężenie kluczy obcych podanych przez klienta.** `placeId` musi należeć do
       `spaceId`; `speciesId`/`parentId`/`plantId` do zakresu wołającego; `diagnosePlant` zawęża
       zapytanie o zdarzenia. → **U-7 (security)**
       *Gotowe, gdy:* test rozszerza `asystentBezObejscia` o próbę wstrzyknięcia cudzego `parentId`

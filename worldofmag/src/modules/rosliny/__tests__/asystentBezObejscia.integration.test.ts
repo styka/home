@@ -117,6 +117,40 @@ test(
         assert.equal(wCudzejPrzestrzeni, 1, "w cudzej przestrzeni przybyła roślina");
       });
 
+      await t.test("wskazania podane wprost przez klienta nie przechodzą przez cudzą przestrzeń", async () => {
+        // Ten przypadek nie idzie przez asystenta, tylko przez SUROWE argumenty Server Action:
+        // każde zalogowane konto może je wywołać z dowolnym `parentId`/`placeId`. Klucz obcy
+        // sprawdza istnienie wiersza, nie właściciela — bez zawężenia atakujący czytałby nazwę
+        // cudzej rośliny jako „rodzica" swojej, a ofiara widziałaby cudzy okaz jako swoje potomstwo.
+        const { sprawdzWskazania } = await import("../lib/sharingGuard");
+        const mojaPrzestrzen = await prisma.plantSpace.create({
+          data: { name: `Parapet-${rnd()}`, kind: "home", ...(await wlasnoscDoZapisu(obcy.id)) },
+        });
+        const cudzeMiejsce = await prisma.plantPlace.create({
+          // Miejsce nie ma własnej własności — wisi na przestrzeni, i to właśnie dlatego zawężenie
+          // musi iść przez `space`, a nie przez kolumnę właściciela, której tu nie ma.
+          data: { name: `Grzadka-${rnd()}`, spaceId: przestrzen.id, kind: "bed" },
+        });
+        try {
+          await assert.rejects(
+            () => sprawdzWskazania(obcy.id, { spaceId: mojaPrzestrzen.id, plantId: roslina.id }),
+            /Roślina nie istnieje/,
+          );
+          await assert.rejects(
+            () => sprawdzWskazania(obcy.id, { spaceId: mojaPrzestrzen.id, placeId: cudzeMiejsce.id }),
+            /Miejsce nie istnieje/,
+          );
+          // Bez podanego `spaceId` też nie wolno: zakres to moje przestrzenie i te mi udostępnione.
+          await assert.rejects(() => sprawdzWskazania(obcy.id, { plantId: roslina.id }), /Roślina nie istnieje/);
+          // Właściciel przechodzi tą samą ścieżką — inaczej test dowodziłby tylko, że funkcja
+          // odrzuca wszystko.
+          await sprawdzWskazania(wlasciciel.id, { spaceId: przestrzen.id, plantId: roslina.id, placeId: cudzeMiejsce.id });
+        } finally {
+          await prisma.plantPlace.delete({ where: { id: cudzeMiejsce.id } }).catch(() => {});
+          await prisma.plantSpace.delete({ where: { id: mojaPrzestrzen.id } }).catch(() => {});
+        }
+      });
+
       await t.test("guard modułu też odmawia — asystent nie jest jedyną linią obrony", async () => {
         await assert.rejects(() => assertPlantAccess(roslina.id, obcy.id), /Brak dostępu/);
       });
