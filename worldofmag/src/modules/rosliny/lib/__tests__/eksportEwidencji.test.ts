@@ -8,6 +8,9 @@ import {
   type WierszEwidencji,
 } from "../eksportEwidencji";
 
+/** Wszystkie testy liczą dzień w JEDNEJ strefie — tej, w której siedzi użytkownik. */
+const STREFA = "Europe/Warsaw";
+
 const wiersz = (over: Partial<WierszEwidencji> = {}): WierszEwidencji => ({
   occurredAt: new Date("2026-05-12T09:30:00Z"),
   spaceName: "Pole 3",
@@ -61,15 +64,27 @@ test("dawka zero i puste ciągi liczą się jako brak, nie jako wypełnienie", (
 
 // ─── CSV ─────────────────────────────────────────────────────────────────────
 
+test("data zabiegu liczy się w strefie UŻYTKOWNIKA, nie procesu", () => {
+  // Oprysk odhaczony o 00:30 czasu polskiego 1 kwietnia = 2026-03-31T22:30Z. Wersja licząca
+  // `getFullYear()` na zegarze procesu (UTC na Renderze) wpisywała tu 2026-03-31 — dzień spoza
+  // okresu, który głosiła nazwa pliku.
+  const csv = ewidencjaDoCsv([wiersz({ occurredAt: new Date("2026-03-31T22:30:00Z") })], STREFA);
+  const wierszDanych = csv.split("\r\n")[1];
+  assert.equal(wierszDanych.split(";")[0], "2026-04-01");
+  // Ta sama chwila w UTC to nadal poprzedni dzień — czyli test sprawdza regułę, a nie zegar maszyny.
+  const utc = ewidencjaDoCsv([wiersz({ occurredAt: new Date("2026-03-31T22:30:00Z") })], "UTC");
+  assert.equal(utc.split("\r\n")[1].split(";")[0], "2026-03-31");
+});
+
 test("eksport ma wszystkie kolumny wymogu, w ustalonej kolejności", () => {
-  const csv = ewidencjaDoCsv([wiersz()]);
+  const csv = ewidencjaDoCsv([wiersz()], STREFA);
   const naglowek = csv.split("\r\n")[0].replace(/^﻿/, "");
   assert.equal(naglowek, KOLUMNY_EWIDENCJI.join(";"));
   assert.equal(KOLUMNY_EWIDENCJI.length, 16);
 });
 
 test("wiersz danych trafia w te same kolumny co nagłówek", () => {
-  const csv = ewidencjaDoCsv([wiersz()]);
+  const csv = ewidencjaDoCsv([wiersz()], STREFA);
   const [naglowek, dane] = csv.replace(/^﻿/, "").split("\r\n");
   assert.equal(dane.split(";").length, naglowek.split(";").length);
   assert.ok(dane.startsWith("2026-05-12;"));
@@ -101,28 +116,28 @@ function poleCsv(linia: string): string[] {
 
 test("średnik w treści nie rozjeżdża wiersza o kolumnę", () => {
   // To jest realny przypadek: użytkownik wpisuje warunki zdaniem z separatorem.
-  const csv = ewidencjaDoCsv([wiersz({ conditions: "12°C; wiatr 2 m/s; sucho" })]);
+  const csv = ewidencjaDoCsv([wiersz({ conditions: "12°C; wiatr 2 m/s; sucho" })], STREFA);
   const [naglowek, dane] = csv.replace(/^﻿/, "").split("\r\n");
   assert.equal(poleCsv(dane).length, poleCsv(naglowek).length);
   assert.equal(poleCsv(dane)[13], "12°C; wiatr 2 m/s; sucho");
 });
 
 test("cudzysłów w treści jest podwajany, a nie gubiony", () => {
-  const csv = ewidencjaDoCsv([wiersz({ note: 'preparat "X"' })]);
+  const csv = ewidencjaDoCsv([wiersz({ note: 'preparat "X"' })], STREFA);
   assert.ok(csv.includes('"preparat ""X"""'));
 });
 
 test("plik zaczyna się od BOM — bez niego polski Excel rozjeżdża znaki", () => {
-  assert.ok(ewidencjaDoCsv([]).startsWith("﻿"));
+  assert.ok(ewidencjaDoCsv([], STREFA).startsWith("﻿"));
 });
 
 test("pusty rejestr daje sam nagłówek, a nie pusty plik", () => {
-  const csv = ewidencjaDoCsv([]).replace(/^﻿/, "");
+  const csv = ewidencjaDoCsv([], STREFA).replace(/^﻿/, "");
   assert.equal(csv.trim(), KOLUMNY_EWIDENCJI.join(";"));
 });
 
 test("brakujące pola zostają puste, a nie jako „null”", () => {
-  const csv = ewidencjaDoCsv([wiersz({ permitNumber: null, withdrawalDays: null })]);
+  const csv = ewidencjaDoCsv([wiersz({ permitNumber: null, withdrawalDays: null })], STREFA);
   assert.doesNotMatch(csv, /null|undefined/);
 });
 

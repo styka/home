@@ -287,3 +287,96 @@ oraz legalność importu kontraktu Roślin w `src/actions/trash.ts`.
 
 F-1, F-2 i F-3 blokują. F-4 i F-5 uderzają w kryteria akceptacji. Zadania **T-69…T-80** dopisane do
 `tasks.md`.
+
+---
+
+# Przebieg 3 recenzji — po fazie 8 (`9cdb857..HEAD`)
+
+Znów świeżym okiem, znów z potwierdzeniem każdego ustalenia w kodzie. **Trzy z ośmiu są skutkami
+ubocznymi poprawek z poprzedniej rundy** — i to jest najważniejsza obserwacja z całego przebiegu:
+poprawka pod listę braków ma własne skutki uboczne, więc rundy nie wygasają same. Wygaszać je trzeba
+świadomie, sprawdzając po każdej naprawie trzy rzeczy: czy zmiana znaczenia pola dotarła do
+WSZYSTKICH jego czytelników, czy tekst interfejsu nadal mówi prawdę o kodzie, i czy nie zamieniliśmy
+jednego naruszenia kryterium na drugie.
+
+## Blokujące
+
+### R-2 · `ui/RoslinaSzczegol.tsx:376` · correctness — AC-3
+**Poprawka F-7 zamieniła naruszenie AC-2 na naruszenie AC-3.** `poleWidoczne(tryb, "faza")` bez
+przełącznika „zaawansowane" (ten widok go nie ma) daje w trybach `home` i `garden` **stałe `false`
+bez drogi obejścia** — czyli tryb tu *blokuje*, a nagłówek `lib/tryb.ts` mówi wprost, że tryb chowa
+domyślnie i nigdy nie blokuje.
+
+*Awaria:* ogród, pomidor; użytkownik chce zapisać BBCH 65, bo od fazy zależy, czy zalecenie oprysku
+jest wykonalne — selektora nie ma i nie ma czym go wywołać. Asymetrycznie: fazę **ustawioną** przy
+dodawaniu (tam przełącznik istnieje) widać w wierszu opisu, ale nie da się jej już zmienić ani
+wyczyścić.
+
+### R-4 · `actions/ewidencja.ts:252` ↔ `lib/eksportEwidencji.ts:83` · correctness — AC-25
+**Poprawka F-6 przeliczyła na strefę użytkownika NAZWĘ pliku, ale nie jego TREŚĆ — w jednej funkcji
+zostały dwie różne reguły strefy dla tych samych dat.** Kolumna „Data zabiegu" idzie nadal przez
+`getFullYear()` w strefie procesu, czyli przez to samo, co komentarz dwie linijki wyżej nazywa
+źródłem błędu.
+
+*Awaria:* oprysk odhaczony o 00:30 czasu polskiego 1 kwietnia zapisuje `occurredAt =
+2026-03-31T22:30Z`. Filtr okresu porównuje instanty, więc wiersz **wchodzi** do zakresu 1–30 kwietnia,
+plik nazywa się `…-2026-04-01_2026-04-30.csv`, a w środku ten wiersz ma datę `2026-03-31` — dzień poza
+okresem zadeklarowanym w nazwie, w dokumencie dla kontroli.
+
+## Przy świeżo dodanej funkcji
+
+### R-3 · `domain/harmonogram.ts:200` ↔ `actions/opieka.ts:132` · correctness
+**Komentarz dopisany w tej rundzie twierdzi coś, czemu ta sama runda odebrała prawdziwość.** Stoi
+tam, że data techniczna „i tak nikogo nie zobaczy, bo `pomijac` mówi «nie zakładaj zadania»" —
+a `createCareTask` **`pomijac` nie czyta** i bezwarunkowo zapisuje `nextDueAt`. Ta sama runda dała
+`createCareTask` wejście z interfejsu, z listą rodzajów zawierającą `WATERING`.
+
+*Awaria:* pszenica w przestrzeni `field`. Użytkownik — dokładnie ten, dla którego F-4 kazało zrobić
+to wejście — dodaje zadanie „Podlewanie" i dostaje termin dziś+30 dni z uzasadnieniem „ten gatunek
+nie ma cyklu podlewania". Zaplanowane podlewanie, którego własne wyjaśnienie mówi, że podlewania się
+nie planuje. Dodatkowo sekcja „Zadania opieki" **niczego nie wypisuje**, więc pomyłki nie da się
+cofnąć w miejscu, w którym powstała.
+
+### R-1 · `ui/RoslinaSzczegol.tsx:191` · correctness
+**Tekst pola obiecuje tryb, którego w systemie nie ma:** „puste = jednorazowo", a pusty odstęp to
+gałąź, w której `przeliczTermin` podstawia domyślne 14 dni. Pojęcia zabiegu jednorazowego moduł nie
+zna — `recordCare` zawsze wyznacza następny termin.
+
+*Awaria:* „Przesadzanie" z pustym odstępem wraca co dwa tygodnie w nieskończoność.
+
+## Drobne
+
+### R-5 · `lib/terminy.ts:105` · convention (C-54)
+Nagłówek opisuje **starą** semantykę `pomijac` („gatunek, który w tej porze nie jest podlewany, nie
+dostaje zadania w ogóle" — pomidor w styczniu dostaje je teraz na 1 marca) i wciąż obiecuje ścieżkę
+„zadanie zakłada się z chwilą pierwszego odnotowanego podlania", o której F-4 ustaliło, że nie
+istnieje. To pierwsze miejsce, do którego zajrzy następna osoba.
+
+### R-6 · `domain/harmonogram.ts:204` · convention (C-32)
+Zmiana semantyki `pomijac` wypuściła na produkcję łańcuch, który dotąd nigdy nie był zapisywany —
+z błędem gramatycznym: „wracamy do tego na **wiosna**". `NAZWA_PORY` trzyma mianowniki, zdanie
+wymaga biernika. To pierwsze zdanie, jakie moduł mówi o swoim najważniejszym rozstrzygnięciu (AC-9).
+
+### R-7 · `src/actions/notifications.ts:192` · simplification
+Zamiana na `getCareAgenda({ dni: 3 })` jest równoważna po stronie filtra, ale okno straciło **dolne**
+ograniczenie: kontrakt zwraca też wszystkie zaległe, `orderBy asc`, `take: SUFIT_LISTY` (1000)
+zamiast lokalnego limitu 200. Przy ≥1000 zaległych zadań opieki żadne nadchodzące nie zmieści się
+w `take` i przypomnienia o roślinach zamilkną bez śladu.
+
+### R-8 · `lib/eksportEwidencji.ts:57` · simplification (C-53)
+`dzien` wyeksportowane bez importera — ta sama kategoria co martwy klucz z F-12.
+
+## Sprawdzone i CZYSTE
+
+Kompletność migawki przestrzeni (wszystkie pięć poziomów kaskady w `include`, każdy z gałęzią
+w `restoreRosliny`, kolejność `createMany` zgodna z kluczami obcymi), własność rośliny po zmianie
+(brak rozjazdu w drugą stronę — pozostałe tabele modułu nie mają `workspaceId`), guardy w
+`propagatePlant` i `updatePlant`, arytmetyka pór roku przy granicy roku, `recordCare` dla gatunku
+sezonowo niepodlewanego, zakres w `calendar.ts` i podniesiona zapadka N+1, tabela prawdy z czwartym
+podmiotem (dowodzi osobno decyzji guardu i zakresu list, z kontrolą, że obcy tych samych zapytań nie
+przechodzi), `pustyRejestr && !formularz` i `empty.action`, komplet kluczy i18n.
+
+## Werdykt: ⛔ ZMIANY WYMAGANE
+
+Blokują R-2 (naruszone AC-3) i R-4 (dokument prawny z datą wiersza poza okresem w nazwie).
+Zadania **T-81…T-88** dopisane do `tasks.md`.

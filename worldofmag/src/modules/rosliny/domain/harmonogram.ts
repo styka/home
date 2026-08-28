@@ -109,6 +109,22 @@ const NAZWA_PORY: Record<PoraRoku, string> = {
   autumn: "jesień",
 };
 
+/**
+ * Ta sama pora w BIERNIKU — „wracamy do tego na wiosnę", nie „na wiosna".
+ *
+ * Osobna mapa, a nie odmiana wyliczana z mianownika: dwie z czterech nazw brzmią w obu przypadkach
+ * tak samo („lato", „jesień"), więc reguła zgadywana z końcówki działałaby połowicznie i wyglądała
+ * na poprawną. To zdanie jest pierwszym, jakie moduł mówi o swoim najważniejszym rozstrzygnięciu
+ * (AC-9), a do bazy trafiło dopiero wtedy, gdy zero w jednej porze przestało oznaczać „nie zakładaj
+ * zadania" — czyli po zmianie, która nie miała z językiem nic wspólnego.
+ */
+const NAZWA_PORY_BIERNIK: Record<PoraRoku, string> = {
+  winter: "zimę",
+  spring: "wiosnę",
+  summer: "lato",
+  autumn: "jesień",
+};
+
 /** Kolejność pór w roku — do wyznaczenia najbliższej, w której podlewanie ma sens. */
 const KOLEJNOSC: PoraRoku[] = ["winter", "spring", "summer", "autumn"];
 
@@ -201,7 +217,7 @@ export function terminPodlewania(wejscie: WejscieTerminu): WynikTerminu {
       // datą techniczną, której i tak nikt nie zobaczy, bo `pomijac` mówi „nie zakładaj zadania".
       termin: nastepna?.start ?? new Date(wejscie.od.getTime() + 30 * DZIEN_MS),
       uzasadnienie: nastepna
-        ? `${NAZWA_PORY[pora]} — ten gatunek nie jest teraz podlewany na cykl; wracamy do tego na ${NAZWA_PORY[nastepna.pora]}`
+        ? `${NAZWA_PORY[pora]} — ten gatunek nie jest teraz podlewany na cykl; wracamy do tego na ${NAZWA_PORY_BIERNIK[nastepna.pora]}`
         : "ten gatunek nie ma cyklu podlewania — nawadnianie jest decyzją agrotechniczną, nie odstępem",
       ostrzezenie: mroz
         ? `Przymrozek ${mroz.date} (${Math.round(mroz.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`

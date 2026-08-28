@@ -1563,6 +1563,12 @@
     "reason": "interactive",
     "access": "owner"
   },
+  "opieka:getPlantCareTasks": {
+    "kind": "read",
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
   "opieka:recordCare": {
     "status": "ai",
     "action": "log_plant_care",

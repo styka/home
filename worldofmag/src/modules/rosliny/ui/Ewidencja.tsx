@@ -16,6 +16,13 @@ import { getPlants } from "../actions/rosliny";
 import type { PrzestrzenDTO } from "../actions/przestrzenie";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
 
+/** Dzień instantu w strefie PRZEGLĄDARKI — czyli tej, w której użytkownik wykonał zabieg. */
+function dzienLokalny(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /** Dzisiejsza data w formacie pola `<input type="date">` — w strefie użytkownika, nie w UTC. */
 function dzisiaj(): string {
   const d = new Date();
@@ -323,7 +330,9 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
             {pozycje.map((p) => (
               <li key={p.id} style={{ fontSize: 13, color: "var(--text-primary)", display: "grid", gap: 3 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
-                  <span style={{ fontWeight: 600 }}>{p.occurredAt.slice(0, 10)}</span>
+                  {/* `slice(0,10)` na ISO daje dzień w UTC — ten sam rozjazd, co w kolumnie CSV:
+                      zabieg z 00:30 czasu polskiego pokazywałby się jako poprzedni dzień. */}
+                  <span style={{ fontWeight: 600 }}>{dzienLokalny(p.occurredAt)}</span>
                   <span>{p.productName ?? t("brakSrodka")}</span>
                   <span style={{ ...drobny, marginLeft: "auto" }}>{p.spaceName}</span>
                 </div>

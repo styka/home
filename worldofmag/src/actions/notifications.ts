@@ -192,7 +192,10 @@ export async function syncReminders(): Promise<number> {
     // udostępnione"), a powtórzona reguła rozjeżdża się przy pierwszej zmianie: tak właśnie
     // powstał stan, w którym opiekun widział zadania nadanej przestrzeni w agendzie i na pulpicie,
     // ale nie dostawał o nich powiadomienia. `getCareAgenda` zna tę regułę w jednym miejscu.
-    getCareAgenda({ dni: 3 }),
+    // `od: now` jest tu istotne, a nie ozdobne: bez dolnej granicy kontrakt oddaje także WSZYSTKIE
+    // zaległe, posortowane rosnąco — przy tysiącu zaległych zadań opieki żadne nadchodzące nie
+    // zmieściłoby się w limicie i przypomnienia o roślinach zamilkłyby bez śladu.
+    getCareAgenda({ dni: 3, od: now }),
   ]);
 
   const jobs: Promise<void>[] = [];

@@ -2260,8 +2260,14 @@
         "dodajZadanie": "Dodaj zadanie opieki",
         "rodzajZabieguEtykieta": "Rodzaj zabiegu",
         "coIleDniEtykieta": "Co ile dni",
-        "coIleDniPlaceholder": "Co ile dni (puste = jednorazowo)",
-        "zadanieDodane": "Zadanie opieki dodane — pojawi się w agendzie."
+        "coIleDniPlaceholder": "Co ile dni (puste = co 14)",
+        "zadanieDodane": "Zadanie opieki dodane — pojawi się w agendzie.",
+        "zaawansowane": "Pokaż zaawansowane",
+        "brakZadan": "Nie ma jeszcze żadnego zadania opieki.",
+        "bezTerminu": "bez terminu — ten gatunek nie ma cyklu podlewania",
+        "wylaczZadanie": "Nie przypominaj",
+        "wylaczZadaniePytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie.",
+        "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę."
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",

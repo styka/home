@@ -102,11 +102,19 @@ export async function terminPodlewaniaRosliny(plantId: string, od = new Date()):
  * Cichy brak zamiast wyjątku: nieudane założenie harmonogramu nie może cofnąć **dodania rośliny**,
  * bo to użytkownik właśnie zrobił. Roślina bez harmonogramu jest w porządku; brak rośliny nie.
  *
- * **Gatunek, który w tej porze nie jest podlewany na cykl, nie dostaje zadania w ogóle.** Reguła
- * mówi to wprost (`pomijac`), a my liczymy termin PRZED utworzeniem wiersza — inaczej pomidor dodany
- * w styczniu albo pszenica dodana kiedykolwiek zaczynałaby życie od zadania „Podlewanie", które
- * użytkownik musi ręcznie usunąć. Zadanie zakłada się wtedy z chwilą pierwszego odnotowanego
- * podlania, tą samą ścieżką co każde inne.
+ * **Zadania nie dostaje wyłącznie gatunek bez cyklu podlewania w ŻADNEJ porze** — zboża i uprawy
+ * polowe, których nawadnianie jest decyzją agrotechniczną, a nie odstępem między podlaniami. Reguła
+ * mówi to wprost (`pomijac`), a my liczymy termin PRZED utworzeniem wiersza, żeby taki wiersz
+ * w ogóle nie powstał.
+ *
+ * **Zero w bieżącej porze przy dodatniej innej to NIE jest ten przypadek.** Pomidor dodany
+ * w styczniu ma prawdziwą datę następnego podlania — 1 marca — i dostaje zadanie z tą datą; po
+ * prostu czeka. Wcześniej obie sytuacje szły pod jedną flagą i 125 ze 182 wpisów katalogu nie
+ * dostawało zadania nigdy, bez śladu w interfejsie.
+ *
+ * Gatunek bez cyklu nie zostaje przez to bez możliwości opieki: zadanie zakłada się wtedy ręcznie,
+ * przyciskiem „Dodaj zadanie opieki" w szczegółach rośliny (`createCareTask`, które tę samą flagę
+ * czyta i nie wymyśla wtedy terminu).
  */
 export async function zalozHarmonogramPodlewania(plantId: string): Promise<void> {
   try {

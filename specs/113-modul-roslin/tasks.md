@@ -313,12 +313,33 @@
       rundę recenzji.
 
 
+## Faza 9 — po trzeciej recenzji (R-1…R-8)
+
+- [x] **T-81** — **Przełącznik „zaawansowane" w szczególe rośliny**, tak jak w widoku przestrzeni;
+      `poleWidoczne` dostaje jego stan, a nie stałą. → **R-2, AC-3**
+      *Gotowe, gdy:* w trybie `home` fazy nie widać domyślnie, ale da się ją odsłonić i zmienić.
+- [x] **T-82** — **Jedna reguła strefy w całej ewidencji**: nazwa pliku, kolumna „Data zabiegu"
+      i lista liczą dzień tak samo, w strefie użytkownika. → **R-4, R-8, AC-25**
+      *Gotowe, gdy:* zabieg odhaczony o 00:30 czasu polskiego ma w CSV datę tego dnia, a nie
+      poprzedniego, i mieści się w okresie, który głosi nazwa pliku.
+- [x] **T-83** — **`createCareTask` czyta `pomijac`** — gatunek bez cyklu nie dostaje wymyślonej daty;
+      sekcja „Zadania opieki" **wypisuje zadania rośliny** z możliwością wyłączenia. → **R-3**
+      *Gotowe, gdy:* „Podlewanie" dodane pszenicy nie ma terminu, a widać je tam, gdzie powstało.
+- [x] **T-84** `[P]` — **Tekst pola odstępu mówi prawdę o domyślnej wartości** (moduł nie zna zabiegu
+      jednorazowego). → **R-1**
+- [x] **T-85** `[P]` — **Nazwa pory w bierniku** w uzasadnieniu terminu. → **R-6, C-32**
+- [x] **T-86** — **`getCareAgenda` przyjmuje `od`**, powiadomienia proszą o samo okno zamiast
+      o wszystko od początku świata. → **R-7**
+- [x] **T-87** `[P]` — **Nagłówek `zalozHarmonogramPodlewania` opisuje AKTUALNĄ semantykę** `pomijac`
+      i aktualną ścieżkę zakładania zadania. → **R-5, C-54**
+- [x] **T-88** — **Bramki, build, testy; aktualizacja `verify.md`** o trzecią rundę recenzji.
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadania | AC | Zadania |
 |---|---|---|---|
 | AC-1 | T-11, T-23 | AC-16 | T-16, T-27 |
-| AC-2 | T-7, T-24, **T-75** | AC-17 | T-16, T-27, **T-52** |
+| AC-2 | T-7, T-24, **T-75, T-81** | AC-17 | T-16, T-27, **T-52** |
 | AC-3 | T-7, T-24 | AC-18 | T-33, **T-53** |
 | AC-4 | T-12 | AC-19 | T-33, **T-53** |
 | AC-5 | T-12, T-25 | AC-20 | T-34, **T-54** |
@@ -326,7 +347,7 @@
 | AC-7 | T-13, **T-56, T-57, T-64, T-70** | AC-22 | T-35 |
 | AC-8 | T-5, T-14, T-48, **T-59, T-73** | AC-23 | T-36, T-37, T-43 |
 | AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, T-54, **T-56, T-61, T-69** |
-| AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28, **T-60, T-69, T-74** |
+| AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28, **T-60, T-69, T-74, T-82** |
 | AC-11 | T-5, T-14, **T-49** | AC-26 | T-6, **T-54** |
 | AC-12 | T-38, T-39 | AC-27 | T-21 |
 | AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42, **T-58, T-76** |

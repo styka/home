@@ -53,10 +53,24 @@ export const KOLUMNY_EWIDENCJI = [
   "Uwagi",
 ] as const;
 
-/** Data w formacie, który czyta i człowiek, i arkusz: `RRRR-MM-DD`. */
-export function dzien(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+/**
+ * Data w formacie, który czyta i człowiek, i arkusz: `RRRR-MM-DD` — **w strefie użytkownika**.
+ *
+ * `getFullYear()` czytałoby instant w strefie PROCESU (na Renderze UTC), więc oprysk odhaczony
+ * o 00:30 czasu polskiego trafiał do dokumentu z datą dnia POPRZEDNIEGO — a filtr okresu, który
+ * porównuje instanty, wpuszczał go do zakresu zaczynającego się dopiero tego dnia. Wiersz miał
+ * wtedy w dokumencie datę spoza okresu, który głosi nazwa pliku. Nazwa pliku i treść muszą liczyć
+ * dzień JEDNĄ regułą, inaczej dokument dla kontroli przeczy sam sobie.
+ *
+ * `en-CA` daje dokładnie `RRRR-MM-DD`, bez ręcznego składania z części.
+ */
+export function dzien(d: Date, strefa: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: strefa,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }
 
 /**
@@ -74,13 +88,13 @@ function pole(v: string | number | null | undefined): string {
   return s;
 }
 
-export function ewidencjaDoCsv(wiersze: WierszEwidencji[]): string {
+export function ewidencjaDoCsv(wiersze: WierszEwidencji[], strefa: string): string {
   const linie: string[] = [KOLUMNY_EWIDENCJI.join(";")];
 
   for (const w of wiersze) {
     linie.push(
       [
-        pole(dzien(w.occurredAt)),
+        pole(dzien(w.occurredAt, strefa)),
         pole(w.spaceName),
         pole(w.plantName),
         pole(w.placeName),

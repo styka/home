@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Sprout, Stethoscope, Ruler, NotebookPen, Trash2, Scissors, ScanSearch, Wheat, CalendarPlus } from "lucide-react";
+import { Sprout, Stethoscope, Ruler, NotebookPen, Trash2, Scissors, ScanSearch, Wheat, CalendarPlus, Settings2, BellOff } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -20,7 +20,7 @@ import {
   type WynikDiagnozy,
 } from "../actions/analiza";
 import { updatePlant } from "../actions/rosliny";
-import { createCareTask } from "../actions/opieka";
+import { createCareTask, getPlantCareTasks, updateCareTask, type ZadanieOpiekiDTO } from "../actions/opieka";
 import { poleWidoczne } from "../lib/tryb";
 import { RODZAJE_ZABIEGOW, type RodzajZabiegu } from "../lib/typy";
 import { addSpeciesFromCatalog } from "../actions/gatunki";
@@ -46,6 +46,7 @@ export function RoslinaSzczegol({
   pomiary: poczatkowePomiary,
   zdarzenia,
   zbiory: poczatkoweZbiory,
+  zadania: poczatkoweZadania,
   tryb,
 }: {
   roslina: RoslinaSzczegolDTO;
@@ -53,6 +54,7 @@ export function RoslinaSzczegol({
   pomiary: PomiarDTO[];
   zdarzenia: ZdarzenieDTO[];
   zbiory: ZbiorDTO[];
+  zadania: ZadanieOpiekiDTO[];
   tryb: TrybPrzestrzeni;
 }) {
   const t = useTranslations("modules.rosliny.RoslinaSzczegol");
@@ -86,6 +88,8 @@ export function RoslinaSzczegol({
   const [zbiory, setZbiory] = useState<ZbiorDTO[]>(poczatkoweZbiory);
   const [faza, setFaza] = useState(roslina.stage ?? "");
   const [pytamOPrzyczyne, setPytamOPrzyczyne] = useState(false);
+  const [zaawansowane, setZaawansowane] = useState(false);
+  const [zadania, setZadania] = useState<ZadanieOpiekiDTO[]>(poczatkoweZadania);
   const [noweZadanie, setNoweZadanie] = useState<{ kind: RodzajZabiegu; coIleDni: string } | null>(null);
   const [przyczyna, setPrzyczyna] = useState("");
   const [komunikat, setKomunikat] = useState<string | null>(null);
@@ -191,8 +195,21 @@ export function RoslinaSzczegol({
         // pusty albo niedodatni znaczy „jednorazowo", a nie „co zero dni".
         recurring: Number.isFinite(co) && co > 0 ? JSON.stringify({ interval: co }) : null,
       });
+      // Lista pochodzi z serwera, bo to serwer rozstrzyga TERMIN — a dla gatunku bez cyklu
+      // podlewania rozstrzyga, że terminu nie ma. Doklejenie własnej wersji wiersza pokazywałoby
+      // datę, której nikt nie zapisał.
+      setZadania(await getPlantCareTasks(roslina.id));
       setNoweZadanie(null);
       setKomunikat(t("zadanieDodane"));
+    });
+  }
+
+  async function wylaczZadanie(z: ZadanieOpiekiDTO) {
+    if (!(await confirmDialog({ title: t("wylaczZadaniePytanie", { tytul: z.title }) }))) return;
+    startTransition(async () => {
+      await updateCareTask(z.id, { active: false });
+      setZadania((lista) => lista.map((x) => (x.id === z.id ? { ...x, active: false } : x)));
+      setKomunikat(t("zadanieWylaczone"));
     });
   }
 
@@ -351,6 +368,19 @@ export function RoslinaSzczegol({
         </Link>
       }
       state="ready"
+      filters={
+        // Ten sam przełącznik co w widoku przestrzeni — bez niego tryb `home`/`garden` nie chowałby
+        // pól zaawansowanych, tylko je ODBIERAŁ (AC-3).
+        <button
+          type="button"
+          style={{ ...przycisk, background: zaawansowane ? "var(--bg-hover)" : "var(--bg-elevated)" }}
+          aria-pressed={zaawansowane}
+          onClick={() => setZaawansowane((v) => !v)}
+        >
+          <Settings2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          {t("zaawansowane")}
+        </button>
+      }
       actions={
         <>
           <button type="button" style={przycisk} onClick={sadzonka} disabled={pending}>
@@ -373,11 +403,12 @@ export function RoslinaSzczegol({
           <span>{t(`status.${status}`)}</span>
         </p>
         {roslina.statusReason && <p style={{ ...drobny, margin: "6px 0 0" }}>{roslina.statusReason}</p>}
-        {/* Trzeci argument to stan przełącznika „zaawansowane"; ten widok go nie ma, więc podajemy
-            `false` i decyduje TRYB. Wcześniej stało tu `true`, co czyniło warunek stałą i wystawiało
-            listę 28 kodów BBCH także na parapecie w mieszkaniu — segmencie o zerowej tolerancji na
-            parametry (AC-2). Ustawioną wcześniej fazę widać nadal w wierszu opisu powyżej. */}
-        {poleWidoczne(tryb, "faza") && (
+        {/* Trzeci argument to stan przełącznika „zaawansowane" — ten widok ma go od T-81, tak samo
+            jak widok przestrzeni. Stała `true` wystawiała listę 28 kodów BBCH na parapecie
+            w mieszkaniu (AC-2); sama stała `false` byłaby jednak jeszcze gorsza, bo w trybie `home`
+            i `garden` **odbierałaby** dostęp do pola, a tryb ma chować domyślnie, nigdy nie blokować
+            (AC-3, nagłówek `lib/tryb.ts`). */}
+        {poleWidoczne(tryb, "faza", zaawansowane) && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
             <label htmlFor="faza-rozwojowa" style={drobny}>{t("fazaEtykieta")}</label>
             <select
@@ -652,6 +683,38 @@ export function RoslinaSzczegol({
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>{t("zadaniaTytul")}</h2>
         <p style={{ ...drobny, margin: "0 0 10px" }}>{t("zadaniaOpis")}</p>
+        {/* Sekcja WYPISUJE to, co sama zakłada. Agenda pokazuje wyłącznie zadania z terminem
+            w horyzoncie, więc bez tej listy zadanie bez daty albo z terminem za pół roku było
+            niewidoczne wszędzie — a pomyłki nie dało się cofnąć tam, gdzie powstała. */}
+        {zadania.length === 0 ? (
+          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("brakZadan")}</p>
+        ) : (
+          <ul style={{ listStyle: "none", margin: "0 0 10px", padding: 0, display: "grid", gap: 8 }}>
+            {zadania.map((z) => (
+              <li key={z.id} style={{ display: "grid", gap: 2, opacity: z.active ? 1 : 0.55 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{z.title}</span>
+                  <span style={drobny}>
+                    {z.nextDueAt ? z.nextDueAt.slice(0, 10) : t("bezTerminu")}
+                  </span>
+                  {z.active && (
+                    <button
+                      type="button"
+                      style={{ ...przycisk, marginLeft: "auto" }}
+                      onClick={() => void wylaczZadanie(z)}
+                      disabled={pending}
+                    >
+                      <BellOff size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      {t("wylaczZadanie")}
+                    </button>
+                  )}
+                </div>
+                {/* Uzasadnienie terminu (AC-9) — także wtedy, gdy brzmi „ten gatunek nie ma cyklu". */}
+                {z.reason && <span style={drobny}>{z.reason}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
         {noweZadanie ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <select

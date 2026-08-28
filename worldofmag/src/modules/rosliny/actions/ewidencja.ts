@@ -226,8 +226,8 @@ export async function exportTreatmentRegister(opts?: {
   od?: Date;
   do?: Date;
 }): Promise<EksportEwidencji> {
-  const pozycje = await getTreatmentRegister(opts);
   const strefa = userTimeZone();
+  const pozycje = await getTreatmentRegister(opts);
 
   const wiersze: WierszEwidencji[] = pozycje.map((p) => ({
     occurredAt: new Date(p.occurredAt),
@@ -259,7 +259,7 @@ export async function exportTreatmentRegister(opts?: {
       },
       wiersze.map((w) => dataWStrefie(strefa, w.occurredAt)),
     ),
-    csv: ewidencjaDoCsv(wiersze),
+    csv: ewidencjaDoCsv(wiersze, strefa),
     liczbaZabiegow: wiersze.length,
     liczbaNiekompletnych: pozycje.filter((p) => p.braki.length > 0).length,
   };

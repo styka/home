@@ -51,7 +51,17 @@ const MS_DZIEN = 86_400_000;
  * własnej przestrzeni (wisi na `PlantSpace`), więc pytanie o nią byłoby pytaniem o kolumnę, której
  * ta tabela nie ma — dokładnie ten błąd łapie bramka `check:owner-columns`.
  */
-export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): Promise<PozycjaAgendy[]> {
+export async function getCareAgenda(opts?: {
+  spaceId?: string;
+  dni?: number;
+  /**
+   * Dolna granica okna. Domyślnie **brak** — agenda musi pokazywać zaległe, bo po to istnieje.
+   * Wołający, któremu zaległe nie są potrzebne (powiadomienia mówią o tym, co nadchodzi), podaje
+   * ją jawnie: bez niej `take` wypełniłby się zaległościami i o nadchodzącym zabiegu nikt by się
+   * nie dowiedział.
+   */
+  od?: Date;
+}): Promise<PozycjaAgendy[]> {
   const user = await requireAuth();
   const teraz = new Date();
   // Koniec doby liczony w strefie UŻYTKOWNIKA (ciasteczko `tz`), nie procesu — na Renderze proces
@@ -63,7 +73,7 @@ export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): 
     take: SUFIT_LISTY,
     where: {
       active: true,
-      nextDueAt: { lte: horyzont },
+      nextDueAt: { ...(opts?.od ? { gte: opts.od } : {}), lte: horyzont },
       space: { is: { ...(await zakresPrzestrzeni(user.id)), ...(opts?.spaceId ? { id: opts.spaceId } : {}) } },
     },
     select: {
@@ -132,12 +142,59 @@ export async function createCareTask(data: {
   const wynik = await przeliczTermin(zadanie.id, data.startAt ?? new Date());
   await prisma.plantCareTask.update({
     where: { id: zadanie.id },
-    data: { nextDueAt: wynik.termin, reason: wynik.uzasadnienie },
+    data: {
+      // **`pomijac` znaczy „nie ma czego zaplanować" i tutaj też obowiązuje.** Bez tego warunku
+      // podlewanie dodane ręcznie przy pszenicy dostawało termin za miesiąc, a jako uzasadnienie
+      // zdanie „ten gatunek nie ma cyklu podlewania" — zaplanowany zabieg, którego własne
+      // wyjaśnienie mówi, że się go nie planuje. Zadanie zostaje (użytkownik świadomie je założył
+      // i może podlać ręcznie), ale bez wymyślonej daty.
+      nextDueAt: wynik.pomijac ? null : wynik.termin,
+      reason: wynik.uzasadnienie,
+    },
   });
 
   revalidatePath("/rosliny/opieka");
   revalidatePath(`/rosliny/${data.spaceId}`);
   return zadanie;
+}
+
+export interface ZadanieOpiekiDTO {
+  id: string;
+  kind: RodzajZabiegu;
+  title: string;
+  /** `null` = zadanie bez zaplanowanego terminu (gatunek bez cyklu podlewania). */
+  nextDueAt: string | null;
+  reason: string | null;
+  active: boolean;
+}
+
+/**
+ * Zadania opieki JEDNEJ rośliny — także te bez terminu i te wyłączone.
+ *
+ * Agenda pokazuje wyłącznie zadania z terminem w horyzoncie, więc zadanie bez daty (gatunek bez
+ * cyklu) albo z terminem za pół roku było w niej niewidoczne — a więc niemożliwe do cofnięcia
+ * w miejscu, w którym powstało. Ten odczyt istnieje po to, żeby sekcja „Zadania opieki" pokazywała
+ * to, co sama zakłada.
+ */
+export async function getPlantCareTasks(plantId: string): Promise<ZadanieOpiekiDTO[]> {
+  const user = await requireAuth();
+  await assertPlantAccess(plantId, user.id);
+
+  const zadania = await prisma.plantCareTask.findMany({
+    take: SUFIT_LISTY,
+    where: { plantId },
+    select: { id: true, kind: true, title: true, nextDueAt: true, reason: true, active: true },
+    orderBy: [{ active: "desc" }, { nextDueAt: "asc" }],
+  });
+
+  return zadania.map((z) => ({
+    id: z.id,
+    kind: z.kind as RodzajZabiegu,
+    title: z.title,
+    nextDueAt: z.nextDueAt?.toISOString() ?? null,
+    reason: z.reason,
+    active: z.active,
+  }));
 }
 
 export async function updateCareTask(

@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Poprawka pod listę braków ma własne skutki uboczne: trzy z ośmiu ustaleń następnej recenzji
+**Problem:** Moduł Rośliny przeszedł trzy rundy recenzji świeżym okiem. Za każdym razem część
+nowych ustaleń dotyczyła **poprawek z rundy poprzedniej**, a nie oryginalnego kodu. Trzy przykłady
+z ostatniej rundy: (1) naprawa „lista faz BBCH pokazuje się w mieszkaniu" ustawiła warunek na sam
+tryb, przez co w mieszkaniu i ogrodzie pola **nie dało się już odsłonić** — jedno naruszenie
+kryterium zamienione na drugie; (2) naprawa „nazwa pliku ewidencji liczona w złej strefie"
+przeliczyła nazwę, ale nie kolumnę „Data zabiegu" w tym samym pliku, więc w jednej funkcji zostały
+dwie różne reguły strefy; (3) zmiana znaczenia flagi `pomijac` dotarła do jednego czytelnika
+(zakładanie harmonogramu), ale nie do drugiego (`createCareTask`), któremu ta sama runda właśnie
+dorobiła wejście z interfejsu.
+
+**Rozwiązanie:** Każde ustalenie naprawione osobno, a po każdej rundzie **nowa recenzja świeżym
+okiem tylko na diff tej rundy** — aż runda przyszła bez ustaleń blokujących.
+
+**Lekcja:** Kiedy poprawiasz listę braków ze zgłoszenia, sprawdź trzy rzeczy, o które lista nie
+prosi: **(a)** czy zmiana znaczenia pola dotarła do WSZYSTKICH jego czytelników (`grep` po nazwie
+pola, nie po miejscu, które zgłoszono), **(b)** czy tekst interfejsu i komentarze nadal mówią prawdę
+o kodzie po zmianie, **(c)** czy nie usunąłeś jednego naruszenia kryterium kosztem drugiego —
+zwłaszcza gdy kryteria są parą („domyślnie schowane" + „ale dostępne na żądanie"). I nie zakładaj,
+że jedna runda recenzji wystarczy: recenzja czyta kod, który przed chwilą powstał pod presją listy,
+więc jej własny wynik też wymaga recenzji.
+
+---
+
 ## 2026-08-28 — Stan `empty` w `ModuleView` zjada `children`, czyli formularz, którym miało się wyjść z pustego stanu
 **Problem:** Widok ewidencji zabiegów miał `state={pustyRejestr ? "empty" : "ready"}`, przycisk
 „Nowy zabieg" w `actions` (pasek rysuje się zawsze) i formularz w `children`. Konto bez ani jednego

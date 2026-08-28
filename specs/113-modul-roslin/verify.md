@@ -174,12 +174,22 @@ reguła milczy — tak samo jak milczy dla wpisu bez rodziny.
 | 2 | ✅ GOTOWE | 30 ✅. Braki domknięte (T-48…T-54), przy okazji wykryty i naprawiony defekt z §5. **Werdykt był przedwczesny** — patrz przebieg 3. |
 | 3 | ⛔ ZMIANY WYMAGANE (recenzja 1) | 12 ustaleń (U-1…U-12), wszystkie potwierdzone w kodzie przed przyjęciem. Dwa twierdzenia z przebiegu 2 obalone: „C-35 naprawiona" (sprawdzano listę zamkniętą z przebiegu 1, nie eksporty modułu) i dowody AC-7/AC-28 (akcja bez wejścia z interfejsu; guard bez zakresu list). Do tego: wyciek przez `parentId`/`plantId` podane wprost do Server Action, zero w wymaganiach wodnych czytane jak brak danych, eksport ewidencji bez okresu, formularz zabiegu bez daty i przedmiotu, `window.prompt`, kubełek agendy w strefie serwera, wyścig w `harvestToPantry`. Domknięte w T-56…T-68. |
 | 4 | ⛔ ZMIANY WYMAGANE (recenzja 2) | 12 ustaleń (F-1…F-12), wszystkie potwierdzone w kodzie przed przyjęciem. Trzy blokujące: **formularza zabiegu nie dało się otworzyć przy pustym rejestrze** (stan `empty` rysuje `ViewEmpty` ZAMIAST `children`, więc ewidencja była nieosiągalna dokładnie dla tego, kto ma ją założyć), **migawka kasowanej przestrzeni nadal gubiła dziennik, pomiary i diagnozy** (`plants: true` bez zagnieżdżeń, więc pętla przywracająca dzieci była no-opem — U-2 piętro wyżej) i **`propagatePlant` pominięte w T-62** (`placeId` z klienta prosto do zapisu). Do tego dwa uderzające w kryteria: gatunek z zerem w bieżącej porze nie dostawał zadania NIGDY i nie było czym tego naprawić (AC-8), a własność rośliny szła z parametru `teamId` zamiast z przestrzeni, więc usunięcie konta członka zespołu zabierało zespołowi uprawę. Domknięte w T-69…T-80. |
+| 5 | ⛔ ZMIANY WYMAGANE (recenzja 3) | 8 ustaleń (R-1…R-8), **trzy z nich to skutki uboczne poprawek z przebiegu 4** — i to jest najważniejsza obserwacja z całej serii. Blokujące: poprawka F-7 zamieniła naruszenie AC-2 na naruszenie **AC-3** (bez przełącznika „zaawansowane" tryb `home`/`garden` nie chował pola fazy, tylko je ODBIERAŁ), a poprawka F-6 przeliczyła na strefę użytkownika NAZWĘ pliku ewidencji, zostawiając jego TREŚĆ w strefie procesu — zabieg z 00:30 czasu polskiego trafiał do dokumentu z datą spoza okresu, który głosi nazwa pliku. Do tego: `createCareTask` nie czytało flagi, której znaczenie ta sama runda zmieniła (podlewanie pszenicy dostawało termin za miesiąc z uzasadnieniem „ten gatunek nie ma cyklu podlewania"), tekst pola obiecywał zabieg jednorazowy, którego moduł nie zna, uzasadnienie terminu trafiło wreszcie do bazy — z błędem gramatycznym („na wiosna"), a powiadomienia straciły dolną granicę okna. Domknięte w T-81…T-88. |
 
 **Wniosek do zapamiętania:** komplet zielonych bramek nie jest miarą kompletności funkcji. Bramki
 tego repozytorium pilnują *wpięcia w mechanizmy platformy*; „czy użytkownik ma jak z tego
 skorzystać" sprawdza dopiero przejście AC po AC z `grep`-em po konsumentach.
 
 ---
+
+**Czwarta lekcja, z przebiegu 5 — i najważniejsza z całej serii:** **poprawka pod listę braków ma
+własne skutki uboczne, więc rundy recenzji nie wygasają same.** Trzy z ośmiu ustaleń tej rundy to
+skutki poprawek z poprzedniej: zamiana jednego naruszenia kryterium na drugie (AC-2 → AC-3),
+przeliczenie na strefę użytkownika połowy tej samej funkcji, i zmiana znaczenia pola, która nie
+dotarła do wszystkich jego czytelników. Wniosek praktyczny: po każdej naprawie trzeba sprawdzić trzy
+rzeczy, o które lista braków nie prosi — czy zmiana semantyki pola dotarła do **wszystkich** jego
+czytelników, czy tekst interfejsu nadal mówi prawdę o kodzie, i czy nie usunęliśmy jednego naruszenia
+kosztem drugiego.
 
 **Trzecia lekcja, z przebiegu 4:** poprawka pisana pod listę braków usuwa OBJAW i trzeba osobno
 sprawdzić dwie rzeczy, o których lista nie mówi: **czy tej samej dziury nie ma piętro wyżej** (U-2
@@ -194,12 +204,12 @@ z interfejsu oraz guard, który wpuszczał do pustego widoku.
 
 ---
 
-## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 4)
+## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 5)
 
 Wszystkie 30 kryteriów akceptacji spełnione z dowodem — dwa z nich (**AC-7**, **AC-28**) dopiero po
 korekcie opisanej wyżej. Bramki: komplet zielony, w tym `check:domain`, `check:owner-columns`,
 `check:route-gating`, `check:pagination`, `check:i18n` i budżet wydajnościowy. `next build`
-przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1468 testów jednostkowych
+przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1469 testów jednostkowych
 i integracyjnych zielonych**, dwie zapadki podniesione świadomie: rejestr modułów 23 → 24 oraz
 kalendarz 14 → 16 zapytań przy `powtorzenia: 1` — najpierw nowy wkład modułu, potem jedno zapytanie
 o nadania, gdy kalendarz zaczął pytać o zakres tak samo jak agenda. W obu krokach powtórzenia
