@@ -44,6 +44,27 @@ test(
       assert.equal(await przemiecWiedzeJesliCzas(), null);
     });
 
+    /**
+     * Warunek wyboru kandydatów jest tu przepisany świadomie: chodzi o to, żeby zmiana tamtego
+     * zapytania musiała przejść przez ten test, a nie prześlizgnąć się niezauważona.
+     */
+    const kandydaciSposrod = (ids: string[]) =>
+      prisma.user.findMany({
+        where: {
+          id: { in: ids },
+          OR: [
+            { assistantPref: { is: null } },
+            {
+              assistantPref: {
+                autoFacts: true,
+                OR: [{ factsLastRunAt: null }, { factsLastRunAt: { lt: new Date(Date.now() - 86_400_000) } }],
+              },
+            },
+          ],
+        },
+        select: { id: true },
+      });
+
     await t.test("wyłączony automat nie trafia do przemiatania (AC-9)", async () => {
       const bezAutomatu = await prisma.user.create({ data: { email: `wiedza-off-${rnd()}@test.local` } });
       const zAutomatem = await prisma.user.create({ data: { email: `wiedza-on-${rnd()}@test.local` } });
@@ -51,17 +72,27 @@ test(
         await prisma.assistantPref.create({ data: { userId: bezAutomatu.id, autoFacts: false } });
         await prisma.assistantPref.create({ data: { userId: zAutomatem.id, autoFacts: true } });
 
-        const kandydaci = await prisma.assistantPref.findMany({
-          where: {
-            autoFacts: true,
-            userId: { in: [bezAutomatu.id, zAutomatem.id] },
-            OR: [{ factsLastRunAt: null }, { factsLastRunAt: { lt: new Date(Date.now() - 86_400_000) } }],
-          },
-          select: { userId: true },
-        });
-        assert.deepEqual(kandydaci.map((k) => k.userId), [zAutomatem.id]);
+        const kandydaci = await kandydaciSposrod([bezAutomatu.id, zAutomatem.id]);
+        assert.deepEqual(kandydaci.map((k) => k.id), [zAutomatem.id]);
       } finally {
         await prisma.user.deleteMany({ where: { id: { in: [bezAutomatu.id, zAutomatem.id] } } });
+      }
+    });
+
+    /**
+     * 111 (recenzja): KONTO, KTÓRE NIGDY NIE ZAJRZAŁO W USTAWIENIA ASYSTENTA, TEŻ MA BYĆ PRZEMIATANE.
+     *
+     * `AssistantPref` powstaje dopiero przy pierwszej zmianie ustawień, więc pierwsza wersja
+     * przemiatania — pytająca o samą tę tabelę — pomijała każde takie konto. Domyślna wartość
+     * kolumny to `true`, czyli brak wiersza znaczy „automat włączony", a nie „wyłączony".
+     */
+    await t.test("konto bez wiersza ustawień asystenta JEST kandydatem", async () => {
+      const swiezak = await prisma.user.create({ data: { email: `wiedza-nowy-${rnd()}@test.local` } });
+      try {
+        const kandydaci = await kandydaciSposrod([swiezak.id]);
+        assert.deepEqual(kandydaci.map((k) => k.id), [swiezak.id]);
+      } finally {
+        await prisma.user.deleteMany({ where: { id: swiezak.id } });
       }
     });
 
@@ -71,15 +102,7 @@ test(
         await prisma.assistantPref.create({
           data: { userId: swiezy.id, autoFacts: true, factsLastRunAt: new Date() },
         });
-        const kandydaci = await prisma.assistantPref.findMany({
-          where: {
-            autoFacts: true,
-            userId: swiezy.id,
-            OR: [{ factsLastRunAt: null }, { factsLastRunAt: { lt: new Date(Date.now() - 86_400_000) } }],
-          },
-          select: { userId: true },
-        });
-        assert.deepEqual(kandydaci, []);
+        assert.deepEqual(await kandydaciSposrod([swiezy.id]), []);
       } finally {
         await prisma.user.deleteMany({ where: { id: swiezy.id } });
       }

@@ -70,24 +70,43 @@ export async function odbierzPrawoDoPrzemiatania(odstepMs = GODZINA_MS): Promise
 export async function przemiecWiedzeJesliCzas(odstepMs = GODZINA_MS): Promise<number | null> {
   if (!(await odbierzPrawoDoPrzemiatania(odstepMs))) return null;
 
-  const kandydaci = await prisma.assistantPref.findMany({
+  const przedDoba = new Date(Date.now() - DOBA_MS);
+  /**
+   * Pytamy o UŻYTKOWNIKÓW, nie o wiersze ustawień — i to nie jest szczegół.
+   *
+   * `AssistantPref` powstaje dopiero wtedy, gdy ktoś **coś w asystencie ustawi**. Zapytanie o samą
+   * tę tabelę pomijałoby więc każde konto, które nigdy nie zajrzało w ustawienia asystenta — czyli
+   * dokładnie te, dla których „wiedza ma rosnąć sama" znaczy najwięcej. Brak wiersza to nie jest
+   * „automat wyłączony": domyślna wartość kolumny to `true`, więc brak wiersza znaczy **włączony**
+   * i tak go tu traktujemy.
+   */
+  const kandydaci = await prisma.user.findMany({
     take: KONT_NA_PRZEBIEG,
     where: {
-      // 111 (AC-9): wyłączony automat znaczy wyłączony. Ręczny przycisk działa niezależnie.
-      autoFacts: true,
-      OR: [{ factsLastRunAt: null }, { factsLastRunAt: { lt: new Date(Date.now() - DOBA_MS) } }],
+      OR: [
+        // Nigdy nie dotknął ustawień asystenta → domyślne, czyli automat włączony.
+        { assistantPref: { is: null } },
+        {
+          assistantPref: {
+            // 111 (AC-9): wyłączony automat znaczy wyłączony. Ręczny przycisk działa niezależnie.
+            autoFacts: true,
+            OR: [{ factsLastRunAt: null }, { factsLastRunAt: { lt: przedDoba } }],
+          },
+        },
+      ],
     },
     // Najdawniej przemiatane idą pierwsze — inaczej przy większej liczbie kont niż `KONT_NA_PRZEBIEG`
-    // te z końca listy nie doczekałyby się nigdy.
-    orderBy: { factsLastRunAt: { sort: "asc", nulls: "first" } },
-    select: { userId: true },
+    // te z końca listy nie doczekałyby się nigdy. Konta bez wiersza mają `null`, więc trafiają na
+    // początek: nigdy nieprzemiecione czekają najdłużej.
+    orderBy: { assistantPref: { factsLastRunAt: { sort: "asc", nulls: "first" } } },
+    select: { id: true },
   });
 
   let zakolejkowane = 0;
   for (const k of kandydaci) {
     // `dedupeKey` jest tu warunkiem poprawności, nie oszczędnością: wnioskowanie trwa kilkanaście
     // sekund, więc wolno chodzące zadanie dostałoby przy kolejnym tyknięciu drugie zlecenie.
-    await enqueue("user.facts", {}, { ownerId: k.userId, dedupeKey: `user.facts:${k.userId}` });
+    await enqueue("user.facts", {}, { ownerId: k.id, dedupeKey: `user.facts:${k.id}` });
     zakolejkowane++;
   }
   return zakolejkowane;

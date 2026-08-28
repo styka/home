@@ -463,6 +463,12 @@ async function summarizeItems(
 
   const items = await uzupelnijUbogiMaterial(surowe, ctx);
 
+  // 111 (recenzja): poziom normalizujemy RAZ i tej jednej wartości używają OBA zapisy niżej.
+  // Wcześniej `NewsItem.summaryLength` brał surowy ciąg z ustawień, a `NewsItemSummary.length`
+  // wartość znormalizowaną — przy nieoczekiwanej zawartości ustawień te dwa zapisy opisywałyby
+  // ten sam tekst dwoma różnymi poziomami, a wtedy powrót do poziomu nie trafiłby w pamięć.
+  const poziom = poziomStreszczenia(defaultLength);
+
   const system =
     "Streszczasz wiadomości prasowe po polsku, rzeczowo i bez ozdobników. Nie dopisujesz niczego, " +
     "czego nie ma w materiale. Zwróć WYŁĄCZNIE JSON.";
@@ -498,7 +504,7 @@ async function summarizeItems(
       const out = await llmJson<{ summaries?: Array<{ index: number; title?: string; summary: string }> }>(
         "generation",
         system,
-        `${instrukcjaDlugosci(poziomStreszczenia(defaultLength))}\n\nMATERIAŁY:\n${blocks}\n\n` +
+        `${instrukcjaDlugosci(poziom)}\n\nMATERIAŁY:\n${blocks}\n\n` +
           `Zwróć JSON: {"summaries":[{"index":0,"title":"...","summary":"..."}]} dla KAŻDEGO materiału.\n` +
           `Pole "title" to TYTUŁ PO POLSKU: przetłumacz go, a jeśli już jest po polsku — przepisz bez zmian. ` +
           `Nie dopisuj do tytułu niczego, czego nie ma w oryginale, i nie zmieniaj jego sensu.`,
@@ -522,7 +528,7 @@ async function summarizeItems(
           where: { id: item.id },
           data: {
             summary: text,
-            summaryLength: defaultLength,
+            summaryLength: poziom,
             summaryFailed: false,
             ...(tytul ? { title: tytul } : {}),
           },
@@ -531,10 +537,10 @@ async function summarizeItems(
         // zajrzeniu na inny jest natychmiastowy i darmowy (AC-18). Bez tego zapisu pamięć
         // zaczynałaby się dopiero od pierwszego ręcznego przełączenia.
         await prisma.newsItemSummary.upsert({
-          where: { itemId_length: { itemId: item.id, length: poziomStreszczenia(defaultLength) } },
+          where: { itemId_length: { itemId: item.id, length: poziom } },
           create: {
             itemId: item.id,
-            length: poziomStreszczenia(defaultLength),
+            length: poziom,
             text,
             fromArticle: item.fromArticle,
           },
