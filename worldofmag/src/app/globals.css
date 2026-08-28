@@ -381,4 +381,10 @@ html[data-reka="left"] .omnia-chrom-konta { flex-direction: row-reverse; }
    Reguła żyje w arkuszu, bo warunek „poniżej md" należy do PASKA, a klasę nadaje
    moduł, który o pasku nic nie wie.
    --------------------------------------------------------------------------- */
-.omnia-akcja-ikonowa { flex: none; }
+/* Klasa podwojona CELOWO, nie przez pomyłkę: `[&>*]:flex-1` z paska kompiluje się do selektora
+   `.…\:flex-1 > *` o specyficzności (0,1,0) — dokładnie takiej samej, jak pojedyncza klasa. Przy
+   remisie decyduje KOLEJNOŚĆ, a Tailwind emituje swoje utility PO regułach z tego pliku (zmierzone
+   w zbudowanym arkuszu: bajt 31256 vs 36884), więc pojedyncza klasa przegrywała mimo poprawnego
+   zapisu. Podwojenie daje (0,2,0) i wygrywa niezależnie od kolejności — a `!important` byłoby
+   młotem, który psuje każdą przyszłą próbę nadpisania tego z zewnątrz. */
+.omnia-akcja-ikonowa.omnia-akcja-ikonowa { flex: none; }

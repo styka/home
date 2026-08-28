@@ -2,7 +2,13 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { oznaczPowrot, pozycjaDla, zapamietaj, zuzyjPowrot } from "@/platform/nawigacja/przewijanie";
+import {
+  oznaczPowrot,
+  pozycjaDla,
+  zapamietaj,
+  zuzyjPowrot,
+  zuzyjPowrotDokumentu,
+} from "@/platform/nawigacja/przewijanie";
 
 /**
  * 111: POWRÓT „WSTECZ" WRACA TAM, GDZIE BYŁEŚ.
@@ -22,9 +28,12 @@ import { oznaczPowrot, pozycjaDla, zapamietaj, zuzyjPowrot } from "@/platform/na
  * 2. **Zapisujemy też PRZY WYJŚCIU z widoku.** Ostatnia klatka przewijania bywa zjedzona przez
  *    nawigację, więc sprzątanie efektu zapisuje pozycję jeszcze raz — to ona jest tą, po którą
  *    użytkownik wróci.
- * 3. **Przywracamy wyłącznie po `popstate`.** To jedyny moment, w którym przeglądarka mówi wprost,
- *    że to nawigacja w historii. Bez tego warunku pozycja wracałaby też przy wejściu z menu, co
- *    byłoby usterką, nie funkcją (AC-2).
+ * 3. **Przywracamy wyłącznie przy POWROCIE W HISTORII** — nigdy przy wejściu z menu czy z odnośnika
+ *    (AC-2). Powrót rozpoznajemy DWOMA sposobami, bo przeglądarka robi go dwoma mechanizmami:
+ *    `popstate`, gdy cofnięcie zostaje w tym samym dokumencie (nawigacja po aplikacji), oraz wpisem
+ *    `back_forward` w pomiarach nawigacji, gdy cofnięcie ładuje dokument OD NOWA (poprzednia strona
+ *    weszła odświeżeniem albo z paska adresu). Sam `popstate` obsługiwał tylko pierwszą połowę —
+ *    i tego właśnie nie widać w testach jednostkowych, a wyszło w klikaczu.
  * 4. **Przywracanie ma okno ponowień, nie jedną próbę.** Listy dociągane z serwera nie mają swojej
  *    wysokości w pierwszej klatce, więc `scrollTop = 1200` po prostu by się nie przyjęło. Próbujemy
  *    przez chwilę, dopóki treść nie urośnie — i **odpuszczamy po czasie**: skok w trakcie czytania
@@ -78,7 +87,12 @@ export function usePrzywroceniePrzewijania(ref: { current: HTMLElement | null })
     // ── przywracanie ─────────────────────────────────────────────────────────
     // Flagę zużywamy ZAWSZE przy wejściu na widok, także gdy nie ma czego przywracać: gdyby
     // została zapalona, przywróciłaby pozycję przy najbliższej zwykłej nawigacji.
-    const toPowrot = zuzyjPowrot();
+    // Dwa rodzaje powrotu, bo przeglądarka robi je dwoma mechanizmami: `popstate` przy nawigacji
+    // wewnątrz dokumentu i `back_forward` w pomiarach, gdy cofnięcie ładuje dokument od nowa.
+    // Kolejność `||` z jawnym drugim wywołaniem, a nie skrót — obie flagi mają się ZUŻYĆ.
+    const zPopstate = zuzyjPowrot();
+    const zDokumentu = zuzyjPowrotDokumentu();
+    const toPowrot = zPopstate || zDokumentu;
     const cel = toPowrot ? pozycjaDla(klucz) : null;
     let przywracanie: number | null = null;
 

@@ -129,7 +129,7 @@
   `useTranslations`. **Gotowe, gdy:** `npm run check:i18n` zielone (od 097 reguła bezwzględna).
 - [x] **T-24** — Testy jednostkowe zebrane i zielone: `przewijanie`, `dlugoscStreszczenia`,
   `harmonogram` wiedzy, `blocksKey`, akcja streszczeń. `npx tsc --noEmit -p tsconfig.test.json`.
-- [ ] **T-25** — Klikacz e2e wg mapowania z planu §8 — **bez `networkidle`** (`check:e2e-waits`):
+- [x] **T-25** — Klikacz e2e wg mapowania z planu §8 — **bez `networkidle`** (`check:e2e-waits`):
   powrót wstecz (AC-1/AC-2), trzy zakładki i stary adres (AC-10..AC-12), pasek przy 360 px
   (AC-13/AC-16), krótki pasek stanu (AC-14), źródła z panelu filtra (AC-17), ponowienie przy
   nieudanym streszczeniu (AC-22).

@@ -114,6 +114,35 @@ export function zuzyjPowrot(): boolean {
   return byl;
 }
 
+/**
+ * DRUGI RODZAJ POWROTU: taki, przy którym przeglądarka ŁADUJE DOKUMENT OD NOWA.
+ *
+ * `popstate` wyżej wyłapuje powrót wewnątrz jednego dokumentu — czyli nawigację po aplikacji
+ * odnośnikami, najczęstszy przypadek. Ale gdy poprzednia strona weszła twardym wczytaniem (odświeżenie,
+ * adres wklejony z paska, wejście z zewnątrz), cofnięcie tworzy **nowy dokument**: żaden `popstate` nie
+ * pada, a moduł ładuje się od zera z opuszczoną flagą. Ten sam gest użytkownika, dwa różne mechanizmy —
+ * i to jest dokładnie ta połowa, której brak wyszedł dopiero w klikaczu.
+ *
+ * Przeglądarka mówi to wprost przez Navigation Timing: `type === "back_forward"`. Czytamy to RAZ na
+ * dokument (flaga poniżej), bo inaczej każde kolejne zamontowanie ramy w tym samym dokumencie —
+ * np. przejście między modułami — uznałoby się za powrót.
+ */
+let powrotDokumentuSprawdzony = false;
+
+export function zuzyjPowrotDokumentu(): boolean {
+  if (powrotDokumentuSprawdzony) return false;
+  powrotDokumentuSprawdzony = true;
+  try {
+    const wpis = window.performance?.getEntriesByType?.("navigation")?.[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    return wpis?.type === "back_forward";
+  } catch {
+    // Starsza przeglądarka albo zablokowane API pomiarów — brak informacji to nie powrót.
+    return false;
+  }
+}
+
 function czyPozycja(x: unknown): x is PozycjaPrzewijania {
   if (typeof x !== "object" || x === null) return false;
   const w = x as Record<string, unknown>;

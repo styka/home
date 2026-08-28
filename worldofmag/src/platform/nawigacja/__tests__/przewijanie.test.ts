@@ -7,6 +7,7 @@ import {
   zapamietajW,
   zapiszPozycje,
   zuzyjPowrot,
+  zuzyjPowrotDokumentu,
   type PozycjaPrzewijania,
 } from "../przewijanie";
 
@@ -82,6 +83,25 @@ test("flaga powrotu zużywa się przy pierwszym sprawdzeniu", () => {
 
 test("bez cofnięcia flaga jest opuszczona", () => {
   assert.equal(zuzyjPowrot(), false);
+});
+
+/**
+ * 111 — DRUGI RODZAJ POWROTU, wykryty dopiero przez klikacz.
+ *
+ * `popstate` pada wyłącznie wtedy, gdy cofnięcie zostaje w TYM SAMYM dokumencie. Gdy poprzednia
+ * strona weszła twardym wczytaniem, cofnięcie tworzy nowy dokument — flaga startuje opuszczona
+ * i sam `popstate` nie wystarcza. Przeglądarka mówi to wprost przez Navigation Timing.
+ *
+ * Odczyt jest JEDNORAZOWY na dokument: inaczej każde kolejne zamontowanie ramy (przejście między
+ * modułami) uznałoby się za powrót i przywracało pozycję tam, gdzie nikt o to nie prosił.
+ */
+test("powrót ładujący dokument od nowa jest rozpoznawany — i tylko raz", () => {
+  ustawOkno({
+    sessionStorage: pamiec(),
+    performance: { getEntriesByType: () => [{ type: "back_forward" }] },
+  });
+  assert.equal(zuzyjPowrotDokumentu(), true);
+  assert.equal(zuzyjPowrotDokumentu(), false, "drugie zamontowanie w tym samym dokumencie to nie powrót");
 });
 
 // ── pamięć niedostępna (AC-3) ────────────────────────────────────────────────
