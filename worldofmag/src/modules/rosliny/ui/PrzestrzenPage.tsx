@@ -13,6 +13,7 @@ import { createPlace } from "../actions/miejsca";
 import { createPlant, type RoslinaDTO } from "../actions/rosliny";
 import { getSeasonPlan, getSpaceInsights, planToTask, type PozycjaPlanu, type TrescAI, type WnioskiPrzestrzeni } from "../actions/analiza";
 import { getPlaceHistory, type HistoriaMiejscaDTO } from "../actions/miejsca";
+import type { GatunekDTO } from "../actions/gatunki";
 import { domyslnaJednostka, poleWidoczne } from "../lib/tryb";
 import { etykietaFazy } from "../lib/fenologia";
 import type { JednostkaLicznosci } from "../lib/typy";
@@ -33,6 +34,7 @@ export function PrzestrzenPage({
   plan: poczatkowyPlan,
   wnioski: poczatkoweWnioski,
   lokalizacje,
+  gatunki,
 }: {
   przestrzen: PrzestrzenDTO;
   miejsca: MiejsceDTO[];
@@ -40,6 +42,7 @@ export function PrzestrzenPage({
   plan: TrescAI<PozycjaPlanu[]>;
   wnioski: TrescAI<WnioskiPrzestrzeni>;
   lokalizacje: { id: string; label: string }[];
+  gatunki: GatunekDTO[];
 }) {
   const t = useTranslations("modules.rosliny.PrzestrzenPage");
   const [miejsca, setMiejsca] = useState(poczatkoweMiejsca);
@@ -60,6 +63,7 @@ export function PrzestrzenPage({
   const [ilosc, setIlosc] = useState("1");
   const [jednostka, setJednostka] = useState<JednostkaLicznosci>(domyslnaJednostka(przestrzen.kind));
   const [miejsceId, setMiejsceId] = useState("");
+  const [gatunekId, setGatunekId] = useState("");
   const [nazwaMiejsca, setNazwaMiejsca] = useState("");
 
   const pokazLicznosc = poleWidoczne(przestrzen.kind, "licznosc", zaawansowane);
@@ -70,10 +74,13 @@ export function PrzestrzenPage({
     if (!nazwa) return;
     startTransition(async () => {
       const liczba = Number(ilosc.replace(",", "."));
+      // Gatunek trafia do zapisu, bo to z niego reguła terminu bierze CZTERY liczby odstępu
+      // podlewania. Bez niego harmonogram zawsze startowałby z wartości domyślnych.
       const { id } = await createPlant({
         spaceId: przestrzen.id,
         name: nazwa,
         placeId: miejsceId || null,
+        speciesId: gatunekId || null,
         quantity: Number.isFinite(liczba) && liczba > 0 ? liczba : 1,
         quantityUnit: jednostka,
       });
@@ -82,13 +89,17 @@ export function PrzestrzenPage({
         {
           id, spaceId: przestrzen.id, placeId: miejsceId || null,
           placeName: miejsca.find((m) => m.id === miejsceId)?.name ?? null,
-          speciesId: null, gatunek: null, rodzina: null, name: nazwa,
+          speciesId: gatunekId || null,
+          gatunek: gatunki.find((g) => g.id === gatunekId)?.namePl ?? null,
+          rodzina: gatunki.find((g) => g.id === gatunekId)?.family ?? null,
+          name: nazwa,
           quantity: Number.isFinite(liczba) && liczba > 0 ? liczba : 1, quantityUnit: jednostka,
           stage: null, status: "ACTIVE", statusReason: null, sownAt: null, acquiredAt: null,
           parentId: null, photoUrl: null, notes: null,
         },
       ]);
       setNazwaRosliny("");
+      setOstrzezenie(null);
       setFormularz(null);
     });
   }
@@ -105,23 +116,38 @@ export function PrzestrzenPage({
   }
 
   /**
-   * AC-26: ostrzeżenie płodozmianowe SPRAWDZAMY W CHWILI WYBORU MIEJSCA, a nie po zapisie.
-   * Po zapisie byłoby to wyrzutem sumienia, a nie ostrzeżeniem — użytkownik ma dowiedzieć się,
-   * zanim posadzi. Nadal jest to OSTRZEŻENIE: formularz działa dalej, nic nie jest blokowane.
+   * AC-26: ostrzeżenie płodozmianowe SPRAWDZAMY W CHWILI WYBORU, a nie po zapisie.
+   * Po zapisie byłoby wyrzutem sumienia, a nie ostrzeżeniem — użytkownik ma dowiedzieć się, zanim
+   * posadzi. Nadal jest to OSTRZEŻENIE: formularz działa dalej, nic nie jest blokowane.
+   *
+   * **Rodzina musi pochodzić z gatunku, który użytkownik WŁAŚNIE wybiera** — nie z rośliny, która
+   * w tym miejscu już stoi. To drugie liczyłoby ryzyko dla czegoś, czego nikt nie sadzi, i dawałoby
+   * ostrzeżenie o rodzinie, której planowana uprawa może w ogóle nie dotyczyć. Dlatego przeliczamy
+   * przy zmianie MIEJSCA i przy zmianie GATUNKU, a bez wybranego gatunku reguła milczy — tak samo
+   * jak milczy dla wpisu bez rodziny (patrz `domain/plodozmian`).
    */
-  function sprawdzMiejsce(id: string) {
-    setMiejsceId(id);
+  function sprawdzPlodozmian(idMiejsca: string, idGatunku: string) {
     setOstrzezenie(null);
-    if (!id) return;
+    if (!idMiejsca || !idGatunku) return;
+    const rodzina = gatunki.find((g) => g.id === idGatunku)?.family ?? null;
+    if (!rodzina) return;
     startTransition(async () => {
       try {
-        const rodzina = rosliny.find((r) => r.placeId === id)?.rodzina ?? null;
-        const historia = await getPlaceHistory(id, rodzina);
-        setOstrzezenie(historia.ostrzezenie);
+        setOstrzezenie((await getPlaceHistory(idMiejsca, rodzina)).ostrzezenie);
       } catch {
         /* brak historii nie może zablokować dodania rośliny */
       }
     });
+  }
+
+  function wybierzMiejsce(id: string) {
+    setMiejsceId(id);
+    sprawdzPlodozmian(id, gatunekId);
+  }
+
+  function wybierzGatunek(id: string) {
+    setGatunekId(id);
+    sprawdzPlodozmian(miejsceId, id);
   }
 
   function zapiszLokalizacje(id: string) {
@@ -239,10 +265,18 @@ export function PrzestrzenPage({
               style={{ ...pole, flex: "1 1 200px" }}
             />
             {miejsca.length > 0 && (
-              <select value={miejsceId} onChange={(e) => sprawdzMiejsce(e.target.value)} aria-label={t("miejsceEtykieta")} style={{ ...pole, flex: "0 1 160px" }}>
+              <select value={miejsceId} onChange={(e) => wybierzMiejsce(e.target.value)} aria-label={t("miejsceEtykieta")} style={{ ...pole, flex: "0 1 160px" }}>
                 <option value="">{t("bezMiejsca")}</option>
                 {miejsca.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            )}
+            {gatunki.length > 0 && (
+              <select value={gatunekId} onChange={(e) => wybierzGatunek(e.target.value)} aria-label={t("gatunekEtykieta")} style={{ ...pole, flex: "0 1 170px" }}>
+                <option value="">{t("bezGatunku")}</option>
+                {gatunki.map((g) => (
+                  <option key={g.id} value={g.id}>{g.namePl}</option>
                 ))}
               </select>
             )}

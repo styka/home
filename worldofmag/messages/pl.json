@@ -2102,7 +2102,9 @@
         "lokalizacjaZapisana": "Lokalizacja zapisana — terminy opieki uwzględnią prognozę.",
         "lokalizacjaUsunieta": "Lokalizacja usunięta — terminy będą liczone bez pogody.",
         "doZadan": "Do zadań",
-        "wZadaniach": "w zadaniach"
+        "wZadaniach": "w zadaniach",
+        "gatunekEtykieta": "Gatunek",
+        "bezGatunku": "Bez gatunku"
       },
       "AgendaOpieki": {
         "tytul": "Opieka",

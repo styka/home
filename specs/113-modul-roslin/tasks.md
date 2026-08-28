@@ -1,7 +1,7 @@
 # Zadania: Moduł Rośliny — od parapetu do hektara
 
 - **Plan:** ./plan.md (113-modul-roslin) · **Spec:** ./spec.md · **Badania:** ./badania.md
-- **Status:** in-progress (zawrót z `/verify` — Faza 6)
+- **Status:** done (weryfikacja: GOTOWE, drugi przebieg)
 - **Data:** 2026-08-28
 
 > **Zasada listy zadań:** kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami
@@ -231,7 +231,7 @@
       płodozmianowe przy zakładaniu uprawy. → **AC-20, AC-24, AC-26**
       *Gotowe, gdy:* pozycja planu tworzy zadanie przez kontrakt Zadań (usuwa też rozjazd wobec
       planu §6.3), zapis zabiegu zwraca listę braków, a ostrzeżenie jest OSTRZEŻENIEM, nie blokadą.
-- [ ] **T-55** — Ponowny przebieg bramek + testów, aktualizacja `verify.md`.
+- [x] **T-55** — Ponowny przebieg bramek + testów, aktualizacja `verify.md`.
 
 ---
 
