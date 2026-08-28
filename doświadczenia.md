@@ -38,6 +38,31 @@ definicja długości streszczenia dla obu ścieżek + tabela `NewsItemSummary` (
 length]`) + materiał zawsze źródłowy. Nadpisania streszczeń podniesione z karty do strumienia
 i `blocksKey` liczony z tytułu **i** treści.
 
+**Trzy rzeczy dołożone po tym, jak klikacz obalił dwie „gotowe" poprawki:**
+
+**(a) `popstate` to POŁOWA powrotu.** Pierwsza wersja przywracania pozycji rozpoznawała powrót
+wyłącznie po zdarzeniu `popstate` — i działała, dopóki cofnięcie zostawało w tym samym dokumencie.
+Gdy poprzednia strona weszła twardym wczytaniem (odświeżenie, adres z paska, wejście z zewnątrz),
+cofnięcie tworzy **nowy dokument**: żadne `popstate` nie pada, moduł startuje od zera z opuszczoną
+flagą i pozycja przepada. Ten sam gest użytkownika, dwa różne mechanizmy przeglądarki. Drugą połowę
+niesie `performance.getEntriesByType("navigation")[0].type === "back_forward"`.
+
+**(b) Remis specyficzności rozstrzyga KOLEJNOŚĆ, a Tailwind jest później.** Reguła
+`.omnia-akcja-ikonowa { flex: none }` stała w `globals.css` **po** `@tailwind utilities` i mimo to
+przegrywała z `[&>*]:flex-1` z paska. Oba selektory mają specyficzność (0,1,0) — `.klasa > *`
+i `.klasa` liczą się tak samo — więc decyduje kolejność w **zbudowanym** arkuszu, a tam Tailwind
+emituje swoje utility na końcu (zmierzone: bajt 31256 vs 36884). Klasa podwojona
+(`.x.x`, specyficzność (0,2,0)) wygrywa niezależnie od kolejności i nie psuje przyszłych nadpisań
+tak, jak zrobiłby to `!important`.
+
+**(c) Zostawiony serwer deweloperski unieważnia cały przebieg testów — po cichu.** Drugie
+uruchomienie klikacza pokazało trzy porażki, z czego dwie w testach, które chwilę wcześniej
+przechodziły. Przyczyną nie był kod: na porcie 3000 stał serwer uruchomiony ręcznie do debugowania,
+Playwright uznał go za „już działający" i przetestował **stary build na innej bazie**. Wnioski
+z takiego przebiegu są bezwartościowe, a wyglądają dokładnie jak regresja. Przed uruchomieniem
+klikacza zwalniaj port (`fuser -k 3000/tcp`), a gdy wynik zaskakuje — najpierw sprawdź, CO właściwie
+odpowiada pod tym adresem.
+
 **Lekcja:** **Gdy coś „nie działa jak w innych aplikacjach", najpierw sprawdź, czy rzecz, na której
 opiera się mechanizm przeglądarki, jest tam, gdzie przeglądarka jej szuka.** Przywracanie pozycji,
 `bfcache` i `scrollRestoration` znają jeden scroller — okno. Aplikacja, która przewijanie przeniosła
