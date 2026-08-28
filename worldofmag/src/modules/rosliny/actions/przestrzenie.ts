@@ -180,7 +180,12 @@ export async function deleteSpace(id: string): Promise<void> {
       // usuwania jako dokumentację o wymogu ustawowym — a bez tej linii jedno kliknięcie
       // „usuń przestrzeń" niszczyłoby ją skuteczniej niż jakikolwiek automat.
       places: true,
-      plants: true,
+      // **`plants: true` NIE wystarcza** — zwraca same wiersze rośliny, a kaskada
+      // (`Plant.space → Cascade`, dalej `journal`/`measurements`/`healthEvents` → `Cascade`)
+      // usuwa też wszystko, co pod nią wisi. Bez zagnieżdżenia pętla przywracająca dzieci czytała
+      // `undefined`, czyli była no-opem, który w kodzie wyglądał na pokrycie: „usuń roślinę →
+      // przywróć" działało, „usuń przestrzeń → przywróć" gubiło rok zdjęć i pomiarów.
+      plants: { include: { journal: true, measurements: true, healthEvents: true } },
       careTasks: true,
       careEvents: true,
     },

@@ -70,6 +70,19 @@ export type RodzajZabiegu =
   | "HARVEST"
   | "CUSTOM";
 
+/** Lista do wyboru w interfejsie — unii `String`+union (C-12) nie da się wyliczyć w czasie wykonania. */
+export const RODZAJE_ZABIEGOW: RodzajZabiegu[] = [
+  "WATERING",
+  "FERTILIZING",
+  "PRUNING",
+  "REPOTTING",
+  "SPRAYING",
+  "MULCHING",
+  "SOWING",
+  "HARVEST",
+  "CUSTOM",
+];
+
 /**
  * Wynik zaplanowanego zabiegu. `SKIPPED` i `POSTPONED` istnieją, bo harmonogram, którego nie da się
  * odłożyć, po tygodniu pokazuje wyłącznie zaległości i przestaje być czytany (AC-10).

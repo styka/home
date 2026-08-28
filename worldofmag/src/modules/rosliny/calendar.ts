@@ -1,6 +1,6 @@
 import { prisma } from "@/platform/db/prisma";
-import { ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { CalendarContribEvent, CalendarRange } from "@/platform/calendar";
+import { zakresPrzestrzeni } from "./lib/sharingGuard";
 import { SUFIT_LISTY } from "@/platform/pagination";
 
 /**
@@ -12,6 +12,12 @@ import { SUFIT_LISTY } from "@/platform/pagination";
  * Zakres bierzemy przez własność PRZESTRZENI, a nie zadania: `PlantCareTask` nie ma własnej
  * kolumny przestrzeni (wisi na `PlantSpace`), więc pytanie o nią byłoby pytaniem o pole, którego
  * ta tabela nie ma — dokładnie ten błąd łapie bramka `check:owner-columns`.
+ *
+ * **Zakres jest DOKŁADNIE ten sam co w agendzie** (`zakresPrzestrzeni`, czyli moje przestrzenie
+ * plus mi udostępnione). Wersja z `ownedOrAsync` pokazywała opiekunowi zadania nadanej przestrzeni
+ * w agendzie i na pulpicie, ale nie w kalendarzu — a to jest wprost historyjka ze specyfikacji
+ * („opiekun podlewa kwiaty przez tydzień"). Trzy widoki tych samych zadań muszą odpowiadać na
+ * pytanie o dostęp tak samo, inaczej brak pozycji w jednym z nich wygląda jak zgubione dane.
  */
 
 /** „YYYY-MM-DD" w czasie lokalnym — ten sam format klucza dnia co w siatce kalendarza. */
@@ -29,7 +35,7 @@ export default async function calendarEvents(
     where: {
       active: true,
       nextDueAt: { gte: from, lt: to },
-      space: { is: { OR: await ownedOrAsync(userId) } },
+      space: { is: await zakresPrzestrzeni(userId) },
     },
     select: {
       id: true,

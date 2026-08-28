@@ -6,6 +6,7 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
 import { brakiEwidencji, ewidencjaDoCsv, nazwaPlikuEwidencji, type WierszEwidencji } from "../lib/eksportEwidencji";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 import { TRYBY_ZAWODOWE } from "../lib/typy";
 
 /**
@@ -226,6 +227,7 @@ export async function exportTreatmentRegister(opts?: {
   do?: Date;
 }): Promise<EksportEwidencji> {
   const pozycje = await getTreatmentRegister(opts);
+  const strefa = userTimeZone();
 
   const wiersze: WierszEwidencji[] = pozycje.map((p) => ({
     occurredAt: new Date(p.occurredAt),
@@ -247,7 +249,16 @@ export async function exportTreatmentRegister(opts?: {
   }));
 
   return {
-    nazwaPliku: nazwaPlikuEwidencji(opts, wiersze),
+    // Zakres i daty wierszy przeliczamy na DATY KALENDARZOWE w strefie użytkownika, zanim trafią
+    // do nazwy pliku: `getFullYear()` na instancie czytałby je w strefie procesu (UTC na Renderze),
+    // przez co „cały rok 2026" wychodził jako 2025-12-31.
+    nazwaPliku: nazwaPlikuEwidencji(
+      {
+        od: opts?.od ? dataWStrefie(strefa, opts.od) : null,
+        do: opts?.do ? dataWStrefie(strefa, opts.do) : null,
+      },
+      wiersze.map((w) => dataWStrefie(strefa, w.occurredAt)),
+    ),
     csv: ewidencjaDoCsv(wiersze),
     liczbaZabiegow: wiersze.length,
     liczbaNiekompletnych: pozycje.filter((p) => p.braki.length > 0).length,

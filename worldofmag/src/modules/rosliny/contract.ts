@@ -8,7 +8,9 @@
  * Konsumenci (i nic ponadto — kontrakt niesie to, czego ktoś potrzebuje, nie „wszystko na wszelki
  * wypadek", C-36):
  * - **wkład do pulpitu** (`dashboard.ts`) → `getCareAgenda`,
- * - **wkład do kalendarza** (`calendar.ts`) → `getCareAgenda`,
+ * - **wkład do kalendarza** (`calendar.ts`) → nic z tego pliku: pyta Prismę wprost, bo potrzebuje
+ *   zakresu DAT, którego `getCareAgenda` nie przyjmuje; zawężenie dostępu bierze z własnego
+ *   `lib/sharingGuard` (import względny, C-36),
  * - **narzędzia odczytu asystenta** → `getSpaces`, `getPlants`, `getCareAgenda`,
  * - **egzekutor akcji asystenta** → `createSpace`, `createPlant`, `recordCare`, `addMeasurement`,
  * - **test izolacji najemcy** → guardy `assertSpaceAccess` i `assertPlantAccess` (wyjątek jak

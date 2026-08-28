@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
-import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess, sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
@@ -131,7 +130,6 @@ export async function createPlant(data: {
   parentId?: string | null;
   photoUrl?: string | null;
   notes?: string | null;
-  teamId?: string | null;
 }): Promise<{ id: string }> {
   const user = await requireAuth();
   await assertSpaceAccess(data.spaceId, user.id, true);
@@ -148,13 +146,26 @@ export async function createPlant(data: {
     plantId: data.parentId,
   });
 
+  const przestrzen = await prisma.plantSpace.findUnique({
+    where: { id: data.spaceId },
+    select: { workspaceId: true },
+  });
+  if (!przestrzen) throw new Error("Przestrzeń nie istnieje");
+
   // Liczność nigdy nie schodzi do zera ani poniżej: „zero sztuk" nie jest bytem, tylko usunięciem
   // wyrażonym po cichu inną drogą.
   const ilosc = data.quantity !== undefined && data.quantity > 0 ? data.quantity : 1;
 
   const roslina = await prisma.plant.create({
     data: {
-      ...(await wlasnoscDoZapisu(user.id, data.teamId)),
+      // **Własność bierze się z PRZESTRZENI, nie z parametru wołającego.** Roślina nie ma
+      // własnego właściciela — ma przestrzeń, w której rośnie, i to ona rozstrzyga, czyja jest.
+      // Wersja z `teamId` (którego widok nigdy nie podawał) zapisywała roślinę w przestrzeni
+      // OSOBISTEJ dodającego, choć `spaceId` wskazywał przestrzeń zespołu: po usunięciu jego konta
+      // kaskada `Plant.workspace` zabierała zespołowi całą uprawę, bez wpisu w koszu. Rozjazd był
+      // niewidoczny, bo zakres list idzie od T-58 przez przestrzeń, a nie przez własność rośliny.
+      // `propagatePlant` robił to poprawnie od początku (`rodzic.workspaceId`).
+      workspaceId: przestrzen.workspaceId,
       spaceId: data.spaceId,
       placeId: data.placeId ?? null,
       speciesId: data.speciesId ?? null,
@@ -201,7 +212,15 @@ export async function updatePlant(
 ): Promise<void> {
   const user = await requireAuth();
   await assertPlantAccess(id, user.id, true);
-  await sprawdzWskazania(user.id, { placeId: data.placeId, speciesId: data.speciesId });
+  // `spaceId` rośliny podajemy JAWNIE, bo bez niego `sprawdzWskazania` schodzi do gałęzi „dowolna
+  // moja przestrzeń": edytor przestrzeni nadanej mógł przypiąć własną roślinę do miejsca
+  // właściciela i zanieczyścić mu płodozmian.
+  const biezaca = await prisma.plant.findUnique({ where: { id }, select: { spaceId: true } });
+  await sprawdzWskazania(user.id, {
+    spaceId: biezaca?.spaceId,
+    placeId: data.placeId,
+    speciesId: data.speciesId,
+  });
 
   const roslina = await prisma.plant.update({
     where: { id },
@@ -285,6 +304,12 @@ export async function propagatePlant(
     },
   });
   if (!rodzic) throw new Error("Roślina nie istnieje");
+  // `placeId` przychodzi z klienta i szło dotąd prosto do zapisu — guard sprawdzał wyłącznie
+  // RODZICA. Sadzonka z cudzym miejscem zanieczyszczała ofierze historię miejsca i jej ostrzeżenie
+  // płodozmianowe, bo `getPlaceHistory` pyta po samym `placeId`.
+  if (data?.placeId !== undefined) {
+    await sprawdzWskazania(user.id, { spaceId: rodzic.spaceId, placeId: data.placeId });
+  }
 
   const sadzonka = await prisma.plant.create({
     data: {

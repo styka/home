@@ -62,12 +62,16 @@ export interface WynikTerminu {
   /** Ostrzeżenie niezależne od terminu (np. przymrozek). `null`, gdy nie ma o czym mówić. */
   ostrzezenie: string | null;
   /**
-   * Czy w tej porze roku gatunek **nie jest podlewany na cykl** (odstęp = 0 w wymaganiach).
+   * Czy gatunek **nie ma cyklu podlewania w ŻADNEJ porze roku** (same zera w wymaganiach).
    *
-   * Wywołujący ma wtedy nie zakładać zadania podlewania, a nie „zaplanować je na kiedyś": zboże
-   * nie ma odstępu między podlaniami w ogóle, a warzywo jednoroczne zimą nie rośnie. `termin`
-   * wskazuje wtedy **początek najbliższej pory, w której podlewanie ma sens** — żeby harmonogram
-   * dało się wznowić bez zgadywania daty.
+   * To jest jedyny przypadek, w którym wywołujący ma nie zakładać zadania podlewania: zboża
+   * i uprawy polowe nawadnia się decyzją agrotechniczną, a nie odstępem między podlaniami.
+   *
+   * **Zero w bieżącej porze przy dodatniej innej to NIE jest ten przypadek** i dlatego nie ustawia
+   * tej flagi. Pomidor w styczniu ma prawdziwą datę następnego podlania — 1 marca — i zadanie ma
+   * powstać z tą datą. Wcześniej obie sytuacje szły pod jedną flagą, więc 125 ze 182 wpisów
+   * katalogu nie dostawało zadania NIGDY: nie było go w agendzie, w kalendarzu ani
+   * w powiadomieniach, a użytkownik nie miał czym tego naprawić.
    */
   pomijac: boolean;
 }
@@ -191,15 +195,20 @@ export function terminPodlewania(wejscie: WejscieTerminu): WynikTerminu {
   // podstawiać wartość domyślną i wymyślać termin, którego nikt nie deklarował.
   if (zadeklarowany <= 0) {
     const nastepna = najblizszaPoraZPodlewaniem(wejscie.od, wymagania);
+    const mroz = dzienPrzymrozku(wejscie);
     return {
+      // Bez następnej pory nie ma czego planować, ale coś zwrócić trzeba — miesiąc do przodu jest
+      // datą techniczną, której i tak nikt nie zobaczy, bo `pomijac` mówi „nie zakładaj zadania".
       termin: nastepna?.start ?? new Date(wejscie.od.getTime() + 30 * DZIEN_MS),
       uzasadnienie: nastepna
         ? `${NAZWA_PORY[pora]} — ten gatunek nie jest teraz podlewany na cykl; wracamy do tego na ${NAZWA_PORY[nastepna.pora]}`
         : "ten gatunek nie ma cyklu podlewania — nawadnianie jest decyzją agrotechniczną, nie odstępem",
-      ostrzezenie: dzienPrzymrozku(wejscie)
-        ? `Przymrozek ${dzienPrzymrozku(wejscie)!.date} (${Math.round(dzienPrzymrozku(wejscie)!.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`
+      ostrzezenie: mroz
+        ? `Przymrozek ${mroz.date} (${Math.round(mroz.tMin)}°C) — rozważ okrycie lub wniesienie roślin.`
         : null,
-      pomijac: true,
+      // Pomijamy WYŁĄCZNIE gatunek bez cyklu w żadnej porze. Zero w tej jednej porze ma prawdziwą
+      // datę wznowienia, więc zadanie powstaje i po prostu czeka.
+      pomijac: nastepna === null,
     };
   }
 

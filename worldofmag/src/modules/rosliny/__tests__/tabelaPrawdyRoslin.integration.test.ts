@@ -14,6 +14,12 @@ import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
  * w deklaracji zasobu. Jedna literówka w typie rodzica (`rosliny.spaces` zamiast `rosliny.space`)
  * daje kod, który się kompiluje, buduje i **odmawia dostępu właścicielowi jego własnej rośliny**.
  *
+ * **Czwarty podmiot — osoba z nadaniem — dołączył po drugiej recenzji i to nie jest kosmetyka.**
+ * Tabela z trzema relacjami (właściciel / zespół / obcy) nie zawierała przypadku `ResourceGrant`
+ * ani razu, więc przepuściła stan, w którym guard mówił „wolno", a listy pytały o WŁASNOŚĆ —
+ * obdarowany wchodził do pustego widoku. Dlatego ten test sprawdza teraz dwie rzeczy, nie jedną:
+ * decyzję guardu **i zakres list**.
+ *
  * Macierz liczy więc (relacja × operacja) dla przestrzeni **i** rośliny w tej przestrzeni, i pilnuje
  * trzech rzeczy naraz: że właściciel może wszystko, że obcy nie może nic, i że **każda decyzja
  * o roślinie jest identyczna z decyzją o jej przestrzeni** — bo to jest dokładnie treść
@@ -50,6 +56,11 @@ test(
     const wlasciciel = await prisma.user.create({ data: { email: `tr-o-${rnd()}@test.local` } });
     const wZespole = await prisma.user.create({ data: { email: `tr-z-${rnd()}@test.local` } });
     const obcy = await prisma.user.create({ data: { email: `tr-x-${rnd()}@test.local` } });
+    // Czwarty podmiot: osoba, której właściciel UDOSTĘPNIŁ przestrzeń. To jest przypadek, którego
+    // brak w tej tabeli przepuścił U-3 — guard mówił „wolno", a listy pytały o własność, więc
+    // obdarowany wchodził do PUSTEGO widoku. Pusty widok wygląda jak awaria danych, nie jak brak
+    // dostępu, więc jest gorszy od jawnej odmowy.
+    const obdarowany = await prisma.user.create({ data: { email: `tr-n-${rnd()}@test.local` } });
 
     const zespol = await prisma.team.create({
       data: {
@@ -59,7 +70,7 @@ test(
       },
     });
 
-    for (const u of [wlasciciel, wZespole, obcy]) await ensurePersonalWorkspace(u.id);
+    for (const u of [wlasciciel, wZespole, obcy, obdarowany]) await ensurePersonalWorkspace(u.id);
     await syncTeamWorkspace(zespol.id);
 
     const przestrzenMoja = await prisma.plantSpace.create({
@@ -84,9 +95,28 @@ test(
       },
     });
 
+    // Nadanie na PRZESTRZEŃ prywatną właściciela, rola `editor`. Roślina nadania nie ma — i o to
+    // chodzi: jej dostęp ma wyniknąć z `parent` w deklaracji zasobu.
+    const przestrzenWorkspace = await prisma.plantSpace.findUnique({
+      where: { id: przestrzenMoja.id },
+      select: { workspaceId: true },
+    });
+    await prisma.resourceGrant.create({
+      data: {
+        workspaceId: przestrzenWorkspace!.workspaceId,
+        resourceType: "rosliny.space",
+        resourceId: przestrzenMoja.id,
+        subjectType: "user",
+        subjectId: obdarowany.id,
+        role: "editor",
+        createdById: wlasciciel.id,
+      },
+    });
+
     const osoby: Record<string, string> = {
       wlasciciel: wlasciciel.id,
       "czlonek zespolu wlasciciela": wZespole.id,
+      "osoba z nadaniem na przestrzen wlasna": obdarowany.id,
       obcy: obcy.id,
     };
 
@@ -153,6 +183,52 @@ test(
         assert.equal(macierz["czlonek zespolu wlasciciela"]["roslina wlasna: odczyt"], "odmowa");
       });
 
+      await t.test("osoba z nadaniem widzi przestrzeń i JEJ ROŚLINY — nadanie dziedziczy się w dół", () => {
+        const w = macierz["osoba z nadaniem na przestrzen wlasna"];
+        assert.equal(w["przestrzen wlasna: odczyt"], "dozwolone");
+        assert.equal(w["roslina wlasna: odczyt"], "dozwolone", "nadanie na przestrzeń nie zeszło na roślinę");
+        // Rola `editor` daje też edycję…
+        assert.equal(w["przestrzen wlasna: edycja"], "dozwolone");
+        // …ale wyłącznie tam, gdzie nadanie sięga: przestrzeń zespołowa właściciela go nie obejmuje.
+        assert.equal(w["przestrzen zespolowa: odczyt"], "odmowa");
+        assert.equal(w["roslina zespolowa: odczyt"], "odmowa");
+      });
+
+      await t.test("ZAKRES LIST: obdarowany ma przestrzeń NA LIŚCIE, a nie tylko przechodzi guard", async () => {
+        // To jest druga połowa U-3 i powód, dla którego sam guard nie wystarcza jako dowód.
+        // Sprawdzamy dokładnie te dwa zapytania, którymi listy modułu pytają o zakres.
+        const { zakresPrzestrzeni, idPrzestrzeniNadanychMi } = await import("../lib/sharingGuard");
+
+        const nadane = await idPrzestrzeniNadanychMi(obdarowany.id);
+        assert.ok(nadane.includes(przestrzenMoja.id), "nadana przestrzeń nie wróciła z `idPrzestrzeniNadanychMi`");
+
+        const przestrzenie = await prisma.plantSpace.findMany({
+          where: { ...(await zakresPrzestrzeni(obdarowany.id)) },
+          select: { id: true },
+        });
+        assert.ok(
+          przestrzenie.some((p) => p.id === przestrzenMoja.id),
+          "obdarowany nie widzi nadanej przestrzeni na liście — wchodzi do pustego widoku",
+        );
+
+        const rosliny = await prisma.plant.findMany({
+          where: { space: { is: await zakresPrzestrzeni(obdarowany.id) } },
+          select: { id: true },
+        });
+        assert.ok(
+          rosliny.some((r) => r.id === roslinaMoja.id),
+          "obdarowany widzi przestrzeń, ale nie jej rośliny",
+        );
+
+        // Obcy przez te same zapytania nie widzi nic — inaczej test dowodziłby, że zakres jest
+        // po prostu szeroki.
+        const obcePrzestrzenie = await prisma.plantSpace.findMany({
+          where: { ...(await zakresPrzestrzeni(obcy.id)) },
+          select: { id: true },
+        });
+        assert.ok(!obcePrzestrzenie.some((p) => p.id === przestrzenMoja.id));
+      });
+
       await t.test("obcy nie może nic", () => {
         for (const v of Object.values(macierz["obcy"])) assert.equal(v, "odmowa");
       });
@@ -178,10 +254,13 @@ test(
         );
       });
     } finally {
+      await prisma.resourceGrant.deleteMany({
+        where: { resourceType: "rosliny.space", resourceId: przestrzenMoja.id },
+      });
       await prisma.plant.deleteMany({ where: { id: { in: [roslinaMoja.id, roslinaZespolowa.id] } } });
       await prisma.plantSpace.deleteMany({ where: { id: { in: [przestrzenMoja.id, przestrzenZespolowa.id] } } });
       await prisma.team.delete({ where: { id: zespol.id } }).catch(() => {});
-      for (const u of [wlasciciel, wZespole, obcy]) {
+      for (const u of [wlasciciel, wZespole, obcy, obdarowany]) {
         await prisma.user.delete({ where: { id: u.id } }).catch(() => {});
       }
     }

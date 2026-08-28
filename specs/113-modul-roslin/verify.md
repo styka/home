@@ -172,13 +172,20 @@ reguła milczy — tak samo jak milczy dla wpisu bez rodziny.
 |---|---|---|
 | 1 | ⛔ DO POPRAWY | 19 ✅ / 7 ⚠️ / 4 ❌. Warstwa serwera kompletna, warstwa widoku jej nie wołała: osiem guardowanych funkcji bez konsumenta (naruszenie C-35). **Wszystkie bramki były wtedy zielone** — bo pytają, czy kod jest poprawnie podłączony do platformy, a nie czy da się z niego skorzystać. |
 | 2 | ✅ GOTOWE | 30 ✅. Braki domknięte (T-48…T-54), przy okazji wykryty i naprawiony defekt z §5. **Werdykt był przedwczesny** — patrz przebieg 3. |
-| 3 | ⛔ ZMIANY WYMAGANE (recenzja) | 12 ustaleń (U-1…U-12), wszystkie potwierdzone w kodzie przed przyjęciem. Dwa twierdzenia z przebiegu 2 obalone: „C-35 naprawiona" (sprawdzano listę zamkniętą z przebiegu 1, nie eksporty modułu) i dowody AC-7/AC-28 (akcja bez wejścia z interfejsu; guard bez zakresu list). Do tego: wyciek przez `parentId`/`plantId` podane wprost do Server Action, zero w wymaganiach wodnych czytane jak brak danych, eksport ewidencji bez okresu, formularz zabiegu bez daty i przedmiotu, `window.prompt`, kubełek agendy w strefie serwera, wyścig w `harvestToPantry`. Domknięte w T-56…T-68. |
+| 3 | ⛔ ZMIANY WYMAGANE (recenzja 1) | 12 ustaleń (U-1…U-12), wszystkie potwierdzone w kodzie przed przyjęciem. Dwa twierdzenia z przebiegu 2 obalone: „C-35 naprawiona" (sprawdzano listę zamkniętą z przebiegu 1, nie eksporty modułu) i dowody AC-7/AC-28 (akcja bez wejścia z interfejsu; guard bez zakresu list). Do tego: wyciek przez `parentId`/`plantId` podane wprost do Server Action, zero w wymaganiach wodnych czytane jak brak danych, eksport ewidencji bez okresu, formularz zabiegu bez daty i przedmiotu, `window.prompt`, kubełek agendy w strefie serwera, wyścig w `harvestToPantry`. Domknięte w T-56…T-68. |
+| 4 | ⛔ ZMIANY WYMAGANE (recenzja 2) | 12 ustaleń (F-1…F-12), wszystkie potwierdzone w kodzie przed przyjęciem. Trzy blokujące: **formularza zabiegu nie dało się otworzyć przy pustym rejestrze** (stan `empty` rysuje `ViewEmpty` ZAMIAST `children`, więc ewidencja była nieosiągalna dokładnie dla tego, kto ma ją założyć), **migawka kasowanej przestrzeni nadal gubiła dziennik, pomiary i diagnozy** (`plants: true` bez zagnieżdżeń, więc pętla przywracająca dzieci była no-opem — U-2 piętro wyżej) i **`propagatePlant` pominięte w T-62** (`placeId` z klienta prosto do zapisu). Do tego dwa uderzające w kryteria: gatunek z zerem w bieżącej porze nie dostawał zadania NIGDY i nie było czym tego naprawić (AC-8), a własność rośliny szła z parametru `teamId` zamiast z przestrzeni, więc usunięcie konta członka zespołu zabierało zespołowi uprawę. Domknięte w T-69…T-80. |
 
 **Wniosek do zapamiętania:** komplet zielonych bramek nie jest miarą kompletności funkcji. Bramki
 tego repozytorium pilnują *wpięcia w mechanizmy platformy*; „czy użytkownik ma jak z tego
 skorzystać" sprawdza dopiero przejście AC po AC z `grep`-em po konsumentach.
 
 ---
+
+**Trzecia lekcja, z przebiegu 4:** poprawka pisana pod listę braków usuwa OBJAW i trzeba osobno
+sprawdzić dwie rzeczy, o których lista nie mówi: **czy tej samej dziury nie ma piętro wyżej** (U-2
+naprawiło „usuń roślinę → przywróć", zostawiając „usuń przestrzeń → przywróć") i **czy ścieżka
+zastępcza, którą poprawka sobie w komentarzu obiecuje, faktycznie istnieje** (nagłówek obiecywał
+zadanie zakładane „przy pierwszym odnotowanym podlaniu" — takiej drogi w interfejsie nie było).
 
 **Druga lekcja, z przebiegu 3:** dowód na spełnienie kryterium **nie może pochodzić z listy
 sporządzonej w poprzednim przebiegu**. Weryfikacja, która sprawdza tylko to, co poprzednio było
@@ -187,14 +194,21 @@ z interfejsu oraz guard, który wpuszczał do pustego widoku.
 
 ---
 
-## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 3)
+## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 4)
 
 Wszystkie 30 kryteriów akceptacji spełnione z dowodem — dwa z nich (**AC-7**, **AC-28**) dopiero po
 korekcie opisanej wyżej. Bramki: komplet zielony, w tym `check:domain`, `check:owner-columns`,
 `check:route-gating`, `check:pagination`, `check:i18n` i budżet wydajnościowy. `next build`
-przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1464 testy jednostkowe
-i integracyjne zielone**, dwie zapadki podniesione świadomie (rejestr modułów 23 → 24, kalendarz
-14 → 15 zapytań przy `powtorzenia: 1`, czyli nowe źródło w agregacie, a nie N+1).
+przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1468 testów jednostkowych
+i integracyjnych zielonych**, dwie zapadki podniesione świadomie: rejestr modułów 23 → 24 oraz
+kalendarz 14 → 16 zapytań przy `powtorzenia: 1` — najpierw nowy wkład modułu, potem jedno zapytanie
+o nadania, gdy kalendarz zaczął pytać o zakres tak samo jak agenda. W obu krokach powtórzenia
+zostały na 1, więc to nie jest N+1.
+
+**Tabela prawdy ma od przebiegu 4 czwarty podmiot — osobę z nadaniem** — i sprawdza przy nim dwie
+rzeczy, nie jedną: decyzję guardu **oraz zakres list** (`idPrzestrzeniNadanychMi`,
+`zakresPrzestrzeni` w zapytaniach o przestrzenie i rośliny). Brak tego przypadku był powodem, dla
+którego U-3 przeszło niezauważone przez trzy przebiegi.
 
 **Odnotowane, świadomie poza zakresem:** `scripts/migrate.js` przy seedowaniu domyślnych przypisań
 LLM woła `llmAssignment.findUnique({ where: { operationType } })`, choć od 034 kluczem głównym jest

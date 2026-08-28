@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Sprout, Stethoscope, Ruler, NotebookPen, Trash2, Scissors, ScanSearch, Wheat, CalendarPlus } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
+import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import { ImageUrlInput } from "@/components/ui/ImageUrlInput";
@@ -19,7 +20,9 @@ import {
   type WynikDiagnozy,
 } from "../actions/analiza";
 import { updatePlant } from "../actions/rosliny";
+import { createCareTask } from "../actions/opieka";
 import { poleWidoczne } from "../lib/tryb";
+import { RODZAJE_ZABIEGOW, type RodzajZabiegu } from "../lib/typy";
 import { addSpeciesFromCatalog } from "../actions/gatunki";
 import { addToShoppingList, bookCareCost, harvestToPantry, recordHarvest, type ZbiorDTO } from "../actions/zbiory";
 import type { ZdarzenieDTO } from "../actions/opieka";
@@ -54,6 +57,7 @@ export function RoslinaSzczegol({
 }) {
   const t = useTranslations("modules.rosliny.RoslinaSzczegol");
   const confirmDialog = useConfirm();
+  const router = useRouter();
   const [dziennik, setDziennik] = useState(poczatkowyDziennik);
   const [pomiary, setPomiary] = useState(poczatkowePomiary);
   const [status, setStatus] = useState<StatusRosliny>(roslina.status);
@@ -82,6 +86,7 @@ export function RoslinaSzczegol({
   const [zbiory, setZbiory] = useState<ZbiorDTO[]>(poczatkoweZbiory);
   const [faza, setFaza] = useState(roslina.stage ?? "");
   const [pytamOPrzyczyne, setPytamOPrzyczyne] = useState(false);
+  const [noweZadanie, setNoweZadanie] = useState<{ kind: RodzajZabiegu; coIleDni: string } | null>(null);
   const [przyczyna, setPrzyczyna] = useState("");
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [blad, setBlad] = useState<string | null>(null);
@@ -162,6 +167,32 @@ export function RoslinaSzczegol({
       // `etykietaFazy` w trybie hobbystycznym może nie znać nazwy — wtedy wystarczy sam kod,
       // bo użytkownik dopiero co go wybrał z listy.
       setKomunikat(kod ? t("fazaZapisana", { nazwa: etykietaFazy(kod, tryb) ?? kod }) : t("fazaUsunieta"));
+    });
+  }
+
+  /**
+   * Ręczne założenie zadania opieki — konsument `createCareTask` po stronie użytkownika.
+   *
+   * Do tej pory jedynym wywołaniem było zalecenie z diagnozy AI, więc roślina, która nie dostała
+   * harmonogramu automatycznie (gatunek bez cyklu podlewania: zboża, uprawy polowe), nie miała
+   * **żadnej** drogi, żeby trafić do agendy. Nawożenie i oprysk mają tam sens niezależnie od
+   * podlewania, więc rodzaj zabiegu wybiera użytkownik.
+   */
+  function dodajZadanie() {
+    if (!noweZadanie) return;
+    const co = Number(noweZadanie.coIleDni);
+    startTransition(async () => {
+      await createCareTask({
+        spaceId: roslina.spaceId,
+        plantId: roslina.id,
+        kind: noweZadanie.kind,
+        title: t(`zabieg.${noweZadanie.kind}`),
+        // Odstęp trafia do `recurring` w tym samym kształcie, którego używa reguła terminu —
+        // pusty albo niedodatni znaczy „jednorazowo", a nie „co zero dni".
+        recurring: Number.isFinite(co) && co > 0 ? JSON.stringify({ interval: co }) : null,
+      });
+      setNoweZadanie(null);
+      setKomunikat(t("zadanieDodane"));
     });
   }
 
@@ -282,6 +313,10 @@ export function RoslinaSzczegol({
       setStatus("DEAD");
       setPytamOPrzyczyne(false);
       setBlad(null);
+      // `statusReason` jest propem z serwera, więc bez odświeżenia świeżo wpisana przyczyna
+      // nie pokazałaby się aż do przeładowania strony — a to jest zdanie, dla którego cały ten
+      // formularz istnieje.
+      router.refresh();
     });
   }
 
@@ -338,7 +373,11 @@ export function RoslinaSzczegol({
           <span>{t(`status.${status}`)}</span>
         </p>
         {roslina.statusReason && <p style={{ ...drobny, margin: "6px 0 0" }}>{roslina.statusReason}</p>}
-        {poleWidoczne(tryb, "faza", true) && (
+        {/* Trzeci argument to stan przełącznika „zaawansowane"; ten widok go nie ma, więc podajemy
+            `false` i decyduje TRYB. Wcześniej stało tu `true`, co czyniło warunek stałą i wystawiało
+            listę 28 kodów BBCH także na parapecie w mieszkaniu — segmencie o zerowej tolerancji na
+            parametry (AC-2). Ustawioną wcześniej fazę widać nadal w wierszu opisu powyżej. */}
+        {poleWidoczne(tryb, "faza") && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
             <label htmlFor="faza-rozwojowa" style={drobny}>{t("fazaEtykieta")}</label>
             <select
@@ -607,6 +646,49 @@ export function RoslinaSzczegol({
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section style={sekcja}>
+        <h2 style={naglowekSekcji}>{t("zadaniaTytul")}</h2>
+        <p style={{ ...drobny, margin: "0 0 10px" }}>{t("zadaniaOpis")}</p>
+        {noweZadanie ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <select
+              value={noweZadanie.kind}
+              onChange={(e) => setNoweZadanie({ ...noweZadanie, kind: e.target.value as RodzajZabiegu })}
+              aria-label={t("rodzajZabieguEtykieta")}
+              style={{ ...pole, flex: "0 1 190px" }}
+            >
+              {RODZAJE_ZABIEGOW.map((k) => (
+                <option key={k} value={k}>{t(`zabieg.${k}`)}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={noweZadanie.coIleDni}
+              onChange={(e) => setNoweZadanie({ ...noweZadanie, coIleDni: e.target.value })}
+              placeholder={t("coIleDniPlaceholder")}
+              aria-label={t("coIleDniEtykieta")}
+              style={{ ...pole, flex: "0 1 200px" }}
+            />
+            <button type="button" style={przyciskGlowny} onClick={dodajZadanie} disabled={pending}>
+              {t("dodajZadanie")}
+            </button>
+            <button type="button" style={przycisk} onClick={() => setNoweZadanie(null)} disabled={pending}>
+              {t("anuluj")}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            style={przycisk}
+            onClick={() => setNoweZadanie({ kind: "FERTILIZING", coIleDni: "" })}
+            disabled={pending}
+          >
+            {t("dodajZadanie")}
+          </button>
         )}
       </section>
 

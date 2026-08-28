@@ -172,6 +172,9 @@ export async function harvestToPantry(
       where: { id: eventId },
       select: { pantryItemId: true },
     });
+    // Obie strony, tak samo jak w gałęzi wygranej: bez odświeżenia widoku roślin znacznik
+    // „już w spiżarni" zostawał nieaktualny akurat u tego, kto kliknął drugi.
+    revalidatePath(`/rosliny/${zdarzenie.spaceId}`);
     revalidatePath("/kitchen/pantry");
     if (!aktualne?.pantryItemId) throw new Error("Nie udało się zapisać zbioru w spiżarni");
     return { pantryItemId: aktualne.pantryItemId };

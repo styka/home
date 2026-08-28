@@ -152,3 +152,138 @@ jest dowodem „użytkownik dostaje to, co obiecuje kryterium".
 
 Poprawki wypisane jako **T-56…T-67** w `tasks.md`. Powrót do `/implement`; `verify.md` wymaga korekty
 w dwóch miejscach (C-54), bo zawiera twierdzenia, które recenzja obaliła.
+
+---
+
+# Przebieg 2 recenzji — po fazie 7 (`af7d8ce..HEAD`)
+
+Zakres: siedem commitów domykających ustalenia U-1…U-12. Recenzję świeżym okiem wykonał subagent
+`omnia-reviewer`; **każde ustalenie zostało przed przyjęciem potwierdzone w kodzie** — żadne nie
+zostało przyjęte na słowo.
+
+Powód, dla którego ta runda w ogóle coś znalazła, jest ten sam co poprzednio i wart zapisania:
+poprawki pisane pod listę braków usuwają OBJAW, a nie zawsze dowożą ścieżkę, którą same sobie
+w komentarzu obiecują (F-4), i nie sprawdzają, czy tej samej dziury nie ma o piętro wyżej (F-2)
+albo w sąsiedniej funkcji (F-3).
+
+## Blokujące
+
+### F-1 · `ui/Ewidencja.tsx:203` · correctness — AC-24, AC-25
+**Przy pustym rejestrze formularz zabiegu nie renderuje się w ogóle — pierwszego wpisu nie da się
+zrobić.** `ModuleView` w stanie `empty` rysuje `ViewEmpty` **zamiast** `children`
+(`ModuleView.tsx:454-462`), a formularz siedzi w `children`; przycisk „Nowy zabieg" jest w `actions`,
+czyli w pasku, który rysuje się zawsze.
+
+*Awaria:* rolnik zakłada przestrzeń `field`, wchodzi na `/rosliny/ewidencja` (0 zabiegów) → klika
+„Nowy zabieg" → **na ekranie nie zmienia się nic**. `recordTreatment` nie ma innego konsumenta
+w aplikacji, więc ewidencja jest nieosiągalna dokładnie dla tego, kto ma ją założyć. Oba kryteria
+były spełnione wyłącznie dla konta, które ma już jakiś zabieg w bazie.
+
+### F-2 · `actions/przestrzenie.ts:171-187` + `src/actions/trash.ts` · correctness — AC-7
+**Migawka kasowanej PRZESTRZENI nadal nie zawiera dziennika, pomiarów ani zdarzeń zdrowotnych —
+a pętla, która miała je odtworzyć, jest pusta.** `plants: true` zwraca same wiersze rośliny, bez
+zagnieżdżeń; kaskada usuwa `PlantJournalEntry`/`PlantMeasurement`/`PlantHealthEvent` przez
+`Plant.space → Cascade`. `przywrocDzieciRosliny` czyta wtedy `undefined` → trzy puste tablice →
+**no-op, który w kodzie wygląda na pokrycie**.
+
+*Awaria:* to jest U-2 piętro wyżej. Ścieżka „usuń roślinę → przywróć" została naprawiona, ścieżka
+„usuń przestrzeń → przywróć" nie: rośliny wracają z pustą osią czasu i bez historii diagnoz,
+a wpis kosza — jedyna kopia — jest po przywróceniu kasowany.
+
+### F-3 · `actions/rosliny.ts:293` · security
+**T-62 pominął `propagatePlant`: `placeId` z klienta idzie prosto do zapisu, bez `sprawdzWskazania`.**
+Guard sprawdza wyłącznie rodzica.
+
+*Awaria:* `propagatePlant(<własna roślina>, { placeId: <cudze miejsce> })` tworzy sadzonkę w mojej
+przestrzeni, ale z cudzym `placeId`. `getPlaceHistory` pyta `where: { placeId }` **bez zawężenia
+przestrzenią**, więc ofiara widzi w „co tu rosło" nazwę pod kontrolą atakującego, a ostrzeżenie
+płodozmianowe liczy się z jego wiersza.
+
+## Przy kryteriach akceptacji
+
+### F-4 · `lib/terminy.ts:105-123` · correctness — AC-8
+**Gatunek z zerem w bieżącej porze nie dostaje zadania i nie ma ŻADNEJ drogi, żeby je kiedykolwiek
+dostać.** Nagłówek obiecuje: „zadanie zakłada się z chwilą pierwszego odnotowanego podlania, tą samą
+ścieżką co każde inne" — ta ścieżka nie istnieje: `recordCare` wymaga istniejącego `taskId`,
+a `createCareTask` **nie ma konsumenta w `ui/` ani w `app/`** (jedyne wywołanie to zalecenie
+diagnozy AI).
+
+*Awaria:* pomidor dodany w styczniu (125 ze 182 wpisów katalogu ma `winter: 0`) i każda uprawa polowa
+(20 wpisów ma zera we wszystkich porach — segment sztandarowy dla tego modułu) nigdy nie ma zadania
+opieki: nie ma jej w agendzie, w kalendarzu ani w powiadomieniach, a użytkownik nie ma przycisku,
+żeby to naprawić. **Rozstrzygnięcie:** to były dwa różne przypadki pod jedną flagą. „Zero w tej
+porze, dodatnie w innej" ma **prawdziwą datę** następnego podlania i zadanie ma powstać; „zera we
+wszystkich porach" to brak cyklu i zadania być nie powinno — ale wtedy użytkownik potrzebuje wejścia
+do `createCareTask`.
+
+### F-5 · `actions/rosliny.ts:157` · correctness
+**Własność rośliny bierze się z `teamId` (którego widok nie podaje), a nie z przestrzeni.** Po
+przejściu odczytów na `space: { is: zakresPrzestrzeni(…) }` (T-58) rozjazd przestał być widoczny.
+`propagatePlant` robi to poprawnie (`rodzic.workspaceId`) — `createPlant` nie.
+
+*Awaria:* członek zespołu dodaje 100 sadzonek do zespołowej szklarni; `Plant.workspaceId` wskazuje
+jego przestrzeń OSOBISTĄ. Kasuje konto → `Plant.workspace → Cascade` → **100 roślin znika
+z przestrzeni zespołu, bez wpisu w koszu**. Symetrycznie obejmuje je jego eksport i usunięcie danych
+z RODO.
+
+### F-6 · `lib/eksportEwidencji.ts:143-163` · correctness — AC-25
+**Nazwa pliku liczy pola kalendarzowe w strefie PROCESU z instantów utworzonych w przeglądarce.**
+Widok wysyła `new Date("2026-01-01T00:00:00")` = `2025-12-31T23:00Z`; na Renderze (UTC)
+`getFullYear()` daje **2025**, więc warunek „cały rok" nigdy nie zachodzi.
+
+*Awaria:* kliknięcie „Cały rok 2026" pobiera `ewidencja-zabiegow-2025-12-31_2026-12-31.csv`. Treść
+jest poprawna, nazwa nie — czyli mniejsza wersja dokładnie tej wady, dla której powstało U-5.
+
+### F-7 · `ui/RoslinaSzczegol.tsx:341` · convention — AC-2
+**`poleWidoczne(tryb, "faza", true)` jest stałą `true`** (funkcja zwraca `true` dla każdego pola, gdy
+trzeci argument jest prawdą). Widok szczegółu nie ma przełącznika „zaawansowane", więc lista 28 kodów
+BBCH pokazuje się także w trybie `home`, dla którego `DOMYSLNIE_WIDOCZNE` jest puste — a komentarz
+w tym samym pliku nazywa ten segment „jedynym o zerowej tolerancji na parametry". Dodatkowo wywołanie
+o stałym wyniku następny czytelnik weźmie za działającą regułę.
+
+### F-8 · `tasks.md` T-58 · correctness (C-54)
+**Warunek ukończenia T-58 nie został dowieziony, choć zadanie jest odhaczone, a `verify.md` (AC-28)
+się na nie powołuje.** Tabela prawdy nadal ma trzy podmioty (właściciel / członek zespołu / obcy);
+przypadek `ResourceGrant` — ten sam, którego brak przepuścił U-3 — wciąż w niej nie występuje.
+Poprawka jest w kodzie i wygląda dobrze, ale nie ma dowodu, że działa.
+
+## Drobne
+
+### F-9 · `ui/Ewidencja.tsx:148-172` · correctness
+Nowa pozycja jest doklejana na czoło listy **niezależnie od wybranego okresu i od własnej daty** —
+zabieg z dzisiaj pojawia się na liście zawężonej do 2025, a eksport (który okres honoruje) go nie
+obejmie. Ten sam rozjazd „widok ≠ plik", przed którym broni komentarz nad komponentem.
+
+### F-10 · `actions/rosliny.ts:204` · security
+`updatePlant` woła `sprawdzWskazania` **bez `spaceId`**, więc działa gałąź „dowolna moja przestrzeń",
+a nie ta, którą opisuje komentarz w `sharingGuard.ts` („miejsce musi należeć do TEJ przestrzeni").
+Edytor przestrzeni nadanej może przypiąć własną roślinę do miejsca właściciela i zanieczyścić jego
+płodozmian. `spaceId` jest już odczytywane w tej samej funkcji.
+
+### F-11 · `modules/rosliny/calendar.ts:33`, `src/actions/notifications.ts:193` · convention
+Po T-58 obdarowany widzi zadania nadanej przestrzeni w agendzie i na pulpicie, ale **nie w
+`/calendar` i nie w powiadomieniach** — tam nadal `ownedOrAsync`. To jest wprost historyjka ze speca
+(„opiekun podlewa kwiaty przez tydzień"), więc niedokończona zamiana, a nie decyzja. Przy okazji:
+`contract.ts` twierdzi, że wkład do kalendarza idzie przez `getCareAgenda` — nie idzie, `calendar.ts`
+pyta Prismę wprost.
+
+### F-12 · resztki po zamianach (C-53)
+- `messages/pl.json` → `Ewidencja.okresZastosuj` bez konsumenta,
+- `domain/harmonogram.ts` — `dzienPrzymrozku(wejscie)` wołane trzy razy na jedno zdanie, z dwoma `!`,
+- `actions/zbiory.ts` — gałąź przegranego wyścigu nie odświeża `/rosliny/<spaceId>`,
+- `RoslinaSzczegol.potwierdzPadla` nie odświeża widoku, więc świeżo wpisana przyczyna nie pokazuje
+  się aż do przeładowania,
+- `tasks.md` T-57 wymienia `parentId` w warunku ukończenia, choć `wierszRoslinyZMigawki` świadomie
+  go pomija (C-54).
+
+## Sprawdzone i CZYSTE (bez zastrzeżeń)
+
+Arytmetyka pór roku przy granicy roku (przejrzana ręcznie i potwierdzona osobnym przebiegiem),
+atomowość `harvestToPantry`, parametryzacja `kubelekAgendy` razem z odpornością `userTimeZone()` na
+wywołanie spoza żądania, zawężenia w `sprawdzWskazania` i treść jego komunikatów, C-30/C-31/C-32/C-34
+oraz legalność importu kontraktu Roślin w `src/actions/trash.ts`.
+
+## Werdykt: ⛔ ZMIANY WYMAGANE
+
+F-1, F-2 i F-3 blokują. F-4 i F-5 uderzają w kryteria akceptacji. Zadania **T-69…T-80** dopisane do
+`tasks.md`.

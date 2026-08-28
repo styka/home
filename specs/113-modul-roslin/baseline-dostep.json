@@ -19,6 +19,16 @@
     "roslina zespolowa: odczyt": "dozwolone",
     "roslina zespolowa: edycja": "dozwolone"
   },
+  "osoba z nadaniem na przestrzen wlasna": {
+    "przestrzen wlasna: odczyt": "dozwolone",
+    "przestrzen wlasna: edycja": "dozwolone",
+    "roslina wlasna: odczyt": "dozwolone",
+    "roslina wlasna: edycja": "dozwolone",
+    "przestrzen zespolowa: odczyt": "odmowa",
+    "przestrzen zespolowa: edycja": "odmowa",
+    "roslina zespolowa: odczyt": "odmowa",
+    "roslina zespolowa: edycja": "odmowa"
+  },
   "obcy": {
     "przestrzen wlasna: odczyt": "odmowa",
     "przestrzen wlasna: edycja": "odmowa",

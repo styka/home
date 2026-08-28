@@ -54,7 +54,7 @@ export const KOLUMNY_EWIDENCJI = [
 ] as const;
 
 /** Data w formacie, który czyta i człowiek, i arkusz: `RRRR-MM-DD`. */
-function dzien(d: Date): string {
+export function dzien(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
@@ -136,29 +136,30 @@ export function brakiEwidencji(w: Partial<WierszEwidencji>): string[] {
  * którego nazwa mówi co innego niż zawartość, jest gorszy niż jego brak: trafia do segregatora
  * i nikt go już nie otworzy, żeby sprawdzić.
  *
+ * **Zakres wchodzi jako DATY KALENDARZOWE (`RRRR-MM-DD`), nie jako `Date`.** To nie jest kaprys
+ * typu: `<input type="date">` daje instant o północy w strefie PRZEGLĄDARKI, a `getFullYear()`
+ * na serwerze czyta go w strefie PROCESU (na Renderze UTC). Wybór „cały rok 2026" przyjeżdżał więc
+ * jako `2025-12-31T23:00Z` i nazwa wychodziła `…-2025-12-31_2026-12-31.csv` — treść poprawna,
+ * nazwa nie. Data kalendarzowa nie ma strefy, więc nie ma czego pomylić.
+ *
  * Zakres bierzemy z filtra, gdy użytkownik go podał, a w przeciwnym razie z **dat skrajnych
  * wyeksportowanych wierszy** — nazwa opisuje wtedy to, co w pliku naprawdę jest. Cały jeden rok
  * kalendarzowy skracamy do samego roku, bo tak nazywa go wymóg (ewidencja za rok X).
  */
 export function nazwaPlikuEwidencji(
-  opts: { od?: Date; do?: Date } | undefined,
-  wiersze: { occurredAt: Date }[],
+  opts: { od?: string | null; do?: string | null } | undefined,
+  dniWierszy: string[],
 ): string {
-  const daty = wiersze.map((w) => w.occurredAt.getTime());
-  const od = opts?.od ?? (daty.length ? new Date(Math.min(...daty)) : null);
-  const doo = opts?.do ?? (daty.length ? new Date(Math.max(...daty)) : null);
+  const posortowane = [...dniWierszy].sort();
+  const od = opts?.od || posortowane[0] || null;
+  const doo = opts?.do || posortowane[posortowane.length - 1] || null;
 
   // Pusty eksport też ma prawo istnieć (dowód, że w okresie nie było zabiegów), ale nie ma z czego
   // wziąć zakresu — nazwa mówi wtedy wprost, że jest pusty, zamiast podawać zmyślony rok.
   if (!od || !doo) return "ewidencja-zabiegow-brak-zabiegow.csv";
 
-  const calyRok =
-    od.getFullYear() === doo.getFullYear() &&
-    od.getMonth() === 0 &&
-    od.getDate() === 1 &&
-    doo.getMonth() === 11 &&
-    doo.getDate() === 31;
-  if (calyRok) return `ewidencja-zabiegow-${od.getFullYear()}.csv`;
+  const rok = od.slice(0, 4);
+  if (od === `${rok}-01-01` && doo === `${rok}-12-31`) return `ewidencja-zabiegow-${rok}.csv`;
 
-  return `ewidencja-zabiegow-${dzien(od)}_${dzien(doo)}.csv`;
+  return `ewidencja-zabiegow-${od}_${doo}.csv`;
 }

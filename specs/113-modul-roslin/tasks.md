@@ -246,7 +246,7 @@
       *Gotowe, gdy:* test kasuje przestrzeń z zabiegiem ŚOR i po przywróceniu **odzyskuje wpis
       ewidencji z numerem zezwolenia**.
 - [x] **T-57** — **Przywrócenie rośliny odtwarza jej historię i daty.** Dziennik, pomiary, zdarzenia
-      zdrowotne oraz `sownAt`/`acquiredAt`/`statusAt`/`parentId`. → **U-2, AC-7**
+      zdrowotne oraz `sownAt`/`acquiredAt`/`statusAt`/`parentId` (**korekta po recenzji 2:** rodzic świadomie NIE wraca — roślina-matka mogła nie należeć do tej przestrzeni i klucz obcy odrzuciłby cały zapis; rodowód jest ozdobą przywróconego rekordu, utrata całej przestrzeni byłaby ceną nieproporcjonalną). → **U-2, AC-7**
       *Gotowe, gdy:* test: roślina z wpisami i datą siewu wraca kompletna, a rok w historii miejsca
       się nie zmienia.
 - [x] **T-58** — **Listy uwzględniają nadania.** `getSpaces`, `getPlants`, `getCareAgenda`,
@@ -277,23 +277,59 @@
 
 ---
 
+## Faza 8 — po drugiej recenzji (F-1…F-12)
+
+- [x] **T-69** — **Formularz zabiegu widoczny przy pustym rejestrze.** Stan `empty` nie może zjadać
+      `children`, bo tam mieszka jedyne wejście do `recordTreatment`. → **F-1, AC-24, AC-25**
+      *Gotowe, gdy:* konto bez ani jednego zabiegu klika „Nowy zabieg" i widzi formularz.
+- [x] **T-70** — **Migawka przestrzeni obejmuje dziennik, pomiary i zdarzenia zdrowotne roślin.**
+      `plants: true` → `plants: { include: … }`. → **F-2, AC-7**
+      *Gotowe, gdy:* test integracyjny kasuje PRZESTRZEŃ z rośliną mającą wpis dziennika i pomiar,
+      przywraca ją i odnajduje oba.
+- [x] **T-71** — **`propagatePlant` zawęża `placeId`** przez `sprawdzWskazania`. → **F-3 (security)**
+      *Gotowe, gdy:* test wstrzyknięcia obejmuje też tę drogę.
+- [x] **T-72** — **Własność rośliny wynika z PRZESTRZENI, nie z parametru `teamId`.** → **F-5**
+      *Gotowe, gdy:* roślina dodana do przestrzeni zespołowej ma `workspaceId` tej przestrzeni,
+      co sprawdza test.
+- [x] **T-73** — **Rozdzielić „zero w tej porze" od „brak cyklu w ogóle".** Pierwsze ma prawdziwą
+      datę i dostaje zadanie; drugie zadania nie dostaje, więc użytkownik potrzebuje wejścia do
+      `createCareTask`. → **F-4, AC-8**
+      *Gotowe, gdy:* pomidor dodany w styczniu MA zadanie podlewania z terminem na 1 marca,
+      pszenica go nie ma, a w szczególe rośliny da się dodać zadanie opieki ręcznie.
+- [x] **T-74** — **Nazwa pliku ewidencji liczona w strefie użytkownika**, nie procesu. → **F-6, AC-25**
+      *Gotowe, gdy:* „Cały rok 2026" daje `ewidencja-zabiegow-2026.csv` także przy serwerze w UTC.
+- [x] **T-75** — **Selektor fazy honoruje tryb przestrzeni** (dziś argument `true` czyni warunek
+      stałą). → **F-7, AC-2**
+- [x] **T-76** — **Tabela prawdy dostaje czwarty podmiot: osobę z nadaniem** — widzi przestrzeń na
+      liście ORAZ jej rośliny. Warunek ukończenia T-58, niedowieziony. → **F-8, AC-28, C-54**
+- [x] **T-77** `[P]` — **`updatePlant` podaje `spaceId` do `sprawdzWskazania`.** → **F-10 (security)**
+- [x] **T-78** — **Kalendarz i powiadomienia w tym samym zakresie co agenda** (przestrzenie nadane),
+      albo jawna decyzja przeciwna. Poprawić też opis kontraktu. → **F-11**
+- [x] **T-79** `[P]` — **Resztki po zamianach:** lista ewidencji przeładowywana po zapisie zamiast
+      doklejania w ślepo (F-9), martwy klucz `okresZastosuj`, potrójne `dzienPrzymrozku`,
+      `revalidatePath` w przegranej gałęzi wyścigu, odświeżenie po zapisaniu przyczyny śmierci,
+      korekta warunku T-57 o `parentId`. → **F-9, F-12, C-53, C-54**
+- [x] **T-80** — **Ponowny przebieg bramek, builda i testów; aktualizacja `verify.md`** o drugą
+      rundę recenzji.
+
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadania | AC | Zadania |
 |---|---|---|---|
 | AC-1 | T-11, T-23 | AC-16 | T-16, T-27 |
-| AC-2 | T-7, T-24 | AC-17 | T-16, T-27, **T-52** |
+| AC-2 | T-7, T-24, **T-75** | AC-17 | T-16, T-27, **T-52** |
 | AC-3 | T-7, T-24 | AC-18 | T-33, **T-53** |
 | AC-4 | T-12 | AC-19 | T-33, **T-53** |
 | AC-5 | T-12, T-25 | AC-20 | T-34, **T-54** |
 | AC-6 | T-12, T-25 | AC-21 | T-34 |
-| AC-7 | T-13, **T-56, T-57, T-64** | AC-22 | T-35 |
-| AC-8 | T-5, T-14, T-48, **T-59** | AC-23 | T-36, T-37, T-43 |
-| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, T-54, **T-56, T-61** |
-| AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28 |
+| AC-7 | T-13, **T-56, T-57, T-64, T-70** | AC-22 | T-35 |
+| AC-8 | T-5, T-14, T-48, **T-59, T-73** | AC-23 | T-36, T-37, T-43 |
+| AC-9 | T-5, T-14, T-26 | AC-24 | T-18, T-28, T-54, **T-56, T-61, T-69** |
+| AC-10 | T-5, T-14, T-26 | AC-25 | T-18, T-28, **T-60, T-69, T-74** |
 | AC-11 | T-5, T-14, **T-49** | AC-26 | T-6, **T-54** |
 | AC-12 | T-38, T-39 | AC-27 | T-21 |
-| AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42, **T-58** |
+| AC-13 | T-15, T-25, **T-50** | AC-28 | T-10, T-29, T-42, **T-58, T-76** |
 | AC-14 | T-15, T-25 | AC-29 | T-40 |
 | AC-15 | T-17, T-51, **T-63** | AC-30 | T-44 |
 

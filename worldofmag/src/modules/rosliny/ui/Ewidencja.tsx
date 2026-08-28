@@ -65,9 +65,19 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
   });
 
   const rokBiezacy = new Date().getFullYear();
-  // Pusty wynik ZAWĘŻONEGO okresu to nie jest pusty rejestr: gdyby widok schodził wtedy do stanu
-  // „pusto", zniknąłby wybór okresu i nie byłoby jak z niego wyjść.
-  const pustyRejestr = pozycje.length === 0 && !okres.od && !okres.do;
+  /**
+   * Kiedy widok wolno przełączyć w stan „pusto".
+   *
+   * Dwa warunki, oba wynikają z tego, że `ModuleView` w stanie `empty` rysuje `ViewEmpty`
+   * **zamiast** `children`:
+   * - pusty wynik ZAWĘŻONEGO okresu to nie jest pusty rejestr — zniknąłby wybór okresu i nie
+   *   byłoby jak z niego wyjść,
+   * - **przy otwartym formularzu nigdy**, bo formularz jest w `children`. Bez tego konto bez ani
+   *   jednego zabiegu klikało „Nowy zabieg" (przycisk siedzi w `actions`, więc rysuje się zawsze)
+   *   i na ekranie nie zmieniało się nic — czyli ewidencja była nieosiągalna dokładnie dla tego,
+   *   kto ma ją założyć.
+   */
+  const pustyRejestr = pozycje.length === 0 && !okres.od && !okres.do && !formularz;
   const niekompletne = pozycje.filter((p) => p.braki.length > 0).length;
 
   /**
@@ -145,31 +155,11 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
         conditions: f.conditions.trim() || null,
         withdrawalDays: Number(f.withdrawalDays) || null,
       });
-      setPozycje((lista) => [
-        {
-          id: wynik.id,
-          // Data i nazwy pochodzą z ODPOWIEDZI serwera — lista pokazuje wtedy to, co naprawdę
-          // zapisano, a nie to, co widok sobie złożył z własnych pól.
-          occurredAt: wynik.occurredAt,
-          spaceName: przestrzenie.find((p) => p.id === f.spaceId)?.name ?? "",
-          plantName: wynik.plantName,
-          placeName: wynik.placeName,
-          productName: f.productName.trim() || null,
-          permitNumber: f.permitNumber.trim() || null,
-          applicationKind: f.applicationKind.trim() || null,
-          doseValue: Number(f.doseValue.replace(",", ".")) || null,
-          doseUnit: f.doseUnit.trim() || null,
-          areaValue: Number(f.areaValue.replace(",", ".")) || null,
-          areaUnit: f.areaUnit.trim() || null,
-          locationText: f.locationText.trim() || null,
-          operator: f.operator.trim() || null,
-          conditions: f.conditions.trim() || null,
-          withdrawalDays: Number(f.withdrawalDays) || null,
-          note: null,
-          braki: wynik.braki,
-        },
-        ...lista,
-      ]);
+      // Lista pochodzi z SERWERA, a nie z doklejenia w ślepo: nowa pozycja musi trafić w wybrany
+      // okres i w kolejność malejącą po dacie. Wersja doklejająca na czoło pokazywała zabieg
+      // z dzisiaj na liście zawężonej do 2025 — którego eksport (honorujący okres) już nie
+      // obejmował. To jest dokładnie ten rozjazd „widok ≠ plik", przed którym broni ten widok.
+      setPozycje(await getTreatmentRegister(zakres()));
       setKomunikat(wynik.braki.length ? t("zapisanoZBrakami", { pola: wynik.braki.join(", ") }) : t("zapisanoKompletnie"));
       setF((s) => ({ ...s, productName: "", permitNumber: "", doseValue: "", areaValue: "", locationText: "", conditions: "" }));
       setFormularz(false);
@@ -201,7 +191,14 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
         </Link>
       }
       state={pustyRejestr ? "empty" : "ready"}
-      empty={{ title: t("pustoTytul"), description: t("pustoOpis"), icon: <ClipboardList size={22} /> }}
+      empty={{
+        title: t("pustoTytul"),
+        description: t("pustoOpis"),
+        icon: <ClipboardList size={22} />,
+        // Stan pusty MUSI mieć wyjście do formularza: to jedyne wejście do ewidencji, a trafia się
+        // na nie zanim powstanie pierwszy wpis.
+        ...(przestrzenie.length > 0 ? { action: { label: t("nowyZabieg"), onClick: () => setFormularz(true) } } : {}),
+      }}
       actions={
         <>
         {przestrzenie.length > 0 && (

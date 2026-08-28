@@ -130,26 +130,28 @@ test("brakujące pola zostają puste, a nie jako „null”", () => {
 
 test("nazwa pliku bierze się z ZAKRESU podanego przez użytkownika", () => {
   assert.equal(
-    nazwaPlikuEwidencji({ od: new Date(2026, 3, 1), do: new Date(2026, 3, 30) }, [wiersz()]),
+    nazwaPlikuEwidencji({ od: "2026-04-01", do: "2026-04-30" }, ["2026-04-12"]),
     "ewidencja-zabiegow-2026-04-01_2026-04-30.csv",
   );
 });
 
 test("pełny rok kalendarzowy skraca się do samego roku — tak nazywa go wymóg", () => {
   assert.equal(
-    nazwaPlikuEwidencji({ od: new Date(2026, 0, 1), do: new Date(2026, 11, 31) }, [wiersz()]),
+    nazwaPlikuEwidencji({ od: "2026-01-01", do: "2026-12-31" }, ["2026-05-12"]),
     "ewidencja-zabiegow-2026.csv",
   );
+});
+
+test("zakres to DATY KALENDARZOWE, więc strefa serwera nie ma jak przesunąć nazwy o dzień", () => {
+  // Wersja przyjmująca `Date` czytała instant północy z przeglądarki w strefie procesu (UTC),
+  // przez co „Cały rok 2026" pobierało się jako `…-2025-12-31_2026-12-31.csv`.
+  assert.equal(nazwaPlikuEwidencji({ od: "2026-01-01", do: "2026-12-31" }, []), "ewidencja-zabiegow-2026.csv");
 });
 
 test("bez filtra nazwa opisuje daty skrajne WYEKSPORTOWANYCH wierszy, a nie rok bieżący", () => {
   // To jest ten błąd, przez który w 2028 rolnik dostawał „ewidencja-zabiegow-2028.csv"
   // z zabiegami z trzech lat.
-  const nazwa = nazwaPlikuEwidencji(undefined, [
-    wiersz({ occurredAt: new Date(2026, 4, 12) }),
-    wiersz({ occurredAt: new Date(2028, 6, 3) }),
-    wiersz({ occurredAt: new Date(2027, 1, 20) }),
-  ]);
+  const nazwa = nazwaPlikuEwidencji(undefined, ["2026-05-12", "2028-07-03", "2027-02-20"]);
   assert.equal(nazwa, "ewidencja-zabiegow-2026-05-12_2028-07-03.csv");
 });
 

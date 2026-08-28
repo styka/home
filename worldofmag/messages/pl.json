@@ -2254,7 +2254,14 @@
         "fazaUsunieta": "Faza rozwojowa wyczyszczona.",
         "przyczynaPlaceholder": "np. przelana, przemarzła, przesuszona",
         "zapiszPrzyczyne": "Zapisz i zakończ",
-        "anuluj": "Anuluj"
+        "anuluj": "Anuluj",
+        "zadaniaTytul": "Zadania opieki",
+        "zadaniaOpis": "Podlewanie zakłada się samo, jeśli gatunek ma cykl. Nawożenie, oprysk czy przycinanie dodajesz wtedy, gdy ich potrzebujesz.",
+        "dodajZadanie": "Dodaj zadanie opieki",
+        "rodzajZabieguEtykieta": "Rodzaj zabiegu",
+        "coIleDniEtykieta": "Co ile dni",
+        "coIleDniPlaceholder": "Co ile dni (puste = jednorazowo)",
+        "zadanieDodane": "Zadanie opieki dodane — pojawi się w agendzie."
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",
@@ -2343,7 +2350,6 @@
         "okresDo": "Do dnia",
         "okresRok": "Cały rok {rok}",
         "okresWyczysc": "Cały rejestr",
-        "okresZastosuj": "Pokaż okres",
         "dataEtykieta": "Data zabiegu",
         "uprawaEtykieta": "Uprawa / roślina",
         "uprawaBrak": "— bez wskazania rośliny —",

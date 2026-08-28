@@ -3,6 +3,9 @@
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { isoDay } from "@/modules/calendar/contract";
+// Zabiegi przy roślinach czytamy przez kontrakt modułu, żeby reguła zakresu („moje przestrzenie
+// plus mi udostępnione") istniała w JEDNYM miejscu — powtórzona tutaj rozjechała się już raz.
+import { getCareAgenda } from "@/modules/rosliny/contract";
 import { notifyUser } from "@/lib/notify";
 import { isScheduledOn, weekDoneCount } from "@/lib/habitStats";
 import { getPendingInvitationsCount } from "@/actions/invitations";
@@ -184,15 +187,12 @@ export async function syncReminders(): Promise<number> {
       where: { archived: false, OR: ownScope },
       select: { id: true, name: true, daysOfWeek: true, weeklyGoal: true, entries: { where: { date: { gte: weekLookbackISO } }, select: { date: true } } },
     }),
-    // 113: zabiegi przy roślinach. Zakres idzie przez PRZESTRZEŃ, a nie przez zadanie:
-    // `PlantCareTask` nie ma własnej kolumny przestrzeni (wisi na `PlantSpace`), więc pytanie
-    // o nią byłoby pytaniem o pole, którego ta tabela nie ma — dokładnie ten błąd łapie
-    // bramka `check:owner-columns`.
-    prisma.plantCareTask.findMany({
-      take: LIMIT_PRZYPOMNIEN,
-      where: { active: true, nextDueAt: { gte: now, lt: in3 }, space: { is: { OR: ownScope } } },
-      select: { id: true, title: true, nextDueAt: true, spaceId: true, plantId: true, plant: { select: { name: true } } },
-    }),
+    // 113: zabiegi przy roślinach — **przez kontrakt modułu, a nie własnym zapytaniem**.
+    // Własne zapytanie musiałoby powtórzyć tutaj regułę zakresu („moje przestrzenie plus mi
+    // udostępnione"), a powtórzona reguła rozjeżdża się przy pierwszej zmianie: tak właśnie
+    // powstał stan, w którym opiekun widział zadania nadanej przestrzeni w agendzie i na pulpicie,
+    // ale nie dostawał o nich powiadomienia. `getCareAgenda` zna tę regułę w jednym miejscu.
+    getCareAgenda({ dni: 3 }),
   ]);
 
   const jobs: Promise<void>[] = [];
@@ -234,15 +234,19 @@ export async function syncReminders(): Promise<number> {
   }
   for (const z of plantCare) {
     if (!z.nextDueAt) continue;
+    const termin = new Date(z.nextDueAt);
+    // Kontrakt oddaje też zaległe (agenda ich potrzebuje), a przypomnienie ma dotyczyć
+    // NADCHODZĄCYCH — zaległościami zajmuje się widok, nie powiadomienie.
+    if (termin < now || termin >= in3) continue;
     jobs.push(notifyUser({
       userId: user.id,
       module: "rosliny",
-      title: `Rośliny: ${z.title}${z.plant?.name ? ` — ${z.plant.name}` : ""}`,
-      dueAt: z.nextDueAt,
+      title: `Rośliny: ${z.title}${z.plantName ? ` — ${z.plantName}` : ""}`,
+      dueAt: termin,
       // Zadanie może dotyczyć całej grządki, a nie pojedynczej rośliny — wtedy prowadzimy do
       // przestrzeni. Adres do nieistniejącej rośliny byłby powiadomieniem donikąd.
       href: z.plantId ? `/rosliny/${z.spaceId}/roslina/${z.plantId}` : `/rosliny/${z.spaceId}`,
-      dedupeKey: `plantcare-${z.id}-${isoDay(z.nextDueAt)}`,
+      dedupeKey: `plantcare-${z.id}-${isoDay(termin)}`,
     }));
   }
   for (const tr of petTreatments) {

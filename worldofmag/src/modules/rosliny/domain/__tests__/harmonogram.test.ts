@@ -187,13 +187,15 @@ test("odstęp nigdy nie schodzi do zera ani poniżej", () => {
 
 // ─── Zero w wymaganiach wodnych = pora bez cyklu podlewania ──────────────────
 
-test("gatunek z zerem w tej porze nie dostaje terminu podlewania, tylko datę wznowienia", () => {
+test("gatunek z zerem w tej porze dostaje datę WZNOWIENIA, a nie odstęp z zapasu", () => {
   // Pomidor w styczniu. Wcześniej dostawał tu „podlej za 14 dni” — odstęp wzięty z wartości
   // domyślnych, bo zero traktowano jak brak danych.
   const od = new Date("2026-01-10");
   const wynik = terminPodlewania({ od, wymagania: { winter: 0, spring: 4, summer: 3, autumn: 5 } });
 
-  assert.equal(wynik.pomijac, true);
+  // NIE pomijamy: data jest prawdziwa, więc zadanie ma powstać i po prostu czekać do marca.
+  // Pomijanie w tym miejscu sprawiało, że 125 ze 182 wpisów katalogu nie dostawało zadania nigdy.
+  assert.equal(wynik.pomijac, false);
   // Wznawiamy z początkiem wiosny, a nie „za 14 dni”.
   assert.equal(wynik.termin.getFullYear(), 2026);
   assert.equal(wynik.termin.getMonth(), 2);
@@ -206,7 +208,7 @@ test("po jesieni z zerem wznowienie przechodzi na wiosnę NASTĘPNEGO roku", () 
     od: new Date("2026-10-05"),
     wymagania: { winter: 0, spring: 4, summer: 3, autumn: 0 },
   });
-  assert.equal(wynik.pomijac, true);
+  assert.equal(wynik.pomijac, false);
   assert.equal(wynik.termin.getFullYear(), 2027);
   assert.equal(wynik.termin.getMonth(), 2);
 });
@@ -226,14 +228,24 @@ test("normalny odstęp nie jest oznaczany do pominięcia", () => {
   assert.equal(terminCykliczny(new Date("2026-07-10"), 14).pomijac, false);
 });
 
-test("ostrzeżenie o przymrozku przechodzi także wtedy, gdy podlewanie pomijamy", () => {
+test("ostrzeżenie o przymrozku przechodzi także wtedy, gdy w tej porze nie podlewamy", () => {
   const wynik = terminPodlewania({
     od: new Date("2026-01-10"),
     wymagania: { winter: 0, spring: 4, summer: 3, autumn: 5 },
     prognoza: [dzien({ date: "2026-01-11", tMin: -6 })],
   });
-  assert.equal(wynik.pomijac, true);
   assert.match(String(wynik.ostrzezenie), /Przymrozek/);
+});
+
+test("każdy wpis katalogu z zerem W CZĘŚCI pór ma prawdziwą datę, a nie pominięcie", () => {
+  // Rozdzielenie dwóch przypadków: pomijamy WYŁĄCZNIE gatunek bez cyklu w żadnej porze.
+  const warzywo = { winter: 0, spring: 4, summer: 3, autumn: 5 };
+  for (const miesiac of [0, 4, 6, 9]) {
+    const od = new Date(2026, miesiac, 10);
+    const w = terminPodlewania({ od, wymagania: warzywo });
+    assert.equal(w.pomijac, false, `miesiąc ${miesiac}: warzywo nie może być pomijane`);
+    assert.ok(w.termin.getTime() > od.getTime());
+  }
 });
 
 // ─── Reguła kontra dane z migracji ───────────────────────────────────────────
@@ -265,6 +277,9 @@ test("każdy wpis katalogu z migracji 0273 daje albo dodatni odstęp, albo jawne
     }
   }
 
-  // Zera w katalogu są regułą, nie pojedynczym wyjątkiem — gdyby ich zabrakło, ten test straciłby sens.
-  assert.ok(pominiete > 0, "katalog powinien zawierać gatunki bez cyklu podlewania w części pór");
+  // Pominięte to WYŁĄCZNIE gatunki bez cyklu w żadnej porze (zboża, uprawy polowe — 20 wpisów).
+  // Gdyby ich zabrakło, ten test straciłby sens; gdyby było ich dużo więcej, znaczyłoby to, że
+  // rozdzielenie dwóch przypadków znów się zlało w jeden.
+  assert.ok(pominiete > 0, "katalog powinien zawierać gatunki bez cyklu podlewania w ogóle");
+  assert.ok(pominiete < wpisy.length * 4 * 0.3, "za dużo pominięć — zero w JEDNEJ porze nie jest brakiem cyklu");
 });
