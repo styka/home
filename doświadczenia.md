@@ -4,6 +4,66 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Dwa zgłoszenia o różnych objawach, jedna przyczyna: prompt płacony od nowa w każdej iteracji
+**Problem:** Właściciel zgłosił dwie rzeczy, które wyglądały na niezwiązane. Raz: asystent nie
+potrafił założyć psa w module Zwierzęta na podstawie zadań — wykonał **11 odczytów w 6 iteracjach**
+i skończył komunikatem „nie dokończyłem", za 1,36 zł. Dwa: „czemu taka prosta operacja kosztowała
+30 groszy? czy to błąd twojego liczenia?".
+
+Rachunek okazał się **poprawny co do czwartego miejsca po przecinku** w obu sesjach — i to była
+pierwsza rzecz, którą trzeba było powiedzieć wprost, zamiast od razu naprawiać. Dopiero rozbicie go
+na składniki pokazało, że oba zgłoszenia to **ten sam błąd widziany z dwóch stron**: prompt
+systemowy jest budowany raz przed pętlą agenta i we wszystkich wywołaniach identyczny co do znaku,
+ale `cache_control` niósł wyłącznie krótki wstęp (1276 tokenów). Katalog narzędzi i akcji
+(~12–18 tys. tokenów) był więc opłacany **w pełnej cenie sześć razy** — ~67 % rachunku drogiej tury.
+
+Cztery dalsze przyczyny leżały w miejscach zupełnie innych niż objaw:
+
+1. **Znacznik „…(ucięto)" ze zrzutu zgłoszenia nie pochodził z narzędzi**, tylko z generowania
+   zrzutu rozmowy dla developera (próg 4000 znaków). Prawdziwym ograniczeniem był limit **12
+   rekordów na narzędzie** po stronie kompaktowania kontekstu — a komunikat obcięcia kazał modelowi
+   „**zawęzić zapytanie**". Model wykonał to polecenie dosłownie i pociął projekt po statusie, tagu
+   i priorytecie. Polecenie było niewykonalne, bo limit siedział w **kontekście, nie w zapytaniu**:
+   podnoszenie `limit` w argumentach nic nie dawało.
+2. **Strażnik pętli istniał i nie on zatrzymał przebieg.** Każda iteracja przynosiła nowe dane, więc
+   licznik jałowych iteracji nigdy nie wystrzelił — przebieg dobił do limitu kroków. Brakowało nie
+   strażnika, lecz **domknięcia wynikiem**: ostatnie wywołanie prosiło o *streszczenie tego, czego
+   asystent nie zrobił*, choć komplet danych był już w kontekście.
+3. **`applyEffort` po cichu unieważniał zadeklarowany budżet wyjścia.** Router modułów deklaruje
+   `maxTokens: 120`; przy poziomie „średnim" włącza się rozszerzone myślenie z budżetem 6144, a
+   `max_tokens` **musi** zostać podniesiony ponad ten budżet — do 7168. Zmierzone: **1326 tokenów
+   wyjścia i 15 sekund** na decyzję „które moduły są istotne".
+4. **`\b` w JavaScripcie jest ASCII-owe.** `READ_INTENT_RE.test("pokaż zadania")` zwracało `false`,
+   bo po „ż" i po spacji stoją dwa znaki nie-słowne. Martwe były wszystkie człony kończące się
+   polską literą (`pokaż`, `znajdź`, `sprawdź`, `doradź`, `oceń`, `streść`, `przychód`, `odhaczyć`,
+   `wąż`) i zaczynające się od niej (`śniadanie`, `słówka`) — przy sprawnych wariantach bez
+   diakrytyków. Skutkiem był **płatny klasyfikator i płatny router** dla tur, których wynik był
+   znany z góry.
+
+Osobno: `new Date("ok. 2021")` zwraca **1 stycznia 2021**. Data oznaczona przez użytkownika jako
+szacunkowa zamieniłaby się w konkretny dzień, którego nikt nie podał — i wyglądałaby na fakt.
+
+**Rozwiązanie:** Drugi punkt cięcia pamięci podręcznej na bloku zmiennym, włączany **od drugiego**
+wywołania w przebiegu (tura jednowywołaniowa nie może zdrożeć o 1,25×) i **nigdy** w wywołaniu
+domykającym (nikt tego nie odczyta — tak wyrzucono 11 860 tokenów). Komunikat obcięcia podaje
+konkretny `offset` zamiast ogólnika, a bezpiecznik znakowy usuwa **całe rekordy** zamiast ciąć
+serializację. `effort: "none"` w obu wywołaniach klasyfikacyjnych. Wspólny konstruktor
+`granicePolskie` zamiast `\b`. Domknięcie przebiegu prosi o **dokończenie zadania**. Daty
+parsowane wyłącznie przez `ISO_DATE_RE` — to samo wyrażenie, którym waliduje kontrakt akcji.
+
+**Lekcja:** **Gdy właściciel pyta „czy to błąd liczenia", najpierw policz — i odpowiedz wprost.**
+Kwota była prawidłowa; gdybyśmy od razu zaczęli „optymalizować", odpowiedź na zadane pytanie nigdy
+by nie padła, a poprawki wyglądałyby na przyznanie się do błędu, którego nie było. Dopiero **rozbicie
+rachunku na składniki** pokazało, że dwa zgłoszenia o zupełnie różnych objawach — „za drogo" i „nie
+dokończył zadania" — mają jedną przyczynę.
+
+Drugie: **komunikat kierowany do modelu jest interfejsem, nie komentarzem.** „Zawęź zapytanie"
+brzmiało jak pomocna rada, a było poleceniem niewykonalnym — i model wykonał je dosłownie jedenaście
+razy. Gdy dane są niekompletne, komunikat musi podać **wykonalny następny krok**, nie kierunek.
+
+Trzecie: **parametr, który wołający deklaruje, musi coś znaczyć.** `maxTokens: 120` obok mechanizmu,
+który po cichu podnosi go do 7168, to nie ustawienie, tylko iluzja ustawienia.
+
 ## 2026-08-28 — Pięć zgłoszeń, z których każde miało przyczynę w innym miejscu niż objaw
 **Problem:** Właściciel zgłosił pięć usterek z trybu „wskaż element". Cztery z nich wyglądały na
 drobiazgi UI, a wszystkie miały przyczynę o piętro niżej niż miejsce, które wskazał.

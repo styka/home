@@ -185,8 +185,14 @@ export const PARAM_LABELS: Record<string, string> = {
   adresKanalu: "Odnośnik lub uchwyt kanału",
   amount: "Kwota",
   active: "Aktywne",
+  // 112: pola profilu zwierzęcia — nazwy znaczą to samo w `add_pet` i `update_pet`, więc
+  // etykieta jest wspólna; kontrolki (data, przełącznik) dokłada `PET_PROFILE_FIELDS`.
+  acquiredAt: "Data nabycia",
+  acquiredFrom: "Skąd pochodzi",
   archived: "Zarchiwizowane",
   bookToPortfel: "Zaksięguj wydatek w Portfelu",
+  birthApprox: "Data urodzenia jest przybliżona",
+  birthDate: "Data urodzenia",
   body: "Treść",
   breed: "Rasa / odmiana",
   buyerContact: "Kontakt kupującego",
@@ -228,6 +234,7 @@ export const PARAM_LABELS: Record<string, string> = {
   horizon: "Zakres czasu",
   hourlyEnd: "Godzina zakończenia",
   hourlyStart: "Godzina rozpoczęcia",
+  identifier: "Obrączka / tag",
   icon: "Ikona",
   initialBalance: "Stan początkowy",
   instructions: "Zalecenia",
@@ -314,6 +321,23 @@ const bool = (label: string): FieldSpec => ({ label, control: "boolean" });
 const day = (label: string): FieldSpec => ({ label, control: "date" });
 const dt = (label: string): FieldSpec => ({ label, control: "datetime" });
 const longText = (label: string): FieldSpec => ({ label, control: "textarea" });
+
+/**
+ * 112: pola profilu zwierzęcia wspólne dla `add_pet` i `update_pet`.
+ *
+ * Jeden zestaw, bo oba wejścia opisują ten sam profil — dwie kopie rozjechałyby się przy pierwszej
+ * zmianie, a objawem byłoby pole widoczne przy zakładaniu i niewidoczne przy poprawianiu.
+ */
+const PET_PROFILE_FIELDS: Record<string, FieldSpec> = {
+  birthDate: day("Data urodzenia"),
+  birthApprox: bool("Data urodzenia jest przybliżona"),
+  acquiredAt: day("Data nabycia"),
+  acquiredFrom: f("Skąd pochodzi"),
+  microchipId: f("Numer mikroczipa"),
+  identifier: f("Obrączka / tag"),
+  color: f("Umaszczenie"),
+  notes: longText("Notatki"),
+};
 
 /**
  * Rejestr wszystkich typów akcji asystenta. Kompletność wymusza bramka
@@ -546,11 +570,18 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   save_report: { label: "Zapisz raport", fields: { content: longText("Treść raportu") } },
 
   // ── ZWIERZĘTA ─────────────────────────────────────────────────────────────
+  // 112: pola PROFILU (data urodzenia, pochodzenie, mikroczip, umaszczenie, notatki) — ten rejestr
+  // rysuje panel potwierdzenia I waliduje po stronie serwera, więc pole opisane w prompcie bez
+  // wpisu tutaj byłoby obietnicą bez pokrycia: model by je podał, a użytkownik nigdy nie zobaczył.
   add_pet: {
     label: "Dodaj zwierzę",
-    fields: { species: sel("Gatunek", PET_SPECIES_OPTIONS), sex: sel("Płeć", PET_SEX_OPTIONS) },
+    fields: {
+      species: sel("Gatunek", PET_SPECIES_OPTIONS),
+      sex: sel("Płeć", PET_SEX_OPTIONS),
+      ...PET_PROFILE_FIELDS,
+    },
   },
-  update_pet: { label: "Zmień zwierzę" },
+  update_pet: { label: "Zmień zwierzę", fields: { sex: sel("Płeć", PET_SEX_OPTIONS), ...PET_PROFILE_FIELDS } },
   set_pet_status: { label: "Zmień status zwierzęcia", fields: { status: sel("Status", PET_STATUS_OPTIONS) } },
   delete_pet: { label: "Usuń zwierzę" },
   log_weight: {
@@ -625,7 +656,10 @@ export function hasParamLabel(type: string, key: string): boolean {
 }
 
 const ID_KEY = /Id$/;
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+// 112: eksportowane — egzekutory modułów muszą uznawać za datę DOKŁADNIE to samo, co walidacja
+// kontraktu. `new Date()` jest zbyt pobłażliwe: `new Date("ok. 2021")` zwraca 1 stycznia 2021, czyli
+// model podający datę szacunkową wyprodukowałby precyzyjną datę, której nikt nie podał.
+export const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 /**
  * Opis pola z sensownym fallbackiem:

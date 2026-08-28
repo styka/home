@@ -8,6 +8,7 @@ import { updatePet, setPetStatus, deletePet } from "../contract";
 import { completeTreatment } from "../contract";
 import { updateEnclosure, deleteEnclosure, assignPetToEnclosure } from "../contract";
 import { asStr } from "@/lib/ai/executorShared";
+import { ISO_DATE_RE } from "@/platform/ai/actionContract";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { RecurringRule, PetStatus } from "@/types";
 import { wlasnoscOsobistaDoZapisu } from "@/platform/workspaces/zapis";
@@ -25,6 +26,47 @@ const SPECIES_MAP: Record<string, string> = {
   rybka: "fish", ptak: "bird", papuga: "bird", chomik: "rodent", szczur: "rodent",
   mysz: "rodent", świnka: "rodent", swinka: "rodent", królik: "rabbit", krolik: "rabbit",
 };
+
+/**
+ * 112: data z parametru akcji → `Date` albo `undefined`.
+ *
+ * Model bywa niedokładny („ok. 2021", pusty string, tekst zamiast ISO). Niepoprawna wartość musi
+ * ZNIKNĄĆ, a nie trafić do bazy — pole pominięte jest zawsze lepsze niż pole nieprawdziwe.
+ *
+ * Samo `new Date()` NIE wystarczy i to jest istota tej funkcji: `new Date("ok. 2021")` zwraca
+ * **1 stycznia 2021**, więc data wyraźnie oznaczona przez użytkownika jako szacunkowa zamieniłaby
+ * się w konkretny dzień, którego nikt nie podał — i wyglądałaby na fakt. Dlatego wymagamy formatu
+ * ISO tym samym wyrażeniem, którym waliduje kontrakt akcji (jedna definicja „co jest datą").
+ */
+function dataZParametru(v: unknown): Date | undefined {
+  const s = asStr(v);
+  if (!s || !ISO_DATE_RE.test(s)) return undefined;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+/**
+ * 112: pola PROFILU zwierzęcia wspólne dla `add_pet` i `update_pet`.
+ *
+ * Wydzielone, bo oba wejścia muszą opisywać ten sam profil — gdyby każde budowało swój zestaw, przy
+ * pierwszej zmianie jedno z nich zostałoby w tyle i objawiłoby się to cichym gubieniem danych.
+ * Zwraca wyłącznie pola FAKTYCZNIE podane, żeby `update_pet` nie kasował istniejących wartości
+ * przez `undefined`.
+ */
+export function poleProfilu(params: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const teksty = ["breed", "sex", "acquiredFrom", "microchipId", "identifier", "color", "notes"] as const;
+  for (const k of teksty) {
+    const v = asStr(params[k]);
+    if (v) out[k] = v;
+  }
+  const birthDate = dataZParametru(params.birthDate);
+  if (birthDate) out.birthDate = birthDate;
+  const acquiredAt = dataZParametru(params.acquiredAt);
+  if (acquiredAt) out.acquiredAt = acquiredAt;
+  if (typeof params.birthApprox === "boolean") out.birthApprox = params.birthApprox;
+  return out;
+}
 
 async function findPetByName(userId: string, name: string) {
   const teamIds = await getUserTeamIds(userId);
@@ -53,8 +95,10 @@ export async function executePetAction(action: AIAction, userId: string): Promis
       data: {
         name,
         species,
-        breed: (params.breed as string) ?? null,
-        sex: (params.sex as string) ?? null,
+        // 112: pełny profil od razu. Do 112 akcja zapisywała wyłącznie imię, gatunek, rasę i płeć,
+        // więc prośba „ustaw wszystko, co można ustawić" nie miała jak zostać spełniona — mimo że
+        // model danych ma te pola od dawna. Wąskim gardłem był KONTRAKT AKCJI, nie baza.
+        ...poleProfilu(params),
         ...(await wlasnoscOsobistaDoZapisu(userId)),
       },
     });
@@ -114,7 +158,13 @@ export async function executePetAction(action: AIAction, userId: string): Promis
   }
 
   if (type === "update_pet" && pet) {
-    await updatePet(pet.id, { name: (params.name as string) ?? undefined, breed: (params.breed as string) ?? undefined });
+    // 112: te same pola profilu co `add_pet` — jeden kształt profilu dla obu wejść (patrz
+    // `poleProfilu`). Podajemy WYŁĄCZNIE pola faktycznie przekazane, żeby uzupełnienie jednego
+    // szczegółu nie wyczyściło pozostałych.
+    await updatePet(pet.id, {
+      ...(asStr(params.name) ? { name: asStr(params.name) as string } : {}),
+      ...poleProfilu(params),
+    });
     return `Zaktualizowano zwierzę ${pet.name}`;
   }
   if (type === "set_pet_status" && pet) {

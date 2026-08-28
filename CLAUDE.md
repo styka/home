@@ -471,6 +471,29 @@ drops the follow-up request from the `answer` step. **Careful:** `buildReadTools
 empty module list as "give everything" — pass the primary module, not `[]`, when trimming the prompt.
 `SMALL_TALK_RE` (`lib/ai/fastPath.ts`, anchored `^…$`) skips `classifyIntent` **and** `routeModules`
 for a message that is nothing but a greeting.
+**112 — 036 finished the split; 112 made it pay.** Two owner reports with opposite-looking symptoms
+("why did this cost 30 groszy?" and "the assistant read 11 times and gave up") had **one cause**: the
+system prompt is built ONCE before the agent loop and is byte-identical in every call, yet only the
+~1276-token intro carried `cache_control` — so the 12–18k-token catalog was billed at full price in
+each of six iterations (~67 % of the expensive turn). Both amounts, recomputed against `LlmModelPrice`,
+were **arithmetically correct**: the pricing was never the bug, the usage was. Fixes: a **second cache
+breakpoint** on the variable block, switched on from the **second** call in a run (a one-call turn must
+not get 25 % more expensive) and **never** on the closing call (nothing reads it — that is how 11 860
+tokens were thrown away); `effort: "none"` on both classification calls, because `applyEffort` raises
+`max_tokens` from 120 to 7168 for extended thinking, so a declared output budget meant nothing
+(measured: 1326 output tokens and 15 s to pick modules); a length guard before `classifyIntent`; and
+`granicePolskie` replacing `\b`, which is **ASCII-only** in JS — every alternative ending in a Polish
+letter (`pokaż`, `znajdź`, `sprawdź`, `oceń`, `wąż`) was silently dead, sending turns whose answer was
+known in advance to the *paid* classifier and router. Read side: the per-tool record budget went 12 → 40
+and the truncation notice now names the **`offset` to use** instead of saying "narrow your query" — an
+instruction that was literally unexecutable (the cap lives in the context, not the query) and which the
+model obeyed by slicing one project into six queries. The char safety-net now drops **whole records**
+instead of `slice()`-ing the JSON mid-record. `list_tasks` gained `offset` and `includeDescription`.
+When the step limit runs out the closing call asks the model to **finish the task** from what it has
+(plan or full answer) plus an explicit list of gaps — never a summary of its own failure; with zero
+successful reads the model is not called at all and 032's honest message stands. The report
+`/reports/asystent-koszt-tury-rozbicie` (migration 0271) carries the arithmetic, because "is the amount
+counted right?" will be asked again.
 
 **The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles
 floating action button (bottom-right, in `AppShell`) opening a **conversational chat

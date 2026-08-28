@@ -89,8 +89,30 @@ function extractJson(content: string): RawParsed | null {
 // Fałszywe trafienie jest tanie (agent i tak poprawnie obsłuży tworzenie) — nadmiar „complex" jest OK.
 // 030: eksportowany — route agenta reużywa go do klasyfikacji „prostej tury odczytowej"
 // (tani model op:"dispatch" z fallbackiem do "reasoning").
-export const READ_INTENT_RE =
-  /^\s*(podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile\b|jak(ie|i|a|ich)\b|któr\w+|co (mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz)\b/i;
+/**
+ * 112: GRANICA SŁOWA ŚWIADOMA POLSKICH LITER.
+ *
+ * `\b` w JavaScripcie jest ASCII-owe: „ż", „ź", „ć", „ń", „ó", „ę", „ą", „ł", „ś" NIE są dla niego
+ * znakami słowa. Skutek jest zdradliwy, bo cichy: w alternatywie `(pokaż|pokaz|…)\b` człon kończący
+ * się polską literą **nigdy nie pasuje** — po „ż" i po spacji stoją dwa znaki nie-słowne, więc
+ * granicy tam nie ma. Tak samo `\b(…|śniadanie|…)` nie złapie słowa zaczynającego się od „ś".
+ *
+ * Zmierzone przed poprawką: `pokaż`, `znajdź`, `sprawdź`, `doradź`, `oceń`, `streść`, `przychód`,
+ * `odhaczyć`, `wąż` — wszystkie martwe, podczas gdy ich warianty bez diakrytyków działały. To jest
+ * wprost koszt: strażnik, który nie łapie „pokaż zadania", wysyła tę turę do PŁATNEGO klasyfikatora
+ * i do płatnego routera, choć odpowiedź obu była znana z góry (AC-14, AC-15).
+ *
+ * Zamiast `\b` używamy asercji na „nie litera" (dowolnego alfabetu) — stąd flaga `u`.
+ */
+export function granicePolskie(rdzen: string, kotwiczOdPoczatku = false): RegExp {
+  const przod = kotwiczOdPoczatku ? "^\\s*" : "(?<!\\p{L})";
+  return new RegExp(`${przod}(?:${rdzen})(?!\\p{L})`, "iu");
+}
+
+export const READ_INTENT_RE = granicePolskie(
+  "podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile|jak(?:ie|i|a|ich)|któr\\w+|co (?:mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (?:mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz",
+  true
+);
 
 /**
  * 036: zwykła uprzejmość („cześć", „dzięki", „ok") — CAŁA wiadomość jest powitaniem/podziękowaniem.
@@ -105,6 +127,39 @@ export const READ_INTENT_RE =
  */
 export const SMALL_TALK_RE =
   /^\s*(hej|cześć|czesc|siema|witaj|dzień dobry|dzien dobry|dobry wieczór|dobry wieczor|hello|hi|yo|dzięki|dzieki|dziękuję|dziekuje|dziękuje|ok|okej|spoko|pa|do zobaczenia|dobranoc)[\s!.,…]*$/i;
+
+/**
+ * 112: górna długość wiadomości, którą w ogóle warto klasyfikować.
+ *
+ * Fast-path szuka POJEDYNCZEJ, PROSTEJ operacji dodania („dodaj mleko", „zanotuj X") — a taka jest
+ * z definicji krótka. Zgłoszenie właściciela pokazało turę, w której długie zdanie sugestii
+ * przeszło przez klasyfikator tylko po to, żeby usłyszeć „complex": 1867 tokenów i ~7 sekund za
+ * odpowiedź, która była z góry przesądzona.
+ *
+ * Liczba jest CELOWO ta sama, co próg „prostej tury odczytowej" w trasie agenta (`isSimpleRead`).
+ * Druga, niezgodna stała opisywałaby to samo pojęcie („polecenie jest krótkie") dwiema wartościami,
+ * które rozjechałyby się przy pierwszej zmianie.
+ */
+export const MAX_DLUGOSC_KLASYFIKACJI = 160;
+
+/**
+ * 112: czy w ogóle warto płacić za klasyfikację tej wiadomości.
+ *
+ * Wydzielone jako funkcja CZYSTA (bez bazy, bez sieci) — dokładnie z tego samego powodu, dla którego
+ * wydzielono `agentPartialRun`: inaczej jedynym sposobem sprawdzenia „czy model NIE został wołany"
+ * byłoby uruchomienie prawdziwego dostawcy.
+ *
+ * Zwraca `false`, gdy wynik klasyfikacji jest znany z góry i musi wyjść „complex".
+ */
+export function wartoKlasyfikowac(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  // Prośba o ODCZYT („podaj/pokaż/znajdź…") nigdy nie jest prostą operacją dodania.
+  if (READ_INTENT_RE.test(trimmed)) return false;
+  // Prosta operacja dodania jest krótka — długie zdanie i tak skończy się jako „complex".
+  if (trimmed.length > MAX_DLUGOSC_KLASYFIKACJI) return false;
+  return true;
+}
 
 // Wskazanie nazwanej listy zakupów (np. „do listy Apteka", „na listę Tygodniowe") — fast-path
 // add_item gubi nazwę listy (buduje tylko rawText), więc oddajemy takie polecenie agentowi, który
@@ -155,10 +210,10 @@ export async function classifyIntent(
   userId?: string
 ): Promise<FastPathResult> {
   const trimmed = text.trim();
-  if (!trimmed) return { kind: "complex" };
 
-  // Strażnik intencji odczytu (bez wołania LLM) — „podaj/pokaż/znajdź/ile/zaproponuj …" → pełny agent.
-  if (READ_INTENT_RE.test(trimmed)) return { kind: "complex" };
+  // Tanie strażniki BEZ wołania LLM: pusta wiadomość, prośba o odczyt, wiadomość zbyt długa, by być
+  // prostą operacją dodania. Każde z tych rozstrzygnięć jest znane z góry — patrz `wartoKlasyfikowac`.
+  if (!wartoKlasyfikowac(trimmed)) return { kind: "complex" };
 
   // 028: NIE przekazujemy tu `userId` do chatComplete — inaczej ten dispatch-call
   // samo-rozliczyłby tokeny do AiUsage, a poniżej sumujemy je do `meta`, które i tak
@@ -173,6 +228,13 @@ export async function classifyIntent(
     ],
     temperature: 0,
     maxTokens: 300,
+    // 112: klasyfikacja to decyzja deterministyczna, nie rozumowanie — rozszerzone myślenie jest tu
+    // czystym kosztem. Bez tego `applyEffort` przy poziomie „średnim" włącza budżet myślenia 6144
+    // tokenów i PODNOSI `max_tokens` z 300 do 7168 (Anthropic tego wymaga), więc zadeklarowany wyżej
+    // budżet wyjścia przestaje cokolwiek znaczyć: zmierzono 494 tokeny wyjścia zamiast ≤300.
+    // To NIE jest wybór modelu (C-40) — model i dostawca nadal pochodzą z `/admin/llm`; call-site
+    // mówi wyłącznie o kształcie WŁASNEJ odpowiedzi.
+    effort: "none",
     json: true,
     source: "fast_path",
     conversationId,

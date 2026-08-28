@@ -8,7 +8,7 @@
 import { PET_ACTIONS_PROMPT } from "./petActions";
 
 const blokPodstawowy = `ZWIERZĘTA (module "pets") — dodatkowe (główne akcje w sekcji ZWIERZĘTA poniżej):
-- update_pet { name?, breed? } (searchQuery = imię)
+- update_pet { name?, breed?, sex?, birthDate?, birthApprox?, acquiredAt?, acquiredFrom?, microchipId?, identifier?, color?, notes? } (searchQuery = imię) — uzupełnia/poprawia profil istniejącego zwierzęcia; te same pola co add_pet (daty w ISO 8601)
 - set_pet_status { status:"ACTIVE"|"SOLD"|"DECEASED"|"ARCHIVED" } (searchQuery = imię)
 - delete_pet {} (searchQuery = imię) — DESTRUKCYJNE`;
 

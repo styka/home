@@ -3,7 +3,7 @@ import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
 import { prisma } from "@/platform/db/prisma";
-import { HARD_MAX, clampLimit, asStr, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";
+import { HARD_MAX, clampLimit, asStr, offsetOf, resolveIdOrName, resolveProjectRef } from "@/lib/ai/readToolShared";
 // 052 (rozdz. 9.6): zakres list i sprawdzanie pojedynczego zasobu pochodzą z JEDNEGO miejsca
 // w module — inaczej lista i guard rozjadą się przy pierwszej zmianie reguły.
 import { accessibleProjectIds, requireTaskModuleAccess } from "../lib/sharingGuard";
@@ -17,7 +17,7 @@ import type { AiReadToolHandler } from "@/platform/ai/contribution";
  */
 export const readToolsPrompt = [
   "- list_projects: args {} → [{ id, name, isInbox, taskCount }]",
-  "- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags, recurring?, hasDescription? }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ\"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X\". \"tags\" w wyniku to lista nazw etykiet danego zadania. recurring:true = zadanie CYKLICZNE (powtarzalne; szczegóły reguły przez get_task); hasDescription:true = zadanie ma niepusty opis (warto pobrać przez get_task, gdy potrzebujesz treści).",
+  "- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit?, offset?, includeDescription? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags, recurring?, hasDescription?, description? }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ\"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X\". \"tags\" w wyniku to lista nazw etykiet danego zadania. recurring:true = zadanie CYKLICZNE (powtarzalne; szczegóły reguły przez get_task).\n  WAŻNE — gdy potrzebujesz KOMPLETU zadań: jeśli wynik zawiera pole \"truncated\", dane NIE są pełne. Powtórz WTEDY to samo wywołanie z offset podanym w tym komunikacie, aż komunikat zniknie. NIE zawężaj wtedy filtrów (status/tag/priorytet) — dzielenie zbioru na filtry gubi zadania i marnuje kroki; offset jest jedynym poprawnym sposobem dobrania reszty.\n  includeDescription:true dokłada TREŚĆ opisu każdego zadania — użyj, gdy masz zbudować coś na podstawie szczegółów wielu zadań naraz (zamiast wołać get_task po jednym). Bez tej flagi dostajesz tylko hasDescription:true.",
   "- get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName, recurring? } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści. recurring = opis reguły cykliczności po polsku (np. \"co tydzień: pon, śr\"), obecny tylko dla zadań cyklicznych.",
   "- list_task_tags: args {} → [{ id, name }]. Dostępne etykiety zadań (użyj, by podać istniejące tagi lub przed set_task_tags).",
   "- list_project_groups: args {} → [{ id, name, projectCount }]. Grupy projektów zadań (foldery/współdzielone widoki).",
@@ -98,8 +98,12 @@ export const readTools: Record<string, AiReadToolHandler> = {
           project: { select: { name: true } },
           tags: { select: { tag: { select: { name: true } } } },
         },
-        orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { order: "asc" }],
+        // Kolejność jest deterministyczna, więc kolejne porcje (`offset`) nie zachodzą na siebie
+        // ani nie gubią rekordów — `id` na końcu rozstrzyga remisy między zadaniami o identycznym
+        // terminie, priorytecie i pozycji (bez tego PostgreSQL nie gwarantuje stałej kolejności).
+        orderBy: [{ dueDate: "asc" }, { priority: "asc" }, { order: "asc" }, { id: "asc" }],
         take: clampLimit(args.limit),
+        skip: offsetOf(args.offset),
       });
       // 030: pola recurring/hasDescription tylko-gdy-ustawione — zero kosztu tokenów dla
       // zwykłych zadań, a model wie o cykliczności (nie halucynuje „aplikacja tego nie ma")
@@ -115,7 +119,16 @@ export const readTools: Record<string, AiReadToolHandler> = {
         projectName: t.project?.name ?? null,
         tags: t.tags.map((tt) => tt.tag.name),
         ...(t.recurring ? { recurring: true } : {}),
-        ...(t.description?.trim() ? { hasDescription: true } : {}),
+        // 112: TREŚĆ opisu na żądanie. Do 112 jedyną informacją było `hasDescription: true`, a
+        // jedyną drogą do treści — `get_task` PO JEDNYM zadaniu, przy czterech narzędziach na turę
+        // i sześciu iteracjach. Zbudowanie profilu z dwudziestu zadań było więc niewykonalne, choć
+        // dokładnie o to prosił użytkownik. Bez flagi wynik jest identyczny jak przed 112, więc
+        // zwykłe odczyty nie płacą za to ani jednego tokenu.
+        ...(t.description?.trim()
+          ? args.includeDescription === true
+            ? { description: t.description }
+            : { hasDescription: true }
+          : {}),
       }));
   },
   get_task: async (args, userId) => {
