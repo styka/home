@@ -6,6 +6,10 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
 import { TRASH_RETENTION_DAYS } from "@/platform/trash/trash";
 import { SUFIT_LISTY } from "@/platform/pagination";
+// Odczyt migawki rośliny jest REGUŁĄ modułu Rośliny (co wolno uzupełnić domyślną, a czego nie),
+// więc bierzemy go z jego kontraktu razem z testem, który tam mieszka — zamiast przepisywać
+// dwadzieścia pól w pliku `"use server"`, gdzie nic tego nie sprawdzi.
+import { wierszRoslinyZMigawki } from "@/modules/rosliny/contract";
 import {
   przestrzenOsobista,
   przestrzenZespoluBezKontroliDostepu,
@@ -392,34 +396,6 @@ async function przywrocDzieciRosliny(
   }
 }
 
-/**
- * 113: wiersz rośliny z migawki.
- *
- * **Daty wracają, i to nie jest kosmetyka.** `sownAt` jest podstawą, z której `getPlaceHistory`
- * liczy rok sezonu — roślina przywrócona bez niego dostaje rok przywrócenia, a ostrzeżenie
- * płodozmianowe zaczyna od tej chwili liczyć nieprawdę.
- */
-function wierszRosliny(p: Record<string, unknown>, placeId: string | null) {
-  return {
-    id: p.id as string,
-    workspaceId: p.workspaceId as string,
-    spaceId: p.spaceId as string,
-    placeId,
-    speciesId: (p.speciesId as string | null) ?? null,
-    name: (p.name as string) ?? "",
-    customSpecies: (p.customSpecies as string | null) ?? null,
-    quantity: (p.quantity as number) ?? 1,
-    quantityUnit: (p.quantityUnit as string) ?? "szt",
-    stage: (p.stage as string | null) ?? null,
-    status: (p.status as string) ?? "ACTIVE",
-    statusReason: (p.statusReason as string | null) ?? null,
-    statusAt: asDate(p.statusAt),
-    sownAt: asDate(p.sownAt),
-    acquiredAt: asDate(p.acquiredAt),
-    notes: (p.notes as string | null) ?? null,
-    photoUrl: (p.photoUrl as string | null) ?? null,
-  };
-}
 
 /**
  * 113 — PRZYWRÓCENIE Z MODUŁU ROŚLINY.
@@ -477,7 +453,7 @@ async function restoreRosliny(d: Record<string, unknown>): Promise<void> {
         // przestrzeni i wtedy klucz obcy odrzuciłby cały zapis. Rodowód jest ozdobą przywróconego
         // rekordu, a nie jego treścią — utrata całej przestrzeni byłaby ceną nieproporcjonalną.
         await tx.plant.createMany({
-          data: rosliny.map((r) => wierszRosliny(r, (r.placeId as string | null) ?? null)),
+          data: rosliny.map((r) => wierszRoslinyZMigawki(r, (r.placeId as string | null) ?? null)),
           skipDuplicates: true,
         });
       }
@@ -567,7 +543,7 @@ async function restoreRosliny(d: Record<string, unknown>): Promise<void> {
       await tx.plant.createMany({
         // Miejsce mogło zostać usunięte osobno — wtedy roślina wraca bez miejsca zamiast nie wracać
         // wcale.
-        data: [wierszRosliny(p, miejsce?.id ?? null)],
+        data: [wierszRoslinyZMigawki(p, miejsce?.id ?? null)],
         skipDuplicates: true,
       });
       await przywrocDzieciRosliny(tx, p);

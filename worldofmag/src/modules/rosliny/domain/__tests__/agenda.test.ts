@@ -4,25 +4,39 @@ import { czytajWymaganiaWodne, kubelekAgendy, trybLubDomyslny } from "../agenda"
 import { WYMAGANIA_WODNE_DOMYSLNE } from "../../lib/typy";
 
 const teraz = new Date("2026-05-12T14:00:00");
+// Koniec doby podaje WYWOŁUJĄCY (z `userDayBounds`), więc test wyraża to samo, co robi akcja:
+// granicę bierzemy ze strefy użytkownika, a nie z zegara procesu.
+const koniecDnia = new Date("2026-05-12T23:59:59.999");
 
 test("zabieg bez terminu trafia do „wkrótce”, a nie do zaległych", () => {
-  assert.equal(kubelekAgendy(null, teraz), "SOON");
+  assert.equal(kubelekAgendy(null, teraz, koniecDnia), "SOON");
 });
 
 test("zabieg na dziś zostaje „na dziś” także po południu", () => {
-  assert.equal(kubelekAgendy(new Date("2026-05-12T08:00:00"), teraz), "TODAY");
-  assert.equal(kubelekAgendy(new Date("2026-05-12T23:30:00"), teraz), "TODAY");
+  assert.equal(kubelekAgendy(new Date("2026-05-12T08:00:00"), teraz, koniecDnia), "TODAY");
+  assert.equal(kubelekAgendy(new Date("2026-05-12T23:30:00"), teraz, koniecDnia), "TODAY");
 });
 
 test("zaległe zaczynają się dopiero dobę po terminie", () => {
   // Wczoraj wieczorem — jeszcze nie alarmujemy.
-  assert.equal(kubelekAgendy(new Date("2026-05-11T20:00:00"), teraz), "TODAY");
+  assert.equal(kubelekAgendy(new Date("2026-05-11T20:00:00"), teraz, koniecDnia), "TODAY");
   // Dwa dni wstecz — to już zaległość.
-  assert.equal(kubelekAgendy(new Date("2026-05-10T08:00:00"), teraz), "OVERDUE");
+  assert.equal(kubelekAgendy(new Date("2026-05-10T08:00:00"), teraz, koniecDnia), "OVERDUE");
+});
+
+test("koniec doby pochodzi ze STREFY UŻYTKOWNIKA, nie z zegara procesu", () => {
+  // Użytkownik w Warszawie, proces w UTC: o 22:00 czasu lokalnego (20:00 UTC) doba kończy się
+  // dopiero o 21:59:59.999 UTC. Wersja licząca `setHours(23,59,…)` na zegarze procesu wypychała
+  // wieczorne zabiegi do „wkrótce”.
+  const wieczorUtc = new Date("2026-05-12T20:00:00Z");
+  const koniecDobyWarszawa = new Date("2026-05-12T21:59:59.999Z");
+  assert.equal(kubelekAgendy(new Date("2026-05-12T21:30:00Z"), wieczorUtc, koniecDobyWarszawa), "TODAY");
+  // A zabieg tuż po północy czasu lokalnego to już jutro.
+  assert.equal(kubelekAgendy(new Date("2026-05-12T22:30:00Z"), wieczorUtc, koniecDobyWarszawa), "SOON");
 });
 
 test("termin jutrzejszy to „wkrótce”", () => {
-  assert.equal(kubelekAgendy(new Date("2026-05-13T08:00:00"), teraz), "SOON");
+  assert.equal(kubelekAgendy(new Date("2026-05-13T08:00:00"), teraz, koniecDnia), "SOON");
 });
 
 test("brak wymagań wodnych daje wartości domyślne", () => {

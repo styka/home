@@ -9,6 +9,7 @@ import { assertSpaceAccess } from "./przestrzenie";
 import { assertPlantAccess } from "./rosliny";
 import { przeliczTermin } from "../lib/terminy";
 import { kubelekAgendy } from "../domain/agenda";
+import { userDayBounds } from "@/lib/userTime";
 import type { RodzajZabiegu, WynikZabiegu } from "../lib/typy";
 
 /**
@@ -53,6 +54,9 @@ const MS_DZIEN = 86_400_000;
 export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): Promise<PozycjaAgendy[]> {
   const user = await requireAuth();
   const teraz = new Date();
+  // Koniec doby liczony w strefie UŻYTKOWNIKA (ciasteczko `tz`), nie procesu — na Renderze proces
+  // stoi w UTC, więc wieczorem czasu polskiego „dziś" kończyło się dwie godziny za wcześnie.
+  const { end: koniecDnia } = userDayBounds();
   const horyzont = new Date(teraz.getTime() + (opts?.dni ?? 7) * MS_DZIEN);
 
   const zadania = await prisma.plantCareTask.findMany({
@@ -88,7 +92,7 @@ export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): 
     title: z.title,
     nextDueAt: z.nextDueAt?.toISOString() ?? null,
     reason: z.reason,
-    bucket: kubelekAgendy(z.nextDueAt, teraz),
+    bucket: kubelekAgendy(z.nextDueAt, teraz, koniecDnia),
   }));
 }
 

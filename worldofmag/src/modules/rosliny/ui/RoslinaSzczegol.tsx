@@ -81,6 +81,8 @@ export function RoslinaSzczegol({
   const [koszt, setKoszt] = useState<Record<string, string>>({});
   const [zbiory, setZbiory] = useState<ZbiorDTO[]>(poczatkoweZbiory);
   const [faza, setFaza] = useState(roslina.stage ?? "");
+  const [pytamOPrzyczyne, setPytamOPrzyczyne] = useState(false);
+  const [przyczyna, setPrzyczyna] = useState("");
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [blad, setBlad] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -241,26 +243,45 @@ export function RoslinaSzczegol({
     });
   }
 
+  /**
+   * Zakończenie życia rośliny.
+   *
+   * Powód jest wymagany tylko dla „padła" — i to jest różnica merytoryczna, nie formalna:
+   * sprzedaż albo zbiór mówią same za siebie, a śmierć bez powodu nie mówi nic. To zdanie jest
+   * przy tym najcenniejszą daną, jaką moduł zbiera („co mi się nie udaje"), więc pytamy o nie
+   * **polem w widoku**, a nie `window.prompt`: natywne okno nie zna skóry, jest po angielsku
+   * u części użytkowników, blokuje wątek i nie da się w nim niczego podpowiedzieć (C-32, C-34).
+   */
   async function zakoncz(nowy: StatusRosliny) {
-    // Powód jest wymagany tylko dla „padła" — i to jest różnica merytoryczna, nie formalna:
-    // sprzedaż albo zbiór mówią same za siebie, a śmierć bez powodu nie mówi nic.
-    let powod: string | null = null;
     if (nowy === "DEAD") {
-      const zgoda = await confirmDialog({
-        title: t("potwierdzPadla"),
-        description: t("potwierdzPadlaOpis"),
-        destructive: true,
-      });
-      if (!zgoda) return;
-      powod = window.prompt(t("podajPrzyczyne")) ?? null;
-      if (!powod?.trim()) {
-        setBlad(t("przyczynaWymagana"));
-        return;
-      }
+      // Najpierw pole, potem potwierdzenie: pytanie „na pewno?" przed podaniem powodu pytałoby
+      // o decyzję, której użytkownik jeszcze nie opisał.
+      setPytamOPrzyczyne(true);
+      return;
     }
     startTransition(async () => {
-      await setPlantStatus(roslina.id, nowy, powod);
+      await setPlantStatus(roslina.id, nowy, null);
       setStatus(nowy);
+    });
+  }
+
+  async function potwierdzPadla() {
+    const powod = przyczyna.trim();
+    if (!powod) {
+      setBlad(t("przyczynaWymagana"));
+      return;
+    }
+    const zgoda = await confirmDialog({
+      title: t("potwierdzPadla"),
+      description: t("potwierdzPadlaOpis"),
+      destructive: true,
+    });
+    if (!zgoda) return;
+    startTransition(async () => {
+      await setPlantStatus(roslina.id, "DEAD", powod);
+      setStatus("DEAD");
+      setPytamOPrzyczyne(false);
+      setBlad(null);
     });
   }
 
@@ -338,7 +359,35 @@ export function RoslinaSzczegol({
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
             <button type="button" style={przycisk} onClick={() => zakoncz("HARVESTED")} disabled={pending}>{t("zebrana")}</button>
             <button type="button" style={przycisk} onClick={() => zakoncz("SOLD")} disabled={pending}>{t("sprzedana")}</button>
-            <button type="button" style={przycisk} onClick={() => zakoncz("DEAD")} disabled={pending}>{t("padla")}</button>
+            <button type="button" style={przycisk} onClick={() => zakoncz("DEAD")} disabled={pending} aria-expanded={pytamOPrzyczyne}>{t("padla")}</button>
+          </div>
+        )}
+        {pytamOPrzyczyne && (
+          <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+            <label htmlFor="przyczyna-smierci" style={drobny}>{t("podajPrzyczyne")}</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <input
+                id="przyczyna-smierci"
+                type="text"
+                value={przyczyna}
+                onChange={(e) => setPrzyczyna(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void potwierdzPadla(); }}
+                placeholder={t("przyczynaPlaceholder")}
+                style={{ ...pole, flex: "1 1 220px" }}
+                autoFocus
+              />
+              <button type="button" style={przyciskGlowny} onClick={() => void potwierdzPadla()} disabled={pending}>
+                {t("zapiszPrzyczyne")}
+              </button>
+              <button
+                type="button"
+                style={przycisk}
+                onClick={() => { setPytamOPrzyczyne(false); setBlad(null); }}
+                disabled={pending}
+              >
+                {t("anuluj")}
+              </button>
+            </div>
           </div>
         )}
         {komunikat && <p style={{ ...drobny, margin: "8px 0 0", color: "var(--accent-green)" }}>{komunikat}</p>}

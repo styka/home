@@ -12,7 +12,10 @@
  * - **narzędzia odczytu asystenta** → `getSpaces`, `getPlants`, `getCareAgenda`,
  * - **egzekutor akcji asystenta** → `createSpace`, `createPlant`, `recordCare`, `addMeasurement`,
  * - **test izolacji najemcy** → guardy `assertSpaceAccess` i `assertPlantAccess` (wyjątek jak
- *   w Kuchni i Zwierzętach: test jest generowany i musi widzieć guardy wszystkich modułów).
+ *   w Kuchni i Zwierzętach: test jest generowany i musi widzieć guardy wszystkich modułów),
+ * - **kosz** (`src/actions/trash.ts`, agregat warstwy aplikacji) → `wierszRoslinyZMigawki`:
+ *   odczyt migawki jest regułą tego modułu (co wolno uzupełnić domyślną, a czego nie), więc
+ *   mieszka tu razem z testem, a nie w pliku akcji kosza.
  *
  * **Co zostaje prywatne i dlaczego.** Miejsca, gatunki, zbiory, ewidencja zabiegów, dziennik,
  * reguła terminu i reguła płodozmianu to mechanika własnych widoków — nikt z zewnątrz po nie nie
@@ -38,3 +41,5 @@ export {
 } from "./actions/opieka";
 
 export { addMeasurement } from "./actions/dziennik";
+
+export { wierszRoslinyZMigawki, type WierszRosliny } from "./domain/kosz";

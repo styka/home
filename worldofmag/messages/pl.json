@@ -2251,7 +2251,10 @@
         "fazaEtykieta": "Faza rozwojowa",
         "bezFazy": "— nie określono —",
         "fazaZapisana": "Zapisano fazę: {nazwa}.",
-        "fazaUsunieta": "Faza rozwojowa wyczyszczona."
+        "fazaUsunieta": "Faza rozwojowa wyczyszczona.",
+        "przyczynaPlaceholder": "np. przelana, przemarzła, przesuszona",
+        "zapiszPrzyczyne": "Zapisz i zakończ",
+        "anuluj": "Anuluj"
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",

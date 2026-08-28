@@ -21,11 +21,15 @@ export type KubelekAgendy = "OVERDUE" | "TODAY" | "SOON";
  *
  * „Dziś" liczymy do KOŃCA dnia lokalnego, a nie „w ciągu 24 godzin": użytkownik pyta o dobę
  * kalendarzową, nie o okno przesuwane względem chwili wejścia na stronę.
+ *
+ * **Koniec doby wchodzi PARAMETREM, a nie z zegara serwera.** `setHours` liczy w strefie procesu,
+ * a na Renderze proces stoi w UTC — więc dla użytkownika w Warszawie wieczorem (22:00 czasu
+ * lokalnego = 20:00 UTC) „koniec dnia" wypadał dwie godziny za wcześnie i zabieg zaplanowany na
+ * 23:30 lądował w „wkrótce" zamiast „na dziś". Wywołujący podaje granicę z `userDayBounds`,
+ * a domena zostaje czysta — nie sięga po ciasteczko ani po żaden kontekst żądania.
  */
-export function kubelekAgendy(nextDueAt: Date | null, teraz: Date): KubelekAgendy {
+export function kubelekAgendy(nextDueAt: Date | null, teraz: Date, koniecDnia: Date): KubelekAgendy {
   if (!nextDueAt) return "SOON";
-  const koniecDnia = new Date(teraz);
-  koniecDnia.setHours(23, 59, 59, 999);
   if (nextDueAt.getTime() < teraz.getTime() - MS_DZIEN) return "OVERDUE";
   if (nextDueAt.getTime() <= koniecDnia.getTime()) return "TODAY";
   return "SOON";

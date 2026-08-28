@@ -269,8 +269,8 @@
       koszt" przypięte do pozycji listy, nie do stanu sesji. → **U-8, AC-15**
 - [x] **T-64** — **Usunięcie przestrzeni dostępne z interfejsu** + edycja i usunięcie miejsca,
       wyłączenie zadania opieki, edytor fazy rozwojowej (konsument `listaFaz`). → **U-9, AC-7**
-- [ ] **T-65** — **Przyczyna śmierci bez `window.prompt`** — pole w widoku. → **U-10, C-34, C-32**
-- [ ] **T-66** `[P]` — **Kubełek agendy w strefie użytkownika** (`userTime`), nie serwera. → **U-11**
+- [x] **T-65** — **Przyczyna śmierci bez `window.prompt`** — pole w widoku. → **U-10, C-34, C-32**
+- [x] **T-66** `[P]` — **Kubełek agendy w strefie użytkownika** (`userTime`), nie serwera. → **U-11**
 - [x] **T-67** `[P]` — **`harvestToPantry` idempotentne wobec wyścigu.** → **U-12**
 - [ ] **T-68** — **Korekta `verify.md`** (C-54): dwa twierdzenia obalone przez recenzję — „C-35
       naprawiona" i dowód AC-28/AC-7. Ponowny przebieg bramek i testów.
