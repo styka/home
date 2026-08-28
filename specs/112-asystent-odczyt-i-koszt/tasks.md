@@ -66,7 +66,7 @@
 
 ## Faza 1 — Kompletny odczyt zamiast spirali zawężania
 
-- [ ] **T-5** — **Budżet wyników, komunikat i bezpiecznik, który nie psuje JSON-a.**
+- [x] **T-5** — **Budżet wyników, komunikat i bezpiecznik, który nie psuje JSON-a.**
   W `src/platform/ai/agentContext.ts`: `PER_TOOL_MAX_RECORDS` 12 → **40**,
   `TOOL_RESULT_MAX_CHARS` 3500 → **12 000**; komunikat obcięcia wskazuje **konkretny następny krok**
   (`offset: <liczba pokazanych>`) zamiast ogólnikowego „zawęź zapytanie"; bezpiecznik znakowy
@@ -77,14 +77,14 @@
   mniej. → **AC-1**, **AC-3**, **AC-4**
   *Zależy od:* Faza 0 (oszczędność finansuje ten wzrost).
 
-- [ ] **T-6** — **Stronicowanie w narzędziu.**
+- [x] **T-6** — **Stronicowanie w narzędziu.**
   Wspólny `offsetOf(args)` w `src/lib/ai/readToolShared.ts` (obok `clampLimit`), wpięty w
   `list_tasks` jako `skip`; zdanie o `offset` w `readToolsPrompt` modułu Zadania.
   *Gotowe, gdy:* test — dwie porcje po 40 z projektu 60-zadaniowego są **rozłączne** i pokrywają
   całość (kolejność już deterministyczna: `dueDate`, `priority`, `order`). → **AC-2**
   *Zależy od:* T-5 (wspólny komunikat musi już mówić o `offset`).
 
-- [ ] **T-7** `[P]` — **Treść opisów bez 20 osobnych odczytów.**
+- [x] **T-7** `[P]` — **Treść opisów bez 20 osobnych odczytów.**
   `list_tasks` przyjmuje `includeDescription: true` i dokłada `description` (skracane per-pole przez
   istniejący `trimLongStrings`); opis narzędzia w `readToolsPrompt` mówi, kiedy tego użyć.
   *Gotowe, gdy:* bez flagi wynik jest **bajt w bajt** taki jak dziś (zero kosztu dla zwykłych

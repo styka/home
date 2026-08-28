@@ -19,6 +19,23 @@ export function clampLimit(n: unknown, def = 25): number {
   return Math.max(1, Math.min(HARD_MAX, Math.floor(v)));
 }
 
+/**
+ * 112: PRZESUNIĘCIE porcji w narzędziu listującym — druga połowa stronicowania odczytu.
+ *
+ * Sam `limit` nie wystarczał: budżet rekordów wstrzykiwanych do kontekstu (`PER_TOOL_MAX_RECORDS`)
+ * siedzi ZA narzędziem, więc podnoszenie `limit` niczego nie odblokowywało. Model dostawał komunikat
+ * „zawęź zapytanie" i ciął projekt po statusie, tagu i priorytecie — jedenaście odczytów zamiast
+ * dwóch (zgłoszenie „pies Raj"). Kolejne porcje wolno dobrać tylko wtedy, gdy jest czym: stąd ten
+ * argument, wskazywany wprost w znaczniku obcięcia.
+ *
+ * Ujemne i nieliczbowe wartości traktujemy jak brak przesunięcia — narzędzie nigdy nie może
+ * odpowiedzieć błędem na argument, który model poda „na wszelki wypadek".
+ */
+export function offsetOf(v: unknown): number {
+  const n = typeof v === "number" && Number.isFinite(v) ? Math.floor(v) : 0;
+  return Math.max(0, n);
+}
+
 export function asStr(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }

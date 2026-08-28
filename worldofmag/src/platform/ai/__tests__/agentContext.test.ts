@@ -14,14 +14,25 @@ import {
 // 028: higiena kontekstu pętli agenta — tnie największy zmienny koszt tokenów
 // (wyniki narzędzi re-wysyłane w każdej iteracji), bez utraty jakości.
 
-test("compactToolResults obcina listę powyżej limitu i dokleja czytelny znacznik", () => {
-  const data = Array.from({ length: 30 }, (_, i) => ({ id: `t${i}`, title: `zadanie ${i}` }));
+test("compactToolResults obcina listę powyżej limitu i mówi, JAK dobrać resztę (AC-1)", () => {
+  const data = Array.from({ length: 60 }, (_, i) => ({ id: `t${i}`, title: `zadanie ${i}` }));
   const results: ToolResult[] = [{ tool: "list_tasks", args: { status: "TODO" }, data }];
   const out = compactToolResults(results);
   const parsed = JSON.parse(out) as Array<{ data: unknown[]; truncated?: string }>;
   assert.equal(parsed[0].data.length, PER_TOOL_MAX_RECORDS, "lista przycięta do limitu");
-  assert.match(parsed[0].truncated ?? "", /pokazano 12 z 30 rekordów/, "znacznik ucięcia z liczbami");
-  assert.match(parsed[0].truncated ?? "", /zawęź zapytanie/, "podpowiedź, że można zawęzić");
+  assert.match(parsed[0].truncated ?? "", /pokazano 40 z 60 rekordów/, "znacznik ucięcia z liczbami");
+  // 112: znacznik musi podać KONKRETNY następny krok. Poprzednie „zawęź zapytanie" było poleceniem
+  // niewykonalnym (limit siedzi w kontekście, nie w zapytaniu) i to ono wyprodukowało spiralę
+  // jedenastu odczytów w zgłoszonej sesji.
+  assert.match(parsed[0].truncated ?? "", /offset: 40/, "wskazany konkretny offset kolejnej porcji");
+  assert.doesNotMatch(parsed[0].truncated ?? "", /zawęź zapytanie/, "żadnego 'zawęź' jako jedynej rady");
+});
+
+test("znacznik uwzględnia offset już pobranej porcji (AC-2)", () => {
+  const data = Array.from({ length: 60 }, (_, i) => ({ id: `t${i}` }));
+  const results: ToolResult[] = [{ tool: "list_tasks", args: { offset: 40 }, data }];
+  const parsed = JSON.parse(compactToolResults(results)) as Array<{ truncated?: string }>;
+  assert.match(parsed[0].truncated ?? "", /offset: 80/, "kolejna porcja liczona od już pobranych");
 });
 
 test("compactToolResults nie rusza wyników mieszczących się w limicie", () => {
@@ -33,15 +44,31 @@ test("compactToolResults nie rusza wyników mieszczących się w limicie", () =>
   assert.equal(parsed[0].truncated, undefined, "brak znacznika ucięcia dla małego wyniku");
 });
 
-test("compactToolResults egzekwuje twardy budżet znaków (bezpiecznik)", () => {
-  // 030: pojedyncze wielkie pole łapie teraz trim per-pole (test niżej), więc bezpiecznik
-  // blokowy prowokujemy WIELOMA rekordami z polami poniżej progu per-pole.
+test("compactToolResults egzekwuje twardy budżet znaków, ZOSTAWIAJĄC poprawny JSON (AC-4)", () => {
+  // 030: pojedyncze wielkie pole łapie trim per-pole (test niżej), więc bezpiecznik blokowy
+  // prowokujemy WIELOMA rekordami z polami poniżej progu per-pole.
   const results: ToolResult[] = [
-    { tool: "list_notes", args: {}, data: Array.from({ length: 12 }, (_, i) => ({ id: `n${i}`, content: "x".repeat(400) })) },
+    { tool: "list_notes", args: {}, data: Array.from({ length: 40 }, (_, i) => ({ id: `n${i}`, content: "x".repeat(600) })) },
   ];
   const out = compactToolResults(results);
-  assert.ok(out.length <= TOOL_RESULT_MAX_CHARS + 80, "blok nie przekracza budżetu (+ marker)");
-  assert.match(out, /\[UCIĘTO — przekroczono budżet znaków/, "czytelny marker ucięcia po budżecie");
+  assert.ok(out.length <= TOOL_RESULT_MAX_CHARS, "blok nie przekracza budżetu");
+  // 112: TO jest istota poprawki. Poprzednia wersja robiła `json.slice(...)`, czyli oddawała modelowi
+  // strukturę urwaną w połowie rekordu — a model, nie rozumiejąc wyniku, ponawiał to samo zapytanie
+  // aż do wyczerpania limitu kroków. Wynik musi być zawsze parsowalny.
+  const parsed = JSON.parse(out) as Array<{ data: unknown[]; truncated?: string }>;
+  assert.ok(Array.isArray(parsed), "wynik jest poprawnym JSON-em, nie urwanym stringiem");
+  assert.ok(parsed[0].data.length < 40, "zmieściliśmy się, oddając MNIEJ rekordów");
+  assert.match(parsed[0].truncated ?? "", /offset:/, "model wie, jak sięgnąć po resztę");
+});
+
+test("bezpiecznik nie psuje JSON-a nawet przy skrajnie dużych rekordach (AC-4)", () => {
+  // Skrajność: pojedynczy rekord po skróceniu per-pole i tak przekracza cały budżet bloku.
+  const results: ToolResult[] = [
+    { tool: "list_notes", args: {}, data: Array.from({ length: 200 }, (_, i) => ({ id: `n${i}`, a: "y".repeat(690) })) },
+  ];
+  const out = compactToolResults(results);
+  assert.doesNotThrow(() => JSON.parse(out), "wynik zawsze parsowalny");
+  assert.ok(out.length <= TOOL_RESULT_MAX_CHARS, "budżet dotrzymany");
 });
 
 test("collapseUsedToolData zwija starsze bloki, zostawia pełny ostatni", () => {

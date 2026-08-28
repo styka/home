@@ -35,8 +35,20 @@ export function czyCachowacKatalog(numerWywolania: number, czyDomykajace = false
   return numerWywolania >= 2;
 }
 
-export const PER_TOOL_MAX_RECORDS = 12; // maks. rekordów na jedno narzędzie wstrzykiwanych do kontekstu
-export const TOOL_RESULT_MAX_CHARS = 3500; // twardy budżet znaków na CAŁY blok wyników (bezpiecznik)
+/**
+ * Maks. rekordów na jedno narzędzie wstrzykiwanych do kontekstu.
+ *
+ * 112: podniesione 12 → 40. Dwanaście rekordów oznaczało, że polecenie „przeczytaj WSZYSTKIE zadania
+ * z projektu i zbuduj z nich profil" było fizycznie niewykonalne w jednym odczycie — a komunikat
+ * obcięcia kazał przy tym „zawęzić zapytanie", więc model tnął projekt po statusie, tagu i
+ * priorytecie. Zgłoszona sesja: jedenaście odczytów w sześciu iteracjach, zero wyniku. Limit siedział
+ * w KONTEKŚCIE, nie w zapytaniu, więc podnoszenie `limit` w argumentach niczego nie odblokowywało.
+ *
+ * Podwyżkę finansuje naprawa pamięci podręcznej promptu z tego samego przebiegu (`czyCachowacKatalog`).
+ */
+export const PER_TOOL_MAX_RECORDS = 40;
+/** Twardy budżet znaków na CAŁY blok wyników (bezpiecznik). 112: 3500 → 12 000, patrz wyżej. */
+export const TOOL_RESULT_MAX_CHARS = 12_000;
 // Stały prefiks bloku wyników — służy też do ROZPOZNANIA bloków do zwinięcia.
 export const TOOL_DATA_HEADER = "Wyniki narzędzi";
 export const TOOL_DATA_STUB = "[wyniki narzędzi z wcześniejszego kroku — już wykorzystane]";
@@ -90,23 +102,64 @@ export function compactToolResults(results: ToolResult[]): string {
   const trimmed = results.map((r) => {
     const data = trimLongStrings(r.data);
     if (Array.isArray(data) && data.length > PER_TOOL_MAX_RECORDS) {
-      const shown = data.slice(0, PER_TOOL_MAX_RECORDS);
-      return {
-        tool: r.tool,
-        args: r.args,
-        data: shown,
-        truncated: `pokazano ${shown.length} z ${data.length} rekordów — zawęź zapytanie (search/status/limit)`,
-        ...(r.error ? { error: r.error } : {}),
-        ...(r.repeat ? { repeat: r.repeat } : {}),
-      };
+      return zRekordami(r, data, PER_TOOL_MAX_RECORDS, data.length);
     }
     return { ...r, data };
   });
   const json = JSON.stringify(trimmed);
-  if (json.length > TOOL_RESULT_MAX_CHARS) {
-    return json.slice(0, TOOL_RESULT_MAX_CHARS) + " …[UCIĘTO — przekroczono budżet znaków; zawęź zapytanie]";
+  if (json.length <= TOOL_RESULT_MAX_CHARS) return json;
+
+  // 112: bezpiecznik znakowy USUWA CAŁE REKORDY, zamiast ciąć wynikowy string.
+  //
+  // Poprzednia wersja robiła `json.slice(...)`, czyli oddawała modelowi JSON urwany w połowie
+  // rekordu. `doświadczenia.md` odnotowuje już raz, do czego to prowadzi: model nie rozumie wyniku i
+  // PONAWIA to samo zapytanie aż do wyczerpania limitu kroków — czyli dokładnie ten objaw, który
+  // zgłoszenie opisuje jako „kolejne próby nie wnosiły nic nowego". Wynik musi zawsze pozostać
+  // poprawną, zamkniętą strukturą, choćby zawierał mniej rekordów.
+  return ograniczDoBudzetu(results);
+}
+
+/** Jeden wynik narzędzia obcięty do `ile` rekordów, ze znacznikiem mówiącym JAK dobrać resztę. */
+function zRekordami(r: ToolResult, data: unknown[], ile: number, lacznie: number) {
+  const shown = data.slice(0, ile);
+  const juzPokazano = (typeof r.args?.offset === "number" ? r.args.offset : 0) + shown.length;
+  return {
+    tool: r.tool,
+    args: r.args,
+    data: shown,
+    // 112: komunikat wskazuje KONKRETNY następny krok. Poprzednie „zawęź zapytanie
+    // (search/status/limit)" było poleceniem niewykonalnym — limit siedzi w kontekście, nie w
+    // zapytaniu — a model wykonał je dosłownie i pociął projekt na sześć zapytań po kolejnych
+    // wymiarach. Ogólnik w tym miejscu produkuje spiralę; konkret ją kończy.
+    truncated:
+      `pokazano ${shown.length} z ${lacznie} rekordów. Aby pobrać KOLEJNE, powtórz to samo ` +
+      `wywołanie z argumentem offset: ${juzPokazano} (nie zawężaj filtrów — reszta danych istnieje).`,
+    ...(r.error ? { error: r.error } : {}),
+    ...(r.repeat ? { repeat: r.repeat } : {}),
+  };
+}
+
+/**
+ * Składa blok wyników mieszczący się w budżecie znaków, zmniejszając liczbę rekordów per narzędzie —
+ * nigdy nie tnąc serializacji. Schodzi aż do zera rekordów; wtedy zostaje sam znacznik, z którego
+ * model dowiaduje się, że dane istnieją i jak po nie sięgnąć mniejszymi porcjami.
+ */
+function ograniczDoBudzetu(results: ToolResult[]): string {
+  let ile = PER_TOOL_MAX_RECORDS;
+  let ostatni = "";
+  while (ile >= 0) {
+    const zmniejszone = results.map((r) => {
+      const data = trimLongStrings(r.data);
+      if (Array.isArray(data)) return zRekordami(r, data, Math.min(ile, data.length), data.length);
+      return { ...r, data };
+    });
+    ostatni = JSON.stringify(zmniejszone);
+    if (ostatni.length <= TOOL_RESULT_MAX_CHARS) return ostatni;
+    ile = ile > 10 ? Math.floor(ile / 2) : ile - 1;
   }
-  return json;
+  // Nawet bez rekordów blok nie mieści się w budżecie (same błędy/argumenty są za długie).
+  // Oddajemy poprawny JSON z samymi nazwami narzędzi — nigdy urwany string.
+  return JSON.stringify(results.map((r) => ({ tool: r.tool, data: [], truncated: "wynik za duży — zawęź zakres" })));
 }
 
 /**
