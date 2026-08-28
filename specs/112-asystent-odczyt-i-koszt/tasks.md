@@ -111,7 +111,7 @@
 
 ## Faza 3 — Zwierzę z profilem i raport braków (C-23)
 
-- [ ] **T-9** `[P]` — **Katalog akcji Zwierząt opisuje pełny profil + wymaga raportu braków.**
+- [x] **T-9** `[P]` — **Katalog akcji Zwierząt opisuje pełny profil + wymaga raportu braków.**
   W `src/modules/pets/ai/petActions.ts`: `add_pet` i `update_pet` dostają `birthDate`, `birthApprox`,
   `acquiredAt`, `acquiredFrom`, `microchipId`, `identifier`, `color`, `notes`; dochodzi reguła —
   przy przenoszeniu danych z innego modułu odpowiedź ma zawierać **wyodrębnioną listę informacji,
@@ -119,14 +119,14 @@
   *Gotowe, gdy:* opis parametrów zgadza się z polami `Pet` w `schema.prisma` (żadnego pola bez
   pokrycia w bazie). → **AC-10**
 
-- [ ] **T-10** — **Egzekutor zapisuje nowe pola.**
+- [x] **T-10** — **Egzekutor zapisuje nowe pola.**
   W `src/modules/pets/ai/executor.ts`: `add_pet` i `update_pet` zapisują pola z T-9. Daty parsowane
   z ISO; **niepoprawna data → pole pominięte**, nigdy `Invalid Date` do bazy. Własność bez zmian
   (`wlasnoscOsobistaDoZapisu`).
   *Gotowe, gdy:* `npm run check:ai-coverage` i `npm run check:actions` zielone. → **AC-9**
   *Zależy od:* T-9.
 
-- [ ] **T-11** — **Kontrakt akcji: kontrolki i etykiety PL.**
+- [x] **T-11** — **Kontrakt akcji: kontrolki i etykiety PL.**
   W `src/platform/ai/actionContract.ts` nowe pola `add_pet`/`update_pet` dostają kontrolki
   (`day("Data urodzenia")`, `longText("Notatki")` …) — ten rejestr rysuje panel potwierdzenia **i**
   waliduje po stronie serwera, więc pole bez wpisu byłoby obietnicą bez pokrycia.

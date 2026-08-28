@@ -3,9 +3,10 @@
 // Trzymany osobno, by prompt pozostał czytelny mimo wielu akcji.
 
 export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):
-- add_pet: params { name: string, species?: string, breed?: string, sex?: string }
+- add_pet: params { name: string, species?: string, breed?: string, sex?: string, birthDate?: string, birthApprox?: boolean, acquiredAt?: string, acquiredFrom?: string, microchipId?: string, identifier?: string, color?: string, notes?: string }
   Dodaje nowe zwierzę. species to klucz: dog|cat|snake|lizard|turtle|fish|bird|rodent|rabbit|other.
   Mapuj polskie nazwy: pies→dog, kot→cat, wąż→snake, jaszczurka/gekon→lizard, żółw→turtle, ryba/rybka→fish, ptak/papuga→bird, chomik/szczur/mysz/świnka→rodent, królik→rabbit. sex: male|female|unknown.
+  Wypełnij OD RAZU wszystko, co wynika z polecenia — nie zakładaj „gołego" zwierzęcia, żeby potem je poprawiać: birthDate/acquiredAt w ISO 8601 (birthApprox:true, gdy data jest szacowana, np. „ok. 2021"), acquiredFrom = skąd pochodzi (hodowla, schronisko, osoba), microchipId = numer mikroczipa, identifier = obrączka/tag, color = umaszczenie, notes = pozostałe istotne informacje jednym akapitem.
 - log_weight: params { weightKg?: number, weightGrams?: number, lengthCm?: number }, searchQuery: string
   Zapisuje pomiar wagi/długości zwierzęcia. searchQuery to imię zwierzęcia. Podaj wagę w weightKg LUB weightGrams.
 - schedule_treatment: params { kind?: "MEDICATION"|"VACCINE"|"DEWORMER"|"PARASITE"|"SUPPLEMENT", name: string, dueDate?: string, everyDays?: number, dosage?: string }, searchQuery: string
@@ -30,7 +31,13 @@ export const PET_ACTIONS_PROMPT = `ZWIERZĘTA (module: "pets"):
 - record_sale: params { buyerName?: string, price?: number, buyerContact?: string }, searchQuery: string
   Zapisuje sprzedaż zwierzęcia i oznacza je jako sprzedane. searchQuery to imię zwierzęcia.
 - add_breeding_pair: params { name?: string, partner?: string }, searchQuery: string
-  Tworzy parę hodowlaną. searchQuery to imię pierwszego zwierzęcia, partner to imię drugiego.`;
+  Tworzy parę hodowlaną. searchQuery to imię pierwszego zwierzęcia, partner to imię drugiego.
+
+PRZENOSZENIE DANYCH Z INNEGO MODUŁU (np. „załóż zwierzę na podstawie zadań z projektu X"):
+1. Najpierw przeczytaj KOMPLET danych źródłowych (patrz uwaga o offset przy narzędziach odczytu) wraz z treścią opisów — dopiero potem buduj akcje.
+2. Zbuduj JEDEN plan: add_pet z pełnym profilem + osobne akcje na to, co moduł potrafi przechować (schedule_treatment dla leków/szczepień/odrobaczania, schedule_care_task dla rutyn typu mycie/czesanie/czyszczenie uszu, record_vet_visit dla wizyt, log_health_note dla rozpoznań i dolegliwości, log_weight dla pomiarów).
+3. W polu opisu odpowiedzi ZAWSZE wypisz osobno, CZEGO NIE DAŁO SIĘ PRZENIEŚĆ i dlaczego — konkretnie, z podaniem informacji źródłowej i brakującego miejsca w module (np. „kontakt do petsittera — moduł nie ma pola na kontakty do opiekunów"). Nie pomijaj tego i nie zastępuj ogólnikiem: użytkownik prosi o tę listę po to, żeby zgłosić brak do rozwoju aplikacji.
+4. NIGDY nie zmieniaj ani nie kasuj danych źródłowych (zadań, notatek) przy takim przenoszeniu — chyba że użytkownik wyraźnie o to poprosi.`;
 
 export const PET_ACTION_EXAMPLES = `Polecenie: "dodaj psa Reksio, golden retriever"
 → [{ "id":"a1", "module":"pets", "type":"add_pet", "description":"Dodaj psa Reksio (golden retriever)", "params":{ "name":"Reksio", "species":"dog", "breed":"golden retriever" } }]
