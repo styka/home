@@ -22,21 +22,30 @@
 
 ## Faza 0 — Tanie decyzje i pamięć podręczna (musi być PRZED Fazą 1)
 
-- [ ] **T-1** `[P]` — **Wysiłek nie przesłania budżetu wyjścia w klasyfikacji.**
+- [x] **T-1** `[P]` — **Wysiłek nie przesłania budżetu wyjścia w klasyfikacji.**
   `routeModules` (`src/app/api/llm/home/agent/route.ts`) i `classifyIntent` (`src/lib/ai/fastPath.ts`)
   przekazują `effort: "none"` do `chatComplete`.
   *Gotowe, gdy:* oba wywołania mają jawny `effort`, a komentarz przy każdym mówi **dlaczego**
   (`applyEffort` podnosi `max_tokens` ze 120 do 7168, bo Anthropic tego wymaga przy rozszerzonym
   myśleniu). `npm run test:unit` zielony. → **AC-14**
 
-- [ ] **T-2** `[P]` — **Klasyfikacja, która nie może pomóc, nie kosztuje.**
+- [x] **T-2** `[P]` — **Klasyfikacja, która nie może pomóc, nie kosztuje.**
   W `classifyIntent` dokładamy próg długości **przed** wywołaniem modelu, obok istniejącego odsiewu
   `READ_INTENT_RE`. Próg = `160` znaków, ta sama liczba co `isSimpleRead` w trasie (żadnej drugiej,
   niezgodnej stałej).
   *Gotowe, gdy:* test — długa wiadomość zwraca `{ kind: "complex" }` **bez** wywołania
   `chatComplete` (podmieniona zależność albo licznik wywołań). → **AC-15**
 
-- [ ] **T-3** — **Drugi punkt cięcia pamięci podręcznej + koniec niemego fallbacku.**
+- [x] **T-2a** — **Granica słowa świadoma polskich liter** *(zadanie odkryte w implementacji, C-54 —
+  patrz plan §6.2).* `\b` jest ASCII-owe, więc `READ_INTENT_RE.test("pokaż zadania")` zwracało
+  `false`; martwe były wszystkie człony kończące się polską literą i zaczynające się od niej. Wspólny
+  konstruktor `granicePolskie(rdzen)` w `src/lib/ai/fastPath.ts`, użyty w `READ_INTENT_RE`,
+  `SIMPLE_READ_ANALYTIC_RE` i 16 wpisach `KEYWORD_ROUTES`.
+  *Gotowe, gdy:* test pokazuje, że `pokaż`/`znajdź`/`sprawdź` są łapane, a dopasowanie **wewnątrz
+  słowa** („podajnik", „opiszwierzak") nadal nie zachodzi. → **AC-14**, **AC-15** (ta sama usterka:
+  płacimy za rozstrzygnięcie znane z góry)
+
+- [x] **T-3** — **Drugi punkt cięcia pamięci podręcznej + koniec niemego fallbacku.**
   `toAnthropicSystem` (`src/platform/llm/chat.ts`) przyjmuje informację, czy oznaczyć **także blok
   zmienny**; gdy podział zostaje odrzucony (bo `stable + variable !== system`), zdarzenie idzie do
   `logEvent` jako `ai.prompt.podzialOdrzucony` zamiast po cichu oznaczać cały prompt.
@@ -45,7 +54,7 @@
   (jeden blok + wpis do logu), pusty prefiks (bez podziału). `npm run check:logs` zielony
   (żadnego `console.*`). → **AC-12** (część), **AC-13** (część)
 
-- [ ] **T-4** — **Polityka oznaczania per wywołanie w pętli agenta.**
+- [x] **T-4** — **Polityka oznaczania per wywołanie w pętli agenta.**
   W `runAgentLoopRaw` sterujemy flagą z T-3 wg tabeli z planu §6.1: pierwsze wywołanie — nie,
   drugie i dalsze — tak, **wywołanie domykające przebieg — nie** (nic po nim nie nastąpi).
   *Gotowe, gdy:* test na czystej funkcji decydującej (numer wywołania + „czy ostatnie" → flaga)
@@ -86,7 +95,7 @@
 
 ## Faza 2 — Domknięcie tury wynikiem
 
-- [ ] **T-8** — **„Dokończ z tego, co masz" zamiast „streść, czego nie zrobiłeś".**
+- [x] **T-8** — **„Dokończ z tego, co masz" zamiast „streść, czego nie zrobiłeś".**
   `summarizePartialRun` w trasie agenta prosi o **dokończenie zadania**: `plan` (akcje do
   potwierdzenia) albo `answer`, **plus jawna lista braków**. Obsługa wyniku przyjmuje także
   `step: "plan"` i zwraca go istniejącą ścieżką (`normalizeActions` → panel potwierdzenia; akcje

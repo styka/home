@@ -9,6 +9,32 @@
 //      ostatni, którego model właśnie potrzebuje) → koniec kwadratowego narostu tokenów.
 // Oba są provider-agnostyczne i nie ruszają delimitera „NIEUFNE DANE" (dokłada go wołający).
 
+/**
+ * 112: czy przy TYM wywołaniu modelu oznaczyć drugim punktem cięcia pamięci podręcznej także blok
+ * ZMIENNY promptu (katalog narzędzi i akcji, ~12–18 tys. tokenów).
+ *
+ * Prompt systemowy jest budowany RAZ przed pętlą i przekazywany do każdego wywołania identyczny co
+ * do znaku — mimo to do 112 opłacano go w pełnej cenie za każdym razem (zgłoszona sesja: sześć
+ * iteracji, ~67% rachunku tury).
+ *
+ * Reguła ma dwa brzegi i oba są celowe:
+ *  - **pierwsze wywołanie: NIE.** Zapis do pamięci kosztuje 1,25× ceny wejścia, więc oznaczanie
+ *    katalogu w turze, która skończy się na jednym wywołaniu, PODNIOSŁOBY koszt — czyli dokładnie
+ *    przypadku z drugiego zgłoszenia („czemu ta prosta operacja kosztowała 30 groszy").
+ *  - **wywołanie domykające przebieg: NIE.** Po nim nic już nie nastąpi, więc zapłacilibyśmy 1,25×
+ *    za pamięć, której nikt nie odczyta. W zgłoszonej sesji tak wyrzucono 11 860 tokenów.
+ *
+ * Rachunek dla przebiegu 6-wywołaniowego: 6,0× ceny wejścia za katalog → 2,65×
+ * (1,0 + 1,25 zapis + 4 × 0,1 odczyt).
+ *
+ * @param numerWywolania numer wywołania modelu w przebiegu, licząc od 1
+ * @param czyDomykajace czy to ostatnie wywołanie przebiegu (podsumowanie/dokończenie)
+ */
+export function czyCachowacKatalog(numerWywolania: number, czyDomykajace = false): boolean {
+  if (czyDomykajace) return false;
+  return numerWywolania >= 2;
+}
+
 export const PER_TOOL_MAX_RECORDS = 12; // maks. rekordów na jedno narzędzie wstrzykiwanych do kontekstu
 export const TOOL_RESULT_MAX_CHARS = 3500; // twardy budżet znaków na CAŁY blok wyników (bezpiecznik)
 // Stały prefiks bloku wyników — służy też do ROZPOZNANIA bloków do zwinięcia.

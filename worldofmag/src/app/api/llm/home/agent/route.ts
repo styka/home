@@ -11,15 +11,15 @@ import {
 } from "@/lib/ai/agentPrompt";
 import { getAiCatalog } from "@/lib/ai/catalog";
 import { readFollowupsEnabled } from "@/platform/ai/followups";
-import { partialRunFallbackMessage } from "@/platform/ai/agentPartialRun";
+import { countSuccessfulReads, partialRunFallbackMessage } from "@/platform/ai/agentPartialRun";
 import { webSearch } from "@/lib/news/webSearch";
 import { chatComplete, classifyRateLimitKind, rateLimitUserMessage } from "@/platform/llm/chat";
 import { sprawdzLimit, zajmijSlot, POLITYKI } from "@/platform/rateLimit";
 import { ustalJezykZadania } from "@/platform/i18n/kontekst";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
-import { classifyIntent, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
+import { classifyIntent, granicePolskie, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
 import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
-import { compactToolResults, collapseUsedToolData, TOOL_DATA_HEADER } from "@/platform/ai/agentContext";
+import { compactToolResults, collapseUsedToolData, czyCachowacKatalog, TOOL_DATA_HEADER } from "@/platform/ai/agentContext";
 import { humanizeAssistantText } from "@/platform/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executorShared";
@@ -138,8 +138,13 @@ const BULK_MAX_TOKENS = 4000;
 
 
 // 030: słowa wykluczające „prostą turę odczytową" (analiza/ocena/raport → zawsze reasoning).
-const SIMPLE_READ_ANALYTIC_RE =
-  /\b(oceń|ocen\w*|przeanalizuj|analiz\w*|porównaj|porownaj|dlaczego|zaproponuj|zasugeruj|doradź|doradz|raport\w*|podsumow\w*|streść|streszcz\w*|zestawieni\w*)\b/i;
+// 112: granica słowa świadoma polskich liter — `\b` jest ASCII-owe, więc „oceń", „doradź" i
+// „streść" nigdy tu nie pasowały (patrz `granicePolskie`). Objaw był cichy i kosztowny: tura
+// analityczna wyglądała na „prostą turę odczytową" i szła tanim modelem, po czym i tak wracała
+// fallbackiem do „reasoning" — czyli płaciliśmy dwa razy.
+const SIMPLE_READ_ANALYTIC_RE = granicePolskie(
+  "oceń|ocen\\w*|przeanalizuj|analiz\\w*|porównaj|porownaj|dlaczego|zaproponuj|zasugeruj|doradź|doradz|raport\\w*|podsumow\\w*|streść|streszcz\\w*|zestawieni\\w*"
+);
 
 // 030: `op` konfigurowalne — proste tury odczytowe jadą na tańszym modelu (op "dispatch",
 // przydział w /admin/llm — C-40), z fallbackiem do "reasoning" po stronie wołającego.
@@ -159,7 +164,9 @@ async function callAgent(
   op: AgentOp = "reasoning",
   level?: AssistantWorkLevel,
   // 036: podział promptu systemowego na stały prefiks i zmienny ogon — cache tylko na prefiksie.
-  systemBlocks?: { stable: string; variable: string }
+  systemBlocks?: { stable: string; variable: string },
+  // 112: czy oznaczyć drugim punktem cięcia także katalog (patrz `czyCachowacKatalog`).
+  cacheVariableBlock = false
 ): Promise<{ content: string; truncated: boolean }> {
   const result = await chatComplete({
     op,
@@ -172,6 +179,7 @@ async function callAgent(
     // 034: poziom pracy asystenta — model, wysiłek i temperatura wynikają z konfiguracji poziomu.
     level,
     systemBlocks,
+    cacheVariableBlock,
   });
   if (!result.ok) {
     const err = new Error(result.message) as Error & { status?: number };
@@ -191,22 +199,22 @@ async function catalogModules(): Promise<string[]> {
 // Słowa-klucze per moduł — do TANIEGO pre-routingu bez LLM. Dobierane tak, by
 // były wysoce dystynktywne (mało fałszywych trafień). Granice słów (\b) + formy.
 const KEYWORD_ROUTES: Record<string, RegExp> = {
-  portfel: /\b(wydatek|wydałem|wydała|przychód|zarobiłem|kwot\w*|portfel\w*|\d+\s*(zł|pln|euro|eur))\b/i,
-  flota: /\b(zatankow\w*|tankowani\w*|paliw\w*|przebieg\w*|serwis\w*|pojazd\w*|auto|samoch\w*|opon\w*|przegląd\w*)\b/i,
-  habits: /\b(nawyk\w*|odhacz\w*|odhaczyć|streak|seri\w* dni)\b/i,
-  magazynowanie: /\b(magazyn\w*|na stani\w*|stan magazyn\w*|wyda(j|ć|łem) ze stanu|przyję(cie|ć)|regał\w*|półk\w*)\b/i,
-  warsztaty: /\b(warsztat\w*|pracowni\w*|narzędzi\w*|narzedzi\w*|stanowis\w*|wyposażeni\w*|przegląd\w* (narzędzi|sprzętu))\b/i,
-  kitchen: /\b(posiłek|posiłk\w*|przepis\w*|spiżarni\w*|jadłospis\w*|ugotow\w*|śniadani\w*|obiad\w*|kolacj\w*)\b/i,
-  health: /\b(wizyt\w*|badani\w*|lekarz\w*|przychodni\w*|recept\w*|wynik\w* bada\w*)\b/i,
-  languages: /\b(fiszk\w*|słówk\w*|słowk\w*|tali\w*|powtórk\w* słów|tłumaczeni\w*)\b/i,
-  news: /\b(wiadomoś\w*|news\w*|temat\w* wiadomoś\w*|monitoruj\w* temat)\b/i,
-  weather: /\b(pogod\w*|prognoz\w*|deszcz\w*|temperatur\w*|lokalizacj\w* pogod\w*)\b/i,
-  shopping: /\b(zakup\w*|do listy|na list[ęe]|kup(ić|ię|ę|cie|)|sklep\w*)\b/i,
-  tasks: /\b(zadani\w*|projekt\w*|to-?do|deadline\w*|termin\w* zadani\w*)\b/i,
-  notes: /\b(notatk\w*|zanotuj|zapisz notatk\w*)\b/i,
-  pets: /\b(zwierz\w*|pies|psa|kot\w*|wąż|węż\w*|terrari\w*|karmieni\w*|waż\w* (psa|kota|zwierz\w*))\b/i,
-  contacts: /\b(kontakt\w*|numer telefonu|do kogo|znajom\w*|osob[ęy] o (imieniu|nazwisku))\b/i,
-  reports: /\b(raport\w*)\b/i,
+  portfel: granicePolskie("wydatek|wydałem|wydała|przychód|zarobiłem|kwot\\w*|portfel\\w*|\\d+\\s*(zł|pln|euro|eur)"),
+  flota: granicePolskie("zatankow\\w*|tankowani\\w*|paliw\\w*|przebieg\\w*|serwis\\w*|pojazd\\w*|auto|samoch\\w*|opon\\w*|przegląd\\w*"),
+  habits: granicePolskie("nawyk\\w*|odhacz\\w*|odhaczyć|streak|seri\\w* dni"),
+  magazynowanie: granicePolskie("magazyn\\w*|na stani\\w*|stan magazyn\\w*|wyda(j|ć|łem) ze stanu|przyję(cie|ć)|regał\\w*|półk\\w*"),
+  warsztaty: granicePolskie("warsztat\\w*|pracowni\\w*|narzędzi\\w*|narzedzi\\w*|stanowis\\w*|wyposażeni\\w*|przegląd\\w* (narzędzi|sprzętu)"),
+  kitchen: granicePolskie("posiłek|posiłk\\w*|przepis\\w*|spiżarni\\w*|jadłospis\\w*|ugotow\\w*|śniadani\\w*|obiad\\w*|kolacj\\w*"),
+  health: granicePolskie("wizyt\\w*|badani\\w*|lekarz\\w*|przychodni\\w*|recept\\w*|wynik\\w* bada\\w*"),
+  languages: granicePolskie("fiszk\\w*|słówk\\w*|słowk\\w*|tali\\w*|powtórk\\w* słów|tłumaczeni\\w*"),
+  news: granicePolskie("wiadomoś\\w*|news\\w*|temat\\w* wiadomoś\\w*|monitoruj\\w* temat"),
+  weather: granicePolskie("pogod\\w*|prognoz\\w*|deszcz\\w*|temperatur\\w*|lokalizacj\\w* pogod\\w*"),
+  shopping: granicePolskie("zakup\\w*|do listy|na list[ęe]|kup(ić|ię|ę|cie|)|sklep\\w*"),
+  tasks: granicePolskie("zadani\\w*|projekt\\w*|to-?do|deadline\\w*|termin\\w* zadani\\w*"),
+  notes: granicePolskie("notatk\\w*|zanotuj|zapisz notatk\\w*"),
+  pets: granicePolskie("zwierz\\w*|pies|psa|kot\\w*|wąż|węż\\w*|terrari\\w*|karmieni\\w*|waż\\w* (psa|kota|zwierz\\w*)"),
+  contacts: granicePolskie("kontakt\\w*|numer telefonu|do kogo|znajom\\w*|osob[ęy] o (imieniu|nazwisku)"),
+  reports: granicePolskie("raport\\w*"),
 };
 
 // Pre-routing: jeśli słowa-klucze jednoznacznie wskazują 1–2 moduły, zwróć je BEZ
@@ -241,6 +249,11 @@ async function routeModules(text: string, activeModules: string[], primary: stri
       ],
       temperature: 0,
       maxTokens: 120,
+      // 112: wybór modułów to KLASYFIKACJA, nie rozumowanie. Bez tego `applyEffort` przy poziomie
+      // „średnim" ustawia budżet myślenia 6144 i podnosi `max_tokens` ze 120 do 7168 — zmierzono
+      // 1326 tokenów wyjścia i 15 sekund na decyzję „które moduły są istotne", czyli 8% kosztu całej
+      // tury. Deklaracja dotyczy kształtu własnej odpowiedzi, nie wyboru modelu (C-40).
+      effort: "none",
       json: true,
       source: "dispatch_route",
       conversationId,
@@ -360,6 +373,10 @@ async function runAgentLoopRaw(
   // Po dwóch takich kończymy przebieg częściowym wynikiem, nie dobijając do MAX_ITERATIONS.
   let unproductiveIterations = 0;
   let lastTruncated = false;
+  // 112: numer wywołania modelu w tym przebiegu (nie numer iteracji — jedna iteracja potrafi wołać
+  // model do trzech razy przy naprawie formatu). Decyduje o drugim punkcie cięcia pamięci podręcznej
+  // promptu; patrz `czyCachowacKatalog`.
+  let numerWywolania = 0;
 
   for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
     // 028: przed każdym wywołaniem modelu zwiń starsze, już zużyte bloki wyników
@@ -374,7 +391,17 @@ async function runAgentLoopRaw(
       let content: string;
       let truncated = false;
       try {
-        const res = await callAgent(messages, meta, maxTokens, conversationId, op, level, systemBlocks);
+        numerWywolania += 1;
+        const res = await callAgent(
+          messages,
+          meta,
+          maxTokens,
+          conversationId,
+          op,
+          level,
+          systemBlocks,
+          czyCachowacKatalog(numerWywolania)
+        );
         content = res.content;
         truncated = res.truncated;
       } catch (e) {
@@ -588,36 +615,76 @@ async function runAgentLoopRaw(
     messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, navigate, plan." });
   }
 
-  // 032: przebieg się nie domknął (limit kroków albo przerwana pętla). Zamiast suchego „nie udało
-  // się dokończyć w limicie kroków" — które nie mówi ani co ustalono, ani co zablokowało — dajemy
-  // modelowi JEDNO dodatkowe wywołanie na podsumowanie zebranych danych. Gdy i to zawiedzie,
-  // składamy komunikat po stronie serwera z tego, co jest w logu.
-  const partial = isFinalRun
-    ? await summarizePartialRun(messages, log, meta, conversationId, op, lastTruncated)
-    : // Przebieg nieostateczny: wołający ponowi turę na mocniejszym modelu i odrzuci ten wynik —
-      // nie płacimy za podsumowanie, którego nikt nie zobaczy. Treść jest tylko wypełnieniem.
-      partialRunFallbackMessage(log, lastTruncated);
+  // 032/112: przebieg się nie domknął (limit kroków albo przerwana pętla). Dajemy modelowi JEDNO
+  // dodatkowe wywołanie — od 112 nie na streszczenie tego, czego nie zrobił, lecz na DOKOŃCZENIE
+  // zadania z zebranych danych (plan albo pełna odpowiedź) plus jawną listę braków. Gdy i to
+  // zawiedzie, składamy komunikat po stronie serwera z tego, co jest w logu.
+  if (!isFinalRun) {
+    // Przebieg nieostateczny: wołający ponowi turę na mocniejszym modelu i odrzuci ten wynik —
+    // nie płacimy za dokończenie, którego nikt nie zobaczy. Treść jest tylko wypełnieniem.
+    return {
+      // 030: `limitReached` pozwala wołającemu (fallback dispatch→reasoning) rozpoznać
+      // niedokończoną turę bez porównywania treści komunikatu.
+      body: { step: "answer", answer: partialRunFallbackMessage(log, lastTruncated), limitReached: true, log },
+    };
+  }
+  const domkniecie = await finishPartialRun(messages, log, meta, conversationId, op, lastTruncated, systemBlocks);
+  if ("actions" in domkniecie) {
+    // 112: dokończenie wróciło PLANEM — oddajemy go tą samą ścieżką co plan z pętli, więc trafia do
+    // panelu potwierdzenia z akcjami niszczącymi domyślnie odznaczonymi (bez zmian w 041).
+    log.push({ iter: MAX_ITERATIONS, step: "plan", thought: domkniecie.thought, actionsCount: domkniecie.actions.length });
+    const dialog = messages.filter((m) => m.role !== "system");
+    return {
+      body: {
+        step: "plan",
+        actions: domkniecie.actions,
+        thought: domkniecie.thought,
+        limitReached: true,
+        log,
+        messages: dialog,
+      },
+    };
+  }
   return {
-    // 030: `limitReached` pozwala wołającemu (fallback dispatch→reasoning) rozpoznać
-    // niedokończoną turę bez porównywania treści komunikatu.
-    body: { step: "answer", answer: partial, limitReached: true, log },
+    body: { step: "answer", answer: domkniecie.answer, limitReached: true, log },
   };
 }
 
 /**
- * 032 (AC-11, AC-12): uczciwe zamknięcie niedokończonego przebiegu. Jedno dodatkowe wywołanie modelu
- * z prośbą o podsumowanie — to OSTATNIE wywołanie w przebiegu, nie pętla, więc wolno mu dać większy
- * budżet tokenów niż zwykłej iteracji. Przy awarii składamy komunikat z logu, bez identyfikatorów i
- * surowych wartości technicznych (dorobek 031).
+ * 032/112: uczciwe zamknięcie przebiegu, któremu skończyły się kroki. Jedno dodatkowe wywołanie
+ * modelu — to OSTATNIE wywołanie w przebiegu, nie pętla, więc wolno mu dać większy budżet tokenów
+ * niż zwykłej iteracji. Przy awarii składamy komunikat z logu, bez identyfikatorów i surowych
+ * wartości technicznych (dorobek 031).
+ *
+ * **112 — prosimy o DOKOŃCZENIE, nie o streszczenie porażki.** Do 112 to wywołanie zamawiało opis
+ * tego, czego asystent NIE zrobił („co ustaliłem / co mnie zablokowało / jak dopytać"). W zgłoszonej
+ * sesji („pies Raj") komplet danych był już w kontekście — zabrakło wyłącznie polecenia, żeby ich
+ * użyć, więc użytkownik dostał relację z pracy zamiast jej wyniku. Teraz model ma dowieźć `plan`
+ * albo `answer` z tego, co zebrał, i JAWNIE wypisać braki.
+ *
+ * **112 — dwie poprawki rozliczeniowe w tym samym miejscu.** (1) Przekazujemy `systemBlocks`, czego
+ * to wywołanie wcześniej nie robiło: bez podziału `toAnthropicSystem` oznaczał `cache_control` na
+ * CAŁYM prompcie i płaciliśmy 1,25× ceny wejścia od wszystkiego — w zgłoszonej sesji 11 860 tokenów
+ * zapisu ($0,044) w wywołaniu, po którym nic już tej pamięci nie odczytało. (2) Katalog świadomie
+ * NIE dostaje drugiego punktu cięcia (`czyCachowacKatalog(_, true) === false`) — po tym wywołaniu
+ * przebieg się kończy.
+ *
+ * Zwraca albo gotowy krok terminalny (`plan`), albo tekst odpowiedzi.
  */
-async function summarizePartialRun(
+async function finishPartialRun(
   messages: ChatMessage[],
   log: LogEntry[],
   meta: AgentMeta | undefined,
   conversationId: string | null | undefined,
   op: AgentOp,
-  truncated: boolean
-): Promise<string> {
+  truncated: boolean,
+  systemBlocks?: { stable: string; variable: string }
+): Promise<{ answer: string } | { actions: AIAction[]; thought: string }> {
+  // 112 (AC-8): gdy NIC się nie udało pobrać, nie ma z czego dokańczać — nie wołamy modelu i
+  // oddajemy dotychczasowy, uczciwy komunikat „nie dokończyłem + dlaczego". Dorobek 032 zostaje.
+  if (countSuccessfulReads(log) === 0) {
+    return { answer: partialRunFallbackMessage(log, truncated) };
+  }
   try {
     const res = await callAgent(
       [
@@ -625,25 +692,40 @@ async function summarizePartialRun(
         {
           role: "user",
           content:
-            "Nie zdążyłeś dokończyć zadania. Podsumuj to KRÓTKO (3–5 zdań) po polsku, w polu answer:\n" +
-            "1) co UDAŁO SIĘ ustalić na podstawie zebranych danych (konkretnie, bez ogólników),\n" +
-            "2) czego nie udało się dokończyć i dlaczego,\n" +
-            "3) jedno zdanie: jak użytkownik może dopytać, żeby dostać brakującą część.\n" +
-            "Nie podawaj identyfikatorów ani technicznych nazw. Zwróć obiekt JSON ze step: \"answer\".",
+            "Skończyły ci się kroki, ale masz już zebrane dane. DOKOŃCZ zadanie na ich podstawie — " +
+            "nie streszczaj tego, czego nie zrobiłeś. Wybierz JEDEN krok:\n" +
+            '- gdy użytkownik prosił o zmianę/utworzenie czegoś → { "step":"plan", "actions":[…] } ' +
+            "z akcjami zbudowanymi z zebranych danych;\n" +
+            '- w przeciwnym razie → { "step":"answer", "answer":"…" } z pełną odpowiedzią.\n' +
+            "W OBU przypadkach na końcu (w polu answer albo w opisie planu) wypisz osobno, po polsku, " +
+            "czego NIE udało się ustalić lub przenieść i dlaczego — uczciwie, jednym akapitem. " +
+            "Nie podawaj identyfikatorów ani technicznych nazw.",
         },
       ],
       meta,
       REPORT_MAX_TOKENS,
       conversationId,
-      op
+      op,
+      undefined,
+      systemBlocks,
+      czyCachowacKatalog(0, true)
     );
     const parsed = extractJsonLoose(res.content);
+    if (parsed?.step === "plan") {
+      const actions = normalizeActions(parsed.actions);
+      if (actions.length > 0) {
+        const thought = typeof parsed.thought === "string" && parsed.thought.trim()
+          ? parsed.thought.trim()
+          : "Dokończyłem zadanie na podstawie zebranych danych.";
+        return { actions, thought };
+      }
+    }
     const answer = typeof parsed?.answer === "string" ? parsed.answer.trim() : "";
-    if (answer) return answer;
+    if (answer) return { answer };
   } catch {
-    /* awaria podsumowania → składamy komunikat niżej */
+    /* awaria dokończenia → składamy komunikat niżej */
   }
-  return partialRunFallbackMessage(log, truncated);
+  return { answer: partialRunFallbackMessage(log, truncated) };
 }
 
 export async function POST(req: NextRequest) {

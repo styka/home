@@ -122,6 +122,19 @@ powstaje nowy mechanizm.
 pochodzą z `/admin/llm` i z przydziału per typ operacji. Tutaj call-site oświadcza jedynie, że jego
 własna odpowiedź ma być krótka i deterministyczna; wybór modelu zostaje po stronie konfiguracji.
 
+**Ustalenie z implementacji (naniesione wstecz, C-54): `\b` w JavaScripcie jest ASCII-owe, więc
+strażniki intencji były częściowo martwe.** Pisząc test do AC-15 okazało się, że
+`READ_INTENT_RE.test("pokaż zadania")` zwraca **`false`**: po „ż" i po spacji stoją dwa znaki
+nie-słowne, więc granicy słowa tam nie ma. Martwe były wszystkie człony kończące się polską literą
+(`pokaż`, `znajdź`, `sprawdź`, `doradź`, `oceń`, `streść`, `przychód`, `odhaczyć`, `wąż`) oraz
+zaczynające się od niej (`śniadanie`, `słówka`) — przy działających wariantach bez diakrytyków.
+
+To **nie jest poszerzenie zakresu, tylko ta sama usterka co AC-14/AC-15**: strażnik, który nie łapie
+„pokaż zadania", wysyła turę do **płatnego** klasyfikatora i **płatnego** routera, choć odpowiedź obu
+była znana z góry. Naprawa: jeden wspólny konstruktor `granicePolskie(rdzen)` (asercje „nie litera"
+z flagą `u`) użyty w `READ_INTENT_RE`, `SIMPLE_READ_ANALYTIC_RE` i wszystkich 16 wpisach
+`KEYWORD_ROUTES`. Zakres speca bez zmian; nowe zadanie **T-2a** w `tasks.md`.
+
 **AC-15 (klasyfikacja, która nie może pomóc):** `classifyIntent` odsiewa już `READ_INTENT_RE` przed
 wywołaniem modelu. Dokładamy drugi tani odsiew tego samego rodzaju — **próg długości** — bo
 „pojedyncza prosta operacja dodania" jest z definicji krótka, a zgłoszona wiadomość była długim

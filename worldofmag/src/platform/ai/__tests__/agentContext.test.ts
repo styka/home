@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   compactToolResults,
   collapseUsedToolData,
+  czyCachowacKatalog,
   PER_TOOL_MAX_RECORDS,
   TOOL_RESULT_MAX_CHARS,
   TOOL_DATA_HEADER,
@@ -98,4 +99,27 @@ test("trimLongStrings działa rekurencyjnie w tablicach i zagnieżdżeniach", ()
   const first = out[0] as { nested: { note: string } };
   assert.match(first.nested.note, /SKRÓCONO/);
   assert.equal(out[1], "ok");
+});
+
+// ── 112: polityka DRUGIEGO punktu cięcia pamięci podręcznej promptu ──────────────────────────────
+//
+// Prompt systemowy jest budowany RAZ przed pętlą i identyczny co do znaku we wszystkich wywołaniach
+// przebiegu, a mimo to do 112 katalog (~12–18 tys. tokenów) był opłacany w pełnej cenie za każdym
+// razem — w zgłoszonej sesji sześć razy, ~67% rachunku tury. Oba brzegi reguły są celowe: zapis do
+// pamięci kosztuje 1,25× ceny wejścia, więc oznaczanie katalogu przy wywołaniu, po którym nic nie
+// nastąpi, byłoby czystą stratą (zmierzone: 11 860 tokenów wyrzuconych w domknięciu przebiegu).
+
+test("czyCachowacKatalog: pierwsze wywołanie NIE cache'uje katalogu (tura jednowywołaniowa nie może zdrożeć)", () => {
+  assert.equal(czyCachowacKatalog(1), false);
+});
+
+test("czyCachowacKatalog: od drugiego wywołania cache'ujemy katalog", () => {
+  assert.equal(czyCachowacKatalog(2), true);
+  assert.equal(czyCachowacKatalog(3), true);
+  assert.equal(czyCachowacKatalog(6), true);
+});
+
+test("czyCachowacKatalog: wywołanie DOMYKAJĄCE nigdy nie cache'uje — nikt tego nie odczyta (AC-13)", () => {
+  assert.equal(czyCachowacKatalog(0, true), false);
+  assert.equal(czyCachowacKatalog(7, true), false, "nawet jako siódme wywołanie w przebiegu");
 });

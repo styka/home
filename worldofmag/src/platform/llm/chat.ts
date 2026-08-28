@@ -90,6 +90,16 @@ export interface ChatOptions {
    * `system` z `messages` — inaczej podział jest ignorowany (bezpieczny fallback).
    */
   systemBlocks?: { stable: string; variable: string };
+  /**
+   * 112: oznacz DRUGIM punktem cięcia także blok zmienny (katalog narzędzi i akcji).
+   *
+   * Domyślnie `false`, i to jest istota rzeczy: zapis do pamięci podręcznej kosztuje 1,25× ceny
+   * wejścia, więc oznaczenie katalogu przy wywołaniu, po którym nic nie nastąpi, byłoby czystą
+   * stratą. Włącza to dopiero pętla agenta — od DRUGIEGO wywołania w przebiegu, gdy już wiadomo,
+   * że prompt (identyczny co do znaku) poleci jeszcze raz. Rachunek dla przebiegu 6-iteracyjnego:
+   * 6,0× ceny wejścia za katalog → 2,65× (1,0 + 1,25 zapis + 4 × 0,1 odczyt).
+   */
+  cacheVariableBlock?: boolean;
 }
 
 /**
@@ -260,7 +270,7 @@ export function anthropicBody(cfg: ResolvedLlm, opts: ChatOptions, stream: boole
   const { system, messages } = toAnthropic(opts.messages);
   // Dyrektywa idzie OSOBNYM blokiem na końcu, a nie doklejeniem do treści promptu: doklejenie
   // zmieniłoby blok oznaczony `cache_control`, czyli unieważniłoby pamięć podręczną promptu.
-  const systemBloki = system ? toAnthropicSystem(system, opts.systemBlocks) : undefined;
+  const systemBloki = system ? toAnthropicSystem(system, opts.systemBlocks, opts.cacheVariableBlock) : undefined;
   const systemDoWyslania =
     opts.json && !stream
       ? [...(systemBloki ?? []), { type: "text" as const, text: ANTHROPIC_JSON_DIRECTIVE }]
@@ -491,7 +501,10 @@ type AnthropicSystemBlock = { type: "text"; text: string; cache_control?: { type
 
 export function toAnthropicSystem(
   system: string | undefined,
-  blocks?: { stable: string; variable: string }
+  blocks?: { stable: string; variable: string },
+  // 112: czy oznaczyć DRUGIM punktem cięcia także blok zmienny (katalog narzędzi i akcji).
+  // Decyduje wołający, bo tylko on wie, czy po tym wywołaniu będą następne z tym samym promptem.
+  cacheVariable = false
 ): AnthropicSystemBlock[] | undefined {
   if (!system) return undefined;
   // Podział przyjmujemy tylko wtedy, gdy odtwarza DOKŁADNIE wysyłaną treść — inaczej po cichu
@@ -499,8 +512,27 @@ export function toAnthropicSystem(
   if (blocks?.stable && blocks.stable + blocks.variable === system) {
     return [
       { type: "text", text: blocks.stable, cache_control: { type: "ephemeral" } },
-      ...(blocks.variable ? [{ type: "text" as const, text: blocks.variable }] : []),
+      ...(blocks.variable
+        ? [
+            {
+              type: "text" as const,
+              text: blocks.variable,
+              ...(cacheVariable ? { cache_control: { type: "ephemeral" as const } } : {}),
+            },
+          ]
+        : []),
     ];
+  }
+  // 112: fallback („oznacz cały prompt") jest bezpieczny dla TREŚCI, ale kosztowny: zapis do pamięci
+  // podręcznej idzie po 1,25× ceny wejścia od CAŁEGO promptu. W zgłoszonej sesji tak zapłacono za
+  // 11 860 tokenów w ostatnim wywołaniu przebiegu — po którym nic już nie odczytało tej pamięci.
+  // Fallback zostaje, ale przestaje być niemy: rozjazd ma być widoczny, a nie tylko drogi.
+  if (blocks) {
+    logEvent("warn", "ai.prompt.podzialOdrzucony", {
+      dlugoscSystem: system.length,
+      dlugoscStable: blocks.stable.length,
+      dlugoscVariable: blocks.variable.length,
+    });
   }
   return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
 }
