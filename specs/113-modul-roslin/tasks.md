@@ -334,6 +334,16 @@
       i aktualną ścieżkę zakładania zadania. → **R-5, C-54**
 - [x] **T-88** — **Bramki, build, testy; aktualizacja `verify.md`** o trzecią rundę recenzji.
 
+## Faza 10 — po czwartej recenzji (APPROVE Z UWAGAMI)
+
+- [x] **T-89** — **Jedna funkcja decyduje, co trafia do `nextDueAt`** (`terminDoZapisu` w domenie,
+      z testem). Trzeci pisarz tego pola — `recordCare` — jako jedyny nie dostał warunku `pomijac`
+      i przywracał techniczną datę usuniętą w T-83. → **Z-1**
+- [x] **T-90** — **Komunikat po dodaniu zadania mówi o TYM zadaniu**, a nie obiecuje agendy zadaniu
+      bez terminu. → **Z-2**
+- [x] **T-91** `[P]` — Domknięcia: komentarz przy polu odstępu, prywatny `dzien` + formater `Intl`
+      budowany raz na eksport, dzień listy zadań w strefie przeglądarki. → **Z-3, Z-4, Z-5**
+
 ## Mapowanie kryteriów akceptacji → zadania
 
 | AC | Zadania | AC | Zadania |

@@ -9,6 +9,7 @@ import { assertSpaceAccess } from "./przestrzenie";
 import { assertPlantAccess } from "./rosliny";
 import { przeliczTermin } from "../lib/terminy";
 import { kubelekAgendy } from "../domain/agenda";
+import { terminDoZapisu } from "../domain/harmonogram";
 import { userDayBounds } from "@/lib/userTime";
 import type { RodzajZabiegu, WynikZabiegu } from "../lib/typy";
 
@@ -142,15 +143,10 @@ export async function createCareTask(data: {
   const wynik = await przeliczTermin(zadanie.id, data.startAt ?? new Date());
   await prisma.plantCareTask.update({
     where: { id: zadanie.id },
-    data: {
-      // **`pomijac` znaczy „nie ma czego zaplanować" i tutaj też obowiązuje.** Bez tego warunku
-      // podlewanie dodane ręcznie przy pszenicy dostawało termin za miesiąc, a jako uzasadnienie
-      // zdanie „ten gatunek nie ma cyklu podlewania" — zaplanowany zabieg, którego własne
-      // wyjaśnienie mówi, że się go nie planuje. Zadanie zostaje (użytkownik świadomie je założył
-      // i może podlać ręcznie), ale bez wymyślonej daty.
-      nextDueAt: wynik.pomijac ? null : wynik.termin,
-      reason: wynik.uzasadnienie,
-    },
+    // `pomijac` znaczy „nie ma czego zaplanować": podlewanie dodane ręcznie przy pszenicy nie
+    // dostaje wymyślonej daty. Zadanie zostaje — użytkownik świadomie je założył i może podlać
+    // ręcznie — ale bez terminu, za to z uzasadnieniem, które to tłumaczy.
+    data: terminDoZapisu(wynik),
   });
 
   revalidatePath("/rosliny/opieka");
@@ -276,8 +272,10 @@ export async function recordCare(data: {
         // Pominięcie NIE jest wykonaniem, więc `lastDoneAt` zostaje nietknięte — inaczej historia
         // mówiłaby, że roślina była podlana, a nie była.
         ...(data.outcome === "DONE" ? { lastDoneAt: kiedy } : {}),
-        nextDueAt: wynik.termin,
-        reason: wynik.uzasadnienie,
+        // Ten sam warunek co przy zakładaniu zadania — i dlatego w jednej funkcji. Bez niego
+        // odhaczenie podlewania gatunku bez cyklu dorabiało z powrotem techniczną datę, którą
+        // zakładanie zadania właśnie usunęło.
+        ...terminDoZapisu(wynik),
       },
     });
   }

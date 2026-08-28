@@ -283,3 +283,21 @@ export function terminCykliczny(od: Date, coIleDni: number, wejscie?: Pick<Wejsc
     pomijac: false,
   };
 }
+
+/**
+ * Co zapisać w zadaniu opieki na podstawie wyniku reguły.
+ *
+ * **Istnieje dlatego, że ten warunek zdążył się już raz zgubić.** Pole `nextDueAt` pisane jest
+ * w trzech miejscach (założenie harmonogramu, ręczne dodanie zadania, odnotowanie wykonania),
+ * a `pomijac` znaczy „nie ma czego zaplanować". Gdy znaczenie flagi się zmieniło, warunek trafił
+ * do dwóch z trzech pisarzy — i trzeci (`recordCare`) po odhaczeniu podlewania pszenicy dorabiał
+ * z powrotem techniczną datę „dziś + 30 dni" razem z uzasadnieniem „ten gatunek nie ma cyklu
+ * podlewania". Jedna funkcja zamiast trzech powtórzeń sprawia, że czwarty pisarz nie ma czego
+ * zapomnieć.
+ *
+ * Uzasadnienie zapisujemy ZAWSZE — także przy braku terminu, bo wtedy jest jedyną odpowiedzią na
+ * pytanie „czemu to zadanie nie ma daty".
+ */
+export function terminDoZapisu(wynik: WynikTerminu): { nextDueAt: Date | null; reason: string } {
+  return { nextDueAt: wynik.pomijac ? null : wynik.termin, reason: wynik.uzasadnienie };
+}

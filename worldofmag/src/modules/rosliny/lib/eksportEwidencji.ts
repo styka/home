@@ -64,13 +64,13 @@ export const KOLUMNY_EWIDENCJI = [
  *
  * `en-CA` daje dokładnie `RRRR-MM-DD`, bez ręcznego składania z części.
  */
-export function dzien(d: Date, strefa: string): string {
+function formatDnia(strefa: string): Intl.DateTimeFormat {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: strefa,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(d);
+  });
 }
 
 /**
@@ -90,11 +90,14 @@ function pole(v: string | number | null | undefined): string {
 
 export function ewidencjaDoCsv(wiersze: WierszEwidencji[], strefa: string): string {
   const linie: string[] = [KOLUMNY_EWIDENCJI.join(";")];
+  // Formater budujemy RAZ na eksport, a nie raz na wiersz: `Intl.DateTimeFormat` jest drogi,
+  // a ewidencja za rok potrafi mieć setki zabiegów.
+  const dzien = formatDnia(strefa);
 
   for (const w of wiersze) {
     linie.push(
       [
-        pole(dzien(w.occurredAt, strefa)),
+        pole(dzien.format(w.occurredAt)),
         pole(w.spaceName),
         pole(w.plantName),
         pole(w.placeName),

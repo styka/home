@@ -2267,7 +2267,8 @@
         "bezTerminu": "bez terminu — ten gatunek nie ma cyklu podlewania",
         "wylaczZadanie": "Nie przypominaj",
         "wylaczZadaniePytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie.",
-        "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę."
+        "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę.",
+        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy."
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",

@@ -380,3 +380,63 @@ przechodzi), `pustyRejestr && !formularz` i `empty.action`, komplet kluczy i18n.
 
 Blokują R-2 (naruszone AC-3) i R-4 (dokument prawny z datą wiersza poza okresem w nazwie).
 Zadania **T-81…T-88** dopisane do `tasks.md`.
+
+---
+
+# Przebieg 4 recenzji — po fazie 9 (`95eb4b5..d983a4e`)
+
+## Werdykt: ✅ APPROVE Z UWAGAMI
+
+**Brak ustaleń blokujących.** Wszystkie osiem poprawek R-1…R-8 jest w kodzie i robi to, co
+deklaruje. Recenzja znalazła jeden realny defekt i jeden tekst, który po tej rundzie przestał mówić
+prawdę — oba trafiające dokładnie w punkty (a) i (b) lekcji dopisanej w tym samym commicie do
+`doświadczenia.md`, co jest najlepszym możliwym potwierdzeniem, że lekcja opisuje realny wzorzec,
+a nie wrażenie.
+
+### Naprawione przed produkcją
+
+**Z-1 · `actions/opieka.ts:279` · correctness.** `recordCare` zapisywało `nextDueAt` **bezwarunkowo**
+— zmiana znaczenia `pomijac` dotarła do dwóch z trzech pisarzy tego pola. Odhaczenie podlewania
+pszenicy (20 ze 182 wpisów katalogu ma same zera) dorabiało z powrotem techniczną datę „dziś + 30
+dni" razem z uzasadnieniem „ten gatunek nie ma cyklu podlewania" — czyli **przywracało dokładnie to,
+co T-83 usunęło**, i po 27 dniach wchodziło do agendy, kalendarza i powiadomień.
+
+Poprawione **nie przez dopisanie warunku w trzecim miejscu**, tylko przez sprowadzenie decyzji do
+jednej funkcji: `domain/harmonogram.ts` `terminDoZapisu(wynik)` zwraca `{ nextDueAt, reason }`
+i używają jej wszyscy trzej pisarze. Warunek powielony w trzech miejscach zgubił się raz i zgubiłby
+się znowu; funkcji, której się nie woła, nie da się zapomnieć po cichu — bo pole nie zostanie wtedy
+zapisane w ogóle. Ścieżka zapisu dostała **własny test** (trzy przypadki), którego ta runda nie
+miała — recenzja słusznie to wytknęła.
+
+**Z-2 · `ui/RoslinaSzczegol.tsx` · correctness (tekst).** Komunikat „Zadanie opieki dodane — pojawi
+się w agendzie" był bezwarunkowy, a zadanie bez terminu do agendy nigdy nie trafia. Ekran przeczył
+sam sobie w dwóch sąsiednich elementach: toast obiecywał agendę, lista bezpośrednio nad nim mówiła
+„bez terminu". Komunikat wybierany jest teraz po odpowiedzi serwera **o tym konkretnym zadaniu**
+(po identyfikatorze zwróconym z zapisu, nie po „czy któreś nie ma daty").
+
+### Domknięte przy okazji
+
+- **Z-3** — komentarz przy polu odstępu nadal mówił o „jednorazowo", pojęciu, które R-1 kazało
+  usunąć; tekst i komentarz mówią teraz to samo co kod.
+- **Z-4** — `dzien` było wyeksportowane bez importera i dublowało `dataWStrefie` (zarzut R-8, który
+  T-82 przedwcześnie uznało za zamknięty). Funkcja jest prywatna, a formater `Intl` budowany **raz
+  na eksport**, nie raz na wiersz.
+- **Z-5** — nowa lista zadań renderowała `slice(0, 10)` na ISO, czyli dzień w UTC — ten sam wzorzec,
+  który ten sam commit naprawiał czterdzieści linii dalej w ewidencji.
+
+### Sprawdzone i czyste
+
+Pozostali wołający `getCareAgenda` nie stracili zaległych (parametru `od` nie podają), a `od: now`
+w powiadomieniach nie zmienia widocznego zachowania — tylko przestaje zapychać limit zaległościami.
+Wszyscy czytelnicy `nextDueAt = null` odcinają nulle poprawnie, `NULLS LAST` nie psuje sortowania.
+`getPlantCareTasks` ma guard i wpis w manifeście spójny z rodzeństwem. `poleWidoczne` z przełącznikiem
+odsłania fazę we wszystkich czterech trybach. `NAZWA_PORY_BIERNIK` poprawne dla wszystkich pór, i to
+jedyne zdanie w module z nazwą pory. Test CSV sprawdza regułę, nie zegar maszyny.
+
+---
+
+## Zamknięcie serii
+
+Cztery rundy recenzji świeżym okiem: **12 → 12 → 8 → 2** ustaleń, blokujących **4 → 3 → 2 → 0**.
+Wygaszenie nie nastąpiło samo — w każdej rundzie część ustaleń dotyczyła poprawek z rundy
+poprzedniej. To jest główny wniosek metodyczny z tego feature'a i stoi zapisany w `doświadczenia.md`.

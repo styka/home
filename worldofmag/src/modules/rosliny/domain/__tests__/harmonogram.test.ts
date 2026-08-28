@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   poraRoku,
+  terminDoZapisu,
   terminCykliczny,
   terminPodlewania,
   PROG_OPADU_MM,
@@ -282,4 +283,35 @@ test("każdy wpis katalogu z migracji 0273 daje albo dodatni odstęp, albo jawne
   // rozdzielenie dwóch przypadków znów się zlało w jeden.
   assert.ok(pominiete > 0, "katalog powinien zawierać gatunki bez cyklu podlewania w ogóle");
   assert.ok(pominiete < wpisy.length * 4 * 0.3, "za dużo pominięć — zero w JEDNEJ porze nie jest brakiem cyklu");
+});
+
+// ─── Co trafia do zadania opieki ─────────────────────────────────────────────
+
+test("gatunek bez cyklu nie dostaje daty ani przy zakładaniu zadania, ani przy odhaczeniu", () => {
+  // Trzy miejsca piszą `nextDueAt` i warunek zdążył się już raz zgubić w jednym z nich: po
+  // odhaczeniu podlewania pszenicy zadanie dostawało z powrotem „dziś + 30 dni" z uzasadnieniem
+  // „ten gatunek nie ma cyklu podlewania". Reguła zapisu ma więc własny test.
+  const bezCyklu = terminPodlewania({
+    od: new Date("2026-05-10"),
+    wymagania: { winter: 0, spring: 0, summer: 0, autumn: 0 },
+  });
+  const zapis = terminDoZapisu(bezCyklu);
+  assert.equal(zapis.nextDueAt, null);
+  // Uzasadnienie zapisujemy ZAWSZE — bez terminu jest jedyną odpowiedzią na „czemu bez daty".
+  assert.match(zapis.reason, /decyzją agrotechniczną/);
+});
+
+test("zwykły termin zapisuje się razem ze swoim uzasadnieniem", () => {
+  const wynik = terminPodlewania({ od: new Date("2026-07-10"), wymagania: WYMAGANIA });
+  const zapis = terminDoZapisu(wynik);
+  assert.equal(zapis.nextDueAt?.getTime(), wynik.termin.getTime());
+  assert.equal(zapis.reason, wynik.uzasadnienie);
+});
+
+test("zero w JEDNEJ porze to nadal data do zapisania, a nie brak terminu", () => {
+  const zapis = terminDoZapisu(
+    terminPodlewania({ od: new Date("2026-01-10"), wymagania: { winter: 0, spring: 4, summer: 3, autumn: 5 } }),
+  );
+  assert.ok(zapis.nextDueAt instanceof Date, "pomidor w styczniu musi dostać datę wznowienia");
+  assert.match(zapis.reason, /wiosnę/);
 });

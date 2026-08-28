@@ -40,6 +40,13 @@ import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "
  * w całym module, która POPRAWIA użytkownika, a nie tylko go obsługuje — i to on karmi wnioski
  * o przestrzeni.
  */
+/** Dzień instantu w strefie PRZEGLĄDARKI — `slice(0,10)` na ISO dałoby dzień w UTC. */
+function dzienLokalny(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 export function RoslinaSzczegol({
   roslina,
   dziennik: poczatkowyDziennik,
@@ -186,21 +193,28 @@ export function RoslinaSzczegol({
     if (!noweZadanie) return;
     const co = Number(noweZadanie.coIleDni);
     startTransition(async () => {
-      await createCareTask({
+      const { id } = await createCareTask({
         spaceId: roslina.spaceId,
         plantId: roslina.id,
         kind: noweZadanie.kind,
         title: t(`zabieg.${noweZadanie.kind}`),
-        // Odstęp trafia do `recurring` w tym samym kształcie, którego używa reguła terminu —
-        // pusty albo niedodatni znaczy „jednorazowo", a nie „co zero dni".
+        // Odstęp trafia do `recurring` w tym samym kształcie, którego używa reguła terminu.
+        // Pusty albo niedodatni znaczy „bez własnego odstępu", a wtedy reguła bierze swoje 14 dni —
+        // moduł nie zna zabiegu JEDNORAZOWEGO i etykieta pola mówi to wprost.
         recurring: Number.isFinite(co) && co > 0 ? JSON.stringify({ interval: co }) : null,
       });
       // Lista pochodzi z serwera, bo to serwer rozstrzyga TERMIN — a dla gatunku bez cyklu
       // podlewania rozstrzyga, że terminu nie ma. Doklejenie własnej wersji wiersza pokazywałoby
       // datę, której nikt nie zapisał.
-      setZadania(await getPlantCareTasks(roslina.id));
+      const swieze = await getPlantCareTasks(roslina.id);
+      setZadania(swieze);
       setNoweZadanie(null);
-      setKomunikat(t("zadanieDodane"));
+      // Komunikat mówi to, co serwer rozstrzygnął o TYM zadaniu — szukamy go po identyfikatorze
+      // zwróconym z zapisu, a nie „czy któreś zadanie nie ma daty". Bezwarunkowe „pojawi się
+      // w agendzie" przeczyło liście stojącej bezpośrednio nad nim: zadanie bez terminu do agendy
+      // nie trafia, bo ta pyta o `nextDueAt` w horyzoncie.
+      const dodane = swieze.find((z) => z.id === id);
+      setKomunikat(dodane && dodane.nextDueAt === null ? t("zadanieDodaneBezTerminu") : t("zadanieDodane"));
     });
   }
 
@@ -695,7 +709,7 @@ export function RoslinaSzczegol({
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{z.title}</span>
                   <span style={drobny}>
-                    {z.nextDueAt ? z.nextDueAt.slice(0, 10) : t("bezTerminu")}
+                    {z.nextDueAt ? dzienLokalny(z.nextDueAt) : t("bezTerminu")}
                   </span>
                   {z.active && (
                     <button

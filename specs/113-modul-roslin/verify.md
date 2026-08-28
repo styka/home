@@ -175,6 +175,7 @@ reguła milczy — tak samo jak milczy dla wpisu bez rodziny.
 | 3 | ⛔ ZMIANY WYMAGANE (recenzja 1) | 12 ustaleń (U-1…U-12), wszystkie potwierdzone w kodzie przed przyjęciem. Dwa twierdzenia z przebiegu 2 obalone: „C-35 naprawiona" (sprawdzano listę zamkniętą z przebiegu 1, nie eksporty modułu) i dowody AC-7/AC-28 (akcja bez wejścia z interfejsu; guard bez zakresu list). Do tego: wyciek przez `parentId`/`plantId` podane wprost do Server Action, zero w wymaganiach wodnych czytane jak brak danych, eksport ewidencji bez okresu, formularz zabiegu bez daty i przedmiotu, `window.prompt`, kubełek agendy w strefie serwera, wyścig w `harvestToPantry`. Domknięte w T-56…T-68. |
 | 4 | ⛔ ZMIANY WYMAGANE (recenzja 2) | 12 ustaleń (F-1…F-12), wszystkie potwierdzone w kodzie przed przyjęciem. Trzy blokujące: **formularza zabiegu nie dało się otworzyć przy pustym rejestrze** (stan `empty` rysuje `ViewEmpty` ZAMIAST `children`, więc ewidencja była nieosiągalna dokładnie dla tego, kto ma ją założyć), **migawka kasowanej przestrzeni nadal gubiła dziennik, pomiary i diagnozy** (`plants: true` bez zagnieżdżeń, więc pętla przywracająca dzieci była no-opem — U-2 piętro wyżej) i **`propagatePlant` pominięte w T-62** (`placeId` z klienta prosto do zapisu). Do tego dwa uderzające w kryteria: gatunek z zerem w bieżącej porze nie dostawał zadania NIGDY i nie było czym tego naprawić (AC-8), a własność rośliny szła z parametru `teamId` zamiast z przestrzeni, więc usunięcie konta członka zespołu zabierało zespołowi uprawę. Domknięte w T-69…T-80. |
 | 5 | ⛔ ZMIANY WYMAGANE (recenzja 3) | 8 ustaleń (R-1…R-8), **trzy z nich to skutki uboczne poprawek z przebiegu 4** — i to jest najważniejsza obserwacja z całej serii. Blokujące: poprawka F-7 zamieniła naruszenie AC-2 na naruszenie **AC-3** (bez przełącznika „zaawansowane" tryb `home`/`garden` nie chował pola fazy, tylko je ODBIERAŁ), a poprawka F-6 przeliczyła na strefę użytkownika NAZWĘ pliku ewidencji, zostawiając jego TREŚĆ w strefie procesu — zabieg z 00:30 czasu polskiego trafiał do dokumentu z datą spoza okresu, który głosi nazwa pliku. Do tego: `createCareTask` nie czytało flagi, której znaczenie ta sama runda zmieniła (podlewanie pszenicy dostawało termin za miesiąc z uzasadnieniem „ten gatunek nie ma cyklu podlewania"), tekst pola obiecywał zabieg jednorazowy, którego moduł nie zna, uzasadnienie terminu trafiło wreszcie do bazy — z błędem gramatycznym („na wiosna"), a powiadomienia straciły dolną granicę okna. Domknięte w T-81…T-88. |
+| 6 | ✅ APPROVE Z UWAGAMI (recenzja 4) | 2 ustalenia, **żadne blokujące**. `recordCare` było trzecim pisarzem `nextDueAt` i jako jedyne nie dostało warunku `pomijac` — odhaczenie podlewania pszenicy przywracało techniczną datę, którą poprzednia runda usunęła. Naprawione nie przez trzecie powtórzenie warunku, tylko przez `terminDoZapisu` w domenie: jedna funkcja dla wszystkich trzech pisarzy, z własnym testem. Drugie: komunikat „pojawi się w agendzie" przeczył liście stojącej nad nim. Plus trzy kosmetyczne domknięcia. |
 
 **Wniosek do zapamiętania:** komplet zielonych bramek nie jest miarą kompletności funkcji. Bramki
 tego repozytorium pilnują *wpięcia w mechanizmy platformy*; „czy użytkownik ma jak z tego
@@ -204,13 +205,13 @@ z interfejsu oraz guard, który wpuszczał do pustego widoku.
 
 ---
 
-## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 5)
+## 7. Werdykt końcowy: ✅ GOTOWE (po przebiegu 6, recenzja APPROVE Z UWAGAMI)
 
 Wszystkie 30 kryteriów akceptacji spełnione z dowodem — dwa z nich (**AC-7**, **AC-28**) dopiero po
 korekcie opisanej wyżej. Bramki: komplet zielony, w tym `check:domain`, `check:owner-columns`,
 `check:route-gating`, `check:pagination`, `check:i18n` i budżet wydajnościowy. `next build`
-przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1469 testów jednostkowych
-i integracyjnych zielonych**, dwie zapadki podniesione świadomie: rejestr modułów 23 → 24 oraz
+przechodzi na lokalnym Postgresie (C-13 — produkcyjna baza nietknięta), **1472 testy jednostkowe
+i integracyjne zielone**, dwie zapadki podniesione świadomie: rejestr modułów 23 → 24 oraz
 kalendarz 14 → 16 zapytań przy `powtorzenia: 1` — najpierw nowy wkład modułu, potem jedno zapytanie
 o nadania, gdy kalendarz zaczął pytać o zakres tak samo jak agenda. W obu krokach powtórzenia
 zostały na 1, więc to nie jest N+1.

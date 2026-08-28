@@ -1,5 +1,5 @@
 import { prisma } from "@/platform/db/prisma";
-import { terminCykliczny, terminPodlewania, type PrognozaDobowa, type WynikTerminu } from "../domain/harmonogram";
+import { terminCykliczny, terminDoZapisu, terminPodlewania, type PrognozaDobowa, type WynikTerminu } from "../domain/harmonogram";
 import { czytajWymaganiaWodne } from "../domain/agenda";
 import { prognozaDlaPrzestrzeni } from "./pogoda";
 import type { Naslonecznienie } from "./typy";
@@ -137,8 +137,7 @@ export async function zalozHarmonogramPodlewania(plantId: string): Promise<void>
         placeId: roslina.placeId,
         kind: "WATERING",
         title: "Podlewanie",
-        nextDueAt: wynik.termin,
-        reason: wynik.uzasadnienie,
+        ...terminDoZapisu(wynik),
       },
       select: { id: true },
     });
