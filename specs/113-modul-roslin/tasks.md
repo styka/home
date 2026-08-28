@@ -37,24 +37,24 @@
 
 ## Faza 1 — Domena (czyste reguły z testami; niezależna od bazy)
 
-- [ ] **T-5** `[P]` — **`domain/harmonogram.ts`** — termin następnego zabiegu z (gatunek × miejsce ×
+- [x] **T-5** `[P]` — **`domain/harmonogram.ts`** — termin następnego zabiegu z (gatunek × miejsce ×
       sezon × prognoza) **wraz z jednozdaniowym uzasadnieniem**; przeliczenie od faktycznego
       wykonania; odsunięcie po opadach; ostrzeżenie przy przymrozku. Czysta funkcja — pogodę i datę
       dostaje parametrem. → **AC-8, AC-9, AC-10, AC-11**
       *Gotowe, gdy:* testy jednostkowe pokrywają cztery sezony, trzy nasłonecznienia i wariant
       „deszcz w prognozie"; brak importu Prismy.
-- [ ] **T-6** `[P]` — **`domain/plodozmian.ts`** — z historii miejsca i rodziny botanicznej wylicza
+- [x] **T-6** `[P]` — **`domain/plodozmian.ts`** — z historii miejsca i rodziny botanicznej wylicza
       ostrzeżenie (nie blokadę). → **AC-26**
       *Gotowe, gdy:* test pokazuje ostrzeżenie przy trzecim sezonie tej samej rodziny i milczenie
       przy zmianie rodziny.
-- [ ] **T-7** `[P]` — **`lib/tryb.ts`** — `poleWidoczne(tryb, pole)` + `etykietaFazy(kod, tryb)`.
+- [x] **T-7** `[P]` — **`lib/tryb.ts`** — `poleWidoczne(tryb, pole)` + `etykietaFazy(kod, tryb)`.
       Tryb **chowa domyślnie, nigdy nie blokuje**. → **AC-2, AC-3**
       *Gotowe, gdy:* test przechodzi całą tablicę (4 tryby × pola zawodowe) i potwierdza, że żadne
       pole nie jest niedostępne po „pokaż zaawansowane".
-- [ ] **T-8** `[P]` — **`lib/fenologia.ts`** — słownik faz BBCH (10 głównych + używane szczegółowe),
+- [x] **T-8** `[P]` — **`lib/fenologia.ts`** — słownik faz BBCH (10 głównych + używane szczegółowe),
       dwie prezentacje: kod dla trybu zawodowego, słowo po polsku dla hobby.
       *Gotowe, gdy:* test sprawdza, że każdy kod ma polską nazwę i że nieznany kod nie rzuca.
-- [ ] **T-9** — **Wpis w `src/lib/domain-coverage.json`** dla modułu (`decyzja: "domena"`, pliki
+- [x] **T-9** — **Wpis w `src/lib/domain-coverage.json`** dla modułu (`decyzja: "domena"`, pliki
       z T-5..T-8, powód).
       *Gotowe, gdy:* `npm run check:domain` przechodzi.
 
