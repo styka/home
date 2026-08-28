@@ -227,6 +227,11 @@ Wszystkie rozstrzygnięte w jedynym momencie pytań (C-55):
       widoczne i niezmienione co do zasady** — poprawiamy zużycie, nie prezentację (AC-18). Właściciel
       pytał „czy to błąd liczenia"; odpowiedź brzmi „nie", więc ukrywanie kwoty byłoby odpowiedzią na
       niezadane pytanie.
+- [x] **Ustalenie z rekonesansu (naniesione na etapie planu, C-54):** strażnik pętli **istnieje**
+      i to nie on zatrzymał zgłoszony przebieg. Asystent przerywa po dwóch jałowych iteracjach, ale
+      w sesji „pies Raj" **każda** iteracja przynosiła nowe dane — przebieg zwyczajnie dobił do
+      limitu kroków. Brakowało więc nie strażnika, lecz **domknięcia wynikiem** (AC-6); zakres
+      pozostaje bez zmian, ale przyczyna jest inna, niż sugerowało zgłoszenie.
 - [x] **Założenie przyjęte domyślnie:** ścieżka zgłoszenia z trybu wskazywania elementu **już nie
       woła modelu** (zmiana z przebiegu 099 — zgłoszenie zapisuje się natychmiast). Dokładnie ten
       przebieg, który kosztował 30 groszy, jest więc nieosiągalny. Nie unieważnia to zgłoszenia:
