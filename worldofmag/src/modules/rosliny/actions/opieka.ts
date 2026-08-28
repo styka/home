@@ -8,7 +8,8 @@ import { assertSpaceAccess } from "./przestrzenie";
 import { assertPlantAccess } from "./rosliny";
 import { prognozaDlaPrzestrzeni } from "../lib/pogoda";
 import { terminCykliczny, terminPodlewania, type PrognozaDobowa } from "../domain/harmonogram";
-import { WYMAGANIA_WODNE_DOMYSLNE, type Naslonecznienie, type RodzajZabiegu, type WymaganiaWodne, type WynikZabiegu } from "../lib/typy";
+import { czytajWymaganiaWodne, kubelekAgendy } from "../domain/agenda";
+import type { Naslonecznienie, RodzajZabiegu, WynikZabiegu } from "../lib/typy";
 
 /**
  * 113 — HARMONOGRAM OPIEKI I ZDARZENIA-ZABIEGI.
@@ -41,15 +42,6 @@ export interface PozycjaAgendy {
 }
 
 const MS_DZIEN = 86_400_000;
-
-function kubelek(nextDueAt: Date | null, teraz: Date): "OVERDUE" | "TODAY" | "SOON" {
-  if (!nextDueAt) return "SOON";
-  const koniecDnia = new Date(teraz);
-  koniecDnia.setHours(23, 59, 59, 999);
-  if (nextDueAt.getTime() < teraz.getTime() - MS_DZIEN) return "OVERDUE";
-  if (nextDueAt.getTime() <= koniecDnia.getTime()) return "TODAY";
-  return "SOON";
-}
 
 /**
  * Agenda opieki ze WSZYSTKICH przestrzeni użytkownika.
@@ -96,26 +88,8 @@ export async function getCareAgenda(opts?: { spaceId?: string; dni?: number }): 
     title: z.title,
     nextDueAt: z.nextDueAt?.toISOString() ?? null,
     reason: z.reason,
-    bucket: kubelek(z.nextDueAt, teraz),
+    bucket: kubelekAgendy(z.nextDueAt, teraz),
   }));
-}
-
-/** Wymagania wodne gatunku rośliny — z jej kopii gatunku w przestrzeni, z zapasem domyślnym. */
-function czytajWymagania(waterJson: string | null | undefined): WymaganiaWodne {
-  if (!waterJson) return WYMAGANIA_WODNE_DOMYSLNE;
-  try {
-    const parsed = JSON.parse(waterJson) as Partial<WymaganiaWodne>;
-    return {
-      winter: Number(parsed.winter) || WYMAGANIA_WODNE_DOMYSLNE.winter,
-      spring: Number(parsed.spring) || WYMAGANIA_WODNE_DOMYSLNE.spring,
-      summer: Number(parsed.summer) || WYMAGANIA_WODNE_DOMYSLNE.summer,
-      autumn: Number(parsed.autumn) || WYMAGANIA_WODNE_DOMYSLNE.autumn,
-    };
-  } catch {
-    // Uszkodzony JSON traktujemy jak brak danych — wartości domyślne dadzą sensowny termin,
-    // a wywalenie agendy przez jeden zepsuty wiersz byłoby znacznie gorsze.
-    return WYMAGANIA_WODNE_DOMYSLNE;
-  }
 }
 
 /** Kontekst potrzebny regule terminu: gatunek, miejsce, tryb przestrzeni, prognoza. */
@@ -151,7 +125,7 @@ async function kontekstTerminu(taskId: string) {
     // Deszcz nie podleje rośliny stojącej w mieszkaniu — to jedyne miejsce, w którym tryb
     // przestrzeni wpływa na regułę, a nie tylko na wygląd.
     podDachem: zadanie.space.kind === "home",
-    wymagania: czytajWymagania(zadanie.plant?.species?.waterJson),
+    wymagania: czytajWymaganiaWodne(zadanie.plant?.species?.waterJson),
   };
 }
 

@@ -132,10 +132,13 @@
       "pliki": [
         "domain/harmonogram.ts",
         "domain/plodozmian.ts",
+        "domain/agenda.ts",
+        "domain/roslina.ts",
         "lib/tryb.ts",
-        "lib/fenologia.ts"
+        "lib/fenologia.ts",
+        "lib/eksportEwidencji.ts"
       ],
-      "powod": "113: cztery reguły, z których każda decyduje o czymś, czego z widoku nie widać. `harmonogram` — termin zabiegu z gatunku, miejsca, pory roku i prognozy WRAZ z uzasadnieniem: odstęp podlewania nie jest stałą gatunku, a zdanie „dlaczego dziś\" jest częścią wyniku, nie ozdobą. `plodozmian` — ostrzeżenie (nigdy blokada) z historii miejsca i rodziny botanicznej; przerwa w historii kończy liczenie, bo o to właśnie w płodozmianie chodzi. `tryb` — reguła „tryb CHOWA domyślnie, nigdy nie BLOKUJE\", sprawdzalna tablicą 4 tryby × 7 pól zamiast klikaniem. `fenologia` — jeden słownik faz BBCH w dwóch prezentacjach (kod dla zawodowca, słowo dla hobbysty); nieznany kod schodzi do fazy głównej, bo etykiety preparatów podają fazy spoza listy. Dwie ostatnie zostają w `lib/`, a nie w `domain/`, świadomie: czyta je także warstwa widoku, a `domain/` w tym repo trzyma reguły wyprowadzone z plików akcji."
+      "powod": "113: cztery reguły, z których każda decyduje o czymś, czego z widoku nie widać. `harmonogram` — termin zabiegu z gatunku, miejsca, pory roku i prognozy WRAZ z uzasadnieniem: odstęp podlewania nie jest stałą gatunku, a zdanie „dlaczego dziś\" jest częścią wyniku, nie ozdobą. `plodozmian` — ostrzeżenie (nigdy blokada) z historii miejsca i rodziny botanicznej; przerwa w historii kończy liczenie, bo o to właśnie w płodozmianie chodzi. `tryb` — reguła „tryb CHOWA domyślnie, nigdy nie BLOKUJE\", sprawdzalna tablicą 4 tryby × 7 pól zamiast klikaniem. `fenologia` — jeden słownik faz BBCH w dwóch prezentacjach (kod dla zawodowca, słowo dla hobbysty); nieznany kod schodzi do fazy głównej, bo etykiety preparatów podają fazy spoza listy. `agenda` i `roslina` wyprowadzono z plików akcji dopiero po zgłoszeniu zapadki i to jest dowód, że działa: kubełek agendy („zaległe zaczynają się DOBĘ po terminie, nie w chwili jego minięcia\"), odczyt wymagań wodnych (uszkodzony JSON = wartości domyślne, nie awaria całej agendy), zapasowy tryb przestrzeni i przepisanie wiersza rośliny (nazwa gatunku wpisana z ręki NIE znika, gdy nie ma dopasowania w słowniku) to cztery decyzje, które w pliku „use server\" byłyby niesprawdzalne. `tryb`, `fenologia` i `eksportEwidencji` zostają w `lib/` świadomie: czyta je także warstwa widoku, a `domain/` w tym repo trzyma reguły wyprowadzone z plików akcji."
     },
     "services": {
       "decyzja": "regula-w-lib",

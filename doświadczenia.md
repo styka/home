@@ -4,6 +4,27 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Akcja użytkownika o nazwie `resolve…` cicho wypada z bramki pokrycia AI
+**Problem:** W nowym module Rośliny akcja `resolveHealthEvent` („czy zalecenie pomogło") nie
+pojawiła się na liście kandydatów `check:ai-coverage`, a wpis dodany dla niej w manifeście został
+zgłoszony jako **przestarzały** („akcja już nie istnieje"). Akcja istniała, była wyeksportowana
+z pliku `"use server"` i miała guard.
+
+**Rozwiązanie:** Bramka odsiewa pomocniki wewnętrzne regexpem
+`^(assert|ensure|find|preview|describe|has|is|count|resolve|read)` — a `resolveHealthEvent` zaczyna
+się od `resolve`. Nazwa została zmieniona na `markHealthOutcome`, przez co akcja wróciła do
+klasyfikacji. Powód zapisany w komentarzu przy funkcji, żeby nikt nie „poprawił" nazwy z powrotem.
+
+**Lekcja:** Heurystyka po przedrostku nazwy jest tania i skuteczna, ale ma cichy tryb porażki:
+akcja NIE zgłasza się jako niesklasyfikowana, tylko **znika z listy kandydatów**. Objaw jest więc
+odwrotny do intuicji — zamiast błędu „brakuje wpisu" dostajemy ostrzeżenie „wpis jest zbędny".
+Przy nazywaniu nowych Server Actions unikaj przedrostków z tej listy dla operacji, które są
+**działaniem użytkownika**; `resolve`, `read` i `find` zarezerwuj dla prawdziwych pomocników.
+Gdy manifest mówi „akcja już nie istnieje", a ty ją widzisz w kodzie — to jest sygnał, że wpadła
+w ten filtr, a nie że masz literówkę.
+
+---
+
 ## 2026-08-28 — Dwa zgłoszenia o różnych objawach, jedna przyczyna: prompt płacony od nowa w każdej iteracji
 **Problem:** Właściciel zgłosił dwie rzeczy, które wyglądały na niezwiązane. Raz: asystent nie
 potrafił założyć psa w module Zwierzęta na podstawie zadań — wykonał **11 odczytów w 6 iteracjach**

@@ -1,12 +1,4 @@
 {
-  "src/modules/news/actions/news.ts": {
-    "mode": "on-demand",
-    "reason": "111: w tym pliku zostalo JEDNO wywolanie modelu — resummarizeItem. Zostaje `on-demand`, bo wywolanie dzieje sie na wyrazny klik uzytkownika. UZASADNIENIE Z 086 ('pamiec zwrocilaby nie to, o co uzytkownik poprosil') przestalo byc prawdziwe i dlatego jest tu przepisane: od 111 akcja MA wlasna pamiec, ale PER POZIOM (tabela NewsItemSummary, unikat [itemId, length]), wiec zwraca dokladnie ten poziom, o ktory poproszono. Nie idzie to przez `rememberedContent`/`AiContent`, bo tamta pamiec jest kluczowana zakresem i warunkami generacji, a tu kluczem jest poziom szczegolowosci wybrany przez uzytkownika. Reczne 'Wygeneruj ponownie' (force) omija pamiec."
-  },
-  "src/modules/weather/actions/weather.ts": {
-    "mode": "remembered",
-    "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę. 080 (Z11): tą samą drogą idzie teraz ocena obserwatorów (kind weather.watchers). Wcześniej była jedyną sekcją AI wołaną z useEffect przy każdym wejściu na moduł — bez pamięci i bez trybu, więc każde wejście płaciło za wywołanie modelu, a każda odmowa kończyła się pustą listą i wiecznym spinnerem."
-  },
   "src/app/api/llm/category-hints/route.ts": {
     "mode": "on-demand",
     "reason": "Podpowiedzi do kategorii zamawiane kliknięciem, zależne od wpisywanego tekstu."
@@ -119,33 +111,37 @@
     "mode": "on-demand",
     "reason": "Rozpoznanie pozycji z konkretnego zdjęcia; wynik trafia do formularza."
   },
+  "src/modules/news/actions/news.ts": {
+    "mode": "on-demand",
+    "reason": "111: w tym pliku zostalo JEDNO wywolanie modelu — resummarizeItem. Zostaje `on-demand`, bo wywolanie dzieje sie na wyrazny klik uzytkownika. UZASADNIENIE Z 086 ('pamiec zwrocilaby nie to, o co uzytkownik poprosil') przestalo byc prawdziwe i dlatego jest tu przepisane: od 111 akcja MA wlasna pamiec, ale PER POZIOM (tabela NewsItemSummary, unikat [itemId, length]), wiec zwraca dokladnie ten poziom, o ktory poproszono. Nie idzie to przez `rememberedContent`/`AiContent`, bo tamta pamiec jest kluczowana zakresem i warunkami generacji, a tu kluczem jest poziom szczegolowosci wybrany przez uzytkownika. Reczne 'Wygeneruj ponownie' (force) omija pamiec."
+  },
   "src/modules/news/jobs/newsRefresh.ts": {
     "mode": "on-demand",
     "reason": "Przebieg odswiezania odpalany jawnym klikniecem „Odswiez”. Kazdy przejazd pracuje na INNYM materiale (nowe artykuly w puli), wiec zapamietany wynik z poprzedniego przebiegu bylby po prostu nieaktualny. Trwalosc daje tu baza — pozycje i fakty zostaja zapisane, a nie liczone od nowa przy kazdym wejsciu na widok. Zapamietywana jest natomiast lista goracych tematow (modules/news/lib/goraceTematy.ts, kind news.hotTopics) — od 086 ten przebieg sam ja przelicza, gdy przyszly nowe materialy."
-  },
-  "src/modules/pets/jobs/petsInsights.ts": {
-    "mode": "remembered",
-    "reason": "Porady dobrostanu zwierząt — treść do czytania, zależna od stałego zestawu zwierząt i zadań opieki."
-  },
-  "src/platform/jobs/handlers/skinGenerate.ts": {
-    "mode": "on-demand",
-    "reason": "Generowanie skórki z opisu — operacja odpalana kliknięciem, a wynik zależy WYŁĄCZNIE od tekstu wpisanego przed kliknięciem. Pamięć treści zwracałaby motyw wygenerowany dla poprzedniego opisu, czyli dokładnie to, czego użytkownik nie chce, gdy prosi o inny wygląd. Ponowne generowanie z tym samym opisem jest zamierzone — to sposób na dostanie innego wariantu."
-  },
-  "src/modules/shopping/jobs/storesGenerate.ts": {
-    "mode": "on-demand",
-    "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."
-  },
-  "src/platform/jobs/handlers/userFacts.ts": {
-    "mode": "on-demand",
-    "reason": "Wnioskowanie faktow o uzytkowniku odpalane jawnie i pracujace za kazdym razem na INNYM materiale (nowe zapisane/zablokowane pomysly, nowe tematy). Trwalosc daje tabela UserFact — hipotezy zostaja zapisane, wiec nic nie powstaje dwa razy; pamiec tresci zwrocilaby tu wynik sprzed zmiany zachowan, czyli dokladnie to, czego ten mechanizm ma nie robic."
   },
   "src/modules/news/lib/goraceTematy.ts": {
     "mode": "remembered",
     "reason": "Gorące tematy to treść DO CZYTANIA — lista powstaje raz i wraca z pamięci; 086 przeniosło rdzeń z akcji, żeby wołało go też zadanie odświeżania (force przy nowych materiałach)."
   },
+  "src/modules/pets/jobs/petsInsights.ts": {
+    "mode": "remembered",
+    "reason": "Porady dobrostanu zwierząt — treść do czytania, zależna od stałego zestawu zwierząt i zadań opieki."
+  },
+  "src/modules/rosliny/actions/analiza.ts": {
+    "mode": "remembered",
+    "reason": "113: plik niesie CZTERY wywołania modelu o dwóch różnych stosunkach do pamięci, i to jest świadome. Plan sezonu i wnioski o przestrzeni to treść DO CZYTANIA — ta sama przy każdym wejściu na widok przestrzeni — więc idą przez `rememberedContent` z trybem odświeżania i drugi raz nie kosztują. Identyfikacja i diagnoza ze zdjęcia są świadomie POZA pamięcią: każde zdjęcie jest inne, więc zapis oddawałby wynik policzony dla innego obrazu, a kliknięcie „rozpoznaj\" JEST prośbą o nowe wywołanie. Klasyfikacja pliku idzie za tym, co wymaga pamięci."
+  },
+  "src/modules/shopping/jobs/storesGenerate.ts": {
+    "mode": "on-demand",
+    "reason": "Układ sklepu generowany raz dla nowego sklepu; wynik zapisuje się jako graf sklepu."
+  },
   "src/modules/tasks/jobs/feedbackTitle.ts": {
     "mode": "on-demand",
     "reason": "Tytuł JEDNEGO, konkretnego zgłoszenia. Pamięć treści zwracałaby tytuł policzony dla innego opisu, a wynik i tak trwale zapisuje się w polu Task.title — to baza jest tu nośnikiem, nie AiContent."
+  },
+  "src/modules/weather/actions/weather.ts": {
+    "mode": "remembered",
+    "reason": "Lista propozycji „Co robić?\" i szczegółowe plany pomysłów — treść do czytania, wracająca przy każdym wejściu na stronę. 080 (Z11): tą samą drogą idzie teraz ocena obserwatorów (kind weather.watchers). Wcześniej była jedyną sekcją AI wołaną z useEffect przy każdym wejściu na moduł — bez pamięci i bez trybu, więc każde wejście płaciło za wywołanie modelu, a każda odmowa kończyła się pustą listą i wiecznym spinnerem."
   },
   "src/modules/youtube/actions/ai.ts": {
     "mode": "remembered",
@@ -154,5 +150,13 @@
   "src/modules/youtube/jobs/youtubeRefresh.ts": {
     "mode": "on-demand",
     "reason": "102: ocena „czy warto obejrzeć\" powstaje raz na film w przebiegu odświeżania i jest zapisywana w kolumnie (AC-11 wymaga sortowania listy po niej, czego pamięć treści nie umie). Pamięć zwracałaby ocenę sprzed zmiany materiału."
+  },
+  "src/platform/jobs/handlers/skinGenerate.ts": {
+    "mode": "on-demand",
+    "reason": "Generowanie skórki z opisu — operacja odpalana kliknięciem, a wynik zależy WYŁĄCZNIE od tekstu wpisanego przed kliknięciem. Pamięć treści zwracałaby motyw wygenerowany dla poprzedniego opisu, czyli dokładnie to, czego użytkownik nie chce, gdy prosi o inny wygląd. Ponowne generowanie z tym samym opisem jest zamierzone — to sposób na dostanie innego wariantu."
+  },
+  "src/platform/jobs/handlers/userFacts.ts": {
+    "mode": "on-demand",
+    "reason": "Wnioskowanie faktow o uzytkowniku odpalane jawnie i pracujace za kazdym razem na INNYM materiale (nowe zapisane/zablokowane pomysly, nowe tematy). Trwalosc daje tabela UserFact — hipotezy zostaja zapisane, wiec nic nie powstaje dwa razy; pamiec tresci zwrocilaby tu wynik sprzed zmiany zachowan, czyli dokladnie to, czego ten mechanizm ma nie robic."
   }
 }

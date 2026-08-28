@@ -8,6 +8,7 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
+import { roslinaNaDTO, type RoslinaDTO } from "../domain/roslina";
 import type { JednostkaLicznosci, StatusRosliny } from "../lib/typy";
 import { STATUSY_ZAKONCZONE } from "../lib/typy";
 
@@ -24,27 +25,6 @@ import { STATUSY_ZAKONCZONE } from "../lib/typy";
  * przelałeś sukulenty". Dlatego zakończenie NIE kasuje rekordu: byt znika z listy aktywnych,
  * ale zostaje w historii miejsca i w statystykach.
  */
-
-export interface RoslinaDTO {
-  id: string;
-  spaceId: string;
-  placeId: string | null;
-  placeName: string | null;
-  speciesId: string | null;
-  gatunek: string | null;
-  rodzina: string | null;
-  name: string;
-  quantity: number;
-  quantityUnit: JednostkaLicznosci;
-  stage: string | null;
-  status: StatusRosliny;
-  statusReason: string | null;
-  sownAt: string | null;
-  acquiredAt: string | null;
-  parentId: string | null;
-  photoUrl: string | null;
-  notes: string | null;
-}
 
 const SELECT_ROSLINY = {
   id: true,
@@ -66,52 +46,6 @@ const SELECT_ROSLINY = {
   place: { select: { name: true } },
   species: { select: { namePl: true, family: true } },
 } as const;
-
-type WierszRosliny = {
-  id: string;
-  spaceId: string;
-  placeId: string | null;
-  speciesId: string | null;
-  name: string;
-  customSpecies: string | null;
-  quantity: number;
-  quantityUnit: string;
-  stage: string | null;
-  status: string;
-  statusReason: string | null;
-  sownAt: Date | null;
-  acquiredAt: Date | null;
-  parentId: string | null;
-  photoUrl: string | null;
-  notes: string | null;
-  place: { name: string } | null;
-  species: { namePl: string; family: string | null } | null;
-};
-
-function naDTO(r: WierszRosliny): RoslinaDTO {
-  return {
-    id: r.id,
-    spaceId: r.spaceId,
-    placeId: r.placeId,
-    placeName: r.place?.name ?? null,
-    speciesId: r.speciesId,
-    // Gatunek ze słownika ma pierwszeństwo przed wpisanym z ręki — ale wpisany z ręki nie znika,
-    // bo dla użytkownika bez dopasowania w katalogu jest jedyną nazwą, jaką ma.
-    gatunek: r.species?.namePl ?? r.customSpecies ?? null,
-    rodzina: r.species?.family ?? null,
-    name: r.name,
-    quantity: r.quantity,
-    quantityUnit: r.quantityUnit as JednostkaLicznosci,
-    stage: r.stage,
-    status: r.status as StatusRosliny,
-    statusReason: r.statusReason,
-    sownAt: r.sownAt?.toISOString() ?? null,
-    acquiredAt: r.acquiredAt?.toISOString() ?? null,
-    parentId: r.parentId,
-    photoUrl: r.photoUrl,
-    notes: r.notes,
-  };
-}
 
 /**
  * Rzuca, jeśli użytkownik nie ma dostępu do rośliny.
@@ -147,8 +81,10 @@ export async function getPlants(opts?: {
     orderBy: [{ status: "asc" }, { name: "asc" }],
   });
 
-  return rosliny.map(naDTO);
+  return rosliny.map(roslinaNaDTO);
 }
+
+export type { RoslinaDTO };
 
 export interface RoslinaSzczegolDTO extends RoslinaDTO {
   rodzic: { id: string; name: string } | null;
@@ -172,7 +108,7 @@ export async function getPlant(id: string): Promise<RoslinaSzczegolDTO | null> {
   if (!r) return null;
 
   return {
-    ...naDTO(r),
+    ...roslinaNaDTO(r),
     rodzic: r.parent,
     potomstwo: r.offspring.map((o) => ({ id: o.id, name: o.name, status: o.status as StatusRosliny })),
   };

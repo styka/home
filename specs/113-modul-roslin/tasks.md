@@ -108,80 +108,80 @@
 
 ## Faza 3 — Rejestracja modułu i UI
 
-- [ ] **T-20** — **Deklaracja modułu.** `module.ts` (id `rosliny`, `module.rosliny`, `/rosliny`,
+- [x] **T-20** — **Deklaracja modułu.** `module.ts` (id `rosliny`, `module.rosliny`, `/rosliny`,
       `Sprout`, `var(--accent-green)`, `sideNav` leniwie, `szybkieCele`) + `module.server.ts`
       (`ai`, `calendar` — **bez `jobs`**, plan §9) + wpięcie w `src/lib/modules.tsx` i
       `src/lib/modules.server.ts`. **Nie dopisujemy do `permissions.ts`** (plan §4).
       *Gotowe, gdy:* `npm run check:module-registry` i `check:boundaries` przechodzą.
-- [ ] **T-21** — **Bramka trasy.** `src/app/rosliny/layout.tsx` z `wymagajDostepuDoModulu` (w
+- [x] **T-21** — **Bramka trasy.** `src/app/rosliny/layout.tsx` z `wymagajDostepuDoModulu` (w
       layoucie, bo obejmuje podtrasy). → **AC-27**
       *Gotowe, gdy:* `npm run check:route-gating` przechodzi.
-- [ ] **T-22** — **Teksty.** `messages/pl.json` → `modules.rosliny.*` dla wszystkich widoków
+- [x] **T-22** — **Teksty.** `messages/pl.json` → `modules.rosliny.*` dla wszystkich widoków
       z Fazy 3. Zero literałów z polskimi znakami w komponentach (**C-32**).
       *Gotowe, gdy:* `npm run check:i18n` przechodzi (reguła bezwzględna od 097).
-- [ ] **T-23** — **Lista przestrzeni** `/rosliny` (`ui/RoslinyPage.tsx` + wrapper): przestrzenie
+- [x] **T-23** — **Lista przestrzeni** `/rosliny` (`ui/RoslinyPage.tsx` + wrapper): przestrzenie
       z licznikiem roślin, kafel „do zrobienia dziś", zakładanie przestrzeni z wyborem trybu.
       `ModuleView` ze `state`, slot `settings`. → **AC-1**
-- [ ] **T-24** — **Widok przestrzeni** `/rosliny/[spaceId]`: rośliny, miejsca, przełącznik „pokaż
+- [x] **T-24** — **Widok przestrzeni** `/rosliny/[spaceId]`: rośliny, miejsca, przełącznik „pokaż
       zaawansowane" sterowany `lib/tryb`. → **AC-2, AC-3**
-- [ ] **T-25** — **Szczegół rośliny** `/rosliny/[spaceId]/roslina/[plantId]`: oś czasu (dziennik,
+- [x] **T-25** — **Szczegół rośliny** `/rosliny/[spaceId]/roslina/[plantId]`: oś czasu (dziennik,
       pomiary, opieka, zdrowie), potomstwo, zmiana statusu z powodem, `confirmDialog({ destructive:
       true })` przy usuwaniu. → **AC-5, AC-6, AC-13, AC-14**
-- [ ] **T-26** `[P]` — **Agenda opieki** `/rosliny/opieka` — pozycje ze wszystkich przestrzeni,
+- [x] **T-26** `[P]` — **Agenda opieki** `/rosliny/opieka` — pozycje ze wszystkich przestrzeni,
       **uzasadnienie terminu przy każdej**, wykonaj / pomiń / przesuń. → **AC-9, AC-10**
-- [ ] **T-27** `[P]` — **Katalog gatunków** `/rosliny/katalog` — wyszukiwarka, pochodzenie wpisu,
+- [x] **T-27** `[P]` — **Katalog gatunków** `/rosliny/katalog` — wyszukiwarka, pochodzenie wpisu,
       dodanie do swoich. → **AC-16, AC-17**
-- [ ] **T-28** `[P]` — **Ewidencja** `/rosliny/ewidencja` — rejestr + eksport; widok dostępny tylko
+- [x] **T-28** `[P]` — **Ewidencja** `/rosliny/ewidencja` — rejestr + eksport; widok dostępny tylko
       dla przestrzeni `production`/`field`. → **AC-24, AC-25**
-- [ ] **T-29** — **Nawigacja boczna modułu** `ui/RoslinySideNav.tsx` + `ShareDialog` w nagłówku
+- [x] **T-29** — **Nawigacja boczna modułu** `ui/RoslinySideNav.tsx` + `ShareDialog` w nagłówku
       przestrzeni. → **AC-28**
-- [ ] **T-30** — **Manifest kontraktu widoku** — wpis `rosliny` w `src/lib/ui/view-contract.json`
+- [x] **T-30** — **Manifest kontraktu widoku** — wpis `rosliny` w `src/lib/ui/view-contract.json`
       (klucz = moduł, `entries` = 6 widoków).
       *Gotowe, gdy:* `npm run check:ui-contract` przechodzi; zero hexów bez zadeklarowanej roli.
-- [ ] **T-31** — **Mobile i klawiatura (C-31).** Jednokolumnowy szczegół, cele dotyku `py-3`,
+- [x] **T-31** — **Mobile i klawiatura (C-31).** Jednokolumnowy szczegół, cele dotyku `py-3`,
       `env(safe-area-inset-bottom)` w stopkach modali, skróty `j/k`, `a/n`, `e`, `/`.
       *Gotowe, gdy:* przegląd przy 360 px nie daje przewijania poziomego ani dwóch pasków nawigacji.
 
 ## Faza 4 — AI i integracje
 
-- [ ] **T-32** — **Rodzaje treści AI.** `AiContentKind` += `"rosliny.planSezonu" | "rosliny.wnioski"`;
+- [x] **T-32** — **Rodzaje treści AI.** `AiContentKind` += `"rosliny.planSezonu" | "rosliny.wnioski"`;
       **obie** etykiety w `AI_SECTION_LABELS` (mapa pokrywa całą unię) i obie w `AI_SECTION_KINDS`.
       *Gotowe, gdy:* `tsc --noEmit` czysto.
-- [ ] **T-33** — **`actions/ai.ts` — identyfikacja i diagnoza** (`vision`): identyfikacja z propozycją
+- [x] **T-33** — **`actions/ai.ts` — identyfikacja i diagnoza** (`vision`): identyfikacja z propozycją
       do przyjęcia; diagnoza z **kontekstem rośliny** (gatunek, miejsce, 10 ostatnich zdarzeń,
       prognoza), wymuszonym poziomem pewności i **dopuszczalnym „nie wiem"**, zaleceniami w kolejności
       naturalne → biologiczne → chemiczne, zapisem `PlantHealthEvent` i akcją „zaplanuj zalecany
       zabieg". Model i provider **z konfiguracji** (C-40). → **AC-18, AC-19**
       *Gotowe, gdy:* test kontraktu odpowiedzi (walidacja JSON, `confidence`, wariant „nie wiem").
-- [ ] **T-34** — **`actions/ai.ts` — plan sezonu i wnioski** (`reasoning`, `rememberedContent`
+- [x] **T-34** — **`actions/ai.ts` — plan sezonu i wnioski** (`reasoning`, `rememberedContent`
       z `mode`): plan dla lokalizacji, trybu, tego co rośnie i historii miejsca; pozycje wysyłane do
       Zadań (`createTask`). `hashInputs` z `userContextStamp`. Obsługa `PendingContent` przez
       `AiContentPending` — **nigdy jako błąd**. → **AC-20, AC-21**
       *Gotowe, gdy:* test: drugie wejście nie woła modelu; zmiana warunków zapala `stale`.
-- [ ] **T-35** — **Wskaźnik kosztu.** `AiCostBadge` z **wymaganym** propem `akcja` w czterech
+- [x] **T-35** — **Wskaźnik kosztu.** `AiCostBadge` z **wymaganym** propem `akcja` w czterech
       miejscach („Rozpoznanie rośliny", „Diagnoza rośliny", „Plan sezonu", „Wnioski o przestrzeni")
       + `AiContentMeta` przy sekcjach pamiętanych. → **AC-22**
       *Gotowe, gdy:* `npm run check:cost-badge` i `npm run check:content-memory` przechodzą
       (wpis dla `actions/ai.ts` w manifeście pamięci treści z klasyfikacją i powodem).
-- [ ] **T-36** — **Asystent — odczyty i akcje.** `ai/{catalog,readTools,executor,index}.ts`;
+- [x] **T-36** — **Asystent — odczyty i akcje.** `ai/{catalog,readTools,executor,index}.ts`;
       read-toole `list_plant_spaces`, `list_plants` (z `offset`/`take`), `plant_care_agenda`; akcje
       `create_plant_space`, `create_plant`, `log_plant_care`, `add_plant_measurement`.
       `AIActionModule` += `"rosliny"`, cztery wpisy w `actionContract.ts` z polskimi etykietami,
       egzekutory w `/api/llm/home/execute`, wpięcie w `src/lib/ai/catalog.ts`. → **AC-23**
       *Gotowe, gdy:* `npm run check:actions` przechodzi.
-- [ ] **T-37** — **Manifest pokrycia AI i dostępu.** Wpis w `src/lib/ai/action-coverage.json` dla
+- [x] **T-37** — **Manifest pokrycia AI i dostępu.** Wpis w `src/lib/ai/action-coverage.json` dla
       **każdej** akcji i **każdego** odczytu modułu (`kind`, `status`, `action`, `access: "owner"`),
       przy faktycznym guardzie w ciele akcji.
       *Gotowe, gdy:* `npm run check:ai-coverage` i `npm run check:access` przechodzą.
-- [ ] **T-38** `[P]` — **Kalendarz.** `calendar.ts` — zaplanowane zabiegi w zakresie dat. → **AC-12**
-- [ ] **T-39** `[P]` — **Powiadomienia.** `syncReminders` w `src/actions/notifications.ts` +
+- [x] **T-38** `[P]` — **Kalendarz.** `calendar.ts` — zaplanowane zabiegi w zakresie dat. → **AC-12**
+- [x] **T-39** `[P]` — **Powiadomienia.** `syncReminders` w `src/actions/notifications.ts` +
       zapytanie o `plantCareTask` z `nextDueAt` w oknie 3 dni, idempotentnie po `dedupeKey`.
       → **AC-12**
-- [ ] **T-40** — **Pulpit.** `dashboard.ts` (`plantCareDue`, `plantAgenda`) + wpięcie w
+- [x] **T-40** — **Pulpit.** `dashboard.ts` (`plantCareDue`, `plantAgenda`) + wpięcie w
       `src/lib/dashboardContributors.ts` + pola w `DashboardSnapshot` (`@/modules/home/contract`).
       **`src/app/page.tsx` pozostaje nietknięta.** → **AC-29**
       *Gotowe, gdy:* `npm run check:module-registry` przechodzi (wpięcie w obie strony).
-- [ ] **T-41** `[P]` — **Retencja.** `retention.ts` — polityka na zdjęcia dziennika roślin
+- [x] **T-41** `[P]` — **Retencja.** `retention.ts` — polityka na zdjęcia dziennika roślin
       zakończonych; **rejestr zabiegów jawnie wyłączony** (dokumentacja o wymogu ustawowym, powód
       w pliku) + wpięcie w `src/lib/retention/polityki.ts`.
 

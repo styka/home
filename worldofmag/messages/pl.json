@@ -1245,6 +1245,42 @@
         "imieNazwa": "Imię / nazwa *"
       }
     },
+    "czat": {
+      "CzatPage": {
+        "tytul": "Czat",
+        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
+      },
+      "ListaRozmow": {
+        "rozmowy": "Rozmowy",
+        "nowaRozmowa": "Nowa rozmowa",
+        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
+      },
+      "WatekRozmowy": {
+        "wrocDoListy": "Wróć do listy rozmów",
+        "pisze": "{kto} pisze…",
+        "starsze": "Pokaż starsze wiadomości",
+        "ladowanie": "Wczytywanie…",
+        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
+        "edytowano": "(edytowano)",
+        "wiadomoscUsunieta": "Wiadomość usunięta",
+        "odpowiedz": "Odpowiedz",
+        "zareaguj": "Dodaj reakcję",
+        "edytuj": "Edytuj",
+        "usun": "Usuń",
+        "usunacWiadomosc": "Usunąć wiadomość?",
+        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
+        "przeczytanePrzez": "Przeczytane: {kto}"
+      },
+      "PoleWiadomosci": {
+        "napisz": "Napisz wiadomość…",
+        "wyslij": "Wyślij",
+        "zapisz": "Zapisz zmiany",
+        "anuluj": "Anuluj",
+        "edytujesz": "Edytujesz wiadomość",
+        "odpowiadaszNa": "Odpowiadasz: {autor}"
+      }
+    },
     "flota": {
       "FlotaHomePage": {
         "mojPrywatny": "Mój (prywatny)",
@@ -1991,6 +2027,217 @@
         "trescNaDyskuGoogle": "Treść na Dysku Google"
       }
     },
+    "rosliny": {
+      "SideNav": {
+        "opieka": "Opieka",
+        "katalog": "Katalog gatunków",
+        "ewidencja": "Ewidencja zabiegów",
+        "brakPrzestrzeni": "Brak przestrzeni"
+      },
+      "RoslinyPage": {
+        "tytul": "Rośliny",
+        "nowaPrzestrzen": "Nowa przestrzeń",
+        "trybOpis": "Tryb decyduje o tym, co widać domyślnie. Niczego nie blokuje — zawsze możesz pokazać pola zaawansowane.",
+        "nazwaPlaceholder": "np. Mieszkanie, Ogród przy domu, Kwiaciarnia",
+        "nazwaEtykieta": "Nazwa przestrzeni",
+        "trybEtykieta": "Tryb przestrzeni",
+        "zaloz": "Załóż",
+        "zalozPierwsza": "Załóż pierwszą przestrzeń",
+        "pustoTytul": "Nie masz jeszcze żadnej przestrzeni roślinnej",
+        "pustoOpis": "Przestrzeń to miejsce, w którym trzymasz rośliny — mieszkanie, ogród, kwiaciarnia albo pole. Możesz mieć ich kilka naraz.",
+        "naDzisTytul": "Do zrobienia dziś ({ile})",
+        "caleZestawienie": "Całe zestawienie opieki",
+        "licznik": "{rosliny} roślin · {miejsca} miejsc",
+        "zespol": "Zespół: {nazwa}",
+        "bladOgolny": "Nie udało się zapisać",
+        "tryb": {
+          "home": "Mieszkanie",
+          "garden": "Ogród",
+          "production": "Produkcja / kwiaciarnia",
+          "field": "Pole"
+        }
+      },
+      "PrzestrzenPage": {
+        "wroc": "← Wróć do przestrzeni",
+        "udostepnij": "Udostępnij",
+        "noweMiejsce": "Nowe miejsce",
+        "nowaRoslina": "Nowa roślina",
+        "zaawansowane": "Pokaż zaawansowane",
+        "nazwaRoslinyPlaceholder": "np. Monstera z salonu",
+        "nazwaRoslinyEtykieta": "Nazwa rośliny",
+        "nazwaMiejscaPlaceholder": "np. Parapet południowy, Grządka B, Pole 3",
+        "nazwaMiejscaEtykieta": "Nazwa miejsca",
+        "miejsceEtykieta": "Miejsce",
+        "bezMiejsca": "Bez miejsca",
+        "iloscEtykieta": "Ilość",
+        "jednostkaEtykieta": "Jednostka",
+        "dodaj": "Dodaj",
+        "roslinyTytul": "Rośliny ({ile})",
+        "brakRoslin": "W tej przestrzeni nie ma jeszcze roślin.",
+        "miejscaTytul": "Miejsca",
+        "miejsceLicznik": "{ile} roślin",
+        "planTytul": "Plan sezonu",
+        "planPusty": "Plan jest pusty — dodaj rośliny, żeby miał z czego wyjść.",
+        "wnioskiTytul": "Wnioski",
+        "statystyki": "Rośnie: {aktywne} · zakończonych: {zakonczone}",
+        "przezywalnosc": "przeżywalność {procent}%",
+        "generuj": "Generuj",
+        "tryb": {
+          "home": "Mieszkanie — rośliny doniczkowe, bez parametrów technicznych.",
+          "garden": "Ogród — grządki, strefy, sezon i pogoda.",
+          "production": "Produkcja — partie, fazy rozwoju i koszt jednostkowy.",
+          "field": "Pole — powierzchnie, fazy BBCH i ewidencja zabiegów."
+        },
+        "jednostka": {
+          "szt": "szt.",
+          "m2": "m²",
+          "ha": "ha"
+        }
+      },
+      "AgendaOpieki": {
+        "tytul": "Opieka",
+        "wroc": "← Wróć do przestrzeni",
+        "pustoTytul": "Nic nie czeka",
+        "pustoOpis": "Żaden zabieg nie wypada w najbliższych dniach.",
+        "zrobione": "Zrobione",
+        "odloz": "Odłóż",
+        "pomin": "Pomiń",
+        "grupa": {
+          "OVERDUE": "Zaległe",
+          "TODAY": "Na dziś",
+          "SOON": "Wkrótce"
+        }
+      },
+      "RoslinaSzczegol": {
+        "wroc": "← Wróć do przestrzeni",
+        "sadzonka": "Załóż sadzonkę",
+        "usun": "Usuń",
+        "zebrana": "Zebrana",
+        "sprzedana": "Sprzedana",
+        "padla": "Padła",
+        "potwierdzPadla": "Oznaczyć roślinę jako martwą?",
+        "potwierdzPadlaOpis": "Roślina zniknie z listy aktywnych, ale zostanie w historii miejsca i w statystykach.",
+        "podajPrzyczyne": "Co się stało? (np. przelana, przesuszona, przemarzła)",
+        "przyczynaWymagana": "Bez przyczyny ten wpis nic nie powie, gdy wrócisz do niego za rok.",
+        "potwierdzUsuniecie": "Usunąć roślinę „{nazwa}”?",
+        "potwierdzUsunieciaOpis": "Trafi do kosza — możesz ją stamtąd przywrócić.",
+        "rodowodTytul": "Rodowód",
+        "pochodziZ": "Pochodzi z:",
+        "diagnozaTytul": "Ocena stanu",
+        "diagnozaOpis": "Ocena bierze pod uwagę gatunek, miejsce, ostatnie zabiegi i pogodę — nie tylko to, co widać.",
+        "objawPlaceholder": "Co Cię niepokoi? np. żółkną dolne liście",
+        "objawEtykieta": "Opis objawu",
+        "oceń": "Oceń",
+        "pomoglo": "Pomogło",
+        "bezZmian": "Bez zmian",
+        "akcjaDiagnoza": "Diagnoza rośliny",
+        "dziennikTytul": "Dziennik",
+        "wpisPlaceholder": "Co się dziś wydarzyło?",
+        "wpisEtykieta": "Wpis do dziennika",
+        "brakWpisow": "Dziennik jest pusty.",
+        "dodaj": "Dodaj",
+        "pomiaryTytul": "Pomiary",
+        "rodzajPomiaruEtykieta": "Rodzaj pomiaru",
+        "wartoscPlaceholder": "Wartość",
+        "wartoscEtykieta": "Wartość pomiaru",
+        "brakPomiarow": "Brak pomiarów.",
+        "historiaTytul": "Historia zabiegów",
+        "bladOgolny": "Nie udało się wykonać operacji",
+        "jednostka": {
+          "szt": "szt.",
+          "m2": "m²",
+          "ha": "ha"
+        },
+        "status": {
+          "ACTIVE": "Rośnie",
+          "SOLD": "Sprzedana",
+          "HARVESTED": "Zebrana",
+          "DEAD": "Padła",
+          "ARCHIVED": "Zarchiwizowana"
+        },
+        "pomiar": {
+          "HEIGHT_CM": "Wysokość",
+          "LEAF_COUNT": "Liczba liści",
+          "TRUNK_CM": "Obwód pnia",
+          "SOIL_MOISTURE": "Wilgotność podłoża",
+          "TEMP_C": "Temperatura",
+          "PH": "Odczyn pH",
+          "LIGHT": "Światło",
+          "OTHER": "Inny pomiar"
+        },
+        "zabieg": {
+          "WATERING": "Podlewanie",
+          "FERTILIZING": "Nawożenie",
+          "PRUNING": "Przycinanie",
+          "REPOTTING": "Przesadzanie",
+          "SPRAYING": "Oprysk",
+          "MULCHING": "Ściółkowanie",
+          "SOWING": "Siew",
+          "HARVEST": "Zbiór",
+          "CUSTOM": "Inny zabieg"
+        },
+        "wynik": {
+          "DONE": "wykonane",
+          "SKIPPED": "pominięte",
+          "POSTPONED": "odłożone"
+        },
+        "pewnosc": {
+          "low": "Pewność: niska",
+          "medium": "Pewność: średnia",
+          "high": "Pewność: wysoka",
+          "unknown": "Nie da się tego rozstrzygnąć na podstawie tego, co jest"
+        },
+        "zalecenie": {
+          "naturalne": "naturalne",
+          "biologiczne": "biologiczne",
+          "chemiczne": "chemiczne"
+        }
+      },
+      "KatalogGatunkow": {
+        "tytul": "Katalog gatunków",
+        "wroc": "← Wróć do przestrzeni",
+        "szukajPlaceholder": "Nazwa polska lub łacińska",
+        "szukajEtykieta": "Szukaj gatunku",
+        "szukaj": "Szukaj",
+        "kategoriaEtykieta": "Kategoria",
+        "wszystkieKategorie": "Wszystkie kategorie",
+        "mojeTytul": "Moje gatunki ({ile})",
+        "katalogTytul": "Katalog",
+        "katalogOpis": "Dodanie do swoich tworzy Twoją kopię wpisu — możesz ją zmienić, nie ruszając katalogu.",
+        "brakWynikow": "Nic nie pasuje do tego wyszukiwania.",
+        "juzMam": "Masz już u siebie",
+        "dodajDoSwoich": "Dodaj do swoich",
+        "kategoria": {
+          "houseplant": "Doniczkowe",
+          "vegetable": "Warzywa",
+          "herb": "Zioła",
+          "fruit": "Owoce",
+          "cereal": "Polowe i zboża",
+          "ornamental": "Ozdobne",
+          "other": "Inne"
+        },
+        "pochodzenie": {
+          "system": "z katalogu",
+          "user": "wpis własny",
+          "ai": "propozycja AI"
+        }
+      },
+      "Ewidencja": {
+        "tytul": "Ewidencja zabiegów",
+        "wroc": "← Wróć do przestrzeni",
+        "eksportuj": "Eksportuj",
+        "pustoTytul": "Rejestr jest pusty",
+        "pustoOpis": "Zabiegi środkami ochrony roślin zapisane w przestrzeniach produkcyjnych i polowych pojawią się tutaj.",
+        "obowiazekTytul": "Co musi się tu znaleźć",
+        "obowiazekOpis": "Od 1 stycznia 2026 ewidencja zabiegów obejmuje dodatkowo rodzaj zastosowania środka, numer zezwolenia i dokładną lokalizację zabiegu. Zapisy trzeba doprowadzić do formy elektronicznej do 31 stycznia roku następującego po roku zastosowania.",
+        "niekompletne": "Niekompletnych wpisów: {ile}. Kontrola sprawdza kompletność danych — uzupełnij je przed oddaniem dokumentu.",
+        "rejestrTytul": "Zabiegi ({ile})",
+        "brakSrodka": "(brak nazwy środka)",
+        "zezwolenie": "zezwolenie {numer}",
+        "brakuje": "Brakuje: {pola}",
+        "wyeksportowano": "Wyeksportowano {ile} zabiegów, w tym niekompletnych: {braki}."
+      }
+    },
     "services": {
       "AvailabilityEditor": {
         "dostepnoscDoRezerwacji": "Dostępność do rezerwacji",
@@ -2720,42 +2967,6 @@
           "reczne": "dodany ręcznie",
           "subskrypcje": "z subskrypcji"
         }
-      }
-    },
-    "czat": {
-      "CzatPage": {
-        "tytul": "Czat",
-        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
-      },
-      "ListaRozmow": {
-        "rozmowy": "Rozmowy",
-        "nowaRozmowa": "Nowa rozmowa",
-        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
-        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
-      },
-      "WatekRozmowy": {
-        "wrocDoListy": "Wróć do listy rozmów",
-        "pisze": "{kto} pisze…",
-        "starsze": "Pokaż starsze wiadomości",
-        "ladowanie": "Wczytywanie…",
-        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
-        "edytowano": "(edytowano)",
-        "wiadomoscUsunieta": "Wiadomość usunięta",
-        "odpowiedz": "Odpowiedz",
-        "zareaguj": "Dodaj reakcję",
-        "edytuj": "Edytuj",
-        "usun": "Usuń",
-        "usunacWiadomosc": "Usunąć wiadomość?",
-        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
-        "przeczytanePrzez": "Przeczytane: {kto}"
-      },
-      "PoleWiadomosci": {
-        "napisz": "Napisz wiadomość…",
-        "wyslij": "Wyślij",
-        "zapisz": "Zapisz zmiany",
-        "anuluj": "Anuluj",
-        "edytujesz": "Edytujesz wiadomość",
-        "odpowiadaszNa": "Odpowiadasz: {autor}"
       }
     }
   }

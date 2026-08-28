@@ -7,8 +7,8 @@ import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess } from "../lib/sharingGuard";
+import { trybLubDomyslny } from "../domain/agenda";
 import type { TrybPrzestrzeni } from "../lib/typy";
-import { TRYBY_PRZESTRZENI } from "../lib/typy";
 
 /**
  * 113 — PRZESTRZENIE ROŚLINNE.
@@ -28,10 +28,6 @@ export interface PrzestrzenDTO {
   liczbaRoslin: number;
   liczbaMiejsc: number;
   zespol: { id: string; name: string } | null;
-}
-
-function trybLubDomyslny(kind: string | null | undefined): TrybPrzestrzeni {
-  return TRYBY_PRZESTRZENI.includes(kind as TrybPrzestrzeni) ? (kind as TrybPrzestrzeni) : "home";
 }
 
 export async function getSpaces(): Promise<PrzestrzenDTO[]> {

@@ -133,7 +133,7 @@ export async function syncReminders(): Promise<number> {
   const in14 = new Date(now.getTime() + 14 * MS_DAY);
 
   const weekLookbackISO = isoDay(new Date(now.getTime() - 8 * MS_DAY));
-  const [tasks, health, vehicles, petCare, petTreatments, pantry, dueCards, svcRequests, habits] = await Promise.all([
+  const [tasks, health, vehicles, petCare, petTreatments, pantry, dueCards, svcRequests, habits, plantCare] = await Promise.all([
     prisma.task.findMany({
       take: LIMIT_PRZYPOMNIEN,
       where: {
@@ -184,6 +184,15 @@ export async function syncReminders(): Promise<number> {
       where: { archived: false, OR: ownScope },
       select: { id: true, name: true, daysOfWeek: true, weeklyGoal: true, entries: { where: { date: { gte: weekLookbackISO } }, select: { date: true } } },
     }),
+    // 113: zabiegi przy roślinach. Zakres idzie przez PRZESTRZEŃ, a nie przez zadanie:
+    // `PlantCareTask` nie ma własnej kolumny przestrzeni (wisi na `PlantSpace`), więc pytanie
+    // o nią byłoby pytaniem o pole, którego ta tabela nie ma — dokładnie ten błąd łapie
+    // bramka `check:owner-columns`.
+    prisma.plantCareTask.findMany({
+      take: LIMIT_PRZYPOMNIEN,
+      where: { active: true, nextDueAt: { gte: now, lt: in3 }, space: { is: { OR: ownScope } } },
+      select: { id: true, title: true, nextDueAt: true, spaceId: true, plantId: true, plant: { select: { name: true } } },
+    }),
   ]);
 
   const jobs: Promise<void>[] = [];
@@ -221,6 +230,19 @@ export async function syncReminders(): Promise<number> {
     jobs.push(notifyUser({
       userId: user.id, module: "pets", title: `Opieka: ${c.title}${c.pet?.name ? ` — ${c.pet.name}` : ""}`,
       dueAt: c.nextDueAt, href: `/pets/${c.petId}`, dedupeKey: `petcare-${c.id}-${isoDay(c.nextDueAt)}`,
+    }));
+  }
+  for (const z of plantCare) {
+    if (!z.nextDueAt) continue;
+    jobs.push(notifyUser({
+      userId: user.id,
+      module: "rosliny",
+      title: `Rośliny: ${z.title}${z.plant?.name ? ` — ${z.plant.name}` : ""}`,
+      dueAt: z.nextDueAt,
+      // Zadanie może dotyczyć całej grządki, a nie pojedynczej rośliny — wtedy prowadzimy do
+      // przestrzeni. Adres do nieistniejącej rośliny byłby powiadomieniem donikąd.
+      href: z.plantId ? `/rosliny/${z.spaceId}/roslina/${z.plantId}` : `/rosliny/${z.spaceId}`,
+      dedupeKey: `plantcare-${z.id}-${isoDay(z.nextDueAt)}`,
     }));
   }
   for (const tr of petTreatments) {

@@ -88,6 +88,40 @@ export const MEDICATION_FREQ_OPTIONS = optionsFrom({
   WEEKLY: "W wybrane dni tygodnia",
   HOURLY: "Co określoną liczbę godzin",
 });
+// 113: słowniki modułu Rośliny. Wartości techniczne (te, którymi mówi model) tłumaczone na słowa,
+// które użytkownik widzi w podglądzie planu — bez tego zatwierdzałby akcję opisaną kodem.
+export const PLANT_SPACE_MODE_OPTIONS = optionsFrom({
+  home: "Mieszkanie",
+  garden: "Ogród",
+  production: "Produkcja / kwiaciarnia",
+  field: "Pole",
+});
+export const PLANT_QUANTITY_UNIT_OPTIONS = optionsFrom({
+  szt: "sztuki",
+  m2: "metry kwadratowe",
+  ha: "hektary",
+});
+export const PLANT_CARE_KIND_OPTIONS = optionsFrom({
+  WATERING: "Podlewanie",
+  FERTILIZING: "Nawożenie",
+  PRUNING: "Przycinanie",
+  REPOTTING: "Przesadzanie",
+  SPRAYING: "Oprysk",
+  MULCHING: "Ściółkowanie",
+  SOWING: "Siew",
+  HARVEST: "Zbiór",
+  CUSTOM: "Inny zabieg",
+});
+export const PLANT_MEASUREMENT_KIND_OPTIONS = optionsFrom({
+  HEIGHT_CM: "Wysokość",
+  LEAF_COUNT: "Liczba liści",
+  TRUNK_CM: "Obwód pnia",
+  SOIL_MOISTURE: "Wilgotność podłoża",
+  TEMP_C: "Temperatura",
+  PH: "Odczyn pH",
+  LIGHT: "Natężenie światła",
+  OTHER: "Inny pomiar",
+});
 export const PET_SPECIES_OPTIONS = optionsFrom({
   dog: "Pies",
   cat: "Kot",
@@ -183,6 +217,20 @@ export const PARAM_LABELS: Record<string, string> = {
   // parser kontraktu w bramce dopasowuje blok wpisu do pierwszej linii `  },`, więc wpis
   // jednoliniowy stojący wyżej połyka następne i `fields` przestaje być widziane.
   adresKanalu: "Odnośnik lub uchwyt kanału",
+  // 113 (Rośliny): nazwy są jednoznaczne w skali całej aplikacji, więc etykiety mieszkają
+  // w słowniku WSPÓLNYM. `rodzaj` i `jednostka` mają dodatkowo listy wartości w `fields` swoich
+  // akcji — tam, gdzie znaczą co innego (rodzaj zabiegu vs rodzaj pomiaru).
+  przestrzen: "Przestrzeń roślinna",
+  miejsce: "Miejsce",
+  gatunek: "Gatunek",
+  ilosc: "Ilość",
+  jednostka: "Jednostka",
+  tryb: "Tryb",
+  rodzaj: "Rodzaj",
+  wartosc: "Wartość",
+  roslina: "Roślina",
+  nazwa: "Nazwa",
+  notatka: "Notatka",
   amount: "Kwota",
   active: "Aktywne",
   // 112: pola profilu zwierzęcia — nazwy znaczą to samo w `add_pet` i `update_pet`, więc
@@ -551,6 +599,15 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   add_youtube_channel: { label: "Dodaj kanał YouTube" },
   refresh_youtube: { label: "Odśwież YouTube" },
   mark_youtube_watched: { label: "Oznacz film jako obejrzany" },
+
+  // ── ROŚLINY ───────────────────────────────────────────────────────────────
+  // 113: żadna z tych akcji nie jest destrukcyjna. Usuwanie rośliny i przestrzeni świadomie NIE
+  // wchodzi do katalogu asystenta — nie ma go w kryteriach akceptacji, a dopisanie wymagałoby
+  // rozszerzenia `DESTRUCTIVE_ACTION_TYPES` bez potrzeby (C-53).
+  create_plant_space: { label: "Załóż przestrzeń roślinną", fields: { tryb: sel("Tryb", PLANT_SPACE_MODE_OPTIONS) } },
+  create_plant: { label: "Dodaj roślinę", fields: { jednostka: sel("Jednostka", PLANT_QUANTITY_UNIT_OPTIONS), notatka: longText("Notatki") } },
+  log_plant_care: { label: "Odnotuj zabieg przy roślinie", fields: { rodzaj: sel("Rodzaj zabiegu", PLANT_CARE_KIND_OPTIONS), notatka: longText("Notatka") } },
+  add_plant_measurement: { label: "Zapisz pomiar rośliny", fields: { rodzaj: sel("Rodzaj pomiaru", PLANT_MEASUREMENT_KIND_OPTIONS) } },
 
   // ── POGODA ────────────────────────────────────────────────────────────────
   add_weather_location: { label: "Dodaj lokalizację pogodową" },
