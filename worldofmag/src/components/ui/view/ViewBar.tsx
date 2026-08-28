@@ -5,6 +5,20 @@ import Link from "next/link";
 import { HelpCircle, Settings2 } from "lucide-react";
 
 /**
+ * 111: klasa, którą moduł oznacza akcję będącą **samą ikoną** — taka nie rozciąga się w pasku.
+ *
+ * Wyjątek jest po stronie ikony, a nie tekstu, i to jest cała decyzja. Domyślne rozciąganie
+ * wszystkich akcji weszło w 087 z dobrego powodu (wiersz dosunięty do prawej z pustą lewą połową
+ * wyglądał źle) i zostaje nietknięte we wszystkich widokach. Zgłoszenie z Wiadomości dotyczyło
+ * czego innego: „po równo" znaczy też, że ikona dostaje tyle samo miejsca co przycisk z tekstem,
+ * a ikona nie ma czym wypełnić stu dwudziestu pikseli.
+ *
+ * Regułę (`flex: none`) niesie `globals.css`, bo warunek „poniżej md" należy do PASKA, a klasę
+ * nadaje moduł, który o pasku nic nie wie.
+ */
+export const KLASA_AKCJI_IKONOWEJ = "omnia-akcja-ikonowa";
+
+/**
  * 045 — pasek bieżącego widoku. Trzy strefy:
  *
  *   [ filtry modułu ] … [ akcje modułu ] [ chrom powłoki ]
@@ -134,6 +148,7 @@ export function ViewBar({ filters, actions, settings, help, compact, title, titl
         {(actions || settings || help) && (
           <div className="ml-auto flex flex-1 items-center gap-1.5 [&>*]:flex-1 md:order-3 md:ml-0 md:flex-none md:shrink-0 md:[&>*]:flex-none">
             {actions}
+            {/* 111: ikony ramy są ikoną z definicji, więc rozciąganie ich nie ma znaczenia. */}
             {help && <PrzyciskPomocy {...help} />}
             {settings && <PrzyciskUstawien {...settings} />}
           </div>
@@ -181,6 +196,7 @@ function PrzyciskPomocy({ href, label }: NonNullable<ViewBarProps["help"]>) {
       href={href}
       title={label}
       aria-label={label}
+      className={KLASA_AKCJI_IKONOWEJ}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -224,13 +240,21 @@ function PrzyciskUstawien({ onClick, href, active, label }: NonNullable<ViewBarP
   const wnetrze = <Settings2 size={16} />;
   if (href) {
     return (
-      <Link href={href} title={label} aria-label={label} style={styl}>
+      <Link href={href} title={label} aria-label={label} className={KLASA_AKCJI_IKONOWEJ} style={styl}>
         {wnetrze}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} title={label} aria-label={label} aria-pressed={active} style={styl}>
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      className={KLASA_AKCJI_IKONOWEJ}
+      style={styl}
+    >
       {wnetrze}
     </button>
   );

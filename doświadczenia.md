@@ -4,6 +4,120 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-28 — Pięć zgłoszeń, z których każde miało przyczynę w innym miejscu niż objaw
+**Problem:** Właściciel zgłosił pięć usterek z trybu „wskaż element". Cztery z nich wyglądały na
+drobiazgi UI, a wszystkie miały przyczynę o piętro niżej niż miejsce, które wskazał.
+
+1. **Powrót „wstecz" pokazywał stronę od góry.** Bo w Omnii **nie przewija się okno**: rama widoku
+   (`ModuleView`) trzyma treść we własnym kontenerze z `overflow-y: auto`, a `<main>` powyżej ma
+   `overflow: hidden`. Przywracanie pozycji przez przeglądarkę i przez Next dotyczy **okna**, więc
+   dla tego kontenera po prostu nie istniało — i nic w aplikacji jego pozycji nie zapisywało.
+2. **„Wiedza o Tobie" nie rosła z korzystania.** Zadanie `user.facts` było kolejkowane z **dokładnie
+   jednego miejsca w całej aplikacji** — przycisku „Poszukaj hipotez". Do tego czytało trzy sygnały
+   z dwóch modułów przy progu wejścia równym trzy, więc konto nieużywające akurat tych dwóch
+   modułów nie miało jak go przekroczyć, choćby pracowało codziennie.
+3. **Wiersz akcji nad Wiadomościami wyglądał na pusty.** `ViewBar` od 087 nakładał poniżej `md`
+   `flex: 1` na **wszystkie** dzieci strefy akcji. Ikona, przycisk z tekstem i koło zębate
+   dostawały po jednej trzeciej szerokości — ikona nie ma czym wypełnić 120 px.
+4. **Ten sam poziom streszczenia dawał dwa różne teksty.** Streszczenia powstają w dwóch miejscach
+   i każde widziało **inną ilość materiału**: przebieg odświeżania streszcza wsadowo ze skrótu RSS
+   (600 znaków), a zmiana poziomu dociąga pełny artykuł (4000). Instrukcja długości była przy tym
+   **zduplikowana w dwóch plikach**. Osobno: akcja nigdy nie sprawdzała, czy dany poziom już
+   istnieje, a przy nieudanym pobraniu artykułu streszczała `item.summary`, czyli **poprzednie
+   streszczenie**.
+5. **Lektor czytał tekst sprzed zmiany poziomu.** Dwie niezależne przyczyny naraz: treść żyła
+   w dwóch miejscach (karta trzymała nową w `useState`, lektor budował bloki z danych serwera),
+   a `blocksKey` — w kodzie nazwany „podpisem TREŚCI" — liczył się **z samych tytułów**. Tytuł przy
+   zmianie poziomu się nie zmienia, więc efekt uciszający lektora się nie budził.
+
+**Rozwiązanie:** Pamięć pozycji przewijania wpięta w kontener ramy (obejmuje wszystkie moduły
+i `/admin`), przywracana wyłącznie po `popstate`. Poszerzone sygnały wiedzy + automat na wzór
+retencji (prawo do przebiegu odbierane atomowo warunkowym `UPDATE`) z odciskiem materiału, żeby nie
+płacić za przebieg bez nowych danych. Wyjątek `flex: none` **po stronie ikony**, nie tekstu. Jedna
+definicja długości streszczenia dla obu ścieżek + tabela `NewsItemSummary` (unikat `[itemId,
+length]`) + materiał zawsze źródłowy. Nadpisania streszczeń podniesione z karty do strumienia
+i `blocksKey` liczony z tytułu **i** treści.
+
+**Czwarta rzecz, dołożona po recenzji — najważniejsza z całego przebiegu.** Świeże oko znalazło
+w tej zmianie **sześć poważnych usterek**, których nie zobaczył ani komplet 1318 testów
+jednostkowych, ani klikacz na prawdziwej przeglądarce. Cztery z nich mają wspólny kształt:
+**poprawka psuła dokładnie tę rzecz, którą naprawiała.**
+
+- Kod dbający o to, żeby stare ulubione (`?tresc=timeline`) dalej działały, dokładał wpis do
+  historii przy każdym wejściu — a ponieważ cofnięcie odtwarzało stary adres, efekt odpalał się
+  znowu. **Z takiej strony nie dało się wyjść „wstecz"**: mechanizm naprawiający zgłoszenie
+  o zgodności ulubionych łamał zgłoszenie o przycisku „wstecz", z tego samego przebiegu.
+- Przywracanie pozycji przewijania zużywało flagę powrotu tylko przy zmianie **ścieżki**, a stan
+  widoku w Omnii żyje w `?query`. Flaga zostawała zapalona i zużywała ją **następna zwykła
+  nawigacja** — przywracając pozycję tam, gdzie nikt o to nie prosił, czyli łamiąc regułę „tylko
+  przy powrocie", którą sama miała egzekwować.
+- Pamięć streszczeń per poziom dostała backfill odsiewający pozycje po fladze `summaryFailed` —
+  a ta flaga znaczy „ponowienia zawiodły", nie „nie ma streszczenia". Pozycje z przebiegu, który
+  skończył się przed etapem streszczania, miały w `summary` surowy skrót z kanału i opuszczoną
+  flagę, więc **pamięć utrwaliła nie-streszczenia jako streszczenia** — i żaden rewert kodu by tego
+  nie odkręcił, bo dane już są.
+- Automat wnioskowania zapisywał znacznik czasu wyłącznie po **udanym** przebiegu, a kandydatem
+  było też konto bez wiersza ustawień (który ten zapis dopiero tworzy). Konto z niedziałającym
+  modelem wracało więc do kolejki **co godzinę zamiast raz na dobę** — a przy awarii za wywołaniem
+  modelu każda próba byłaby płatna.
+
+**Lekcja:** testy odpowiadają na pytanie „czy to działa". Żaden z tych czterech błędów nie
+odpowiadał na nie źle — wszystkie przechodziły. Znalazło je dopiero czytanie kodu pod innym
+pytaniem: **„co ta zmiana psuje"**. Przy poprawce warto przejść osobno: czego ten kod dotyka poza
+swoim celem, co robi przy **wyjątku**, co zapisuje **nieodwracalnie** (migracja danych!) i czy jego
+własna reguła nie ma dziury w przypadku, którego akurat nie ma w teście. Druga para oczu na diffie
+jest tania; sześć takich usterek na produkcji nie jest.
+
+**Lekcja towarzysząca, o samej recenzji:** pierwszy szkic raportu powstał, zanim recenzent zwrócił
+wynik, i twierdził, że wyniku nie było. Recenzent wrócił — z werdyktem „zmiany wymagane". Raport
+napisany na zapas, przed danymi, opisuje życzenie, a nie stan.
+
+**Trzy rzeczy dołożone po tym, jak klikacz obalił dwie „gotowe" poprawki:**
+
+**(a) `popstate` to POŁOWA powrotu.** Pierwsza wersja przywracania pozycji rozpoznawała powrót
+wyłącznie po zdarzeniu `popstate` — i działała, dopóki cofnięcie zostawało w tym samym dokumencie.
+Gdy poprzednia strona weszła twardym wczytaniem (odświeżenie, adres z paska, wejście z zewnątrz),
+cofnięcie tworzy **nowy dokument**: żadne `popstate` nie pada, moduł startuje od zera z opuszczoną
+flagą i pozycja przepada. Ten sam gest użytkownika, dwa różne mechanizmy przeglądarki. Drugą połowę
+niesie `performance.getEntriesByType("navigation")[0].type === "back_forward"`.
+
+**(b) Remis specyficzności rozstrzyga KOLEJNOŚĆ, a Tailwind jest później.** Reguła
+`.omnia-akcja-ikonowa { flex: none }` stała w `globals.css` **po** `@tailwind utilities` i mimo to
+przegrywała z `[&>*]:flex-1` z paska. Oba selektory mają specyficzność (0,1,0) — `.klasa > *`
+i `.klasa` liczą się tak samo — więc decyduje kolejność w **zbudowanym** arkuszu, a tam Tailwind
+emituje swoje utility na końcu (zmierzone: bajt 31256 vs 36884). Klasa podwojona
+(`.x.x`, specyficzność (0,2,0)) wygrywa niezależnie od kolejności i nie psuje przyszłych nadpisań
+tak, jak zrobiłby to `!important`.
+
+**(c) Zostawiony serwer deweloperski unieważnia cały przebieg testów — po cichu.** Drugie
+uruchomienie klikacza pokazało trzy porażki, z czego dwie w testach, które chwilę wcześniej
+przechodziły. Przyczyną nie był kod: na porcie 3000 stał serwer uruchomiony ręcznie do debugowania,
+Playwright uznał go za „już działający" i przetestował **stary build na innej bazie**. Wnioski
+z takiego przebiegu są bezwartościowe, a wyglądają dokładnie jak regresja. Przed uruchomieniem
+klikacza zwalniaj port (`fuser -k 3000/tcp`), a gdy wynik zaskakuje — najpierw sprawdź, CO właściwie
+odpowiada pod tym adresem.
+
+**Lekcja:** **Gdy coś „nie działa jak w innych aplikacjach", najpierw sprawdź, czy rzecz, na której
+opiera się mechanizm przeglądarki, jest tam, gdzie przeglądarka jej szuka.** Przywracanie pozycji,
+`bfcache` i `scrollRestoration` znają jeden scroller — okno. Aplikacja, która przewijanie przeniosła
+do własnego `div`-a, traci je bez jednego błędu w konsoli.
+
+Drugi wniosek, powtórzony tu **dwa razy w jednym przebiegu**: **ta sama informacja w dwóch
+nośnikach zawsze rozjedzie się w tę stronę, która boli.** Raz było to streszczenie (karta vs. dane
+serwera), raz instrukcja długości (dwie kopie w dwóch plikach) — i za każdym razem objaw był
+opisany jako „dziwne zachowanie", a nie jako niespójność.
+
+Trzeci, najbardziej podstępny: **komentarz może kłamać, a wtedy kłamie przez lata.** `blocksKey`
+miał nad sobą akapit tłumaczący, że jest „PODPISEM TREŚCI, nie tożsamości tablicy" — i przez ten
+akapit nikt go nie sprawdził, choć treści nie obejmował. Przy poprawianiu podejrzanego miejsca
+czytaj **kod**, a komentarz traktuj jak hipotezę do zweryfikowania.
+
+Czwarty, o naprawianiu: **poprawka nie może cofać poprzedniej poprawki.** Pierwsza wersja fixu na
+puste akcje zdejmowała domyślne rozciąganie i kazała je deklarować — co przywróciłoby zgłoszenie
+z 087 („akcje dosunięte do prawej z pustą lewą połową") we wszystkich widokach, które nowej klasy by
+nie dostały. Gdy wyjątek da się postawić po jednej albo po drugiej stronie, wybierz tę, która
+zostawia dotychczasowe zachowanie nietknięte.
+
 ## 2026-08-27 — Trasa, do której nie prowadził żaden odnośnik, i dlaczego pilnuje tego bramka
 **Problem:** Przy porządkowaniu panelu administratora okazało się, że `/admin/llm` — konfiguracja
 dostawców i modeli LLM, jedna z najważniejszych powierzchni administracyjnych — **nie była

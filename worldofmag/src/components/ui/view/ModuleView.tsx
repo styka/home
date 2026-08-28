@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type MutableRefObject, type ReactNode, type RefObject } from "react";
+import { usePrzywroceniePrzewijania } from "@/hooks/usePrzywroceniePrzewijania";
 import { PageHeader } from "@/components/ui/home/PageHeader";
 import { ViewBar } from "./ViewBar";
 import { ChromeFrame } from "./ChromeFrame";
@@ -203,6 +204,33 @@ export function ModuleView({
    */
   const ramaRef = useRef<HTMLDivElement>(null);
   const pasekRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * 111: PRZYWRACANIE POZYCJI PRZEWIJANIA PRZY POWROCIE „WSTECZ".
+   *
+   * Zgłoszenie właściciela: powrót na przewiniętą stronę pokazywał ją od góry. Przyczyna leży
+   * dokładnie tutaj: przewija się TEN kontener, a nie okno — `<main>` powyżej ma `overflow: hidden`
+   * — więc przywracanie pozycji przez przeglądarkę i przez Next, które dotyczy okna, dla niego nie
+   * istniało. Wpięcie w ramę obsługuje wszystkie widoki modułów i panel administratora naraz.
+   *
+   * **Znane ograniczenie:** w `layout="fill"` przewija się treść modułu, a nie ten kontener
+   * (`overflowY: hidden` niżej), więc tam pozycja nie jest jeszcze pamiętana. Świadomie poza
+   * zakresem — te widoki mają własne, osobne kontenery przewijania w panelach.
+   *
+   * Własny `ref` jest potrzebny, bo `scrollRef` jest OPCJONALNY (podają go tylko listy
+   * wirtualizowane). Gdy moduł go poda, oba wskazują ten sam element — jeden kontener, jeden zapis.
+   */
+  const przewijanieRef = useRef<HTMLDivElement | null>(null);
+  usePrzywroceniePrzewijania(przewijanieRef);
+  const ustawKontenerPrzewijania = useCallback(
+    (el: HTMLDivElement | null) => {
+      przewijanieRef.current = el;
+      // `RefObject.current` jest w typach tylko do odczytu, ale to jest zwykły obiekt
+      // `useRef` konsumenta — dokładnie tak działa łączenie referencji w Reakcie.
+      if (scrollRef) (scrollRef as unknown as MutableRefObject<HTMLDivElement | null>).current = el;
+    },
+    [scrollRef],
+  );
   useEffect(() => {
     const rama = ramaRef.current;
     if (!rama) return;
@@ -252,7 +280,7 @@ export function ModuleView({
       <ChromeFrame />
 
       <div
-      ref={scrollRef}
+      ref={ustawKontenerPrzewijania}
       style={{
         position: "relative",
         flex: 1,

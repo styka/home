@@ -357,3 +357,34 @@ html[data-reka="left"] .omnia-plywajacy { right: auto; left: 1.25rem; }
 
 /* Rząd chromu konta (gwiazdka, tryb administratora, dzwonek) też idzie za ręką. */
 html[data-reka="left"] .omnia-chrom-konta { flex-direction: row-reverse; }
+
+/* ---------------------------------------------------------------------------
+   111: AKCJA BĘDĄCA SAMĄ IKONĄ NIE ROZCIĄGA SIĘ W PASKU WIDOKU.
+
+   Od 087 `ViewBar` rozciąga poniżej `md` wszystkie dzieci strefy akcji po równo —
+   i to jest dobre domyślne: wiersz akcji dosunięty do prawej krawędzi z pustą lewą
+   połową wyglądał źle (to było zgłoszenie z 087) . Ale „po równo" znaczy też, że
+   ikona dostaje tyle samo miejsca co przycisk z tekstem, a ikona nie ma czym
+   wypełnić stu dwudziestu pikseli.
+
+   Zgłoszenie właściciela z Wiadomości: „są dwie ikony po bokach i jedna ikona
+   z tekstem na środku, więc wiersz wydaje się bardzo pusty (…) przyciski z tekstami
+   powinny się rozciągać, a te z samymi ikonami mają zajmować minimalnie tyle
+   miejsca, ile potrzebują".
+
+   Dlatego wyjątek jest po stronie IKONY, a nie tekstu: domyślne zachowanie z 087
+   zostaje nietknięte we wszystkich widokach, a moduł oznacza tylko te akcje, które
+   są samą ikoną. Ikony rysowane przez ramę (pomoc, ustawienia) dostają tę klasę
+   zawsze — są ikoną z definicji.
+
+   Cel dotyku zostaje pełnowymiarowy (C-31): kurczy się wyłącznie NADMIAR szerokości.
+   Reguła żyje w arkuszu, bo warunek „poniżej md" należy do PASKA, a klasę nadaje
+   moduł, który o pasku nic nie wie.
+   --------------------------------------------------------------------------- */
+/* Klasa podwojona CELOWO, nie przez pomyłkę: `[&>*]:flex-1` z paska kompiluje się do selektora
+   `.…\:flex-1 > *` o specyficzności (0,1,0) — dokładnie takiej samej, jak pojedyncza klasa. Przy
+   remisie decyduje KOLEJNOŚĆ, a Tailwind emituje swoje utility PO regułach z tego pliku (zmierzone
+   w zbudowanym arkuszu: bajt 31256 vs 36884), więc pojedyncza klasa przegrywała mimo poprawnego
+   zapisu. Podwojenie daje (0,2,0) i wygrywa niezależnie od kolejności — a `!important` byłoby
+   młotem, który psuje każdą przyszłą próbę nadpisania tego z zewnątrz. */
+.omnia-akcja-ikonowa.omnia-akcja-ikonowa { flex: none; }

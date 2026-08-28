@@ -50,6 +50,14 @@ export interface AssistantPrefsDTO {
    */
   autoApprove: boolean;
   /**
+   * 111 (AC-9): czy system sam szuka hipotez o uzytkowniku z jego aktywnosci.
+   *
+   * Domyslnie WLACZONE, bo zgloszenie wlasciciela brzmialo: wiedza ma rosnac z samego wykonywania
+   * akcji w aplikacji. Automat domyslnie wylaczony nie spelnilby go. Reczne szukanie hipotez
+   * dziala niezaleznie od tego przelacznika.
+   */
+  autoFacts: boolean;
+  /**
    * 080 (Z12): prędkość czytania lektora. Domyślna 0.95 nie jest okrągła celowo — dokładnie tyle
    * było zaszyte w `lib/tts`, więc użytkownik, który niczego nie ustawił, nie usłyszy zmiany.
    */
@@ -69,6 +77,7 @@ export interface AssistantPrefsInput {
   voiceKind?: string;
   voiceId?: string | null;
   autoApprove?: boolean;
+  autoFacts?: boolean;
   readerRate?: number;
   readerFollow?: boolean;
   presentation?: string;
@@ -80,6 +89,7 @@ const DEFAULTS: AssistantPrefsDTO = {
   voiceKind: "browser",
   voiceId: null,
   autoApprove: false,
+  autoFacts: true,
   readerRate: READER_RATE_DEFAULT,
   readerFollow: true,
   presentation: "window",
@@ -111,6 +121,7 @@ export async function getAssistantPrefs(): Promise<AssistantPrefsDTO> {
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
     autoApprove: row.autoApprove,
+    autoFacts: row.autoFacts,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
     presentation: parseAssistantPresentation(row.presentation),
@@ -131,12 +142,14 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind?: AssistantVoiceKind;
     voiceId?: string | null;
     autoApprove?: boolean;
+    autoFacts?: boolean;
     readerRate?: number;
     readerFollow?: boolean;
     presentation?: AssistantPresentation;
   } = {};
 
   if (input.autoApprove !== undefined) data.autoApprove = input.autoApprove === true;
+  if (input.autoFacts !== undefined) data.autoFacts = input.autoFacts === true;
   if (input.readerRate !== undefined) data.readerRate = parseReaderRate(input.readerRate);
   if (input.readerFollow !== undefined) data.readerFollow = input.readerFollow === true;
   // 106: wartość spoza unii jest IGNOROWANA, nie zapisywana — to jedyne pole, które klient wysyła
@@ -194,6 +207,7 @@ export async function updateAssistantPrefs(input: AssistantPrefsInput): Promise<
     voiceKind: parseVoiceKind(row.voiceKind),
     voiceId: row.voiceId ?? null,
     autoApprove: row.autoApprove,
+    autoFacts: row.autoFacts,
     readerRate: parseReaderRate(row.readerRate),
     readerFollow: row.readerFollow,
     presentation: parseAssistantPresentation(row.presentation),

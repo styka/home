@@ -188,7 +188,7 @@
     "bez-testu": "12 czystych plików w `modules/*/lib/` nie ma testu: calendar/collect, kitchen/recipeImportDraft, kitchen/sharingGuard, pets/petExport, pets/sharingGuard, shopping/offlineMutations, shopping/offlineStore, shopping/sharingGuard, tasks/access, truck/googleMaps, portfel/currency (część czysta), services/services. Bramka ich nie wymaga, bo 069 nie obiecywał ich pokrycia — ale to gotowa lista na następny przebieg."
   },
   "zapadka": {
-    "maks": 34,
+    "maks": 33,
     "opis": [
       "Liczba synchronicznych funkcji pomocniczych pozostających w plikach akcji (`src/modules/*/",
       "actions/*.ts` + `src/actions/*.ts`). Przed 069 było ich 55; 21 wyprowadzono jako reguły,",

@@ -978,7 +978,9 @@
         "zgadzaSie": "Zgadza się",
         "usun": "Usuń",
         "tresc": "Treść",
-        "npLubiWycieczkiGorskie": "np. Lubi wycieczki górskie, ale nie w upały"
+        "npLubiWycieczkiGorskie": "np. Lubi wycieczki górskie, ale nie w upały",
+        "samSzukajHipotez": "Sam szukaj hipotez z mojej aktywności",
+        "samSzukajHipotezOpis": "Raz na dobę, gdy przybędzie nowego materiału. System patrzy wyłącznie na NAZWY tego, co prowadzisz (nawyki, projekty, tematy, przepisy, talie, warsztaty) i na to, których modułów używasz — nie czyta treści notatek, zdrowia, leków, finansów ani kontaktów. Każdą hipotezę i tak potwierdzasz sam."
       },
       "WorkspaceLocaleSection": {
         "ustawieniaZespoluZmieniaJego": "Ustawienia zespołu zmienia jego właściciel lub administrator."
@@ -1674,7 +1676,10 @@
       "NewsItemCard": {
         "bezStreszczenia": "Bez streszczenia — pokazujemy skrót ze źródła.",
         "przeczytane": "Przeczytane",
-        "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu."
+        "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu.",
+        "sprobujPonownie": "Spróbuj ponownie",
+        "wygenerujPonownie": "Wygeneruj streszczenie ponownie",
+        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)"
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",
@@ -1695,7 +1700,9 @@
         "edytujTemat": "Edytuj temat",
         "ustawieniaModulu": "Ustawienia modułu",
         "trybCzytania": "Tryb czytania — schowaj wszystko poza wiadomościami",
-        "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania"
+        "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania",
+        "ostatnieOdswiezanie": "Ostatnie odświeżanie: {kiedy}",
+        "szczegolyPrzebiegu": "źródeł: {zrodel} · nowych materiałów: {nowych} · pozycji: {pozycji} · faktów na osi: {faktow}"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
@@ -1760,7 +1767,8 @@
         "szukajPortalu": "Szukaj portalu…",
         "wszystkiePortale": "Wszystkie portale",
         "nicNiePasuje": "Nic nie pasuje",
-        "wyczyscWybor": "Wyczyść wybór"
+        "wyczyscWybor": "Wyczyść wybór",
+        "zarzadzajZrodlami": "Zarządzaj źródłami"
       },
       "NewsModuleSettings": {
         "domyslnaDlugoscStreszczen": "Domyślna długość streszczeń",

@@ -28,12 +28,18 @@ export function SourceFilter({
   sources,
   wybrane,
   onZmiana,
+  onZarzadzaj,
 }: {
   /** Wyłącznie źródła włączone — wyłączone nie mają czego filtrować. */
   sources: SourceDTO[];
   /** Klucze wybranych źródeł. Pusta lista = wszystkie. */
   wybrane: string[];
   onZmiana: (klucze: string[]) => void;
+  /**
+   * 111 (AC-17): wejście do ZARZĄDZANIA źródłami. Opcjonalne — konsument, który go nie poda,
+   * dostaje sam filtr, dokładnie jak przed 111.
+   */
+  onZarzadzaj?: () => void;
 }) {
   const t = useTranslations("modules.news.SourceFilter");
   const [otwarty, setOtwarty] = useState(false);
@@ -144,8 +150,33 @@ export function SourceFilter({
           )}
         </div>
 
-        {!wszystkie && (
-          <div className="border-t border-[var(--border)] px-3 py-2">
+        {/**
+          * 111 (AC-17): ZARZĄDZANIE ŹRÓDŁAMI MIESZKA W TYM SAMYM PANELU, CO ICH FILTR.
+          *
+          * „Źródła" przestały być zakładką (zakładki są miejscem na WIDOKI, nie na konfigurację —
+          * C-33), więc dojście do nich musiało znaleźć nowe miejsce. Wybór padł na stopkę tego
+          * panelu, a nie na drugi przycisk obok filtra, i to jest decyzja, nie oszczędność:
+          * obie kontrolki dotyczą JEDNEGO pojęcia — portali. Dwa sąsiadujące przyciski z tym samym
+          * słowem („Portale" i „Źródła") kazałyby zgadywać, czym się różnią — dokładnie ten zarzut
+          * właściciel postawił w 086 liście tematów obok zakładki „Tematy".
+          */}
+        {/* Bez `onZarzadzaj` nie rysujemy stopki: martwy przycisk to gotowa pułapka dla drugiego
+            konsumenta tego komponentu (recenzja 111). */}
+        {(onZarzadzaj || !wszystkie) && (
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] px-3 py-2">
+          {onZarzadzaj && (
+          <button
+            type="button"
+            onClick={() => {
+              setOtwarty(false);
+              onZarzadzaj();
+            }}
+            className="py-1 text-xs text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline"
+          >
+            {t("zarzadzajZrodlami")}
+          </button>
+          )}
+          {!wszystkie && (
             <button
               type="button"
               onClick={() => onZmiana([])}
@@ -153,7 +184,8 @@ export function SourceFilter({
             >
               {t("wyczyscWybor")}
             </button>
-          </div>
+          )}
+        </div>
         )}
       </AnchoredLayer>
     </div>
