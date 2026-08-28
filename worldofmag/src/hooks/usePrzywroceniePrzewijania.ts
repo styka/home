@@ -75,11 +75,22 @@ export function usePrzywroceniePrzewijania(ref: { current: HTMLElement | null })
     const klucz = window.location.pathname + window.location.search;
 
     let klatka: number | null = null;
+    /**
+     * Ostatnia ZNANA pozycja, trzymana obok elementu.
+     *
+     * Sprzątanie efektu nie może czytać `el.scrollTop`: React bywa uruchamiany współbieżnie i
+     * element potrafi być już odłączony od dokumentu, a odłączony element zwraca `0`. Zapis zera
+     * KASUJE wpis (próg w `przewijanie.ts`) — czyli sprzątanie skasowałoby dokładnie tę pozycję,
+     * po którą użytkownik za chwilę wróci. Zmienna jest odporna na odłączenie, a przy świadomym
+     * przewinięciu na samą górę i tak niesie `0`, więc kasowanie wpisu nadal działa.
+     */
+    let ostatniaPozycja = el.scrollTop;
     const naPrzewiniecie = () => {
+      ostatniaPozycja = el.scrollTop;
       if (klatka !== null) return;
       klatka = window.requestAnimationFrame(() => {
         klatka = null;
-        zapamietaj(klucz, el.scrollTop);
+        zapamietaj(klucz, ostatniaPozycja);
       });
     };
     el.addEventListener("scroll", naPrzewiniecie, { passive: true });
@@ -102,6 +113,9 @@ export function usePrzywroceniePrzewijania(ref: { current: HTMLElement | null })
         przywracanie = null;
         if (!ref.current) return;
         ref.current.scrollTop = cel;
+        // Przywrócona pozycja jest od tej chwili „ostatnią znaną" — inaczej sprzątanie efektu
+        // zapisałoby wartość sprzed przywrócenia i pozycja cofnęłaby się przy następnym wyjściu.
+        ostatniaPozycja = ref.current.scrollTop;
         // Przyjęło się (z tolerancją na zaokrąglenie i na treść odrobinę krótszą niż była)?
         if (Math.abs(ref.current.scrollTop - cel) < 4 || Date.now() > doKiedy) return;
         przywracanie = window.requestAnimationFrame(sprobuj);
@@ -115,8 +129,9 @@ export function usePrzywroceniePrzewijania(ref: { current: HTMLElement | null })
       el.removeEventListener("scroll", naPrzewiniecie);
       if (klatka !== null) window.cancelAnimationFrame(klatka);
       if (przywracanie !== null) window.cancelAnimationFrame(przywracanie);
-      // Decyzja 2: ostatnia klatka przewijania bywa zjedzona przez nawigację.
-      zapamietaj(klucz, el.scrollTop);
+      // Decyzja 2: ostatnia klatka przewijania bywa zjedzona przez nawigację — zapisujemy jeszcze raz,
+      // z ZAPAMIĘTANEJ liczby, a nie z elementu (patrz `ostatniaPozycja` wyżej).
+      zapamietaj(klucz, ostatniaPozycja);
     };
     // `pathname` jest tu po to, żeby przy przejściu między widokami efekt przeszedł pełny cykl:
     // sprzątanie zapisuje pozycję STAREGO widoku, a nowy przebieg przywraca pozycję nowego.
