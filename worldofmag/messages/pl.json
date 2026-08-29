@@ -2944,7 +2944,16 @@
         "npKrakowRynekGlowny": "np. Kraków, Rynek Główny 1",
         "najpierwZapiszProfilPojazdu": "Najpierw zapisz profil pojazdu powyżej.",
         "robotUwzglednionych": "robót uwzględnionych",
-        "otworzWGoogleMaps": "Otwórz w Google Maps"
+        "otworzWGoogleMaps": "Otwórz w Google Maps",
+        "pojazdZFloty": "Pojazd z Floty:",
+        "wybierzPojazd": "— wybierz —",
+        "szacowanyKosztPaliwa": "szac. koszt paliwa",
+        "zaksiegujKoszt": "Zaksięguj koszt trasy",
+        "zaMaloDanychPaliwo": "Za mało danych: potrzeba co najmniej dwóch pełnych tankowań i tankowań z wpisanym kosztem.",
+        "zalozeniaKosztu": "Założenia: {spalanie} l/100 km (średnia z pełnych tankowań) × {cena} zł/l (średnia cena).",
+        "kosztZaksiegowany": "Koszt trasy zaksięgowany w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       }
     },
     "warsztaty": {

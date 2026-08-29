@@ -41,7 +41,7 @@
   `kontaktZWpisu`; phone z `ServiceProvider`, notatka z adresem profilu); przyciski:
   `ProviderPublicPage` (headerAction) + karta zlecenia w `MyRequestsPage` (gdy DTO niesie id
   wykonawcy — sprawdzić; brak → tylko profil, odnotować w plan.md); i18n; manifest.
-- [ ] **T-7** `[P]` — Z-INT-14: flota — kontrakt += `computeConsumption`; `lib/flota.ts` +=
+- [x] **T-7** `[P]` — Z-INT-14: flota — kontrakt += `computeConsumption`; `lib/flota.ts` +=
   `avgFuelPrice(logs)` + test; truck — select pojazdu (`getVehicles`), metryka kosztu
   (dystans × avg/100 × cena; braki danych → komunikat), akcja `zaksiegujKosztTrasy` (sourceId
   = skrót start|cel|dzień); i18n; manifest. Gotowe, gdy: test `avgFuelPrice` zielony,

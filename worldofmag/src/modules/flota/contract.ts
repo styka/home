@@ -20,3 +20,8 @@ export {
   addFuelLog,
   addServiceRecord,
 } from "./actions/flota";
+
+// 115 (Z-INT-14): Truck liczy koszt paliwa trasy ze średnich pojazdu — czyste funkcje
+// nad `fuelLogs`, które `getVehicles` i tak już zwraca. Bez nowej akcji.
+export { computeConsumption, avgFuelPrice, type FuelLogLike } from "./lib/flota";
+export type { VehicleWithStats } from "./actions/flota";

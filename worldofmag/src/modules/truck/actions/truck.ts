@@ -4,6 +4,9 @@ import type { VehicleProfile } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth } from "@/platform/auth/serverUtils";
+import { createHash } from "crypto";
+import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 import { geocode, routeHgv, OrsError, type OrsRestrictions } from "../lib/ors";
 import { fetchRoadworks } from "../lib/overpass";
 import { ograniczProfil } from "../domain/profilPojazdu";
@@ -133,4 +136,29 @@ export async function planTruckRoute(
     if (err instanceof OrsError) return { error: err.message };
     return { error: "Nie udało się zaplanować trasy. Spróbuj ponownie." };
   }
+}
+
+/**
+ * 115 (Z-INT-14): jawne księgowanie szacowanego kosztu paliwa trasy w Portfelu.
+ * Idempotencja per (start, cel, dzień użytkownika) — powtórne kliknięcie tego samego dnia
+ * koryguje kwotę (np. po zmianie pojazdu), a ta sama trasa jutro to nowy wydatek.
+ */
+export async function zaksiegujKosztTrasy(data: {
+  start: string;
+  cel: string;
+  kwota: number;
+  opis?: string | null;
+}): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  if (!Number.isFinite(data.kwota) || data.kwota <= 0) throw new Error("Brak kwoty do zaksięgowania");
+  const dzien = dataWStrefie(userTimeZone());
+  const sourceId = createHash("sha1").update(`${data.start}|${data.cel}|${dzien}`).digest("hex");
+  return bookAutoExpense(user.id, {
+    module: "truck",
+    sourceId,
+    amount: data.kwota,
+    category: "Transport",
+    note: data.opis ?? `Trasa: ${data.start} → ${data.cel}`,
+    force: true,
+  });
 }
