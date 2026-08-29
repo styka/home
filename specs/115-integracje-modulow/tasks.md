@@ -31,7 +31,7 @@
   i `saveDoctorToContacts(id)`; przyciski w `EventCard` (+ toast `brak-konta`); i18n; wpisy
   `action-coverage.json`. Gotowe, gdy: księgowanie tworzy/koryguje `WalletEntry` na fixturze,
   dedup nie tworzy duplikatu.
-- [ ] **T-4** `[P]` — Z-INT-03 + Z-INT-07(pets): akcje `bookVetVisitCost`, `bookSaleIncome`
+- [x] **T-4** `[P]` — Z-INT-03 + Z-INT-07(pets): akcje `bookVetVisitCost`, `bookSaleIncome`
   (kind income), `saveVetToContacts` (reuse `kontaktZWpisu`); UI: akcje w wierszu wizyty
   (`VetSection`/`Row` z `actions`) i sprzedaży (`PetBreeding`); i18n; manifest.
   Gotowe, gdy: przychód ląduje z `kind:"income"` i dodatnią deltą (fixture).

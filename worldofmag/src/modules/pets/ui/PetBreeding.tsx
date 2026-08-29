@@ -3,13 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useCallback, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Loader2, Egg, Dna, GitBranch, Coins, Calculator } from "lucide-react";
+import { Plus, Trash2, Loader2, Egg, Dna, GitBranch, Coins, Calculator, Wallet } from "lucide-react";
 import { Modal, Field, inputStyle, PrimaryButton, GhostButton } from "./Modal";
 import { useToast } from "@/components/ui/Toast";
 import {
   getPetBreeding, setParentage, setGenetics, createBreedingPair, updateBreedingPair,
   deleteBreedingPair, createClutch, markClutchHatched, deleteClutch, createOffspring,
-  recordSale, deleteSale,
+  recordSale, deleteSale, bookSaleIncome,
 } from "../actions/petBreeding";
 import {
   parseGenetics, calculateOffspring, zygositiesForMode, GENE_MODE_LABELS, ZYGOSITY_LABELS,
@@ -239,6 +239,19 @@ export function BreedingSection({ pet }: { pet: PetWithRelations }) {
                   <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{s.buyerName || "Nabywca"}{s.price != null ? ` · ${s.price.toFixed(2)} ${s.currency}` : ""}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(s.soldAt)}{s.buyerContact ? ` · ${s.buyerContact}` : ""}</div>
                 </div>
+                {s.price != null && (
+                  <button
+                    onClick={() => startTransition(async () => {
+                      try {
+                        const w = await bookSaleIncome(s.id);
+                        showToast(w.zaksiegowano ? t("przychodZaksiegowany") : t("brakKontaAuto"), w.zaksiegowano ? "success" : "error");
+                      } catch (e) { showToast(e instanceof Error ? e.message : "Błąd", "error"); }
+                    })}
+                    title={t("zaksiegujPrzychod")}
+                    aria-label={t("zaksiegujPrzychod")}
+                    style={iconBtn}
+                  ><Wallet size={12} /></button>
+                )}
                 <button onClick={() => startTransition(async () => { await deleteSale(s.id); reload(); })} style={iconBtn}><Trash2 size={12} /></button>
               </div>
             ))}

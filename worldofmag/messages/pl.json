@@ -1896,7 +1896,10 @@
         "imie": "Imię *",
         "plec": "Płeć",
         "zapiszSprzedaz": "Zapisz sprzedaż",
-        "oznaczZwierzeJakoSprzedane": "Oznacz zwierzę jako sprzedane"
+        "oznaczZwierzeJakoSprzedane": "Oznacz zwierzę jako sprzedane",
+        "zaksiegujPrzychod": "Zaksięguj przychód w Portfelu",
+        "przychodZaksiegowany": "Przychód zaksięgowany w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela."
       },
       "PetDetailPage": {
         "zwierzeta": "Zwierzęta"
@@ -1943,7 +1946,14 @@
         "udostepnianie": "Udostępnianie",
         "abyUdostepnicCalemuZespolowi": "Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.",
         "widocznoscFunkcji": "Widoczność funkcji",
-        "zapiszWidocznosc": "Zapisz widoczność"
+        "zapiszWidocznosc": "Zapisz widoczność",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zapiszWeterynarza": "Zapisz weterynarza w kontaktach",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "kontaktZapisany": "Zapisano w kontaktach.",
+        "kontaktJuzIstnial": "Taki kontakt już istnieje — nie zduplikowano.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "PetsHomePage": {
         "zwierzeta": "Zwierzęta",

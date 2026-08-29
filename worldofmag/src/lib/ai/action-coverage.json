@@ -3381,5 +3381,20 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
+  },
+  "petCare:bookVetVisitCost": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "petCare:saveVetToContacts": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "petBreeding:bookSaleIncome": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   }
 }

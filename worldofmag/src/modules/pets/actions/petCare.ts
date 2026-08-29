@@ -5,6 +5,8 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
+import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { zapiszKontaktZWpisu, type WynikZapisuKontaktu } from "@/lib/kontaktZWpisu";
 import { parseRecurringRule } from "@/lib/recurrence";
 import { nextDueFrom } from "../domain/terminOpieki";
 import { buildAgenda, buildWelfareSuggestions, buildEnvironmentSuggestions, type AgendaSource } from "../lib/petWelfare";
@@ -274,6 +276,42 @@ export async function updateVetVisit(id: string, patch: Partial<{
   const v = await prisma.petVetVisit.update({ where: { id }, data: patch });
   revalidatePet(existing.petId);
   return v as PetVetVisit;
+}
+
+/**
+ * 115 (Z-INT-03): jawne księgowanie kosztu wizyty weterynaryjnej w Portfelu.
+ * Idempotentnie po (pets, id wizyty) — powtórne kliknięcie koryguje kwotę.
+ */
+export async function bookVetVisitCost(id: string): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  const v = await prisma.petVetVisit.findUnique({ where: { id }, select: { petId: true, cost: true, reason: true, date: true } });
+  if (!v) throw new Error("Nie znaleziono wizyty");
+  await assertPetAccess(v.petId, user.id, true);
+  if (!v.cost || v.cost <= 0) throw new Error("Ta wizyta nie ma wpisanego kosztu");
+  const wynik = await bookAutoExpense(user.id, {
+    module: "pets",
+    sourceId: id,
+    amount: v.cost,
+    category: "Zwierzęta",
+    note: v.reason ?? "Wizyta weterynaryjna",
+    date: v.date,
+    force: true,
+  });
+  revalidatePet(v.petId);
+  revalidatePath("/portfel");
+  return wynik;
+}
+
+/** 115 (Z-INT-07): weterynarz z wizyty do Kontaktów (tag „weterynarz"; dedup po nazwie). */
+export async function saveVetToContacts(id: string): Promise<WynikZapisuKontaktu> {
+  const user = await requireAuth();
+  const v = await prisma.petVetVisit.findUnique({ where: { id }, select: { petId: true, vetName: true, clinic: true } });
+  if (!v) throw new Error("Nie znaleziono wizyty");
+  await assertPetAccess(v.petId, user.id, true);
+  if (!v.vetName?.trim()) throw new Error("Ta wizyta nie ma wpisanego weterynarza");
+  const wynik = await zapiszKontaktZWpisu({ name: v.vetName, company: v.clinic ?? null, tag: "weterynarz" });
+  revalidatePath("/contacts");
+  return wynik;
 }
 
 export async function deleteVetVisit(id: string): Promise<void> {
