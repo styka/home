@@ -26,6 +26,8 @@ import { isPathLocked } from "@/lib/pathPermissions";
 import { MODULES, resolveMenu, pozycjePaska, defaultMenuPrefs, type MenuPrefs } from "@/lib/modules";
 import { updateMenuPrefs } from "@/actions/menuPrefs";
 import { PasekKciukaPolaczony } from "./PasekKciukaPolaczony";
+import { PoziomyPasekModulow } from "./PoziomyPasekModulow";
+import type { WariantNawigacji } from "@/lib/skins/zaawansowane";
 import { TrybAdminaProvider } from "@/platform/admin/trybAdmina";
 import { KosztToasts } from "@/components/ui/KosztToasts";
 import { PrzelacznikTrybuAdmina } from "@/components/ui/PrzelacznikTrybuAdmina";
@@ -45,6 +47,9 @@ interface AppShellProps {
   /** 083: czy administrator może włączyć pokazywanie kosztów AI (uprawnienie + wyłącznik systemowy). */
   /** 085: czy przełącznik trybu administratora ma się pojawić (konto administratora). */
   trybAdminaDostepny?: boolean;
+  /** 116: wariant nawigacji ze skórki zaawansowanej. `sidebar-prawy` robi czysty CSS
+   *  (html[data-nav] + order), ale `pasek-gorny` zmienia SKŁAD powłoki — stąd prop. */
+  ukladNawigacji?: WariantNawigacji;
 }
 
 // Pozycje dolne (stałe, niepodlegające konfiguracji) — do wykrywania aktywnego modułu i paska górnego.
@@ -55,7 +60,7 @@ const BOTTOM_ITEMS: BottomItem[] = [
   { id: "admin",       label: "Admin",       href: "/admin",       Icon: Shield,   color: "var(--accent-purple)" },
 ];
 
-export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], trybAdminaDostepny = false }: AppShellProps) {
+export function AppShell({ children, invitationCount = 0, isAdmin = false, userRoles = [], userPermissions = [], menuPrefs = defaultMenuPrefs(), usdPlnRate = DEFAULT_USD_PLN_RATE, favoriteViews = [], trybAdminaDostepny = false, ukladNawigacji = "sidebar-lewy" }: AppShellProps) {
   const t = useTranslations("components.shell.AppShell");
   const [menuOpen, setMenuOpen] = useState(false);
   /**
@@ -167,7 +172,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
       // (`scrollY` spadło tylko 335 → 291), a przy schowanej klawiaturze zaniżała wysokość okna
       // o ~44 px — na dole ekranu robił się jasny pasek. Przewijanie blokujemy inaczej: `overflow`
       // na elemencie `html` na czas otwartego okna pełnoekranowego (patrz `AICommandSheet`).
-      className="flex flex-col md:flex-row h-screen overflow-hidden"
+      className={`flex flex-col ${ukladNawigacji === "pasek-gorny" ? "" : "md:flex-row"} h-screen overflow-hidden`}
       style={{
         backgroundColor: "var(--bg-base)",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -317,7 +322,20 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
         </div>
       )}
 
-      <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
+      {/* 116: wariant `pasek-gorny` podmienia pasek boczny na listwę poziomą (tylko md:+).
+          Telefon nie widzi różnicy — jego nawigacją pozostaje górny pasek + pasek kciuka. */}
+      {ukladNawigacji === "pasek-gorny" ? (
+        <PoziomyPasekModulow
+          moduly={enabled}
+          pathname={pathname}
+          invitationCount={invitationCount}
+          isAdmin={isAdmin}
+          favoriteViews={favoriteViews}
+          isLocked={isLocked}
+        />
+      ) : (
+        <ModuleSidebar invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} favoriteViews={favoriteViews} />
+      )}
 
       {/**
        * 085: powłoka NIE wstrzykuje już nic do paska widoku.
@@ -347,7 +365,7 @@ export function AppShell({ children, invitationCount = 0, isAdmin = false, userR
           `overflow-hidden` (przy którym ten rozmiar wynosi 0) — opakowanie tej odporności nie
           odziedziczyło i rozpychało się na całą listę: zmierzone `/tasks` przy 360 × 640 → `main`
           2028 px zamiast 595 px, a wewnętrzny kontener przestawał być kontenerem przewijania. */}
-      <div className="relative flex flex-1 min-w-0 min-h-0">
+      <div className="omnia-tresc relative flex flex-1 min-w-0 min-h-0">
         <main ref={mainRef} className="flex-1 overflow-hidden flex flex-col min-w-0 pb-16 md:pb-0">
           {children}
         </main>

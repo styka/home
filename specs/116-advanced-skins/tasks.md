@@ -51,11 +51,11 @@
   przechodzą bez zmian. Pokrywa AC-1 (ścieżka simple nietknięta), AC-14, AC-9.
 
 ## Faza 3 — Powłoka i warianty układu
-- [ ] **T-8** — `src/app/globals.css`: reguły konsumujące `--c-*` z fallbackami do istniejących
+- [x] **T-8** — `src/app/globals.css`: reguły konsumujące `--c-*` z fallbackami do istniejących
   tokenów, sekcja `@keyframes omnia-anim-*` (fade, slide-up, scale, glow-pulse, shimmer),
   reguły `html[data-nav="sidebar-prawy"]` (order na `md:+` przez klasy-haki). Gotowe, gdy:
   brak zmian wyglądu bez aktywnej skórki zaawansowanej (fallbacki = dzisiejsze wartości).
-- [ ] **T-9** — `src/app/layout.tsx` + `AppShell.tsx` + `ModuleSidebar.tsx`: `data-nav` na
+- [x] **T-9** — `src/app/layout.tsx` + `AppShell.tsx` + `ModuleSidebar.tsx`: `data-nav` na
   `<html>`, klasy-haki `omnia-nawigacja`/`omnia-tresc`, prop `ukladNawigacji`; nowy
   `src/components/shell/PoziomyPasekModulow.tsx` (wariant `pasek-gorny`, desktop-only,
   z `resolveMenu`); wejście do `/settings` widoczne w każdym wariancie. Gotowe, gdy:

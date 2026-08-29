@@ -388,3 +388,155 @@ html[data-reka="left"] .omnia-chrom-konta { flex-direction: row-reverse; }
    zapisu. Podwojenie daje (0,2,0) i wygrywa niezależnie od kolejności — a `!important` byłoby
    młotem, który psuje każdą przyszłą próbę nadpisania tego z zewnątrz. */
 .omnia-akcja-ikonowa.omnia-akcja-ikonowa { flex: none; }
+
+/* ---------------------------------------------------------------------------
+   116: SKÓRKA ZAAWANSOWANA — bramkowane reguły.
+
+   Definicja zaawansowana kompiluje się do zmiennych CSS (inline na <html>) plus
+   atrybutów `data-*`, które BRAMKUJĄ poniższe reguły. Bez skórki zaawansowanej
+   żaden atrybut nie jest ustawiony, więc żadna reguła nie działa — skórki proste
+   nie mogą się od tej sekcji zmienić (AC-1). Wzorzec ten sam co `data-chrome-frame`
+   wyżej: atrybut nakłada serwer, zero migotania.
+
+   Zmienne rodzin (`--c-btn-*` itd.) DOPEŁNIA kompilator: reguła przepisuje całą
+   rodzinę naraz, więc każda zmienna ma wartość równą bazowej, jeśli skórka jej
+   nie zmieniła (kompilacja.ts). Dlatego reguły nie potrzebują fallbacków var(). */
+
+/* Przyciski — przejęcie koloru przez PRZEPISANIE zmiennych, nie właściwości:
+   przyciski w aplikacji malują się inline przez var(--accent-blue)/var(--on-accent),
+   a wartość zmiennej z arkusza dociera pod inline style bez wojny o specyficzność. */
+html[data-c-btn] button {
+  --accent-blue: var(--c-btn-bg);
+  --on-accent: var(--c-btn-text);
+}
+html[data-c-btn] button:hover {
+  --accent-blue: var(--c-btn-hover-bg);
+}
+html[data-c-btn-radius] button { border-radius: var(--c-btn-radius); }
+html[data-c-btn-shadow] button { box-shadow: var(--c-btn-shadow); }
+html[data-c-btn-shadow] button:hover { box-shadow: var(--c-btn-hover-shadow); }
+html[data-c-btn-transform] button { text-transform: var(--c-btn-transform); }
+html[data-c-btn-disabled] button:disabled { opacity: var(--c-btn-disabled-opacity); }
+
+/* Okna dialogowe. Tło idzie przepisaniem zmiennej (Modal maluje się inline przez
+   var(--bg-surface)); zaokrąglenie MUSI przebić inline `borderRadius: 16px 16px 0 0`
+   — stąd jedyny `!important` w tej sekcji, świadomy i bramkowany. */
+html[data-c-modal] [role="dialog"] { --bg-surface: var(--c-modal-bg); }
+html[data-c-modal-radius] [role="dialog"] { border-radius: var(--c-modal-radius) !important; }
+html[data-c-modal-shadow] [role="dialog"] { box-shadow: var(--c-modal-shadow); }
+
+/* Tło nawigacji z grafiki (slot `nav-background`). */
+html[data-asset-nav] .omnia-nawigacja {
+  background-image: var(--c-nav-bg-image);
+  background-size: cover;
+  background-position: center;
+}
+html[data-asset-nav="tile"] .omnia-nawigacja {
+  background-size: auto;
+  background-repeat: repeat;
+}
+
+/* Tło aplikacji z grafiki (slot `app-background`) — dopasowanie. Sam obraz niesie
+   token --bg-image-base (konsumowany przez regułę `body` wyżej). */
+html[data-asset-bg="cover"] body {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+html[data-asset-bg="tile"] body {
+  background-size: auto;
+  background-repeat: repeat;
+}
+
+/* Wariant układu: pasek boczny po PRAWEJ. Czysty CSS na kolejności flexboksa —
+   korzeń powłoki jest `md:flex-row`, więc wystarczy zamienić `order` haków.
+   Poniżej `md` korzeń jest kolumną (górny pasek / treść / pasek kciuka) i kolejność
+   musi zostać — stąd media query, nie sama reguła. */
+@media (min-width: 768px) {
+  html[data-nav="sidebar-prawy"] .omnia-nawigacja { order: 2; border-right: none; border-left: 1px solid var(--chrome-border, var(--border)); }
+  html[data-nav="sidebar-prawy"] .omnia-tresc { order: 1; }
+}
+
+/* Nadpisania tokenów NA TELEFONIE (skórka zaawansowana, responsive.mobile).
+   Zmienna ustawiona inline na <html> wygrywa z arkuszem, więc kompilator przenosi
+   nadpisywany token do pary --d-…/--m-… i USUWA go z inline; te reguły składają
+   z pary właściwą wartość po obu stronach progu md. `:root[data-resp-mobile]`
+   (0,2,0) świadomie przebija `:root` (0,1,0) z góry pliku. */
+:root[data-resp-mobile] {
+  --font-size-base: var(--d-font-size-base);
+  --space-unit: var(--d-space-unit);
+  --view-padding: var(--d-view-padding);
+  --radius: var(--d-radius);
+  --control-height: var(--d-control-height);
+}
+@media (max-width: 767px) {
+  :root[data-resp-mobile] {
+    --font-size-base: var(--m-font-size-base);
+    --space-unit: var(--m-space-unit);
+    --view-padding: var(--m-view-padding);
+    --radius: var(--m-radius);
+    --control-height: var(--m-control-height);
+  }
+}
+
+/* Animacje skórki — ZAMKNIĘTY katalog @keyframes. Parametry (czas/krzywa/dystans/
+   skala/poświata) niosą zmienne wyliczone przez kompilator z intensywności.
+   Globalna reguła prefers-reduced-motion na górze pliku wyłącza je wszystkie —
+   charakter motywu nigdy nie wygrywa z ustawieniem dostępności. */
+@keyframes omnia-anim-fade {
+  from { opacity: 0; }
+}
+@keyframes omnia-anim-slide-up {
+  from { opacity: 0; transform: translateY(var(--anim-dist, 8px)); }
+}
+@keyframes omnia-anim-scale {
+  from { opacity: 0; transform: scale(var(--anim-scale, 0.97)); }
+}
+@keyframes omnia-anim-glow-pulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: var(--anim-glow, 0 0 14px rgba(59, 130, 246, 0.45)); }
+}
+
+/* Wejście treści widoku. */
+html[data-anim-content="fade"] main {
+  animation: omnia-anim-fade var(--anim-content-dur, 240ms) var(--anim-content-ease, ease) both;
+}
+html[data-anim-content="slide-up"] main {
+  --anim-dist: var(--anim-content-dist, 8px);
+  animation: omnia-anim-slide-up var(--anim-content-dur, 240ms) var(--anim-content-ease, ease) both;
+}
+html[data-anim-content="scale"] main {
+  --anim-scale: var(--anim-content-scale, 0.97);
+  animation: omnia-anim-scale var(--anim-content-dur, 240ms) var(--anim-content-ease, ease) both;
+}
+
+/* Reakcja przycisku pod kursorem. */
+html[data-anim-btn-hover] button {
+  transition:
+    transform var(--anim-btnh-dur, 120ms) var(--motion-easing, ease),
+    box-shadow var(--anim-btnh-dur, 120ms) var(--motion-easing, ease);
+}
+html[data-anim-btn-hover="scale"] button:hover { transform: scale(var(--anim-btnh-scale, 1.02)); }
+html[data-anim-btn-hover="glow-pulse"] button:hover { box-shadow: var(--anim-btnh-glow, 0 0 14px rgba(59, 130, 246, 0.55)); }
+
+/* Poświata nawigacji. */
+html[data-anim-nav-glow="glow-pulse"] .omnia-nawigacja {
+  --anim-glow: var(--anim-nav-glow, 0 0 18px rgba(59, 130, 246, 0.45));
+  animation: omnia-anim-glow-pulse var(--anim-nav-dur, 2400ms) ease-in-out infinite;
+}
+
+/* Wejście okna dialogowego. */
+html[data-anim-modal="fade"] [role="dialog"] {
+  animation: omnia-anim-fade var(--anim-modal-dur, 200ms) var(--anim-modal-ease, ease) both;
+}
+html[data-anim-modal="slide-up"] [role="dialog"] {
+  --anim-dist: var(--anim-modal-dist, 16px);
+  animation: omnia-anim-slide-up var(--anim-modal-dur, 200ms) var(--anim-modal-ease, ease) both;
+}
+html[data-anim-modal="scale"] [role="dialog"] {
+  --anim-scale: var(--anim-modal-scale, 0.95);
+  animation: omnia-anim-scale var(--anim-modal-dur, 200ms) var(--anim-modal-ease, ease) both;
+}
+
+/* Tempo animacji ładowania (Tailwindowe .animate-spin). */
+html[data-anim-loader="spin"] .animate-spin { animation-duration: var(--anim-loader-dur, 1000ms); }
