@@ -63,7 +63,7 @@
   w stopce `NewsItemCard` (props przez NewsStream/NewsTimeline*); i18n; manifest.
 - [x] **T-13** `[P]` — Z-INT-12: `zapiszFilmJakoNotatke(videoId)` (streszczenie z pamięci treści,
   fallback opis; + kanał + adres) + przycisk w `FilmSzczegol`; i18n; manifest.
-- [ ] **T-14** `[P]` — Z-INT-13: sekcja „Fiszki z filmu" w `FilmSzczegol` (tylko gdy
+- [x] **T-14** `[P]` — Z-INT-13: sekcja „Fiszki z filmu" w `FilmSzczegol` (tylko gdy
   transkrypcja jest i są talie): select talii (`getDecks`), fetch `/api/llm/languages/extract`
   (sourceText=transkrypcja przycięta, targetLang z talii), lista propozycji z checkboxami,
   „Dodaj (N)" → `bulkAddWords`; `AiCostBadge` (akcja „Fiszki z filmu"); i18n.

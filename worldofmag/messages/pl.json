@@ -3118,7 +3118,15 @@
         },
         "zapiszNotatke": "Zapisz jako notatkę",
         "notatkaZapisana": "Zapisano notatkę",
-        "notatkaBlad": "Nie udało się zapisać notatki"
+        "notatkaBlad": "Nie udało się zapisać notatki",
+        "fiszkiTytul": "Fiszki z filmu",
+        "fiszkiTalia": "Talia",
+        "fiszkiZaproponuj": "Zaproponuj fiszki",
+        "fiszkiPracuje": "Wybieram słownictwo…",
+        "fiszkiBrak": "Nie znaleziono słownictwa wartego fiszek w tym materiale.",
+        "fiszkiDodaj": "Dodaj ({n})",
+        "fiszkiDodano": "Dodano fiszki: {n}",
+        "fiszkiBlad": "Nie udało się przygotować fiszek"
       },
       "KanalyPage": {
         "tytul": "Kanały i ustawienia",
