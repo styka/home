@@ -361,5 +361,15 @@ T-19…T-25 = ETAP 6 biznes/prawo) czekają na akcje/decyzje właściciela (patr
 _**Postęp 2026-08-29 (przegląd całościowy, 114):** trzy równoległe recenzje świeżym okiem
 (Rośliny / przekrojowa / macierz zdolności modułów) → naprawione w tej sesji: patrz nagłówek
 ETAP 7; pozostałości = **T-26…T-31** powyżej. Suita jednostkowa i bramki build zielone._
+_**Postęp 2026-08-29 (integracje międzymodułowe, 115, spec-driven pipeline):** dogłębna analiza
+każdego modułu z każdym (raport `/reports/integracje-miedzymodulowe-115`, migracja 0283) i realizacja
+WSZYSTKICH 19 zleceń **Z-INT-01…19**: fundament Portfela (`bookAutoExpense` z wynikiem + `kind:
+income`), księgowania z Zdrowia/Zwierząt (koszt wizyty, przychód sprzedaży)/Warsztatów (koszt
+projektu)/Trucka (koszt trasy z pojazdem Floty), zapisy do Kontaktów (lekarz, weterynarz,
+wykonawca), mosty do Zadań (kalendarz, kontakt, notatka, wiadomość czatu), mosty treści (artykuł
+Wiadomości → notatka, film YouTube → notatka, fiszki z transkrypcji → Języki), automaty (braki
+warsztatowe → lista zakupów, zakupy → spiżarnia, prognoza Pogody w kalendarzu, ewidencja Roślin →
+zdjęcie środka z Magazynu) i cztery nowe wkłady pulpitu (nawyki, przeglądy warsztatowe, urodziny,
+pogoda). Pełny build + 1483 testy zielone._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._

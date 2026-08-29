@@ -101,6 +101,28 @@ plan for commercialization lives in the admin report
 
 > **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, the Server Actions list, and the Database Schema section below.
 
+> **Integracje międzymodułowe (115, 2026-08-29).** Po dogłębnej analizie każdego modułu z każdym
+> (raport `/reports/integracje-miedzymodulowe-115`, seeded by migration 0283; artefakty w
+> `specs/115-integracje-modulow/`) zrealizowano 19 zleceń Z-INT-01…19 — wszystkie przez KONTRAKTY
+> modułów, wg wzorca „akcja w module ŹRÓDŁA z własnym guardem + pre-check uprawnienia modułu CELU":
+> **Portfel** — `bookAutoExpense` zwraca `WynikKsiegowania` (`{zaksiegowano, powod}`) i przyjmuje
+> `kind: "expense"|"income"`; jawne przyciski „Zaksięguj" w Zdrowiu (koszt wizyty, `HealthEvent.cost`,
+> 0280), Zwierzętach (koszt wizyty wet., przychód sprzedaży), Warsztatach (koszt projektu,
+> `WorkshopProject.cost`, 0281) i Trucku (koszt paliwa trasy z pojazdu Floty; flota contract +=
+> `avgFuelPrice`). **Kontakty** — zapis lekarza/weterynarza/wykonawcy z Zdrowia/Zwierząt/Usług
+> (helper `src/lib/kontaktZWpisu.ts` z dedupem) + `createTaskFromContact`. **Zadania** — „Do zadań"
+> z pozycji wspólnego kalendarza (`calendar/actions/doZadan.ts`), notatki, wiadomości czatu.
+> **Notatki** — zapis artykułu Wiadomości i filmu YouTube (streszczenie z `AiContent`, bez ponownej
+> generacji); kontrakty Notatek/Kuchni eksportują `notesModule`/`kitchenModule` dla pre-checków.
+> **Języki** — sekcja „Fiszki z filmu" w YouTube (transkrypcja → `/api/llm/languages/extract` →
+> przegląd → `bulkAddWords`). **Automaty** — braki warsztatowe → lista zakupów
+> (`addWorkshopLowStockToShoppingList`), `completeShopping(doSpizarni)` → spiżarnia (błąd spiżarni
+> nie cofa zakończenia), prognoza Pogody w siatce kalendarza (`WeatherPref.kalendarzPrognoza`, 0282;
+> `getKalendarzPrognoza` w kontrakcie), ewidencja Roślin → `adjustStorageQuantity` Magazynu
+> (kontrakt += `getStorageItems`). **Pulpit** — cztery nowe wkłady `dashboard.ts` (habits, warsztaty,
+> contacts, weather z twardym timeoutem 3 s), pola w `DashboardSnapshot`, render w istniejących
+> sekcjach `today`/`modules`.
+
 ---
 
 ## Repository Layout
