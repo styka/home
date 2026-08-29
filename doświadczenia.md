@@ -5902,3 +5902,14 @@ telefonie, a od `md` `display: contents` przywraca dokładnie dotychczasowy ukł
 **Lekcja:** `minHeight` na kontenerze, którego zawartość bywa warunkowa, to rezerwacja miejsca na
 nic. Przy przenoszeniu treści za `hidden md:*` sprawdź, czy opakowanie ma jeszcze po co istnieć
 w tym punkcie granicznym.
+
+## 2026-08-29 — `export A=… B="$A"` ustawia B na STARĄ (pustą) wartość A
+**Problem:** Lokalne `prisma migrate deploy` „przechodziło" w tle (exit 0 przez `| tail`), ale nie
+robiło nic: `export DATABASE_URL="…" DIRECT_URL="$DATABASE_URL"` w jednej linii rozwija
+`$DATABASE_URL` do wartości sprzed przypisania — pustej. Prisma kończyła się błędem P1012
+(„DIRECT_URL resolved to an empty string"), maskowanym przez pipe.
+**Rozwiązanie:** Dwa osobne `export` (najpierw `DATABASE_URL`, potem `DIRECT_URL="$DATABASE_URL"`)
+i sprawdzenie skutku w bazie (`SELECT` po tabeli), a nie samego kodu wyjścia.
+**Lekcja:** W bashu ekspansje w jednym poleceniu widzą stan sprzed tego polecenia — zmienną
+zależną eksportuj w osobnej linii. Po „udanej" migracji weryfikuj stan bazy, nie exit code,
+zwłaszcza gdy wynik przechodzi przez `| tail`/`| head`.
