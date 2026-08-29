@@ -18,18 +18,18 @@
   `prisma migrate deploy` przechodzi.
 
 ## Faza 1 — Rdzeń definicji (czyste funkcje, bez UI)
-- [ ] **T-2** — `src/lib/skins/zaawansowane.ts`: typy `DefinicjaZaawansowana` (schemaVersion 1),
+- [x] **T-2** — `src/lib/skins/zaawansowane.ts`: typy `DefinicjaZaawansowana` (schemaVersion 1),
   zamknięte katalogi (komponenty, stany, animacje, cele animacji, warianty nav, sloty assetów),
   `ADVANCED_COMPONENT_CONTROLS` (nowe rodziny `--c-*` w `src/lib/skins.ts` — bez dotykania
   `ALL_CONTROLS`), `walidujDefinicje(raw) → {definicja, odrzucone[]}` (limit 64 kB, walidacja
   pole-po-polu przez `sanitizeTokenValue`-owe reguły), `migrujDefinicje` (v1 = identyczność).
   Gotowe, gdy: kompiluje się i pokrywa przypadki z T-4.
-- [ ] **T-3** — `src/lib/skins/kompilacja.ts`: `kompilujDefinicje(definicja, assety) →
+- [x] **T-3** — `src/lib/skins/kompilacja.ts`: `kompilujDefinicje(definicja, assety) →
   {tokens, dataNav, ostrzezenia[]}` — mapowanie komponentów/stanów/animacji/responsive na
   zmienne `--c-*`, `url()` assetów wyłącznie z cuid zweryfikowanego względem przekazanej listy,
   brakujący asset ⇒ slot pominięty + ostrzeżenie; ostrzeżenia kontrastowe przez
   `lib/skins/contrast.ts`. Gotowe, gdy: czysta funkcja bez Prismy (client-safe).
-- [ ] **T-4** — `src/lib/skins/__tests__/zaawansowane.test.ts`: walidacja poprawnej definicji,
+- [x] **T-4** — `src/lib/skins/__tests__/zaawansowane.test.ts`: walidacja poprawnej definicji,
   odrzucanie niebezpiecznych wartości (`url(`, `;`, `{`, `expression`, selektory), nieznane pola
   → `odrzucone` bez unieważnienia reszty, limit rozmiaru, fallback kompilacji, referencja
   nieistniejącego assetu, katalog animacji (spoza listy = odrzucone), eksport wersji.

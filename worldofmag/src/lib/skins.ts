@@ -325,29 +325,32 @@ function usesOnlyAllowedFns(value: string, allowed: string[]): boolean {
   return true;
 }
 
-/** Sanityzacja pojedynczej wartości tokenu wg jego rodzaju. Zwraca bezpieczną
- *  wartość lub null (odrzucenie). Chroni przed wstrzyknięciem do inline style. */
-export function sanitizeTokenValue(key: string, raw: unknown): string | null {
+/** Sanityzacja WARTOŚCI wg rodzaju kontrolki — wspólny rdzeń dla tokenów skórek
+ *  prostych i właściwości komponentów skórek zaawansowanych (116). Zwraca bezpieczną
+ *  wartość lub null (odrzucenie). Chroni przed wstrzyknięciem do inline style.
+ *  `options` — wymagane dla `keyword`/`font` (zamknięta lista). */
+export function sanitizeValueOfKind(
+  kind: SkinControlKind,
+  raw: unknown,
+  options?: { value: string; label: string }[],
+): string | null {
   if (typeof raw !== "string") return null;
   const v = raw.trim();
   if (!v) return null;
 
-  const control = ALL_CONTROLS.find((c) => c.key === key);
-  if (!control) return null;
-
-  if (v.length > maxLengthFor(control.kind)) return null;
+  if (v.length > maxLengthFor(kind)) return null;
 
   // Globalna blokada — obowiązuje KAŻDY rodzaj, także złożone.
   const lower = v.toLowerCase();
   if (FORBIDDEN.some((bad) => lower.includes(bad))) return null;
 
-  switch (control.kind) {
+  switch (kind) {
     case "scheme":
       return v === "light" || v === "dark" ? v : null;
 
     case "keyword":
     case "font":
-      return control.options?.some((o) => o.value === v) ? v : null;
+      return options?.some((o) => o.value === v) ? v : null;
 
     case "radius":
     case "density":
@@ -385,6 +388,19 @@ export function sanitizeTokenValue(key: string, raw: unknown): string | null {
     case "color":
       return COLOR_RE.test(v) ? v : null;
   }
+}
+
+/** Sanityzacja pojedynczej wartości tokenu wg jego KLUCZA (rodzaj z katalogu kontrolek). */
+export function sanitizeTokenValue(key: string, raw: unknown): string | null {
+  const control = ALL_CONTROLS.find((c) => c.key === key);
+  if (!control) return null;
+  return sanitizeValueOfKind(control.kind, raw, control.options);
+}
+
+/** Rodzaj tokenu po kluczu — publiczny odczyt katalogu (116: aliasy komponentów
+ *  skórki zaawansowanej sanityzują wartość regułą tokenu, na który wskazują). */
+export function tokenControl(key: string): SkinControl | null {
+  return ALL_CONTROLS.find((c) => c.key === key) ?? null;
 }
 
 /** Waliduje surową mapę tokenów (np. z DB lub formularza) → bezpieczna mapa. */
