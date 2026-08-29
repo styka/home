@@ -25,7 +25,9 @@ export default async function calendarEvents(userId: string, { from, to }: Calen
   });
 
   const events: CalendarContribEvent[] = [];
-  const lata = new Set([from.getFullYear(), to.getFullYear()]);
+  // Tablica, nie Set: target tsconfig.json aplikacji nie pozwala iterować po Set w for…of
+  // (tsconfig.test.json ma inny target, więc `check:test-types` tego nie łapie — dopiero next build).
+  const lata = Array.from(new Set([from.getFullYear(), to.getFullYear()]));
   for (const k of kontakty) {
     if (!k.birthday) continue;
     // Urodziny zapisujemy jako północ UTC dnia kalendarzowego — miesiąc/dzień czytamy więc w UTC.
