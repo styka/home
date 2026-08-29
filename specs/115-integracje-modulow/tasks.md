@@ -14,7 +14,7 @@
 - `[P]` — równoległe względem poprzedniego
 
 ## Faza 0 — Fundament
-- [ ] **T-1** — Portfel: `lib/autoExpense.ts` — `AutoExpenseInput += kind?: "income"|"expense"`
+- [x] **T-1** — Portfel: `lib/autoExpense.ts` — `AutoExpenseInput += kind?: "income"|"expense"`
   (income → `delta:+amount`, `kind:"income"`); zwrot `WynikKsiegowania = { zaksiegowano,
   powod?: "brak-konta"|"kwota-zero" }` zamiast `void`; typ wyeksportowany przez kontrakt.
   Gotowe, gdy: tsc czysto, dotychczasowi konsumenci (flota/services/shopping/rosliny) bez zmian
