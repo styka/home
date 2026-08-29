@@ -106,7 +106,7 @@
 - [x] **T-21** — Z-INT-19: migracja-seed raportu „Integracje międzymodułowe — analiza"
   (numer z `next:migration`; treść = analiza.md rozdz. 1–6) + `migrate deploy` lokalnie;
   aktualizacja `CLAUDE.md` (tabela modułów: nowe mosty) i trackera A.16.
-- [ ] **T-22** — Mapowanie AC-1…AC-16 → dowody (input do `/verify`); wpis(y) do
+- [x] **T-22** — Mapowanie AC-1…AC-16 → dowody (input do `/verify`); wpis(y) do
   `doświadczenia.md`, jeśli wystąpił nieoczywisty problem (C-51).
 
 ## Mapowanie AC → zadania
