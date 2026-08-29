@@ -2567,7 +2567,8 @@
         "tejOperacjiNieDa": "Tej operacji nie da się cofnąć — usunięte pozycje nie trafiają do kosza.",
         "zarchiwizujListe": "Zarchiwizuj listę",
         "wydanoKupioneZCena": "Wydano (kupione z ceną)",
-        "abyKsiegowacZakupyW": "Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia."
+        "abyKsiegowacZakupyW": "Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.",
+        "dodajKupioneDoSpizarni": "Dodaj kupione pozycje ({n}) do spiżarni"
       },
       "ShoppingSideNav": {
         "trafiajaTuBrakiZ": "Trafiają tu braki z Magazynu",

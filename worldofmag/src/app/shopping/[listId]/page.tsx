@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { kitchenModule } from "@/modules/kitchen/contract";
 import { prisma } from "@/platform/db/prisma";
 import { getLists, assertListAccess } from "@/modules/shopping/actions/lists";
 import { getCategoryEmojiMap, getCategoryNames } from "@/modules/shopping/actions/categories";
@@ -42,5 +44,5 @@ export default async function ListPage({ params, searchParams }: Props) {
 
   if (!list) notFound();
 
-  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} financeReady={!!finance?.autoExpenseElementId} viewParams={searchParams ?? {}} />;
+  return <ShoppingPage list={list as unknown as ShoppingListWithItems} allLists={allLists} categoryEmojiMap={categoryEmojiMap} categoryNames={categoryNames} stores={stores} financeReady={!!finance?.autoExpenseElementId} kitchenReady={hasPermission(session, kitchenModule.permission)} viewParams={searchParams ?? {}} />;
 }

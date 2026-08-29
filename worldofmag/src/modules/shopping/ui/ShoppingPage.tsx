@@ -37,6 +37,7 @@ interface ShoppingPageProps {
   categoryNames?: string[];
   stores: StoreWithGraph[];
   financeReady?: boolean; // S6: czy użytkownik ma skonfigurowane konto Portfela do księgowania
+  kitchenReady?: boolean; // 115 (Z-INT-16): czy użytkownik ma moduł Kuchnia (widoczność „do spiżarni")
   /**
    * 043: parametry adresu z serwera — stan widoku (zakładka filtra, sortowanie) czytamy stąd,
    * a nie z `window`, żeby nie powstał rozjazd hydratacji.
@@ -75,7 +76,7 @@ function decodeSortMode(raw: string, stores: StoreWithGraph[]): SortMode {
   return { type: "category" };
 }
 
-export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false, viewParams = {} }: ShoppingPageProps) {
+export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames = [], stores, financeReady = false, kitchenReady = false, viewParams = {} }: ShoppingPageProps) {
   const t = useTranslations("modules.shopping.ShoppingPage");
   const router = useRouter();
   const { toggle: togglePalette } = useCommandPalette();
@@ -419,7 +420,8 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
           items={items}
           pending={isPending}
           financeReady={financeReady}
-          onConfirm={(bookToPortfel) => startTransition(async () => { await completeShopping(effListId, { bookToPortfel }); router.push("/shopping"); })}
+          kitchenReady={kitchenReady}
+          onConfirm={(bookToPortfel, doSpizarni) => startTransition(async () => { await completeShopping(effListId, { bookToPortfel, doSpizarni }); router.push("/shopping"); })}
           onCancel={() => setCompleteOpen(false)}
         />
       )}
@@ -436,12 +438,26 @@ export function ShoppingPage({ list, allLists, categoryEmojiMap, categoryNames =
   );
 }
 
-function CompleteShoppingModal({ listName, items, pending, financeReady, onConfirm, onCancel }: {
+/** 115 (Z-INT-16): zapamiętany wybór „do spiżarni" — domyślnie ODZNACZONY (nadwyżka wpisów
+ *  w spiżarni jest gorsza niż brak, więc opcja musi być świadoma; localStorage jak sortowanie). */
+const PANTRY_STORAGE_KEY = "wom_shopping_pantry";
+
+function readPantryPref(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(PANTRY_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function CompleteShoppingModal({ listName, items, pending, financeReady, kitchenReady, onConfirm, onCancel }: {
   listName: string;
   items: Item[];
   pending: boolean;
   financeReady: boolean;
-  onConfirm: (bookToPortfel: boolean) => void;
+  kitchenReady: boolean;
+  onConfirm: (bookToPortfel: boolean, doSpizarni: boolean) => void;
   onCancel: () => void;
 }) {
   const t = useTranslations("modules.shopping.ShoppingPage");
@@ -455,6 +471,8 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
     .reduce((s, i) => s + (i.price as number) * (i.quantity && i.quantity > 0 ? i.quantity : 1), 0);
   const canBook = financeReady && spend > 0;
   const [book, setBook] = useState(canBook);
+  const canPantry = kitchenReady && done > 0;
+  const [pantry, setPantry] = useState(() => canPantry && readPantryPref());
   const rows: { label: string; value: number; color: string }[] = [
     { label: "Kupione", value: done, color: "var(--accent-green)" },
     { label: "Brakujące", value: missing, color: "var(--accent-amber)" },
@@ -473,7 +491,7 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
       footer={
         <>
           <button onClick={onCancel} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>Anuluj</button>
-          <button onClick={() => onConfirm(canBook && book)} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
+          <button onClick={() => onConfirm(canBook && book, canPantry && pantry)} disabled={pending} className="text-sm px-3 py-1.5 rounded" style={{ background: "var(--accent-green)", color: "var(--on-accent)", fontWeight: 600, border: "none", opacity: pending ? 0.6 : 1 }}>
             {t("zarchiwizujListe")}
           </button>
         </>
@@ -513,6 +531,24 @@ function CompleteShoppingModal({ listName, items, pending, financeReady, onConfi
         <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
           {t("abyKsiegowacZakupyW")}
         </p>
+      )}
+      {canPantry && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--text-secondary)", margin: 0, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={pantry}
+            onChange={(e) => {
+              setPantry(e.target.checked);
+              try {
+                localStorage.setItem(PANTRY_STORAGE_KEY, e.target.checked ? "1" : "0");
+              } catch {
+                // brak localStorage (tryb prywatny) — wybór działa w tej sesji, tylko nie wraca
+              }
+            }}
+            style={{ width: 16, height: 16 }}
+          />
+          {t("dodajKupioneDoSpizarni", { n: done })}
+        </label>
       )}
     </Modal>
   );

@@ -74,7 +74,7 @@
 - [x] **T-15** — Z-INT-04: `addWorkshopLowStockToShoppingList(listId)` (assertListAccess +
   `addItemStructured`, deficyt do progu) + przycisk sekcyjny z wyborem listy w
   `MaintenanceAgenda`; i18n; manifest. Gotowe, gdy: fixture z brakiem tworzy pozycję listy.
-- [ ] **T-16** `[P]` — Z-INT-16: `completeShopping(opts += doSpizarni)` → po archiwizacji
+- [x] **T-16** `[P]` — Z-INT-16: `completeShopping(opts += doSpizarni)` → po archiwizacji
   pozycje DONE do `addPantryItem` (błąd spiżarni nie cofa zakończenia; wynik
   `dodanoDoSpizarni`); checkbox w `CompleteShoppingModal` (localStorage
   `wom_shopping_pantry`, domyślnie odznaczony); pre-check `module.kitchen` dla widoczności
