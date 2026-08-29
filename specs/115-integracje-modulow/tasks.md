@@ -117,3 +117,13 @@ AC-13→T-18 · AC-14→T-19 · AC-15→T-21 · AC-16→T-20.
 ## Notatki / blokady
 - Ścieżka krytyczna: T-1 → (T-3,T-4,T-5,T-7) · T-2 → (T-3,T-5,T-17) · T-3(helper) → T-4,T-6 ·
   reszta faz niezależna między sobą.
+
+## Faza 8 — Poprawki z recenzji (review 2026-08-29)
+- [x] **T-23** — R-1/R-2: truck `zaksiegujKosztTrasy` — `user.id` w hashu `sourceId` (kolizja
+  między użytkownikami → korupcja portfela) + zawężenie `findFirst` w `bookAutoExpense` do
+  `elementId` konta użytkownika (obrona w głąb) + brakujący `revalidatePath("/portfel")`.
+- [x] **T-24** — R-3: pre-check `module.contacts` w `zapiszKontaktZWpisu` (wzorzec pozostałych
+  mostów) — kontakt nie może powstawać dla konta bez dostępu do trasy /contacts.
+- [x] **T-25** — R-4/R-5: `removeAutoExpense` w delete akcjach źródeł księgowań (sale/wizyta
+  wet./wizyta zdrowia/projekt — precedens Floty) + kolor komunikatu błędu ≠ kolor sukcesu
+  w 4 widokach (truck/warsztaty/health/services).

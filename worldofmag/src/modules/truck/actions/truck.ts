@@ -152,8 +152,11 @@ export async function zaksiegujKosztTrasy(data: {
   const user = await requireAuth();
   if (!Number.isFinite(data.kwota) || data.kwota <= 0) throw new Error("Brak kwoty do zaksięgowania");
   const dzien = dataWStrefie(userTimeZone());
-  const sourceId = createHash("sha1").update(`${data.start}|${data.cel}|${dzien}`).digest("hex");
-  return bookAutoExpense(user.id, {
+  // `user.id` w hashu jest OBOWIĄZKOWE (recenzja 115, R-1): to pierwszy sourceId liczony z danych,
+  // a nie z cuid-a rekordu, więc bez właściciela dwaj użytkownicy księgujący tę samą trasę tego
+  // samego dnia zderzyliby się na (sourceModule, sourceId) i nadpisywali sobie nawzajem wpisy.
+  const sourceId = createHash("sha1").update(`${user.id}|${data.start}|${data.cel}|${dzien}`).digest("hex");
+  const wynik = await bookAutoExpense(user.id, {
     module: "truck",
     sourceId,
     amount: data.kwota,
@@ -161,4 +164,6 @@ export async function zaksiegujKosztTrasy(data: {
     note: data.opis ?? `Trasa: ${data.start} → ${data.cel}`,
     force: true,
   });
+  revalidatePath("/portfel");
+  return wynik;
 }

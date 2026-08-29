@@ -53,8 +53,13 @@ export async function bookAutoExpense(userId: string, opts: AutoExpenseInput): P
   const kind = opts.kind === "income" ? "income" : "expense";
   const znak = kind === "income" ? 1 : -1;
 
+  // Zawężenie do KONTA użytkownika (recenzja 115, R-1 — obrona w głąb): historyczne sourceId to
+  // cuid-y rekordów (globalnie unikalne), ale sourceId liczony z danych (Truck) mógłby się zderzyć
+  // między użytkownikami — bez tego filtra „korekta" nadpisywałaby cudzy wpis cudzym saldem.
+  // Świadomy koszt: po zmianie konta auto-księgowania stare źródło dostanie NOWY wpis na nowym
+  // koncie zamiast korekty starego — duplikat widać i można go usunąć, korupcja sald nie.
   const existing = await prisma.walletEntry.findFirst({
-    where: { sourceModule: opts.module, sourceId: opts.sourceId },
+    where: { sourceModule: opts.module, sourceId: opts.sourceId, elementId: el.id },
   });
 
   if (existing) {

@@ -6,7 +6,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
-import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
 import type { PetGene } from "../lib/petGenetics";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
@@ -333,5 +333,9 @@ export async function deleteSale(id: string): Promise<void> {
   if (!sale) return;
   await assertPetAccess(sale.petId, user.id, true);
   await prisma.petSale.delete({ where: { id } });
+  // Recenzja 115 (R-4): fantomowy PRZYCHÓD po skasowanej sprzedaży jest gorszy niż fantomowy
+  // wydatek — odwracamy auto-wpis razem ze źródłem (precedens Floty).
+  await removeAutoExpense("pets", `sale-${id}`);
   revalidatePet(sale.petId);
+  revalidatePath("/portfel");
 }

@@ -5,7 +5,9 @@
 // Usługi — a reguła przynależności mówi: helper wielu modułów zostaje wspólny. Idzie przez
 // KONTRAKT Kontaktów, więc guardy własności robi moduł docelowy.
 
-import { createContact, getContacts } from "@/modules/contacts/contract";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createContact, getContacts, contactsModule } from "@/modules/contacts/contract";
 
 export type WpisKontaktu = {
   name: string;
@@ -31,6 +33,11 @@ export function dopasujIstniejacy(kontakty: Array<{ name: string }>, name: strin
 
 /** Tworzy kontakt z wpisu, chyba że kontakt o tej nazwie już istnieje. */
 export async function zapiszKontaktZWpisu(w: WpisKontaktu): Promise<WynikZapisuKontaktu> {
+  // Recenzja 115 (R-3): pre-check modułu docelowego jak w pozostałych mostach — bez niego kontakt
+  // powstawałby w przestrzeni konta, dla którego trasa /contacts jest zablokowana (rekord-widmo).
+  const session = await auth();
+  if (!hasPermission(session, contactsModule.permission)) throw new Error("Brak dostępu do modułu Kontakty");
+
   const name = w.name.trim();
   if (!name) throw new Error("Brak nazwy osoby do zapisania");
 

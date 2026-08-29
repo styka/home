@@ -8,7 +8,7 @@ import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { userDayBounds } from "@/lib/userTime";
-import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 import { zapiszKontaktZWpisu, type WynikZapisuKontaktu } from "@/lib/kontaktZWpisu";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
@@ -201,7 +201,11 @@ export async function deleteHealthEvent(id: string): Promise<void> {
   const user = await requireAuth();
   await assertEventAccess(id, user.id);
   await prisma.healthEvent.delete({ where: { id } });
+  // Recenzja 115 (R-4): kasowanie źródła odwraca auto-wpis w Portfelu (precedens Floty) —
+  // inaczej zostaje wydatek-widmo, którego przycisk-korektor już nie istnieje.
+  await removeAutoExpense("health", id);
   revalidatePath("/health");
+  revalidatePath("/portfel");
 }
 
 /**

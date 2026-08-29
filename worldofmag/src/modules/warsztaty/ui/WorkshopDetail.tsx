@@ -449,7 +449,8 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
   const [name, setName] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [cost, setCost] = useState("");
-  const [komunikat, setKomunikat] = useState<string | null>(null);
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [komunikat, setKomunikat] = useState<{ tekst: string; blad: boolean } | null>(null);
 
   function add() {
     if (!name.trim()) return;
@@ -467,9 +468,9 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
     startTransition(async () => {
       try {
         const w = await bookProjectCost(id);
-        setKomunikat(w.zaksiegowano ? t("zaksiegowanoWPortfelu") : t("brakKontaAuto"));
+        setKomunikat(w.zaksiegowano ? { tekst: t("zaksiegowanoWPortfelu"), blad: false } : { tekst: t("brakKontaAuto"), blad: true });
       } catch (e) {
-        setKomunikat(e instanceof Error ? e.message : t("bladOperacji"));
+        setKomunikat({ tekst: e instanceof Error ? e.message : t("bladOperacji"), blad: true });
       }
       setTimeout(() => setKomunikat(null), 5000);
     });
@@ -489,7 +490,7 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
       </div>
 
       {komunikat && (
-        <p role="status" className="text-xs px-3 py-2 rounded border" style={{ color: "var(--accent-green)", borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}>{komunikat}</p>
+        <p role="status" className="text-xs px-3 py-2 rounded border" style={{ color: komunikat.blad ? "var(--accent-red)" : "var(--accent-green)", borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}>{komunikat.tekst}</p>
       )}
       {workshop.projects.length === 0 ? (
         <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>{t("brakProjektowDodajZlecenie")}</p>

@@ -5,7 +5,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
-import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 import { zapiszKontaktZWpisu, type WynikZapisuKontaktu } from "@/lib/kontaktZWpisu";
 import { parseRecurringRule } from "@/lib/recurrence";
 import { nextDueFrom } from "../domain/terminOpieki";
@@ -320,7 +320,10 @@ export async function deleteVetVisit(id: string): Promise<void> {
   if (!existing) return;
   await assertPetAccess(existing.petId, user.id, true);
   await prisma.petVetVisit.delete({ where: { id } });
+  // Recenzja 115 (R-4): kasowanie źródła odwraca auto-wpis w Portfelu (precedens Floty).
+  await removeAutoExpense("pets", id);
   revalidatePet(existing.petId);
+  revalidatePath("/portfel");
 }
 
 // ─── Measurements ─────────────────────────────────────────────────────────

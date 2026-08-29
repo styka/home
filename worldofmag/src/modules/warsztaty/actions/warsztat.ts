@@ -9,7 +9,7 @@ import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
-import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 import { assertListAccess, addItemStructured } from "@/modules/shopping/contract";
 
 export type WarsztatMode = "home" | "pro";
@@ -468,5 +468,8 @@ export async function deleteWorkshopProject(id: string): Promise<void> {
   if (!project) throw new Error("Projekt nie istnieje");
   await assertWorkshopAccess(project.workshopId, user.id);
   await prisma.workshopProject.delete({ where: { id } });
+  // Recenzja 115 (R-4): kasowanie źródła odwraca auto-wpis w Portfelu (precedens Floty).
+  await removeAutoExpense("warsztaty", `projekt-${id}`);
   revalidatePath(`/warsztaty/${project.workshopId}`);
+  revalidatePath("/portfel");
 }

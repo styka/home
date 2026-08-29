@@ -62,7 +62,8 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
   // 115 (Z-INT-14): koszt paliwa trasy ze średnich wybranego pojazdu Floty.
   const [pojazdy, setPojazdy] = useState<VehicleWithStats[] | null>(null);
   const [pojazdId, setPojazdId] = useState("");
-  const [kosztInfo, setKosztInfo] = useState<string | null>(null);
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [kosztInfo, setKosztInfo] = useState<{ tekst: string; blad: boolean } | null>(null);
   useEffect(() => {
     if (!result || pojazdy !== null) return;
     getVehicles().then(setPojazdy).catch(() => setPojazdy([]));
@@ -77,9 +78,9 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
     if (!result || kosztPaliwa == null) return;
     try {
       const w = await zaksiegujKosztTrasy({ start: result.origin.label, cel: result.destination.label, kwota: kosztPaliwa });
-      setKosztInfo(w.zaksiegowano ? t("kosztZaksiegowany") : t("brakKontaAuto"));
+      setKosztInfo(w.zaksiegowano ? { tekst: t("kosztZaksiegowany"), blad: false } : { tekst: t("brakKontaAuto"), blad: true });
     } catch (e) {
-      setKosztInfo(e instanceof Error ? e.message : t("bladOperacji"));
+      setKosztInfo({ tekst: e instanceof Error ? e.message : t("bladOperacji"), blad: true });
     }
     setTimeout(() => setKosztInfo(null), 5000);
   }
@@ -308,7 +309,7 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
                     {t("zalozeniaKosztu", { spalanie: (spalanie as number).toFixed(1), cena: (cenaLitra as number).toFixed(2) })}
                   </p>
                 )}
-                {kosztInfo && <p role="status" style={{ fontSize: 12, color: "var(--accent-green)", margin: 0 }}>{kosztInfo}</p>}
+                {kosztInfo && <p role="status" style={{ fontSize: 12, color: kosztInfo.blad ? "var(--accent-red)" : "var(--accent-green)", margin: 0 }}>{kosztInfo.tekst}</p>}
               </div>
             )}
 

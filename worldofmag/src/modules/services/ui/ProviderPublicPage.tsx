@@ -35,15 +35,16 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
   const [verified, setVerified] = useState(provider.verified);
   const [favored, setFavored] = useState(provider.isFavorite);
   const [copied, setCopied] = useState(false);
-  const [kontaktInfo, setKontaktInfo] = useState<string | null>(null);
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [kontaktInfo, setKontaktInfo] = useState<{ tekst: string; blad: boolean } | null>(null);
 
   // 115 (Z-INT-06): wykonawca do prywatnego CRM.
   async function doKontaktow() {
     try {
       const w = await saveProviderToContacts(provider.id);
-      setKontaktInfo(w.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"));
+      setKontaktInfo({ tekst: w.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"), blad: false });
     } catch (e) {
-      setKontaktInfo(e instanceof Error ? e.message : t("bladOperacji"));
+      setKontaktInfo({ tekst: e instanceof Error ? e.message : t("bladOperacji"), blad: true });
     }
     setTimeout(() => setKontaktInfo(null), 5000);
   }
@@ -92,7 +93,7 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
     >
 
       {kontaktInfo && (
-        <div role="status" style={{ fontSize: 12, color: "var(--accent-green)" }}>{kontaktInfo}</div>
+        <div role="status" style={{ fontSize: 12, color: kontaktInfo.blad ? "var(--accent-red)" : "var(--accent-green)" }}>{kontaktInfo.tekst}</div>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <RatingStars avg={provider.ratingAvg} count={provider.ratingCount} size={15} />

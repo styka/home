@@ -229,7 +229,8 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<HealthEvent | null>(null);
   const [focused, setFocused] = useState<number>(-1);
-  const [komunikat, setKomunikat] = useState<string | null>(null);
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [komunikat, setKomunikat] = useState<{ tekst: string; blad: boolean } | null>(null);
 
   const filtered = events.filter((e) => tab === "ALL" || e.kind === tab);
   const now = Date.now();
@@ -269,8 +270,8 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     await setHealthStatus(ev.id, next);
     router.refresh();
   }
-  function pokaz(msg: string) {
-    setKomunikat(msg);
+  function pokaz(tekst: string, blad = false) {
+    setKomunikat({ tekst, blad });
     setTimeout(() => setKomunikat(null), 5000);
   }
 
@@ -279,10 +280,10 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     try {
       const wynik = await bookHealthEventCost(ev.id);
       if (wynik.zaksiegowano) pokaz(t("zaksiegowanoWPortfelu"));
-      else if (wynik.powod === "brak-konta") pokaz(t("brakKontaAuto"));
-      else pokaz(t("kwotaZero"));
+      else if (wynik.powod === "brak-konta") pokaz(t("brakKontaAuto"), true);
+      else pokaz(t("kwotaZero"), true);
     } catch (e) {
-      pokaz(e instanceof Error ? e.message : t("bladOperacji"));
+      pokaz(e instanceof Error ? e.message : t("bladOperacji"), true);
     }
   }
   async function saveDoctor(ev: HealthEvent) {
@@ -290,7 +291,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
       const wynik = await saveDoctorToContacts(ev.id);
       pokaz(wynik.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"));
     } catch (e) {
-      pokaz(e instanceof Error ? e.message : t("bladOperacji"));
+      pokaz(e instanceof Error ? e.message : t("bladOperacji"), true);
     }
   }
 
@@ -366,8 +367,8 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
       </div>
 
       {komunikat && (
-        <div role="status" style={{ fontSize: 12, color: "var(--accent-green)", padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}>
-          {komunikat}
+        <div role="status" style={{ fontSize: 12, color: komunikat.blad ? "var(--accent-red)" : "var(--accent-green)", padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}>
+          {komunikat.tekst}
         </div>
       )}
 
