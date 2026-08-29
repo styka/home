@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 import { stripJsonFence } from "@/lib/groqVision";
 import { usageField } from "@/platform/ai/costVisibility";
 
@@ -59,10 +60,11 @@ function approxBase64Bytes(s: string): number {
   return Math.floor(((s.length - idx - 1) * 3) / 4);
 }
 
-async function structureTasks(text: string, today: string) {
+async function structureTasks(text: string, today: string, userId: string) {
   const userMsg = `Dzisiejsza data: ${today}\n\nDane do sparsowania na zadania:\n${text.trim()}`;
   return chatComplete({
     op: "dispatch",
+    userId,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: userMsg },
@@ -74,6 +76,12 @@ async function structureTasks(text: string, today: string) {
 }
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego chatComplete nie
+  // wiązał kosztu z użytkownikiem, więc licznik zużycia i miesięczny limit planu pomijały
+  // te wywołania (dawały się obejść „tańszą" trasą pomocniczą).
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session.user.id;
   const { text, image, today } = (await req.json().catch(() => ({}))) as {
     text?: string;
     image?: string;
@@ -93,6 +101,7 @@ export async function POST(req: NextRequest) {
     }
     const vision = await chatComplete({
       op: "vision",
+      userId,
       messages: [
         {
           role: "user",
@@ -118,7 +127,7 @@ export async function POST(req: NextRequest) {
 
   if (!source.trim()) return NextResponse.json({ error: "Empty input" }, { status: 400 });
 
-  const result = await structureTasks(source, todayStr);
+  const result = await structureTasks(source, todayStr, userId);
   if (!result.ok) {
     return NextResponse.json({ error: result.message }, { status: result.status });
   }

@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { chatStream } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego koszt wywołania
+  // nie wiązał się z użytkownikiem (licznik zużycia i miesięczny limit planu go pomijały).
+  const session = await auth();
+  if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
+  const userId = session.user.id;
   const { question, notes } = await req.json() as {
     question: string;
     notes: Array<{ title: string; content: string }>;
@@ -22,6 +28,7 @@ Na końcu odpowiedzi ZAWSZE dodaj blok: <!-- sources: [1,3] --> z numerami notat
 
   return chatStream({
     op: "reasoning",
+    userId,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },

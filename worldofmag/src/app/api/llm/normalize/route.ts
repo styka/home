@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 import { usageField } from "@/platform/ai/costVisibility";
 
 const SYSTEM_PROMPT = `Jesteś asystentem listy zakupów. Użytkownik poda Ci tekst (mówiony lub pisany) opisujący produkty do kupienia.
@@ -15,6 +16,12 @@ Przykład wejścia: "pół kilo jabłek, dwa litry mleka i chleb i 20 deko sera"
 Przykład wyjścia: [{"name":"jabłka","quantity":0.5,"unit":"kg"},{"name":"mleko","quantity":2,"unit":"l"},{"name":"chleb","quantity":null,"unit":null},{"name":"ser żółty","quantity":20,"unit":"dkg"}]`;
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego chatComplete nie
+  // wiązał kosztu z użytkownikiem, więc licznik zużycia i miesięczny limit planu pomijały
+  // te wywołania (dawały się obejść „tańszą" trasą pomocniczą).
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session.user.id;
   const { text } = await req.json().catch(() => ({ text: "" }));
   if (!text?.trim()) {
     return NextResponse.json({ error: "Empty text" }, { status: 400 });
@@ -22,6 +29,7 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "dispatch",
+    userId,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: text.trim() },

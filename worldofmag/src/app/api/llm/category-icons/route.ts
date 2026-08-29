@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 import { usageField } from "@/platform/ai/costVisibility";
 
 const GROQ_ITEMS_SYSTEM = `You are a shopping assistant for a Polish app. The app supports any shopping category (food, pets, cleaning, tools, etc.). Return ONLY a JSON array of exactly 6 English item names (1-3 words each) that are visually distinct and typical for the given category. No markdown, no explanation.`;
 
 async function getEnglishItems(
   category: string,
-  additionalText: string
+  additionalText: string,
+  userId: string
 ): Promise<{ items: string[]; res: Awaited<ReturnType<typeof chatComplete>> }> {
   const userMsg = additionalText
     ? `Polish shopping category: "${category}". The user also described these items in Polish: "${additionalText}". Translate the described items to English (1-3 words each). If fewer than 6, add similar items from the same category. Return exactly 6 as a JSON array.`
@@ -14,6 +16,7 @@ async function getEnglishItems(
 
   const result = await chatComplete({
     op: "dispatch",
+    userId,
     messages: [{ role: "system", content: GROQ_ITEMS_SYSTEM }, { role: "user", content: userMsg }],
     temperature: 0.4,
     maxTokens: 150,
@@ -48,6 +51,12 @@ async function generateImage(item: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego chatComplete nie
+  // wiązał kosztu z użytkownikiem, więc licznik zużycia i miesięczny limit planu pomijały
+  // te wywołania (dawały się obejść „tańszą" trasą pomocniczą).
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session.user.id;
   const body = await req.json().catch(() => ({}));
   const category: string = body.category ?? "";
   const additionalText: string = typeof body.additionalText === "string" ? body.additionalText.trim() : "";
@@ -60,7 +69,7 @@ export async function POST(req: NextRequest) {
   let items: string[];
   let itemsCall: Awaited<ReturnType<typeof chatComplete>> | undefined;
   try {
-    const r = await getEnglishItems(category, additionalText);
+    const r = await getEnglishItems(category, additionalText, userId);
     items = r.items;
     itemsCall = r.res;
     if (items.length === 0) throw new Error("empty");
