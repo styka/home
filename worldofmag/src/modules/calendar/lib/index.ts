@@ -1,7 +1,9 @@
 // Typy i stałe modułu Kalendarz (warstwa spinająca daty wszystkich modułów).
 // Wydzielone z akcji serwerowej, bo plik "use server" eksportuje tylko funkcje.
 
-export type CalendarModule = "tasks" | "kitchen" | "health" | "flota" | "pets" | "languages" | "services" | "rosliny";
+export type CalendarModule =
+  | "tasks" | "kitchen" | "health" | "flota" | "pets" | "languages" | "services" | "rosliny"
+  | "habits" | "warsztaty";
 
 export type CalendarEvent = {
   id: string;
@@ -24,6 +26,8 @@ export const MODULE_META: Record<CalendarModule, { label: string; accent: string
   languages: { label: "Języki", accent: "var(--accent-purple)" },
   services: { label: "Usługi", accent: "var(--accent-blue)" },
   rosliny: { label: "Rośliny", accent: "var(--accent-green)" },
+  habits: { label: "Nawyki", accent: "var(--accent-orange)" },
+  warsztaty: { label: "Warsztaty", accent: "var(--accent-amber)" },
 };
 
 /** "YYYY-MM-DD" w czasie lokalnym dla podanej daty. */
