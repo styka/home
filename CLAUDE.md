@@ -50,6 +50,23 @@ weather, storage, workshop, a service marketplace, contacts/CRM, a unified
 calendar, …) unified by a shared ownership model, RBAC, notifications, a
 soft-delete trash, per-user Google Drive storage, and an AI assistant.
 
+### Positioning & strategic direction (owner decision, 2026-08)
+
+**Omnia is an "ERP for private life"** — one system where all of a person's areas
+run on shared data, the way a company's departments do in an ERP. That framing is
+official and drives the roadmap: Omnia will grow **professional ERP modules**
+(invoicing/KSeF, orders, CRM-for-business, HR-lite, custom vertical modules built
+per company) so people can use ONE system in both their private and professional
+life, with the new business modules integrating with the existing private ones.
+The bet behind it: many modules a company needs are also useful to individuals in
+their hobbies — usually in a simplified form. The proof already in the codebase is
+**Pets** (hobbyist care vs. professional breeding in one module) and the **Dom/Pro
+mode** pattern in Magazynowanie and Warsztaty — new business modules should follow
+that same "one entity, two scales" philosophy (cf. Rośliny 113: the same entity
+from windowsill to hectare) rather than forking into separate apps. The business
+plan for commercialization lives in the admin report
+`/reports/omnia-biznesplan-rok-pierwszy` (seeded by migration 0275).
+
 ### UX Philosophy
 - Keyboard-first (vim-style shortcuts: j/k, x, e, d)
 - Dark theme, minimalist (Linear/GitHub/VS Code aesthetic), skinnable
