@@ -175,9 +175,9 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
   Module permissions are likewise seeded in SQL migrations (`gen_random_uuid()::text`).
 - **Migration numbering**: every new migration dir needs a **unique, sequential**
   4-digit prefix. Get the next free number with `npm run next:migration`; `npm run
-  check:migrations` (also wired into `build`) fails on a *new* collision. The 12
-  legacy duplicate prefixes (parallel `claude/*` branches) are grandfathered in
-  `scripts/check-migrations.js` — **never renumber an already-applied migration**:
+  check:migrations` (also wired into `build`) fails on a *new* collision. The 13
+  legacy duplicate prefixes (parallel `claude/*` branches; last: `0275`, 2026-08-29)
+  are grandfathered in `scripts/check-migrations.js` — **never renumber an already-applied migration**:
   `migrate deploy` keys on the full dir name, so a rename re-runs it (CREATE/ALTER →
   deploy breaks). Duplicate prefixes are harmless to leave; only fix them going forward.
 

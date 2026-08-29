@@ -19,9 +19,17 @@ const MIGRATIONS_DIR = path.join(__dirname, "..", "prisma", "migrations")
 
 // Numery, które mają już po kilka katalogów w historii repo. Zostają nietknięte.
 // NIE dopisuj tu nowych numerów — nowa kolizja ma być błędem, nie wyjątkiem.
+// Jedyny usprawiedliwiony dopisek: kolizja wykryta już PO zaaplikowaniu obu migracji
+// na bazie testowej (develop) — wtedy przemianowanie łamie twardszą regułę z CLAUDE.md
+// („never renumber an already-applied migration") i jedynym wyjściem jest grandfather.
 const LEGACY_DUPLICATES = new Set([
   "0043", "0049", "0074", "0077", "0078",
   "0095", "0096", "0099", "0100", "0102", "0103", "0109",
+  // 2026-08-29: dwie równoległe gałęzie claude/* dodały raporty-biznesplany jako 0275
+  // (0275_raport_biznesplan_ksef i 0275_raport_biznesplan_omnia). Obie to idempotentne
+  // INSERT-y (ON CONFLICT DO NOTHING, różne slugi), obie zaaplikowane na develop przed
+  // wykryciem kolizji — przemianowanie zabronione, duplikat nieszkodliwy.
+  "0275",
 ])
 
 function migrationNumbers() {

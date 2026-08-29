@@ -5913,3 +5913,20 @@ i sprawdzenie skutku w bazie (`SELECT` po tabeli), a nie samego kodu wyjścia.
 **Lekcja:** W bashu ekspansje w jednym poleceniu widzą stan sprzed tego polecenia — zmienną
 zależną eksportuj w osobnej linii. Po „udanej" migracji weryfikuj stan bazy, nie exit code,
 zwłaszcza gdy wynik przechodzi przez `| tail`/`| head`.
+
+## 2026-08-29 — Kolizja numeru migracji między równoległymi sesjami wykryta dopiero na develop
+**Problem:** Dwie równoległe gałęzie `claude/*` dodały tego samego dnia migracje `0275_*`
+(raporty-biznesplany). Każda sesja wzięła numer z `npm run next:migration` na SWOIM stanie repo,
+obie zbudowały się zielono u siebie, a kolizja ujawniła się dopiero po zmergowaniu obu do
+`develop` — gdzie `check:migrations` wywala build deployu. Przemianować się nie dało: obie
+migracje były już zaaplikowane na testowej bazie (CLAUDE.md: „never renumber an already-applied
+migration").
+**Rozwiązanie:** Numer `0275` dopisany do `LEGACY_DUPLICATES` w `scripts/check-migrations.js`
+z komentarzem-uzasadnieniem (obie migracje to idempotentne `INSERT … ON CONFLICT DO NOTHING`
+o różnych slugach — duplikat prefiksu jest nieszkodliwy); licznik w CLAUDE.md zaktualizowany.
+**Lekcja:** `next:migration` gwarantuje unikalność tylko wobec zmergowanej historii — przy
+równoległych sesjach PRZED pushem na develop zrób `git fetch origin develop` i sprawdź, czy numer
+nie zajęty na `origin/develop`. Gdy kolizja już zaaplikowana na bazie: grandfather (z powodem
+w komentarzu), nigdy rename. Reguła skryptu „nie dopisuj nowych numerów" ustępuje twardszej
+regule „nie przemianowuj zaaplikowanych migracji" — konflikt reguł rozstrzyga się na rzecz tej,
+której złamanie psuje bazę, nie estetykę.
