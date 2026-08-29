@@ -31,8 +31,11 @@
       "powod": "Agregat agendy zbiera wkłady innych modułów; własna reguła to budowa kanału iCal (ma test). `collect.ts` nie ma jeszcze testu — patrz `obserwacje.bez-testu`. W akcji został tylko `feedUrl`, doklejający `AUTH_URL`, czyli infrastruktura."
     },
     "contacts": {
-      "decyzja": "bez-regul",
-      "powod": "Cienki CRUD nad jednym modelem. Dwa pomocniki w akcji to parsowanie etykiet z JSON i mapowanie rekordu na obiekt widoku — żaden nie podejmuje decyzji dziedzinowej."
+      "decyzja": "domena",
+      "pliki": [
+        "domain/urodziny.ts"
+      ],
+      "powod": "114: pierwsza reguła — walidacja/parsowanie daty urodzin (`parseBirthday`: format RRRR-MM-DD, północ UTC, błąd zamiast ciszy; test). Pozostałe dwa pomocniki w akcji to parsowanie etykiet z JSON i mapowanie rekordu na obiekt widoku — infrastruktura, nie decyzje dziedzinowe."
     },
     "czat": {
       "decyzja": "domena",

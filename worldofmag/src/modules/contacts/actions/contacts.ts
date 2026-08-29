@@ -7,6 +7,7 @@ import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/own
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
+import { parseBirthday } from "../domain/urodziny";
 
 export type ContactDTO = {
   id: string;
@@ -46,14 +47,6 @@ function toDTO(c: {
   };
 }
 
-/** "YYYY-MM-DD" → Date (północ UTC) albo null; złe wejście = błąd, nie cisza. */
-function parseBirthday(v: string | null | undefined): Date | null {
-  if (v === null || v === undefined || !v.trim()) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) throw new Error("Data urodzin w formacie RRRR-MM-DD");
-  const d = new Date(`${v.trim()}T00:00:00Z`);
-  if (isNaN(d.getTime())) throw new Error("Nieprawidłowa data urodzin");
-  return d;
-}
 
 /** Lista kontaktów użytkownika (prywatne + zespołowe), z opcjonalnym wyszukiwaniem. */
 export async function getContacts(search?: string): Promise<ContactDTO[]> {
