@@ -653,6 +653,7 @@ export type HealthEvent = {
   unit: string | null;
   referral: string | null;
   reminderAt: Date | null;
+  cost: number | null;
   workspaceId: string;
   createdAt: Date;
   updatedAt: Date;

@@ -5,9 +5,9 @@ import { useMemo, useState, useCallback } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip } from "lucide-react";
+import { HeartPulse, Plus, Stethoscope, FlaskConical, Trash2, Pencil, Check, X, MapPin, CalendarClock, Paperclip, Wallet, UserPlus } from "lucide-react";
 import { EmptyState, cardStyle } from "@/components/ui/home";
-import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "../actions/health";
+import { createHealthEvent, updateHealthEvent, setHealthStatus, deleteHealthEvent, bookHealthEventCost, saveDoctorToContacts, getHealthAttachments, addHealthAttachment, deleteHealthAttachment, type TestTrend, type HealthAttachmentDTO } from "../actions/health";
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { HealthAiOptInToggle } from "./HealthAiOptInToggle";
 import { ModuleView } from "@/components/ui/view";
@@ -52,6 +52,7 @@ interface FormState {
   facility: string;
   location: string;
   referral: string;
+  cost: string;
   notes: string;
   result: string;
   numericValue: string;
@@ -59,7 +60,7 @@ interface FormState {
 }
 
 const emptyForm = (kind: HealthKind): FormState => ({
-  kind, title: "", scheduledAt: "", doctorName: "", specialty: "", facility: "", location: "", referral: "", notes: "", result: "", numericValue: "", unit: "",
+  kind, title: "", scheduledAt: "", doctorName: "", specialty: "", facility: "", location: "", referral: "", cost: "", notes: "", result: "", numericValue: "", unit: "",
 });
 
 function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: (f: FormState) => Promise<void>; onCancel: () => void }) {
@@ -134,6 +135,10 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
           <label style={labelStyle}>Skierowanie</label>
           <input style={inputStyle} value={form.referral} onChange={(e) => set("referral", e.target.value)} placeholder="nr / uwagi" />
         </div>
+        <div style={{ flex: 1 }}>
+          <label style={labelStyle}>{t("kosztEtykieta")}</label>
+          <input style={inputStyle} type="number" step="any" min="0" inputMode="decimal" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="0" />
+        </div>
       </div>
       <div>
         <label style={labelStyle}>Notatki</label>
@@ -168,7 +173,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormState; onSave: 
   );
 }
 
-function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { ev: HealthEvent; focused: boolean; onEdit: () => void; onCycleStatus: () => void; onDelete: () => void; onFocus: () => void }) {
+function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus, onBookCost, onSaveDoctor }: { ev: HealthEvent; focused: boolean; onEdit: () => void; onCycleStatus: () => void; onDelete: () => void; onFocus: () => void; onBookCost: () => void; onSaveDoctor: () => void }) {
   const t = useTranslations("modules.health.HealthHomePage");
   const status = STATUS_META[ev.status];
   const isTest = ev.kind === "TEST";
@@ -185,6 +190,7 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
           {(ev.doctorName || ev.specialty) && <span>· {[ev.specialty, ev.doctorName].filter(Boolean).join(", ")}</span>}
           {ev.facility && <span>· {ev.facility}</span>}
           {ev.location && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>· <MapPin size={11} /> {ev.location}</span>}
+          {ev.cost != null && <span>· {ev.cost.toFixed(2)} zł</span>}
         </div>
         {ev.notes && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{ev.notes}</div>}
         {ev.result && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}><b>Wynik:</b> {ev.result}</div>}
@@ -195,6 +201,12 @@ function EventCard({ ev, focused, onEdit, onCycleStatus, onDelete, onFocus }: { 
           {status.label}
         </button>
         <div style={{ display: "flex", gap: 4 }}>
+          {ev.cost != null && (
+            <button onClick={onBookCost} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }} title={t("zaksiegujWPortfelu")} aria-label={t("zaksiegujWPortfelu")}><Wallet size={14} /></button>
+          )}
+          {ev.doctorName && (
+            <button onClick={onSaveDoctor} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }} title={t("zapiszLekarzaWKontaktach")} aria-label={t("zapiszLekarzaWKontaktach")}><UserPlus size={14} /></button>
+          )}
           <button onClick={onEdit} className="p-1 rounded" style={{ color: "var(--text-muted)", background: "none", border: "none" }}><Pencil size={14} /></button>
           <button onClick={onDelete} className="p-1 rounded" style={{ color: "var(--accent-red)", background: "none", border: "none" }}><Trash2 size={14} /></button>
         </div>
@@ -217,6 +229,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<HealthEvent | null>(null);
   const [focused, setFocused] = useState<number>(-1);
+  const [komunikat, setKomunikat] = useState<string | null>(null);
 
   const filtered = events.filter((e) => tab === "ALL" || e.kind === tab);
   const now = Date.now();
@@ -232,6 +245,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
       doctorName: f.doctorName, specialty: f.specialty, facility: f.facility,
       location: f.location, referral: f.referral, notes: f.notes, result: f.result,
       numericValue: f.kind === "TEST" ? parseNum(f.numericValue) : null, unit: f.unit,
+      cost: parseNum(f.cost),
     });
     setAdding(false);
     router.refresh();
@@ -244,6 +258,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
       doctorName: f.doctorName, specialty: f.specialty, facility: f.facility,
       location: f.location, referral: f.referral, notes: f.notes, result: f.result,
       numericValue: f.kind === "TEST" ? parseNum(f.numericValue) : null, unit: f.unit,
+      cost: parseNum(f.cost),
     });
     setEditing(null);
     router.refresh();
@@ -254,6 +269,31 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
     await setHealthStatus(ev.id, next);
     router.refresh();
   }
+  function pokaz(msg: string) {
+    setKomunikat(msg);
+    setTimeout(() => setKomunikat(null), 5000);
+  }
+
+  // 115 (Z-INT-02/07): mosty do Portfela i Kontaktów — jawne przyciski na karcie wpisu.
+  async function bookCost(ev: HealthEvent) {
+    try {
+      const wynik = await bookHealthEventCost(ev.id);
+      if (wynik.zaksiegowano) pokaz(t("zaksiegowanoWPortfelu"));
+      else if (wynik.powod === "brak-konta") pokaz(t("brakKontaAuto"));
+      else pokaz(t("kwotaZero"));
+    } catch (e) {
+      pokaz(e instanceof Error ? e.message : t("bladOperacji"));
+    }
+  }
+  async function saveDoctor(ev: HealthEvent) {
+    try {
+      const wynik = await saveDoctorToContacts(ev.id);
+      pokaz(wynik.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"));
+    } catch (e) {
+      pokaz(e instanceof Error ? e.message : t("bladOperacji"));
+    }
+  }
+
   async function removeEvent(ev: HealthEvent) {
     if (!(await confirmDialog({ title: "Usunąć wpis?", destructive: true }))) return;
     await deleteHealthEvent(ev.id);
@@ -263,7 +303,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
   const formFromEvent = (ev: HealthEvent): FormState => ({
     kind: ev.kind, title: ev.title, scheduledAt: toLocalInput(ev.scheduledAt),
     doctorName: ev.doctorName ?? "", specialty: ev.specialty ?? "", facility: ev.facility ?? "",
-    location: ev.location ?? "", referral: ev.referral ?? "", notes: ev.notes ?? "", result: ev.result ?? "",
+    location: ev.location ?? "", referral: ev.referral ?? "", cost: ev.cost != null ? String(ev.cost) : "", notes: ev.notes ?? "", result: ev.result ?? "",
     numericValue: ev.numericValue != null ? String(ev.numericValue) : "", unit: ev.unit ?? "",
   });
 
@@ -325,6 +365,12 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
         ))}
       </div>
 
+      {komunikat && (
+        <div role="status" style={{ fontSize: 12, color: "var(--accent-green)", padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg-surface)" }}>
+          {komunikat}
+        </div>
+      )}
+
       {adding && <EventForm initial={emptyForm(tab === "TEST" ? "TEST" : "VISIT")} onSave={handleCreate} onCancel={() => setAdding(false)} />}
       {editing && <EventForm initial={formFromEvent(editing)} onSave={handleUpdate} onCancel={() => setEditing(null)} />}
 
@@ -351,7 +397,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
             <section>
               <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>{t("nadchodzace")}</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />)}
+                {upcoming.map((e, i) => <EventCard key={e.id} ev={e} focused={focused === i} onFocus={() => setFocused(i)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} onBookCost={() => bookCost(e)} onSaveDoctor={() => saveDoctor(e)} />)}
               </div>
             </section>
           )}
@@ -359,7 +405,7 @@ export function HealthHomePage({ events, trends = [], viewParams = {} }: { event
             <section>
               <h2 style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: "0 0 8px" }}>Minione</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {past.map((e, j) => { const idx = upcoming.length + j; return <EventCard key={e.id} ev={e} focused={focused === idx} onFocus={() => setFocused(idx)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} />; })}
+                {past.map((e, j) => { const idx = upcoming.length + j; return <EventCard key={e.id} ev={e} focused={focused === idx} onFocus={() => setFocused(idx)} onEdit={() => { setEditing(e); setAdding(false); }} onCycleStatus={() => cycleStatus(e)} onDelete={() => removeEvent(e)} onBookCost={() => bookCost(e)} onSaveDoctor={() => saveDoctor(e)} />; })}
               </div>
             </section>
           )}

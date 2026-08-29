@@ -25,7 +25,7 @@
   Gotowe, gdy: `npm run check:migrations` i `npm run check:schema-drift` zielone.
 
 ## Faza 1 — Koszty i kontakty (zlewnie Portfel/Kontakty)
-- [ ] **T-3** — Z-INT-02 + Z-INT-07(health): pole `cost` w `EventForm`/`createHealthEvent`/
+- [x] **T-3** — Z-INT-02 + Z-INT-07(health): pole `cost` w `EventForm`/`createHealthEvent`/
   `updateHealthEvent`; helper `src/lib/kontaktZWpisu.ts` (dedup po nazwie przez
   `getContacts` + kształt kontaktu; test jednostkowy); akcje `bookHealthEventCost(id)`
   i `saveDoctorToContacts(id)`; przyciski w `EventCard` (+ toast `brak-konta`); i18n; wpisy

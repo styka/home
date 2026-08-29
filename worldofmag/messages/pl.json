@@ -1328,7 +1328,16 @@
         "zmienStatus": "Zmień status",
         "trendyBadan": "Trendy badań",
         "nadchodzace": "Nadchodzące",
-        "usun": "Usuń"
+        "usun": "Usuń",
+        "kosztEtykieta": "Koszt (zł)",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zapiszLekarzaWKontaktach": "Zapisz lekarza w kontaktach",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "kwotaZero": "Brak kwoty do zaksięgowania.",
+        "kontaktZapisany": "Zapisano w kontaktach.",
+        "kontaktJuzIstnial": "Taki kontakt już istnieje — nie zduplikowano.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "MedicationsPage": {
         "npPoPosilku": "np. po posiłku",

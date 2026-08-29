@@ -3371,5 +3371,15 @@
   "zbiory:recordHarvest": {
     "status": "pending",
     "access": "owner"
+  },
+  "health:bookHealthEventCost": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
+  },
+  "health:saveDoctorToContacts": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   }
 }
