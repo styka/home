@@ -211,7 +211,7 @@ export function NotesPage({ notes, groups, tags, backHref, viewParams = {} }: No
         setFocusedNoteId(null);
       },
     }),
-    [focusedNoteId, filteredNotes, navigateDown, navigateUp, isSearchOpen, editingNoteId, startTransition, setActiveFilter]
+    [focusedNoteId, filteredNotes, navigateDown, navigateUp, isSearchOpen, editingNoteId, startTransition, setActiveFilter, confirmDialog]
   );
 
   useKeyboardShortcuts(handlers);

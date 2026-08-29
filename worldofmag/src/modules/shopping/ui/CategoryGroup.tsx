@@ -161,6 +161,8 @@ export function CategoryGroup({
           {isSvg(effectiveIcon) ? (
             <SvgIcon content={effectiveIcon} size={18} />
           ) : isDataImage(effectiveIcon) ? (
+            // Ikona kategorii to data-URI użytkownika — `next/image` nie ma tu czego optymalizować.
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={effectiveIcon} alt="" width={18} height={18} style={{ objectFit: "contain", borderRadius: 2 }} />
           ) : (
             <span style={{ fontSize: 18, lineHeight: 1 }}>{effectiveIcon}</span>

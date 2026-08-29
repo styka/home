@@ -133,6 +133,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         setRecurringDayOfMonth(r.dayOfMonth ? String(r.dayOfMonth) : "");
       } catch { /* ignore */ }
     }
+    // Reset formularza WYŁĄCZNIE przy zmianie zadania. Pełna lista zależności (task.*) nadpisywałaby
+    // niezapisane edycje użytkownika przy każdej rewalidacji listy — to świadome odstępstwo od reguły.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id]);
 
   function autosave(patch: Parameters<typeof updateTask>[1]) {

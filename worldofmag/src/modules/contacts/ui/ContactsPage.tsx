@@ -42,10 +42,11 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   useEffect(() => {
     if (akcjaNowyKontakt.aktywna) { setAdding(true); setEditId(null); }
   }, [akcjaNowyKontakt.aktywna]);
-  const zamknijDodawanie = () => {
+  const zamknijZAdresu = akcjaNowyKontakt.zamknij;
+  const zamknijDodawanie = useCallback(() => {
     setAdding(false);
-    akcjaNowyKontakt.zamknij();
-  };
+    zamknijZAdresu();
+  }, [zamknijZAdresu]);
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -128,7 +129,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
         setSelectedId(null);
       },
     };
-  }, [contacts, selectedId, editId, adding, query, virtualizer]);
+  }, [contacts, selectedId, editId, adding, query, virtualizer, confirmDialog, zamknijDodawanie]);
 
   useKeyboardShortcuts(handlers);
 

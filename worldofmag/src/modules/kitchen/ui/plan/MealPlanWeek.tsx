@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ShoppingCart, Plus, CheckCircle2, PanelRightOpen, PanelRightClose, Sparkles } from "lucide-react";
 import {
@@ -153,19 +153,22 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
   // Nawigacja STERowana URL-em: zmiana `?week=` przeładowuje wpisy + koszt z
   // serwera dla oglądanego tygodnia (bez tego inne tygodnie były puste, a
   // posiłki dodane poza bieżącym tygodniem znikały po rewalidacji).
-  function navigateToWeek(newAnchor: Date) {
+  // `useCallback` nie jest tu optymalizacją: nasłuchiwacz klawiatury niżej trzyma te funkcje
+  // w domknięciu. Jako zwykłe funkcje wpadały do efektu tylko z pierwszego renderu (zależności
+  // nie obejmowały ich), więc po pierwszym przeskoku strzałki nawigowały wciąż od STAREJ kotwicy.
+  const navigateToWeek = useCallback((newAnchor: Date) => {
     setAnchorDate(newAnchor); // natychmiastowa zmiana siatki; useEffect zsynchronizuje z URL
     router.push(`/kitchen/plan?week=${dateKey(newAnchor)}`);
-  }
-  function goPrev() {
+  }, [router]);
+  const goPrev = useCallback(() => {
     navigateToWeek(subDays(anchorDate, 7));
-  }
-  function goNext() {
+  }, [navigateToWeek, anchorDate]);
+  const goNext = useCallback(() => {
     navigateToWeek(addDays(anchorDate, 7));
-  }
-  function goToday() {
+  }, [navigateToWeek, anchorDate]);
+  const goToday = useCallback(() => {
     navigateToWeek(new Date());
-  }
+  }, [navigateToWeek]);
 
   // Po serwerowym przeładowaniu zsynchronizuj kotwicę z URL (initialWeek).
   useEffect(() => {
@@ -191,7 +194,7 @@ export function MealPlanWeek({ initialWeek, entries, recipes, lists, hasAI, week
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, shoppingOpen]);
+  }, [editing, shoppingOpen, goPrev, goNext, goToday]);
 
   function openEditor(date: Date, slot: MealSlot, entry?: MealPlanEntryWithRecipe) {
     setEditing({ date, slot, entry });

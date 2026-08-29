@@ -9,5 +9,7 @@ export const contentType = "image/png";
 export default function Icon() {
   const svg = brandLogoSvgString(IS_PROD);
   const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  // ImageResponse (Satori) renderuje JSX do PNG poza przeglądarką — `next/image` tam nie istnieje.
+  // eslint-disable-next-line @next/next/no-img-element
   return new ImageResponse(<img width={size.width} height={size.height} src={src} alt="" />, { ...size });
 }

@@ -126,15 +126,16 @@ function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: bo
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
+  const items = workshop.items;
   const grouped = useMemo(() => {
-    const map = new Map<EquipmentKind, typeof workshop.items>();
-    for (const it of workshop.items) {
+    const map = new Map<EquipmentKind, typeof items>();
+    for (const it of items) {
       const k = (KIND_ORDER.includes(it.kind as EquipmentKind) ? it.kind : "tool") as EquipmentKind;
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(it);
     }
     return map;
-  }, [workshop.items]);
+  }, [items]);
 
   return (
     <div className="flex flex-col gap-4">

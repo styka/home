@@ -195,13 +195,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
 
-  useEffect(() => {
-    if (typeof Notification !== "undefined") {
-      setNotificationsEnabled(Notification.permission === "granted");
-    }
-    checkDueNotifications(tasks);
-  }, [tasks]);
-
   // Przelicz wskazówkę przewijania paska akcji na mount, przy resize i gdy zmienia się zestaw
   // widocznych ikon (widok/układ/uprawnienia zmieniają szerokość rzędu).
   useEffect(() => {
@@ -270,7 +263,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // wersja czekała na nią bez limitu, więc przy niezdrowym SW powiadomienia na komputerze
   // przestawały działać (brak fallbacku). Dlatego ścigamy `ready` z krótkim timeoutem i przy
   // braku aktywnego SW spadamy na konstruktor (desktop), a gdy i to się nie uda — milczymy.
-  async function showTaskNotification(title: string, options: NotificationOptions) {
+  const showTaskNotification = useCallback(async (title: string, options: NotificationOptions) => {
     if ("serviceWorker" in navigator) {
       try {
         const reg = await Promise.race([
@@ -290,9 +283,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     } catch {
       /* środowisko bez wsparcia powiadomień */
     }
-  }
+  }, []);
 
-  function checkDueNotifications(taskList: Task[]) {
+  const checkDueNotifications = useCallback((taskList: Task[]) => {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const now = new Date();
     const soon = new Date(now.getTime() + 30 * 60 * 1000);
@@ -316,7 +309,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         tag: key, // ten sam tag = system nie zdubluje powiadomienia
       });
     });
-  }
+  }, [showTaskNotification]);
+
+  // Poniżej definicji `checkDueNotifications` (const nie hoistuje się jak dawna deklaracja funkcji).
+  useEffect(() => {
+    if (typeof Notification !== "undefined") {
+      setNotificationsEnabled(Notification.permission === "granted");
+    }
+    checkDueNotifications(tasks);
+  }, [tasks, checkDueNotifications]);
 
   async function requestNotifications() {
     if (typeof Notification === "undefined") return;
@@ -403,17 +404,17 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
    * każde nowe wywołanie znowu wybierze przypadkiem oba zachowania.
    */
   /** Po akcji masowej: zaznaczenie znika (te zadania są już zmienione), TRYB ZOSTAJE. */
-  function wyczyscZaznaczenie(msg: string | null) {
+  const wyczyscZaznaczenie = useCallback((msg: string | null) => {
     setSelectedIds(new Set());
     setLastSelectedId(null);
     setBulkMessage(msg);
     if (msg) setTimeout(() => setBulkMessage(null), 4000);
-  }
+  }, []);
   /** Jawne wyjście z trybu: przycisk w pasku akcji, `Esc`, opuszczenie widoku listy. */
-  function zakonczZaznaczanie() {
+  const zakonczZaznaczanie = useCallback(() => {
     setSelectionMode(false);
     wyczyscZaznaczenie(null);
-  }
+  }, [wyczyscZaznaczenie]);
   function toggleSelectOne(id: string) {
     setSelectionMode(true);
     setSelectedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -451,7 +452,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Zaznaczanie działa tylko w widoku listy — przy zmianie układu wyczyść stan.
   useEffect(() => {
     if (layout !== "list") { zakonczZaznaczanie(); }
-  }, [layout]);
+  }, [layout, zakonczZaznaczanie]);
 
   // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
   // wypełniała) — nie zawężamy po zakładce statusu (w Kanbanie ukryta), filtrujemy tylko po tagach
@@ -473,21 +474,21 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   const filteredForNav = displayedTasks;
 
-  function navigateDown() {
+  const navigateDown = useCallback(() => {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const next = filteredForNav[idx + 1] ?? filteredForNav[0];
     setFocusedTaskId(next.id);
     rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
-  }
+  }, [filteredForNav, focusedTaskId]);
 
-  async function navigateUp() {
+  const navigateUp = useCallback(() => {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const prev = idx <= 0 ? filteredForNav[filteredForNav.length - 1] : filteredForNav[idx - 1];
     setFocusedTaskId(prev.id);
     rowRefs.current.get(prev.id)?.scrollIntoView({ block: "nearest" });
-  }
+  }, [filteredForNav, focusedTaskId]);
 
   const handlers = useMemo(
     () => ({
@@ -536,7 +537,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds, uklad.pelny, zapiszIUstawUklad]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds, uklad.pelny, zapiszIUstawUklad, confirmDialog, navigateDown, navigateUp, setActiveFilter, t, zakonczZaznaczanie]
   );
 
   useKeyboardShortcuts(handlers);

@@ -171,7 +171,7 @@ function RescheduleControl({ request, onDone }: { request: RequestDTO; onDone: (
     let active = true;
     getAvailableSlots(request.listingId, date, { excludeRequestId: request.id, staffId: request.staffId }).then((s) => { if (active) setSlots(s); }).catch(() => {});
     return () => { active = false; };
-  }, [slotMode, request.listingId, request.id, date]);
+  }, [slotMode, request.listingId, request.id, request.staffId, date]);
 
   async function apply(iso: string) {
     setBusy(iso); setError(null);
