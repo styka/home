@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef, useState, useEffect, useTransition } from "react";
-import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw, Link2, ArrowUpRight, Share2 } from "lucide-react";
+import { Trash2, Pin, PinOff, Loader2, Mic, MicOff, Download, Eye, EyeOff, Paperclip, History, RotateCcw, Link2, ArrowUpRight, Share2, ListTodo, Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { markdownToHtml, MARKDOWN_STYLES } from "@/lib/markdown";
 import { outgoingLinks, backlinks } from "../lib/wikilinks";
 import { TagChip } from "./TagChip";
 import { TagSuggestions } from "./TagSuggestions";
-import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, type NoteAttachmentDTO, type NoteRevisionDTO } from "../actions/notes";
+import { updateNote, deleteNote, toggleNotePin, setNoteTags, getNoteAttachments, addNoteAttachment, deleteNoteAttachment, getNoteRevisions, restoreNoteRevision, createTaskFromNote, type NoteAttachmentDTO, type NoteRevisionDTO } from "../actions/notes";
 import { createTag } from "@/actions/tags";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { useTranslations } from "next-intl";
@@ -69,6 +69,7 @@ export function NoteRow({
 
   // Voice recording state
   const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
+  const [zadanieStan, setZadanieStan] = useState<"spoczynek" | "praca" | "ok" | "blad">("spoczynek");
   const tShare = useTranslations("sharing");
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceEditing, setIsVoiceEditing] = useState(false);
@@ -171,6 +172,19 @@ export function NoteRow({
 
   function handlePin() {
     startTransition(() => { toggleNotePin(note.id); });
+  }
+
+  // 115 (Z-INT-09): notatka → zadanie jednym klikiem; ikona zmienia się w ptaszek zamiast toasta,
+  // bo wiersz nie ma własnego kanału komunikatów, a błąd (np. brak modułu Zadania) mówi tytułem.
+  async function handleToTask() {
+    if (zadanieStan === "praca" || zadanieStan === "ok") return;
+    setZadanieStan("praca");
+    try {
+      await createTaskFromNote(note.id);
+      setZadanieStan("ok");
+    } catch {
+      setZadanieStan("blad");
+    }
   }
 
   async function handleRewrite() {
@@ -559,6 +573,16 @@ export function NoteRow({
               title="Eksportuj do .md"
             >
               <Download size={13} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleToTask(); }}
+              className="p-1 rounded focus:outline-none"
+              style={{ color: zadanieStan === "ok" ? "var(--accent-green)" : zadanieStan === "blad" ? "var(--accent-red)" : "var(--text-muted)" }}
+              title={zadanieStan === "ok" ? t("zadanieDodane") : zadanieStan === "blad" ? t("zadanieBlad") : t("doZadan")}
+              aria-label={t("doZadan")}
+              disabled={zadanieStan === "praca"}
+            >
+              {zadanieStan === "praca" ? <Loader2 size={13} className="animate-spin" /> : zadanieStan === "ok" ? <Check size={13} /> : <ListTodo size={13} />}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onStartEdit(); }}

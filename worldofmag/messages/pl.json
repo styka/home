@@ -1850,7 +1850,10 @@
         "brakWczesniejszychWersji": "Brak wcześniejszych wersji.",
         "przywrocTeWersje": "Przywróć tę wersję",
         "przywroc": "Przywróć",
-        "linkujaTu": "Linkują tu:"
+        "linkujaTu": "Linkują tu:",
+        "doZadan": "Dodaj do zadań",
+        "zadanieDodane": "Dodano zadanie",
+        "zadanieBlad": "Nie udało się utworzyć zadania"
       },
       "NotesHomePage": {
         "przypiete": "Przypięte",

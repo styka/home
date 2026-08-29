@@ -1,3425 +1,3425 @@
 {
   "access:addUserRole": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:createPermission": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:deletePermission": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:getAuditLog": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:getAvailableRoles": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:getPermissions": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:getRolePermissions": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:getUsers": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:removeUserRole": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:toggleRolePermission": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "access:updatePermission": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "activity:getRecentActivity": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "activity:trackActivity": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "adminCategories:createSystemCategory": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminCategories:deleteSystemCategory": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminCategories:getSystemCategories": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminCategories:updateSystemCategory": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:checkCatalogEntry": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:createCatalogEntry": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:deleteCatalogEntry": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:exportCatalog": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:getCatalogEntries": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:importCatalog": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:setCatalogEntryEnabled": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "adminNewsCatalog:updateCatalogEntry": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "ai:streszczenie": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "ai:zapytajOFilm": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "aiConversations:appendAiMessage": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:createAiConversation": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:deleteAiConversation": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:getAiConversation": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:listAiConversations": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:renameAiConversation": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:saveConversationDraft": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiConversations:setAiConversationSaved": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "aiSections:clearSectionMode": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "aiSections:getDefaultSectionModes": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "aiSections:getSectionModes": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "aiSections:setDefaultSectionModes": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "aiSections:setSectionMode": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "analiza:diagnosePlant": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:getSeasonPlan": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:getSpaceInsights": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:identifyPlant": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:markHealthOutcome": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:planToTask": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "analiza:scheduleRecommendedCare": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "assistantPrefs:getAssistantLevelConfig": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "assistantPrefs:getAssistantPrefs": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "assistantPrefs:getSpeechOptions": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "assistantPrefs:resetUserLlmPrefs": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "assistantPrefs:updateAssistantPrefs": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "assistantPrefs:updateUserLlmPref": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "calendar:getMyIcalFeedUrl": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "calendar:regenerateIcalFeed": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "calendarAgenda:getCalendarEvents": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "categories:createCategory": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "dictionary",
-    "access": "owner"
+    "status": "excluded"
   },
   "categories:deleteCategory": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "dictionary",
-    "access": "owner"
+    "status": "excluded"
   },
   "categories:getCategories": {
+    "access": "shared",
     "kind": "read",
-    "status": "excluded",
     "reason": "dictionary",
-    "access": "shared"
+    "status": "excluded"
   },
   "categories:getCategoryEmojiMap": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "dictionary",
-    "access": "owner"
+    "status": "excluded"
   },
   "categories:getCategoryNames": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "dictionary",
-    "access": "owner"
+    "status": "excluded"
   },
   "categories:updateCategory": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "dictionary",
-    "access": "owner"
+    "status": "excluded"
   },
   "categoryIcons:assignIconToCategory": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:deactivateCategoryIcon": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:deleteCategoryIconVariant": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:getActiveCategoryIconMap": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:getAllUserIconVariants": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:getAllUserIconVariantsFlat": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:getCategoryIconVariants": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:orphanCategoryIcons": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:saveAndActivateCategoryIcon": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:saveToLibrary": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:setActiveCategoryIcon": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "categoryIcons:upsertCategoryEmojiOverride": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "config:getConfigMasked": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "admin"
+    "status": "excluded"
   },
   "config:getConfigValue": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "admin"
+    "status": "excluded"
   },
   "config:getRetentionSettings": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "config:setConfigValue": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "config:setRetentionDays": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "contacts:createContact": {
-    "status": "ai",
+    "access": "owner",
     "action": "create_contact",
-    "access": "owner"
+    "status": "ai"
+  },
+  "contacts:createTaskFromContact": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "contacts:deleteContact": {
-    "status": "ai",
+    "access": "owner",
     "action": "delete_contact",
-    "access": "owner"
+    "status": "ai"
   },
   "contacts:getContacts": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "contacts:updateContact": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_contact",
-    "access": "owner"
+    "status": "ai"
   },
   "cookbooks:createCookbook": {
-    "status": "ai",
+    "access": "owner",
     "action": "create_cookbook",
-    "access": "owner"
+    "status": "ai"
   },
   "cookbooks:deleteCookbook": {
-    "status": "ai",
+    "access": "owner",
     "action": "delete_cookbook",
-    "access": "owner"
+    "status": "ai"
   },
   "cookbooks:getCookbook": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "redundant",
-    "access": "owner"
+    "status": "excluded"
   },
   "cookbooks:getCookbooks": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_cookbooks",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "cookbooks:updateCookbook": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_cookbook",
-    "access": "owner"
+    "status": "ai"
   },
   "dashboardPrefs:getDashboardPrefs": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "dashboardPrefs:setDashboardPrefs": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
+  },
+  "doZadan:dodajPozycjeDoZadan": {
+    "access": "self",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "drive:disconnectDrive": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "drive:getDriveStatus": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "dziennik:addJournalEntry": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "dziennik:addMeasurement": {
-    "status": "ai",
+    "access": "owner",
     "action": "add_plant_measurement",
-    "access": "owner"
+    "status": "ai"
   },
   "dziennik:deleteJournalEntry": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "dziennik:getJournal": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "dziennik:getMeasurements": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "ewidencja:exportTreatmentRegister": {
-    "status": "excluded",
-    "reason": "interactive",
     "access": "owner",
-    "guardedVia": "getTreatmentRegister"
+    "guardedVia": "getTreatmentRegister",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "ewidencja:getTreatmentRegister": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "ewidencja:recordTreatment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "favoriteViews:addFavoriteView": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "favoriteViews:getFavoriteViews": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "favoriteViews:removeFavoriteView": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "favoriteViews:removeFavoriteViewByPath": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "favoriteViews:reorderFavoriteViews": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "favoriteViews:updateFavoriteView": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "feedback:getFeedbackInboxInfo": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "feedback:submitFeedbackTask": {
-    "status": "ai",
-    "action": "submit_feedback",
     "access": "open",
-    "accessReason": "Skrzynka zgłoszeń: KAŻDY zalogowany użytkownik może wrzucić zgłoszenie do projektu wskazanego przez administratora, ale nie zyskuje prawa jego odczytu ani modyfikacji. Jedyne odstępstwo w aplikacji — patrz src/actions/feedback.ts."
+    "accessReason": "Skrzynka zgłoszeń: KAŻDY zalogowany użytkownik może wrzucić zgłoszenie do projektu wskazanego przez administratora, ale nie zyskuje prawa jego odczytu ani modyfikacji. Jedyne odstępstwo w aplikacji — patrz src/actions/feedback.ts.",
+    "action": "submit_feedback",
+    "status": "ai"
   },
   "filmy:getFilm": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "filmy:getFilmy": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_youtube_videos",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "filmy:getStanOdswiezania": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "filmy:odswiezYoutube": {
-    "status": "ai",
+    "access": "owner",
     "action": "refresh_youtube",
-    "access": "owner"
+    "status": "ai"
   },
   "filmy:ustawStan": {
-    "status": "ai",
+    "access": "owner",
     "action": "mark_youtube_watched",
-    "access": "owner"
+    "status": "ai"
   },
   "flota:addFuelLog": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "flota:addServiceRecord": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "flota:addVehicleAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "flota:createVehicle": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "flota:deleteFuelLog": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "flota:deleteServiceRecord": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "flota:deleteVehicle": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "flota:deleteVehicleAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "flota:getVehicle": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "flota:getVehicles": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "flota:updateVehicle": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "gatunki:addSpeciesFromCatalog": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "gatunki:createSpecies": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "gatunki:getSpeciesList": {
+    "access": "owner",
     "kind": "read",
-    "status": "pending",
-    "access": "owner"
+    "status": "pending"
   },
   "gatunki:searchCatalog": {
+    "access": "owner",
     "kind": "read",
-    "status": "pending",
-    "access": "owner"
+    "status": "pending"
   },
   "gatunki:updateSpecies": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "habits:createHabit": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "habits:createTaskFromHabit": {
-    "status": "ai",
+    "access": "owner",
     "action": "create_task_from_habit",
-    "access": "owner"
+    "status": "ai"
   },
   "habits:deleteHabit": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "habits:getHabits": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "habits:reorderHabits": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "habits:setHabitArchived": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "habits:toggleHabitDay": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "habits:updateHabit": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "health:addHealthAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
+  },
+  "health:bookHealthEventCost": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "health:createHealthEvent": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "health:deleteHealthAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "health:deleteHealthEvent": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "health:getHealthAttachments": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "health:getHealthEvents": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "health:getHealthSettings": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "health:getTestTrends": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "get_test_trends",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
+  },
+  "health:saveDoctorToContacts": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "health:setHealthAiOptIn": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "health:setHealthStatus": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "health:updateHealthEvent": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "invitations:acceptInvitation": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "teams",
-    "access": "owner"
+    "status": "excluded"
   },
   "invitations:getPendingInvitations": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "teams",
-    "access": "owner"
+    "status": "excluded"
   },
   "invitations:getPendingInvitationsCount": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "teams",
-    "access": "owner"
+    "status": "excluded"
   },
   "invitations:inviteUser": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "teams",
-    "access": "owner"
+    "status": "excluded"
   },
   "invitations:rejectInvitation": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "teams",
-    "access": "owner"
+    "status": "excluded"
   },
   "items:addItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:addItemStructured": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "items:addItems": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:clearDoneItems": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:deleteItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:getSuggestionsForPrefix": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "owner"
+    "status": "excluded"
   },
   "items:markAllInCart": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:moveItem": {
-    "status": "ai",
+    "access": "owner",
     "action": "move_item",
-    "access": "owner"
+    "status": "ai"
   },
   "items:reorderItems": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "items:updateItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "items:updateItemStatus": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "jobs:cancelJobAction": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "jobs:cleanupJobsAction": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "jobs:getJobsOverview": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "jobs:retryJobAction": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "kanaly:dodajKanal": {
-    "status": "ai",
+    "access": "owner",
     "action": "add_youtube_channel",
-    "access": "owner"
+    "status": "ai"
   },
   "kanaly:getKanaly": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "kanaly:usunKanal": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "katalog:addSourceFromCatalog": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "redundant",
-    "access": "owner"
+    "status": "excluded"
   },
   "katalog:getSourceCatalog": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "languageDecks:addWord": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "languageDecks:bulkAddWords": {
-    "status": "ai",
+    "access": "owner",
     "action": "bulk_add_words",
-    "access": "owner"
+    "status": "ai"
   },
   "languageDecks:createDeck": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "languageDecks:deleteDeck": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "languageDecks:deleteWord": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "languageDecks:getDeck": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "redundant",
-    "access": "owner"
+    "status": "excluded"
   },
   "languageDecks:getDecks": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "languageDecks:getDueCards": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_due_cards",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "languageDecks:getStudyStreak": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "get_study_streak",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "languageDecks:submitReview": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "languageDecks:updateDeck": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "languageDecks:updateWord": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "legal:acceptAllCurrentConsents": {
-    "status": "excluded",
+    "access": "self",
     "reason": "account",
-    "access": "self"
+    "status": "excluded"
   },
   "legal:acceptConsent": {
-    "status": "excluded",
+    "access": "self",
     "reason": "account",
-    "access": "self"
+    "status": "excluded"
   },
   "legal:getMyConsents": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "account",
-    "access": "self"
+    "status": "excluded"
   },
   "legal:getOutstandingConsents": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "account",
     "access": "self",
-    "guardedVia": "getMyConsents"
+    "guardedVia": "getMyConsents",
+    "kind": "read",
+    "reason": "account",
+    "status": "excluded"
   },
   "lists:archiveList": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "lists:completeShopping": {
-    "status": "ai",
+    "access": "owner",
     "action": "complete_shopping",
-    "access": "owner"
+    "status": "ai"
   },
   "lists:createList": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "lists:deleteList": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "lists:getActiveListsForOffline": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "lists:getArchivedLists": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "lists:getListSummaries": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "lists:getLists": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "lists:renameList": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "lists:setAutoReplenishList": {
-    "status": "excluded",
-    "reason": "settings",
     "access": "owner",
+    "reason": "settings",
+    "status": "excluded",
     "uzasadnienie": "080 (zadanie 25): wskazanie listy, na którą Magazyn dopisuje braki. To USTAWIENIE integracji, nie czynność — jedna wartość na przestrzeń, zmieniana raz i klikana w miejscu, w którym użytkownik widzi wszystkie listy naraz. Asystent, który by ją przestawiał, przenosiłby automat między listami bez pokazania, skąd i dokąd."
   },
   "lists:unarchiveList": {
-    "status": "ai",
+    "access": "owner",
     "action": "unarchive_list",
-    "access": "owner"
+    "status": "ai"
   },
   "llmConfig:applyAnthropicProfile": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:applySpeechProvider": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:createProvider": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:deleteModelPrice": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:deleteProvider": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getAiBudgetState": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getAiCostBreakdown": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getAssignments": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getCostAlertThreshold": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getCostBadgeEnabled": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getFollowupsEnabled": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getForceBrowserVoice": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getLlmProviders": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getModelPrices": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getRecentAiCalls": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getSpeechConfig": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:getUsdPlnRate": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setAiKillSwitch": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setAiMonthlyBudget": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setAssignment": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setCostAlertThreshold": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setCostBadgeEnabled": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setFollowupsEnabled": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setForceBrowserVoice": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setModelPrice": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:setUsdPlnRate": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "llmConfig:updateProvider": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "mealPlans:bulkSetMealPlan": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "mealPlans:deleteMealPlanEntry": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "mealPlans:generateShoppingListFromPlan": {
-    "status": "ai",
+    "access": "owner",
     "action": "generate_shopping_from_plan",
-    "access": "owner"
+    "status": "ai"
   },
   "mealPlans:getMealPlan": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "mealPlans:getMealPlanCost": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "get_meal_plan_cost",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "mealPlans:getTodaysMeals": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_todays_meals",
     "access": "owner",
-    "guardedVia": "getMealPlan"
+    "action": "list_todays_meals",
+    "guardedVia": "getMealPlan",
+    "kind": "read",
+    "status": "ai"
   },
   "mealPlans:markMealCooked": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "mealPlans:markMealSkipped": {
-    "status": "ai",
+    "access": "owner",
     "action": "mark_meal_skipped",
-    "access": "owner"
+    "status": "ai"
   },
   "mealPlans:moveMealPlanEntry": {
-    "status": "ai",
+    "access": "owner",
     "action": "move_meal_plan_entry",
-    "access": "owner"
+    "status": "ai"
   },
   "mealPlans:setMealPlanEntry": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "mealPlans:updateMealPlanEntry": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_meal_plan_entry",
-    "access": "owner"
+    "status": "ai"
   },
   "medications:createMedicationSchedule": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "medications:deleteMedicationSchedule": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "medications:getMedicationDay": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "medications:getMedicationSchedules": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "medications:logDose": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "medications:unlogDose": {
-    "status": "ai",
+    "access": "owner",
     "action": "unlog_dose",
-    "access": "owner"
+    "status": "ai"
   },
   "medications:updateMedicationSchedule": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_medication",
-    "access": "owner"
+    "status": "ai"
   },
   "menuPrefs:getMenuPrefs": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "menuPrefs:updateMenuPrefs": {
-    "status": "excluded",
+    "access": "self",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "metrics:getUnitEconomics": {
+    "access": "admin",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "admin"
+    "status": "excluded"
   },
   "miejsca:createPlace": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "miejsca:deletePlace": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "miejsca:getPlaceHistory": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "miejsca:getPlaces": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "miejsca:updatePlace": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "news:acknowledgeAllItems": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:acknowledgeItem": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:acknowledgeTopicItems": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:createSource": {
-    "status": "ai",
+    "access": "owner",
     "action": "create_news_source",
-    "access": "owner"
+    "status": "ai"
   },
   "news:createTopic": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "news:deleteSource": {
-    "status": "ai",
+    "access": "owner",
     "action": "delete_news_source",
-    "access": "owner"
+    "status": "ai"
   },
   "news:deleteTopic": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "news:getHiddenTopics": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:getHotTopics": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_hot_topics",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "news:getNewsPref": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "news:getNewsRefreshState": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:getSources": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_news_sources",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "news:getStreamTimeline": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:getStreamView": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:getTopicTimeline": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "get_news_topic_view",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "news:getTopicView": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "get_news_topic_view",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "news:getTopics": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "news:hideHotTopic": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:resummarizeItem": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:setDefaultSummaryLength": {
-    "status": "excluded",
+    "access": "admin",
     "reason": "admin",
-    "access": "admin"
+    "status": "excluded"
   },
   "news:setShowEmptyTopics": {
-    "status": "excluded",
+    "access": "self",
     "reason": "ustawienie widoku",
-    "access": "self"
+    "status": "excluded"
   },
   "news:startNewsRefresh": {
-    "status": "ai",
+    "access": "owner",
     "action": "refresh_news",
-    "access": "owner"
+    "status": "ai"
   },
   "news:unhideHotTopic": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "news:updateSource": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_news_source",
-    "access": "owner"
+    "status": "ai"
   },
   "news:updateTopic": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "noteGroups:createNoteGroup": {
-    "status": "ai",
+    "access": "owner",
     "action": "create_note_group",
-    "access": "owner"
+    "status": "ai"
   },
   "noteGroups:deleteNoteGroup": {
-    "status": "ai",
+    "access": "owner",
     "action": "delete_note_group",
-    "access": "owner"
+    "status": "ai"
   },
   "noteGroups:getNoteGroups": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_note_groups",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "noteGroups:updateNoteGroup": {
-    "status": "ai",
+    "access": "owner",
     "action": "update_note_group",
-    "access": "owner"
+    "status": "ai"
   },
   "notes:addNoteAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:addTagToNote": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "redundant",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:createNote": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
+  },
+  "notes:createTaskFromNote": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
   },
   "notes:deleteNote": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "notes:deleteNoteAttachment": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:getNoteAttachments": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:getNoteRevisions": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:getNotes": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "notes:removeTagFromNote": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "redundant",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:restoreNoteRevision": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "notes:setNoteTags": {
-    "status": "ai",
+    "access": "owner",
     "action": "set_note_tags",
-    "access": "owner"
+    "status": "ai"
   },
   "notes:toggleNotePin": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "notes:updateNote": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "notifications:getLicznikiSkrzynki": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "notifications:getNotifications": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "notifications:getUnreadCount": {
+    "access": "self",
     "kind": "read",
-    "status": "excluded",
     "reason": "settings",
-    "access": "self"
+    "status": "excluded"
   },
   "notifications:markAllNotificationsRead": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "notifications:markNotificationRead": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "notifications:syncReminders": {
-    "status": "excluded",
+    "access": "self",
     "reason": "internal",
-    "access": "self"
+    "status": "excluded"
   },
   "opieka:createCareTask": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "opieka:getCareAgenda": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "plant_care_agenda",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "opieka:getCareHistory": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "opieka:getPlantCareTasks": {
+    "access": "owner",
     "kind": "read",
-    "status": "excluded",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "opieka:recordCare": {
-    "status": "ai",
+    "access": "owner",
     "action": "log_plant_care",
-    "access": "owner"
+    "status": "ai"
   },
   "opieka:updateCareTask": {
-    "status": "pending",
-    "access": "owner"
+    "access": "owner",
+    "status": "pending"
   },
   "pantry:addPantryItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "pantry:autoReplenishToList": {
-    "status": "ai",
+    "access": "owner",
     "action": "auto_replenish_pantry",
-    "access": "owner"
+    "status": "ai"
   },
   "pantry:bulkSetPantryQuantities": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
   "pantry:consumePantryItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "pantry:deletePantryItem": {
-    "status": "ai",
-    "access": "owner"
+    "access": "owner",
+    "status": "ai"
   },
   "pantry:getAutoReplenishCandidates": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_replenish_candidates",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "pantry:getExpiringSoon": {
-    "kind": "read",
-    "status": "ai",
+    "access": "owner",
     "action": "list_expiring_pantry",
-    "access": "owner"
+    "kind": "read",
+    "status": "ai"
   },
   "pantry:getPantry": {
+    "access": "owner",
     "kind": "read",
-    "status": "ai",
-    "access": "owner"
+    "status": "ai"
   },
   "pantry:moveItemToPantry": {
-    "status": "ai",
+    "access": "owner",
     "action": "move_item_to_pantry",
-    "access": "owner"
+    "status": "ai"
   },
   "pantry:setPantryQuantity": {
-    "status": "ai",
+    "access": "owner",
     "action": "set_pantry_quantity",
-    "access": "owner"
+    "status": "ai"
   },
   "pantry:updatePantryItem": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:createBreedingPair": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:createClutch": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:createOffspring": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:deleteBreedingPair": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petBreeding:deleteClutch": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petBreeding:deleteSale": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petBreeding:getPetBreeding": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "niche",
-    "access": "owner"
-  },
-  "petBreeding:markClutchHatched": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:recordSale": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petBreeding:setGenetics": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petBreeding:setParentage": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petBreeding:updateBreedingPair": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:addMeasurement": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:completeCareTask": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:completeTreatment": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:createCareTask": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:createHealthRecord": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:createTreatment": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:createVetVisit": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:deleteCareTask": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:deleteHealthRecord": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:deleteMeasurement": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:deleteTreatment": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:deleteVetVisit": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:getCareAgenda": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_care_agenda",
-    "access": "owner"
-  },
-  "petCare:getCareHistory": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_care_history",
-    "access": "owner"
-  },
-  "petCare:getPetWelfare": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_pet_welfare",
-    "access": "owner"
-  },
-  "petCare:logFeeding": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petCare:updateCareTask": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:updateHealthRecord": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:updateTreatment": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:updateVetVisit": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petHusbandry:addEnvironmentReading": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petHusbandry:assignPetToEnclosure": {
-    "status": "ai",
-    "action": "assign_pet_to_enclosure",
-    "access": "owner"
-  },
-  "petHusbandry:createEnclosure": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "petHusbandry:deleteEnclosure": {
-    "status": "ai",
-    "action": "delete_enclosure",
-    "access": "owner"
-  },
-  "petHusbandry:deleteEnvironmentReading": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petHusbandry:getEnclosures": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_enclosures",
-    "access": "owner"
-  },
-  "petHusbandry:updateEnclosure": {
-    "status": "ai",
-    "action": "update_enclosure",
-    "access": "owner"
-  },
-  "pets:createPet": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "pets:deletePet": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "pets:getPet": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "pets:getPetSharing": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "pets:getPets": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "pets:removePetShare": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "pets:setPetStatus": {
-    "status": "ai",
     "access": "owner",
-    "guardedVia": "updatePet"
-  },
-  "pets:sharePetByEmail": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "pets:sharePetWithTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "pets:updatePet": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "pets:updatePetFeatures": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "polaczenie:czyPolaczony": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "polaczenie:importujSubskrypcje": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "polaczenie:rozlaczYoutube": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfel:addEntry": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:archiveElement": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:createElement": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:deleteElement": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:getElement": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "portfel:getWalletElements": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:getWalletOverview": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_wallet_overview",
-    "access": "owner"
-  },
-  "portfel:importBankCsv": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "portfel:setBalance": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfel:updateElement": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "portfelAuto:getFinanceSettings": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelAuto:setFinanceSettings": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelBudgets:contributeGoal": {
-    "status": "ai",
-    "action": "contribute_goal",
-    "access": "owner"
-  },
-  "portfelBudgets:createBudget": {
-    "status": "ai",
-    "action": "create_budget",
-    "access": "owner"
-  },
-  "portfelBudgets:createGoal": {
-    "status": "ai",
-    "action": "create_goal",
-    "access": "owner"
-  },
-  "portfelBudgets:deleteBudget": {
-    "status": "ai",
-    "action": "delete_budget",
-    "access": "owner"
-  },
-  "portfelBudgets:deleteGoal": {
-    "status": "ai",
-    "action": "delete_goal",
-    "access": "owner"
-  },
-  "portfelBudgets:getBudgetsWithSpending": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_budgets",
-    "access": "owner"
-  },
-  "portfelBudgets:getFinanceGoals": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_goals",
-    "access": "owner"
-  },
-  "portfelBudgets:updateBudget": {
-    "status": "ai",
-    "action": "update_budget",
-    "access": "owner"
-  },
-  "portfelBudgets:updateGoal": {
-    "status": "ai",
-    "action": "update_goal",
-    "access": "owner"
-  },
-  "portfelCurrency:deleteExchangeRate": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelCurrency:getCurrencySettings": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelCurrency:refreshRatesFromNBP": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelCurrency:setBaseCurrency": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelCurrency:setExchangeRate": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "portfelReports:getMonthlyReport": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_monthly_report",
-    "access": "owner"
-  },
-  "privacy:deleteMyAccount": {
-    "status": "excluded",
-    "reason": "account",
-    "access": "self"
-  },
-  "privacy:exportMyData": {
-    "status": "excluded",
-    "reason": "account",
-    "access": "self"
-  },
-  "products:copyGlobalProduct": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "products:createProduct": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "products:deleteProduct": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "products:getProductSuggestions": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "products:getProducts": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "shared"
-  },
-  "products:updateProduct": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "products:upsertUserProduct": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "projectGroups:createProjectGroup": {
-    "status": "ai",
-    "action": "create_project_group",
-    "access": "owner"
-  },
-  "projectGroups:deleteProjectGroup": {
-    "status": "ai",
-    "action": "delete_project_group",
-    "access": "owner"
-  },
-  "projectGroups:getProjectGroup": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "projectGroups:getProjectGroups": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_project_groups",
-    "access": "owner"
-  },
-  "projectGroups:updateProjectGroup": {
-    "status": "ai",
-    "action": "update_project_group",
-    "access": "owner"
-  },
-  "promptWznowienia:getPromptDoPokazania": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "promptWznowienia:oznaczPromptPokazany": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "przestrzenie:createSpace": {
-    "status": "ai",
-    "action": "create_plant_space",
-    "access": "owner"
-  },
-  "przestrzenie:deleteSpace": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "przestrzenie:getSpace": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "przestrzenie:getSpaces": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_plant_spaces",
-    "access": "owner"
-  },
-  "przestrzenie:getWeatherOptions": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "przestrzenie:updateSpace": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "qa:createEpic": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:createScenario": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:createStory": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:deleteEpic": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:deleteScenario": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:deleteStory": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getAllEpics": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getEpicForAdmin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getEpicTreeForAdmin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getModuleStats": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getModuleTree": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getScenarioForAdmin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getScenarioWithContext": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:getStoryForAdmin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:updateEpic": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:updateScenario": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "qa:updateStory": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "recipes:addIngredient": {
-    "status": "ai",
-    "action": "add_ingredient",
-    "access": "owner"
-  },
-  "recipes:addRecipeImage": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:addStep": {
-    "status": "ai",
-    "action": "add_step",
-    "access": "owner"
-  },
-  "recipes:archiveRecipe": {
-    "status": "ai",
-    "action": "archive_recipe",
-    "access": "owner"
-  },
-  "recipes:createRecipe": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "recipes:deleteIngredient": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:deleteRecipe": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "recipes:deleteRecipeImage": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:deleteStep": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:duplicateRecipe": {
-    "status": "ai",
-    "action": "duplicate_recipe",
-    "access": "owner"
-  },
-  "recipes:getRecipe": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_recipe",
-    "access": "owner"
-  },
-  "recipes:getRecipes": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "recipes:markRecipeCooked": {
-    "status": "ai",
-    "action": "mark_recipe_cooked",
-    "access": "owner"
-  },
-  "recipes:reorderIngredients": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:reorderSteps": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:shopForRecipe": {
-    "status": "ai",
-    "action": "shop_for_recipe",
-    "access": "owner"
-  },
-  "recipes:updateIngredient": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:updateRecipe": {
-    "status": "ai",
-    "action": "update_recipe",
-    "access": "owner"
-  },
-  "recipes:updateRecipeImage": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "recipes:updateStep": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "reports:createReport": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "reports:createUserReport": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "reports:deleteReport": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "reports:getReport": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "reports:getReportsMeta": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "reports:getUserReport": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "reports:getUserReportsMeta": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "reports:searchReports": {
-    "kind": "read",
-    "status": "ai",
-    "action": "search_reports",
-    "access": "owner"
-  },
-  "reports:updateReport": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "rosliny:createPlant": {
-    "status": "ai",
-    "action": "create_plant",
-    "access": "owner"
-  },
-  "rosliny:deletePlant": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rosliny:getPlant": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rosliny:getPlants": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_plants",
-    "access": "owner"
-  },
-  "rosliny:propagatePlant": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "rosliny:setPlantStatus": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "rosliny:updatePlant": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "rozmowy:getLicznikNieprzeczytanych": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:getRozmowa": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:getRozmowcy": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:getRozmowy": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:otworzRozmowePrywatna": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:oznaczPrzeczytane": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "rozmowy:zglosPisanie": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "sharing:getResourceGrants": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "shared",
-    "guardedVia": "nadaniaZasobu"
-  },
-  "sharing:getSharedByMe": {
-    "status": "pending",
-    "access": "self"
-  },
-  "sharing:getSharedWithMe": {
-    "status": "pending",
-    "access": "self"
-  },
-  "sharing:grantResourceAccess": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "shared",
-    "guardedVia": "nadajDostep"
-  },
-  "sharing:redeemResourceInvitations": {
-    "status": "excluded",
-    "reason": "account",
-    "access": "self"
-  },
-  "sharing:revokeResourceAccess": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "shared",
-    "guardedVia": "odbierzDostep"
-  },
-  "shoppingSync:syncShoppingMutations": {
-    "status": "excluded",
-    "reason": "internal",
-    "access": "self"
-  },
-  "skins:createSkin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "skins:deleteSkin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "skins:duplicateSkin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "skins:exportSkin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self",
-    "guardedVia": "listAvailableSkins"
-  },
-  "skins:getActiveSkinId": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "skins:importSkin": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "skins:listAvailableSkins": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "skins:setActiveSkin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "skins:updateSkin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "storage:addBatch": {
-    "status": "ai",
-    "action": "add_batch",
-    "access": "owner"
-  },
-  "storage:addLowStockToShoppingList": {
-    "status": "ai",
-    "action": "add_low_stock_to_shopping",
-    "access": "owner"
-  },
-  "storage:addStorageItem": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:addSupplier": {
-    "status": "ai",
-    "action": "add_supplier",
-    "access": "owner"
-  },
-  "storage:adjustStorageQuantity": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:bulkAddStorageItems": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:bulkSetStorageQuantities": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:createDocument": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:createPurchaseOrder": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:deleteBatch": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:deleteDocument": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:deletePurchaseOrder": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:deleteStorageItem": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:deleteSupplier": {
-    "status": "ai",
-    "action": "delete_supplier",
-    "access": "owner"
-  },
-  "storage:getDocument": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:getDocuments": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:getExpiringStorage": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_expiring_storage",
-    "access": "owner"
-  },
-  "storage:getLowStock": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_low_stock",
-    "access": "owner"
-  },
-  "storage:getPurchaseOrder": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:getPurchaseOrders": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:getStorageAnalytics": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_storage_analytics",
-    "access": "owner"
-  },
-  "storage:getStorageItem": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "storage:getStorageItems": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:getStorageSettings": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "storage:getSuppliers": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_suppliers",
-    "access": "owner"
-  },
-  "storage:setStorageCurrency": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "storage:setStorageMode": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "storage:transferStock": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:updatePurchaseOrder": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "storage:updateStorageItem": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "storage:updateSupplier": {
-    "status": "ai",
-    "action": "update_supplier",
-    "access": "owner"
-  },
-  "stores:createStore": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:deleteStore": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:deleteStoreEdge": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:deleteStoreNode": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:getStore": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:getStores": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:renameStore": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:saveStoreGraph": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:upsertStoreEdge": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "stores:upsertStoreNode": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "systemHealth:getSystemHealth": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "admin"
-  },
-  "tags:createTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "tags:deleteTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "tags:getTags": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_note_tags",
-    "access": "owner"
-  },
-  "tags:updateTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "taskProjects:addProjectMember": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "taskProjects:createTaskProject": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "taskProjects:deleteTaskProject": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "taskProjects:getTaskProjects": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "taskProjects:removeProjectMember": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "taskProjects:updateTaskProject": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "taskProjects:updateTaskProjectStatusConfig": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "taskTags:createTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "taskTags:deleteTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "taskTags:getTaskTags": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_task_tags",
-    "access": "owner"
-  },
-  "taskTags:updateTaskTag": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "tasks:addTaskComment": {
-    "status": "ai",
-    "action": "add_task_comment",
-    "access": "owner"
-  },
-  "tasks:bulkDeleteTasks": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "tasks:bulkUpdateTasks": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "tasks:completeRecurringTask": {
-    "status": "excluded",
-    "reason": "internal",
-    "access": "internal",
-    "guardedVia": "updateTask"
-  },
-  "tasks:createTask": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:deleteTask": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:deleteTaskComment": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "tasks:getAllUserTasks": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:getOverdueTasks": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:getTask": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:getTaskAttachments": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "internal",
-    "access": "shared"
-  },
-  "tasks:getTasks": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:getTasksForProjects": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:getTodayTasks": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:removeTaskShare": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "tasks:reorderTask": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "tasks:shareTask": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "tasks:shareTaskByEmail": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "tasks:toggleTaskStatus": {
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "tasks:updateTask": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "tasks:updateTaskTags": {
-    "status": "ai",
-    "action": "set_task_tags",
-    "access": "owner"
-  },
-  "teams:changeMemberRole": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:createSubTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:createTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:deleteTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:getHouseholdOnboarding": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:getMyTeams": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:getTeam": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:leaveTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:removeMember": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:setMemberModuleAccess": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:transferTeamOwnership": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "teams:updateTeam": {
-    "status": "excluded",
-    "reason": "teams",
-    "access": "owner"
-  },
-  "trash:emptyTrash": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "trash:getTrash": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_trash",
-    "access": "owner"
-  },
-  "trash:purgeTrashItem": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "trash:restoreTrashItem": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "truck:getVehicleProfile": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "niche",
-    "access": "owner"
-  },
-  "truck:planTruckRoute": {
-    "status": "excluded",
-    "reason": "niche",
-    "access": "owner"
-  },
-  "truck:saveVehicleProfile": {
-    "status": "excluded",
-    "reason": "niche",
-    "access": "owner"
-  },
-  "units:createUnit": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "units:deleteUnit": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "units:getUnitSuggestions": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "units:getUnits": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "shared"
-  },
-  "units:renameUnit": {
-    "status": "excluded",
-    "reason": "dictionary",
-    "access": "owner"
-  },
-  "userFacts:confirmUserFact": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "userFacts:deleteUserFact": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "userFacts:deleteUserFactByAdmin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "userFacts:getPendingHypothesis": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "userFacts:getUserFacts": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "userFacts:getUserFactsForAdmin": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "userFacts:rejectUserFact": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "userFacts:setUserFactByAdmin": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "userFacts:upsertUserFact": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "ustawienia:getDomyslnaDlugosc": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "ustawienia:ustawDomyslnaDlugosc": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "warsztat:addSuggestedItems": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "warsztat:addWorkshopItem": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "warsztat:addWorkshopProject": {
-    "status": "ai",
-    "action": "add_workshop_project",
-    "access": "owner"
-  },
-  "warsztat:adjustWorkshopItemQuantity": {
-    "status": "ai",
-    "action": "adjust_workshop_item",
-    "access": "owner"
-  },
-  "warsztat:createWorkshop": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "warsztat:deleteWorkshop": {
-    "status": "ai",
-    "action": "delete_workshop",
-    "access": "owner"
-  },
-  "warsztat:deleteWorkshopItem": {
-    "status": "ai",
-    "action": "delete_workshop_item",
-    "access": "owner"
-  },
-  "warsztat:deleteWorkshopProject": {
-    "status": "ai",
-    "action": "delete_workshop_project",
-    "access": "owner"
-  },
-  "warsztat:getMaintenanceOverview": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_maintenance",
-    "access": "owner"
-  },
-  "warsztat:getWarsztatSettings": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "self"
-  },
-  "warsztat:getWorkshop": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "warsztat:getWorkshops": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "warsztat:setWarsztatMode": {
-    "status": "excluded",
-    "reason": "admin",
-    "access": "admin"
-  },
-  "warsztat:updateWorkshop": {
-    "status": "ai",
-    "action": "update_workshop",
-    "access": "owner"
-  },
-  "warsztat:updateWorkshopItem": {
-    "status": "ai",
-    "action": "update_workshop_item",
-    "access": "owner"
-  },
-  "warsztat:updateWorkshopProject": {
-    "status": "ai",
-    "action": "update_workshop_project",
-    "access": "owner"
-  },
-  "weather:addCustomWatcher": {
-    "status": "ai",
-    "action": "add_custom_watcher",
-    "access": "owner"
-  },
-  "weather:addIdeaToTasks": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:addLocation": {
-    "status": "excluded",
-    "reason": "redundant",
-    "access": "owner"
-  },
-  "weather:addLocationByName": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:addLocationByPoint": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:addPresetWatcher": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:blockIdea": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:deleteIdea": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:deleteLocation": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:deleteWatcher": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:generateIdeaDetail": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "weather:getIdeaDetail": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "weather:getIdeaLibrary": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "weather:getIdeas": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "weather:getLocations": {
-    "kind": "read",
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:getWatchers": {
-    "kind": "read",
-    "status": "ai",
-    "action": "list_watchers",
-    "access": "owner"
-  },
-  "weather:getWeather": {
-    "kind": "read",
-    "status": "ai",
-    "action": "get_weather",
-    "access": "owner"
-  },
-  "weather:getWeatherPref": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "weather:saveIdeaFromList": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:setDefaultLocation": {
-    "status": "ai",
-    "access": "owner"
-  },
-  "weather:setIdeaState": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "weather:setWatchersView": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "weather:updateWatcher": {
-    "status": "ai",
-    "action": "update_watcher",
-    "access": "owner"
-  },
-  "wiadomosci:edytujWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner",
-    "guardedVia": "assertAutor"
-  },
-  "wiadomosci:getWiadomosci": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "wiadomosci:przelaczReakcje": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "wiadomosci:usunWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner",
-    "guardedVia": "assertAutor"
-  },
-  "wiadomosci:wyslijWiadomosc": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "workspaceSettings:getWorkspaceLocaleSettings": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "workspaceSettings:setWorkspaceLocale": {
-    "status": "excluded",
-    "reason": "settings",
-    "access": "owner"
-  },
-  "zbiory:addToShoppingList": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "zbiory:bookCareCost": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "zbiory:getHarvests": {
-    "kind": "read",
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "zbiory:harvestToPantry": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "zbiory:recordHarvest": {
-    "status": "pending",
-    "access": "owner"
-  },
-  "health:bookHealthEventCost": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "health:saveDoctorToContacts": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:bookVetVisitCost": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
-  },
-  "petCare:saveVetToContacts": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
+    "status": "ai"
   },
   "petBreeding:bookSaleIncome": {
-    "status": "excluded",
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
   },
-  "warsztat:bookProjectCost": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "owner"
+  "petBreeding:createBreedingPair": {
+    "access": "owner",
+    "status": "ai"
   },
-  "providers:saveProviderToContacts": {
-    "status": "excluded",
+  "petBreeding:createClutch": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petBreeding:createOffspring": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petBreeding:deleteBreedingPair": {
+    "access": "owner",
     "reason": "interactive",
-    "access": "self"
+    "status": "excluded"
+  },
+  "petBreeding:deleteClutch": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petBreeding:deleteSale": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petBreeding:getPetBreeding": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "niche",
+    "status": "excluded"
+  },
+  "petBreeding:markClutchHatched": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petBreeding:recordSale": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petBreeding:setGenetics": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petBreeding:setParentage": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petBreeding:updateBreedingPair": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:addMeasurement": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:bookVetVisitCost": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:completeCareTask": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:completeTreatment": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:createCareTask": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:createHealthRecord": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:createTreatment": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:createVetVisit": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:deleteCareTask": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:deleteHealthRecord": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:deleteMeasurement": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:deleteTreatment": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:deleteVetVisit": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:getCareAgenda": {
+    "access": "owner",
+    "action": "list_care_agenda",
+    "kind": "read",
+    "status": "ai"
+  },
+  "petCare:getCareHistory": {
+    "access": "owner",
+    "action": "list_care_history",
+    "kind": "read",
+    "status": "ai"
+  },
+  "petCare:getPetWelfare": {
+    "access": "owner",
+    "action": "get_pet_welfare",
+    "kind": "read",
+    "status": "ai"
+  },
+  "petCare:logFeeding": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petCare:saveVetToContacts": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:updateCareTask": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:updateHealthRecord": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:updateTreatment": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petCare:updateVetVisit": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petHusbandry:addEnvironmentReading": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petHusbandry:assignPetToEnclosure": {
+    "access": "owner",
+    "action": "assign_pet_to_enclosure",
+    "status": "ai"
+  },
+  "petHusbandry:createEnclosure": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "petHusbandry:deleteEnclosure": {
+    "access": "owner",
+    "action": "delete_enclosure",
+    "status": "ai"
+  },
+  "petHusbandry:deleteEnvironmentReading": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "petHusbandry:getEnclosures": {
+    "access": "owner",
+    "action": "list_enclosures",
+    "kind": "read",
+    "status": "ai"
+  },
+  "petHusbandry:updateEnclosure": {
+    "access": "owner",
+    "action": "update_enclosure",
+    "status": "ai"
+  },
+  "pets:createPet": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "pets:deletePet": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "pets:getPet": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "pets:getPetSharing": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "pets:getPets": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "pets:removePetShare": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "pets:setPetStatus": {
+    "access": "owner",
+    "guardedVia": "updatePet",
+    "status": "ai"
+  },
+  "pets:sharePetByEmail": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "pets:sharePetWithTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "pets:updatePet": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "pets:updatePetFeatures": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "polaczenie:czyPolaczony": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "polaczenie:importujSubskrypcje": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "polaczenie:rozlaczYoutube": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfel:addEntry": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfel:archiveElement": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfel:createElement": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfel:deleteElement": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfel:getElement": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "portfel:getWalletElements": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "portfel:getWalletOverview": {
+    "access": "owner",
+    "action": "get_wallet_overview",
+    "kind": "read",
+    "status": "ai"
+  },
+  "portfel:importBankCsv": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "portfel:setBalance": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfel:updateElement": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "portfelAuto:getFinanceSettings": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelAuto:setFinanceSettings": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelBudgets:contributeGoal": {
+    "access": "owner",
+    "action": "contribute_goal",
+    "status": "ai"
+  },
+  "portfelBudgets:createBudget": {
+    "access": "owner",
+    "action": "create_budget",
+    "status": "ai"
+  },
+  "portfelBudgets:createGoal": {
+    "access": "owner",
+    "action": "create_goal",
+    "status": "ai"
+  },
+  "portfelBudgets:deleteBudget": {
+    "access": "owner",
+    "action": "delete_budget",
+    "status": "ai"
+  },
+  "portfelBudgets:deleteGoal": {
+    "access": "owner",
+    "action": "delete_goal",
+    "status": "ai"
+  },
+  "portfelBudgets:getBudgetsWithSpending": {
+    "access": "owner",
+    "action": "list_budgets",
+    "kind": "read",
+    "status": "ai"
+  },
+  "portfelBudgets:getFinanceGoals": {
+    "access": "owner",
+    "action": "list_goals",
+    "kind": "read",
+    "status": "ai"
+  },
+  "portfelBudgets:updateBudget": {
+    "access": "owner",
+    "action": "update_budget",
+    "status": "ai"
+  },
+  "portfelBudgets:updateGoal": {
+    "access": "owner",
+    "action": "update_goal",
+    "status": "ai"
+  },
+  "portfelCurrency:deleteExchangeRate": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelCurrency:getCurrencySettings": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelCurrency:refreshRatesFromNBP": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelCurrency:setBaseCurrency": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelCurrency:setExchangeRate": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "portfelReports:getMonthlyReport": {
+    "access": "owner",
+    "action": "get_monthly_report",
+    "kind": "read",
+    "status": "ai"
+  },
+  "privacy:deleteMyAccount": {
+    "access": "self",
+    "reason": "account",
+    "status": "excluded"
+  },
+  "privacy:exportMyData": {
+    "access": "self",
+    "reason": "account",
+    "status": "excluded"
+  },
+  "products:copyGlobalProduct": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:createProduct": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:deleteProduct": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:getProductSuggestions": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:getProducts": {
+    "access": "shared",
+    "kind": "read",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:updateProduct": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "products:upsertUserProduct": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "projectGroups:createProjectGroup": {
+    "access": "owner",
+    "action": "create_project_group",
+    "status": "ai"
+  },
+  "projectGroups:deleteProjectGroup": {
+    "access": "owner",
+    "action": "delete_project_group",
+    "status": "ai"
+  },
+  "projectGroups:getProjectGroup": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "projectGroups:getProjectGroups": {
+    "access": "owner",
+    "action": "list_project_groups",
+    "kind": "read",
+    "status": "ai"
+  },
+  "projectGroups:updateProjectGroup": {
+    "access": "owner",
+    "action": "update_project_group",
+    "status": "ai"
+  },
+  "promptWznowienia:getPromptDoPokazania": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "promptWznowienia:oznaczPromptPokazany": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "przestrzenie:createSpace": {
+    "access": "owner",
+    "action": "create_plant_space",
+    "status": "ai"
+  },
+  "przestrzenie:deleteSpace": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "przestrzenie:getSpace": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "przestrzenie:getSpaces": {
+    "access": "owner",
+    "action": "list_plant_spaces",
+    "kind": "read",
+    "status": "ai"
+  },
+  "przestrzenie:getWeatherOptions": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "przestrzenie:updateSpace": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "qa:createEpic": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:createScenario": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:createStory": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:deleteEpic": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:deleteScenario": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:deleteStory": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getAllEpics": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getEpicForAdmin": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getEpicTreeForAdmin": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getModuleStats": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getModuleTree": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getScenarioForAdmin": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getScenarioWithContext": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:getStoryForAdmin": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:updateEpic": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:updateScenario": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "qa:updateStory": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "recipes:addIngredient": {
+    "access": "owner",
+    "action": "add_ingredient",
+    "status": "ai"
+  },
+  "recipes:addRecipeImage": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:addStep": {
+    "access": "owner",
+    "action": "add_step",
+    "status": "ai"
+  },
+  "recipes:archiveRecipe": {
+    "access": "owner",
+    "action": "archive_recipe",
+    "status": "ai"
+  },
+  "recipes:createRecipe": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "recipes:deleteIngredient": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:deleteRecipe": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "recipes:deleteRecipeImage": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:deleteStep": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:duplicateRecipe": {
+    "access": "owner",
+    "action": "duplicate_recipe",
+    "status": "ai"
+  },
+  "recipes:getRecipe": {
+    "access": "owner",
+    "action": "get_recipe",
+    "kind": "read",
+    "status": "ai"
+  },
+  "recipes:getRecipes": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "recipes:markRecipeCooked": {
+    "access": "owner",
+    "action": "mark_recipe_cooked",
+    "status": "ai"
+  },
+  "recipes:reorderIngredients": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:reorderSteps": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:shopForRecipe": {
+    "access": "owner",
+    "action": "shop_for_recipe",
+    "status": "ai"
+  },
+  "recipes:updateIngredient": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:updateRecipe": {
+    "access": "owner",
+    "action": "update_recipe",
+    "status": "ai"
+  },
+  "recipes:updateRecipeImage": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "recipes:updateStep": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "reports:createReport": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "reports:createUserReport": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "reports:deleteReport": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "reports:getReport": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "reports:getReportsMeta": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "reports:getUserReport": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "reports:getUserReportsMeta": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "reports:searchReports": {
+    "access": "owner",
+    "action": "search_reports",
+    "kind": "read",
+    "status": "ai"
+  },
+  "reports:updateReport": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "rosliny:createPlant": {
+    "access": "owner",
+    "action": "create_plant",
+    "status": "ai"
+  },
+  "rosliny:deletePlant": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rosliny:getPlant": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rosliny:getPlants": {
+    "access": "owner",
+    "action": "list_plants",
+    "kind": "read",
+    "status": "ai"
+  },
+  "rosliny:propagatePlant": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "rosliny:setPlantStatus": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "rosliny:updatePlant": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "rozmowy:getLicznikNieprzeczytanych": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:getRozmowa": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:getRozmowcy": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:getRozmowy": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:otworzRozmowePrywatna": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:oznaczPrzeczytane": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "rozmowy:zglosPisanie": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "sharing:getResourceGrants": {
+    "access": "shared",
+    "guardedVia": "nadaniaZasobu",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "sharing:getSharedByMe": {
+    "access": "self",
+    "status": "pending"
+  },
+  "sharing:getSharedWithMe": {
+    "access": "self",
+    "status": "pending"
+  },
+  "sharing:grantResourceAccess": {
+    "access": "shared",
+    "guardedVia": "nadajDostep",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "sharing:redeemResourceInvitations": {
+    "access": "self",
+    "reason": "account",
+    "status": "excluded"
+  },
+  "sharing:revokeResourceAccess": {
+    "access": "shared",
+    "guardedVia": "odbierzDostep",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "shoppingSync:syncShoppingMutations": {
+    "access": "self",
+    "reason": "internal",
+    "status": "excluded"
+  },
+  "skins:createSkin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "skins:deleteSkin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "skins:duplicateSkin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "skins:exportSkin": {
+    "access": "self",
+    "guardedVia": "listAvailableSkins",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skins:getActiveSkinId": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skins:importSkin": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skins:listAvailableSkins": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skins:setActiveSkin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "skins:updateSkin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "storage:addBatch": {
+    "access": "owner",
+    "action": "add_batch",
+    "status": "ai"
+  },
+  "storage:addLowStockToShoppingList": {
+    "access": "owner",
+    "action": "add_low_stock_to_shopping",
+    "status": "ai"
+  },
+  "storage:addStorageItem": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "storage:addSupplier": {
+    "access": "owner",
+    "action": "add_supplier",
+    "status": "ai"
+  },
+  "storage:adjustStorageQuantity": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "storage:bulkAddStorageItems": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:bulkSetStorageQuantities": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:createDocument": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:createPurchaseOrder": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:deleteBatch": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:deleteDocument": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:deletePurchaseOrder": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:deleteStorageItem": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "storage:deleteSupplier": {
+    "access": "owner",
+    "action": "delete_supplier",
+    "status": "ai"
+  },
+  "storage:getDocument": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:getDocuments": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:getExpiringStorage": {
+    "access": "owner",
+    "action": "list_expiring_storage",
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:getLowStock": {
+    "access": "owner",
+    "action": "list_low_stock",
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:getPurchaseOrder": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:getPurchaseOrders": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:getStorageAnalytics": {
+    "access": "owner",
+    "action": "get_storage_analytics",
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:getStorageItem": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "storage:getStorageItems": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:getStorageSettings": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "storage:getSuppliers": {
+    "access": "owner",
+    "action": "list_suppliers",
+    "kind": "read",
+    "status": "ai"
+  },
+  "storage:setStorageCurrency": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "storage:setStorageMode": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "storage:transferStock": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "storage:updatePurchaseOrder": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "storage:updateStorageItem": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "storage:updateSupplier": {
+    "access": "owner",
+    "action": "update_supplier",
+    "status": "ai"
+  },
+  "stores:createStore": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:deleteStore": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:deleteStoreEdge": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:deleteStoreNode": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:getStore": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:getStores": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:renameStore": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:saveStoreGraph": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:upsertStoreEdge": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "stores:upsertStoreNode": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "systemHealth:getSystemHealth": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "tags:createTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "tags:deleteTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "tags:getTags": {
+    "access": "owner",
+    "action": "list_note_tags",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tags:updateTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "taskProjects:addProjectMember": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "taskProjects:createTaskProject": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "taskProjects:deleteTaskProject": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "taskProjects:getTaskProjects": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "taskProjects:removeProjectMember": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "taskProjects:updateTaskProject": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "taskProjects:updateTaskProjectStatusConfig": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "taskTags:createTaskTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "taskTags:deleteTaskTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "taskTags:getTaskTags": {
+    "access": "owner",
+    "action": "list_task_tags",
+    "kind": "read",
+    "status": "ai"
+  },
+  "taskTags:updateTaskTag": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "tasks:addTaskComment": {
+    "access": "owner",
+    "action": "add_task_comment",
+    "status": "ai"
+  },
+  "tasks:bulkDeleteTasks": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "tasks:bulkUpdateTasks": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "tasks:completeRecurringTask": {
+    "access": "internal",
+    "guardedVia": "updateTask",
+    "reason": "internal",
+    "status": "excluded"
+  },
+  "tasks:createTask": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "tasks:deleteTask": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "tasks:deleteTaskComment": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "tasks:getAllUserTasks": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getOverdueTasks": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTask": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTaskAttachments": {
+    "access": "shared",
+    "kind": "read",
+    "reason": "internal",
+    "status": "excluded"
+  },
+  "tasks:getTasks": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTasksForProjects": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:getTodayTasks": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "tasks:removeTaskShare": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "tasks:reorderTask": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "tasks:shareTask": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "tasks:shareTaskByEmail": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "tasks:toggleTaskStatus": {
+    "access": "owner",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "tasks:updateTask": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "tasks:updateTaskTags": {
+    "access": "owner",
+    "action": "set_task_tags",
+    "status": "ai"
+  },
+  "teams:changeMemberRole": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:createSubTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:createTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:deleteTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:getHouseholdOnboarding": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:getMyTeams": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:getTeam": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:leaveTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:removeMember": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:setMemberModuleAccess": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:transferTeamOwnership": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "teams:updateTeam": {
+    "access": "owner",
+    "reason": "teams",
+    "status": "excluded"
+  },
+  "trash:emptyTrash": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "trash:getTrash": {
+    "access": "owner",
+    "action": "list_trash",
+    "kind": "read",
+    "status": "ai"
+  },
+  "trash:purgeTrashItem": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "trash:restoreTrashItem": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "truck:getVehicleProfile": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "niche",
+    "status": "excluded"
+  },
+  "truck:planTruckRoute": {
+    "access": "owner",
+    "reason": "niche",
+    "status": "excluded"
+  },
+  "truck:saveVehicleProfile": {
+    "access": "owner",
+    "reason": "niche",
+    "status": "excluded"
   },
   "truck:zaksiegujKosztTrasy": {
-    "status": "excluded",
+    "access": "self",
     "reason": "interactive",
-    "access": "self"
+    "status": "excluded"
   },
-  "doZadan:dodajPozycjeDoZadan": {
-    "status": "excluded",
-    "reason": "interactive",
-    "access": "self"
+  "units:createUnit": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
   },
-  "contacts:createTaskFromContact": {
-    "status": "excluded",
+  "units:deleteUnit": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "units:getUnitSuggestions": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "units:getUnits": {
+    "access": "shared",
+    "kind": "read",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "units:renameUnit": {
+    "access": "owner",
+    "reason": "dictionary",
+    "status": "excluded"
+  },
+  "userFacts:confirmUserFact": {
+    "access": "owner",
     "reason": "interactive",
-    "access": "owner"
+    "status": "excluded"
+  },
+  "userFacts:deleteUserFact": {
+    "access": "owner",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "userFacts:deleteUserFactByAdmin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "userFacts:getPendingHypothesis": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "userFacts:getUserFacts": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "userFacts:getUserFactsForAdmin": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "userFacts:rejectUserFact": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "userFacts:setUserFactByAdmin": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "userFacts:upsertUserFact": {
+    "access": "owner",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "ustawienia:getDomyslnaDlugosc": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "ustawienia:ustawDomyslnaDlugosc": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "warsztat:addSuggestedItems": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "warsztat:addWorkshopItem": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "warsztat:addWorkshopProject": {
+    "access": "owner",
+    "action": "add_workshop_project",
+    "status": "ai"
+  },
+  "warsztat:adjustWorkshopItemQuantity": {
+    "access": "owner",
+    "action": "adjust_workshop_item",
+    "status": "ai"
+  },
+  "warsztat:bookProjectCost": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "warsztat:createWorkshop": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "warsztat:deleteWorkshop": {
+    "access": "owner",
+    "action": "delete_workshop",
+    "status": "ai"
+  },
+  "warsztat:deleteWorkshopItem": {
+    "access": "owner",
+    "action": "delete_workshop_item",
+    "status": "ai"
+  },
+  "warsztat:deleteWorkshopProject": {
+    "access": "owner",
+    "action": "delete_workshop_project",
+    "status": "ai"
+  },
+  "warsztat:getMaintenanceOverview": {
+    "access": "owner",
+    "action": "list_maintenance",
+    "kind": "read",
+    "status": "ai"
+  },
+  "warsztat:getWarsztatSettings": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "warsztat:getWorkshop": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "warsztat:getWorkshops": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "warsztat:setWarsztatMode": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "warsztat:updateWorkshop": {
+    "access": "owner",
+    "action": "update_workshop",
+    "status": "ai"
+  },
+  "warsztat:updateWorkshopItem": {
+    "access": "owner",
+    "action": "update_workshop_item",
+    "status": "ai"
+  },
+  "warsztat:updateWorkshopProject": {
+    "access": "owner",
+    "action": "update_workshop_project",
+    "status": "ai"
+  },
+  "weather:addCustomWatcher": {
+    "access": "owner",
+    "action": "add_custom_watcher",
+    "status": "ai"
+  },
+  "weather:addIdeaToTasks": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:addLocation": {
+    "access": "owner",
+    "reason": "redundant",
+    "status": "excluded"
+  },
+  "weather:addLocationByName": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "weather:addLocationByPoint": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:addPresetWatcher": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "weather:blockIdea": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:deleteIdea": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:deleteLocation": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "weather:deleteWatcher": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "weather:generateIdeaDetail": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "weather:getIdeaDetail": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "weather:getIdeaLibrary": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "weather:getIdeas": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "weather:getLocations": {
+    "access": "owner",
+    "kind": "read",
+    "status": "ai"
+  },
+  "weather:getWatchers": {
+    "access": "owner",
+    "action": "list_watchers",
+    "kind": "read",
+    "status": "ai"
+  },
+  "weather:getWeather": {
+    "access": "owner",
+    "action": "get_weather",
+    "kind": "read",
+    "status": "ai"
+  },
+  "weather:getWeatherPref": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "weather:saveIdeaFromList": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:setDefaultLocation": {
+    "access": "owner",
+    "status": "ai"
+  },
+  "weather:setIdeaState": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:setWatchersView": {
+    "access": "owner",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "weather:updateWatcher": {
+    "access": "owner",
+    "action": "update_watcher",
+    "status": "ai"
+  },
+  "wiadomosci:edytujWiadomosc": {
+    "access": "owner",
+    "guardedVia": "assertAutor",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "wiadomosci:getWiadomosci": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "wiadomosci:przelaczReakcje": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "wiadomosci:usunWiadomosc": {
+    "access": "owner",
+    "guardedVia": "assertAutor",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "wiadomosci:wyslijWiadomosc": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "workspaceSettings:getWorkspaceLocaleSettings": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "workspaceSettings:setWorkspaceLocale": {
+    "access": "owner",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "zbiory:addToShoppingList": {
+    "access": "owner",
+    "status": "pending"
+  },
+  "zbiory:bookCareCost": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "zbiory:getHarvests": {
+    "access": "owner",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "zbiory:harvestToPantry": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "zbiory:recordHarvest": {
+    "access": "owner",
+    "status": "pending"
   }
 }
