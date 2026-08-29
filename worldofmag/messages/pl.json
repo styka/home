@@ -2400,7 +2400,13 @@
         "uprawaBrak": "— bez wskazania rośliny —",
         "miejsceEtykieta": "Miejsce",
         "miejsceBrak": "— bez wskazania miejsca —",
-        "uprawaMiejsceOpis": "Wskaż uprawę albo miejsce — bez tego dokument ma zabieg bez przedmiotu i kontrola uzna wpis za niekompletny."
+        "uprawaMiejsceOpis": "Wskaż uprawę albo miejsce — bez tego dokument ma zabieg bez przedmiotu i kontrola uzna wpis za niekompletny.",
+        "magazynEtykieta": "Środek z magazynu",
+        "magazynBrak": "— bez zdjęcia z magazynu —",
+        "magazynIloscPlaceholder": "Zużyta ilość",
+        "magazynIloscEtykieta": "Zużyta ilość (zdjęcie ze stanu magazynu)",
+        "magazynZdjeto": "Zdjęto ze stanu magazynu: {ilosc}.",
+        "magazynBlad": "Wpis zapisany, ale nie udało się skorygować stanu magazynu: {blad}"
       }
     },
     "services": {

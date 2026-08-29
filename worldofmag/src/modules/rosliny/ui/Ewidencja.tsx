@@ -14,6 +14,7 @@ import {
 import { getPlaces } from "../actions/miejsca";
 import { getPlants } from "../actions/rosliny";
 import type { PrzestrzenDTO } from "../actions/przestrzenie";
+import { adjustStorageQuantity } from "@/modules/magazynowanie/contract";
 import { drobny, naglowekSekcji, pole, przycisk, przyciskGlowny, sekcja } from "./style";
 
 /** Dzień instantu w strefie PRZEGLĄDARKI — czyli tej, w której użytkownik wykonał zabieg. */
@@ -44,7 +45,15 @@ function dzisiaj(): string {
  * pobrania — dawałyby plik niezgodny z tym, co użytkownik przed chwilą przeglądał, a to jest właśnie
  * ten rodzaj rozjazdu, którego przy dokumencie dla kontroli nikt nie zauważy na czas.
  */
-export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: PozycjaRejestruDTO[]; przestrzenie: PrzestrzenDTO[] }) {
+/** 115 (Z-INT-18): pozycja Magazynu do zdjęcia zużytego środka ze stanu. */
+export interface PozycjaMagazynuDTO {
+  id: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+}
+
+export function Ewidencja({ pozycje: poczatkowe, przestrzenie, magazyn = [] }: { pozycje: PozycjaRejestruDTO[]; przestrzenie: PrzestrzenDTO[]; magazyn?: PozycjaMagazynuDTO[] }) {
   const t = useTranslations("modules.rosliny.Ewidencja");
   const [pending, startTransition] = useTransition();
   const [komunikat, setKomunikat] = useState<string | null>(null);
@@ -69,6 +78,9 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
     operator: "",
     conditions: "",
     withdrawalDays: "",
+    /** 115 (Z-INT-18): opcjonalne zdjęcie środka ze stanu Magazynu. */
+    magazynId: "",
+    magazynIlosc: "",
   });
 
   const rokBiezacy = new Date().getFullYear();
@@ -167,8 +179,21 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
       // z dzisiaj na liście zawężonej do 2025 — którego eksport (honorujący okres) już nie
       // obejmował. To jest dokładnie ten rozjazd „widok ≠ plik", przed którym broni ten widok.
       setPozycje(await getTreatmentRegister(zakres()));
-      setKomunikat(wynik.braki.length ? t("zapisanoZBrakami", { pola: wynik.braki.join(", ") }) : t("zapisanoKompletnie"));
-      setF((s) => ({ ...s, productName: "", permitNumber: "", doseValue: "", areaValue: "", locationText: "", conditions: "" }));
+      let komunikatZapisu = wynik.braki.length ? t("zapisanoZBrakami", { pola: wynik.braki.join(", ") }) : t("zapisanoKompletnie");
+      // 115 (Z-INT-18): zdjęcie zużytego środka ze stanu Magazynu — PO zapisie i osobno od niego.
+      // Błąd stanu (np. edycja równoległa) nie może cofnąć wpisu ewidencji: wpis zostaje,
+      // a komunikat mówi, że magazynu nie udało się skorygować.
+      const ilosc = Number(f.magazynIlosc.replace(",", "."));
+      if (f.magazynId && Number.isFinite(ilosc) && ilosc > 0) {
+        try {
+          await adjustStorageQuantity(f.magazynId, -ilosc, "wydanie", `ewidencja zabiegu ${wynik.occurredAt.slice(0, 10)}`);
+          komunikatZapisu += ` ${t("magazynZdjeto", { ilosc: f.magazynIlosc })}`;
+        } catch (e) {
+          komunikatZapisu += ` ${t("magazynBlad", { blad: e instanceof Error ? e.message : "?" })}`;
+        }
+      }
+      setKomunikat(komunikatZapisu);
+      setF((s) => ({ ...s, productName: "", permitNumber: "", doseValue: "", areaValue: "", locationText: "", conditions: "", magazynId: "", magazynIlosc: "" }));
       setFormularz(false);
     });
   }
@@ -259,6 +284,43 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie }: { pozycje: Pozy
             <input type="text" value={f.operator} onChange={(e) => ustaw("operator", e.target.value)} placeholder={t("wykonujacyPlaceholder")} aria-label={t("wykonujacyEtykieta")} style={pole} />
             <input type="text" value={f.conditions} onChange={(e) => ustaw("conditions", e.target.value)} placeholder={t("warunkiPlaceholder")} aria-label={t("warunkiEtykieta")} style={pole} />
             <input type="text" inputMode="numeric" value={f.withdrawalDays} onChange={(e) => ustaw("withdrawalDays", e.target.value)} placeholder={t("karencjaPlaceholder")} aria-label={t("karencjaEtykieta")} style={pole} />
+            {/* 115 (Z-INT-18): opcjonalne zdjęcie środka ze stanu Magazynu — sekcja istnieje tylko,
+                gdy użytkownik ma moduł Magazynowanie i jakiekolwiek pozycje (strona podaje listę). */}
+            {magazyn.length > 0 && (
+              <>
+                <select
+                  value={f.magazynId}
+                  onChange={(e) => {
+                    const wybor = magazyn.find((m) => m.id === e.target.value);
+                    setF((s) => ({
+                      ...s,
+                      magazynId: e.target.value,
+                      // Nazwa środka z magazynu wypełnia puste pole „środek" — to ta sama substancja.
+                      productName: s.productName || (wybor?.name ?? ""),
+                    }));
+                  }}
+                  aria-label={t("magazynEtykieta")}
+                  style={pole}
+                >
+                  <option value="">{t("magazynBrak")}</option>
+                  {magazyn.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                      {m.quantity != null ? ` (${m.quantity}${m.unit ? ` ${m.unit}` : ""})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={f.magazynIlosc}
+                  onChange={(e) => ustaw("magazynIlosc", e.target.value)}
+                  placeholder={t("magazynIloscPlaceholder")}
+                  aria-label={t("magazynIloscEtykieta")}
+                  style={pole}
+                />
+              </>
+            )}
           </div>
           <button type="button" style={{ ...przyciskGlowny, marginTop: 10 }} onClick={zapisz} disabled={pending}>
             {t("zapiszZabieg")}

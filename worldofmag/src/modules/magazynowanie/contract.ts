@@ -18,6 +18,8 @@
 
 export {
   // odczyt — pulpit i asystent
+  // 115 (Z-INT-18): lista pozycji dla ewidencji zabiegów Roślin (zdjęcie środka ze stanu)
+  getStorageItems,
   getLowStock,
   getExpiringStorage,
   getSuppliers,

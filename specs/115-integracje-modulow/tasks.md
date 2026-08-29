@@ -93,7 +93,7 @@
   na fixturze niesie wartości, pulpit renderuje.
 
 ## Faza 6 — Tryb Pro
-- [ ] **T-19** — Z-INT-18: kontrakt Magazynu += `getStorageItems`; trasa
+- [x] **T-19** — Z-INT-18: kontrakt Magazynu += `getStorageItems`; trasa
   `/rosliny/ewidencja/page.tsx` (pozycje przy `module.magazynowanie`, try/catch); `Ewidencja`:
   select pozycji + ilość zdjęcia; po `recordTreatment` wywołanie `adjustStorageQuantity(−ilosc,
   "wydanie", "ewidencja zabiegu <data>")`; błąd stanu → komunikat, wpis zostaje; i18n.
