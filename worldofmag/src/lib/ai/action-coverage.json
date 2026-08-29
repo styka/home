@@ -3411,5 +3411,10 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "self"
+  },
+  "doZadan:dodajPozycjeDoZadan": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "self"
   }
 }

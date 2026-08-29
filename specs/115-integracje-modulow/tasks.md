@@ -48,7 +48,7 @@
   księgowanie idempotentne per dzień.
 
 ## Faza 2 — Mosty do Zadań
-- [ ] **T-8** — Z-INT-01: `calendar/actions/doZadan.ts` (`dodajPozycjeDoZadan`, pre-check
+- [x] **T-8** — Z-INT-01: `calendar/actions/doZadan.ts` (`dodajPozycjeDoZadan`, pre-check
   `hasPermission(tasksModule.permission)`); UI: przycisk przy pozycji listy dnia (wiersz
   `<Link>` → wrapper + przycisk); komunikat sukcesu; i18n; manifest.
   Gotowe, gdy: pozycja dowolnego modułu tworzy zadanie z terminem i linkiem (fixture).

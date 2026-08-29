@@ -1230,7 +1230,9 @@
       "CalendarPage": {
         "poprzedniMiesiac": "Poprzedni miesiąc",
         "nastepnyMiesiac": "Następny miesiąc",
-        "pokazWszystkie": "Pokaż wszystkie"
+        "pokazWszystkie": "Pokaż wszystkie",
+        "doZadan": "Dodaj do zadań",
+        "doZadanBlad": "Nie udało się utworzyć zadania."
       },
       "IcalFeedCard": {
         "subskrybujAgendeOmniaW": "Subskrybuj agendę Omnia w Google/Apple Calendar (tylko do odczytu).",

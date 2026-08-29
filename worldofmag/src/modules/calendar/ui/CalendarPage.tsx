@@ -5,7 +5,8 @@ import { useState, useMemo, useCallback, useTransition } from "react";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
 import Link from "next/link";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { dodajPozycjeDoZadan } from "../actions/doZadan";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ListTodo, Check } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { getCalendarEvents } from "@/actions/calendarAgenda";
@@ -29,6 +30,19 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
   const t = useTranslations("modules.calendar.CalendarPage");
   const [year, setYear] = useState(initialYear);
   const [month0, setMonth0] = useState(initialMonth0);
+  // 115 (Z-INT-01): pozycje już zamienione na zadanie w tej sesji — przycisk zmienia się w ✓.
+  const [dodaneDoZadan, setDodaneDoZadan] = useState<Set<string>>(new Set());
+  const [bladDoZadan, setBladDoZadan] = useState<string | null>(null);
+  async function doZadan(ev: { id: string; title: string; date: string; at: string | null; href: string; module: CalendarModule }) {
+    try {
+      await dodajPozycjeDoZadan({ title: ev.title, date: ev.date, at: ev.at, href: ev.href, moduleLabel: MODULE_META[ev.module].label });
+      setDodaneDoZadan((prev) => new Set(prev).add(ev.id));
+      setBladDoZadan(null);
+    } catch (e) {
+      setBladDoZadan(e instanceof Error ? e.message : t("doZadanBlad"));
+      setTimeout(() => setBladDoZadan(null), 5000);
+    }
+  }
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selected, setSelected] = useState<string>(isoDay(new Date()));
   // 043: filtr modułu w adresie. Reużywamy ISTNIEJĄCEGO parametru `module` (wejście z linku
@@ -165,14 +179,14 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 10 }}>
           {formatDayHeading(selected)}
         </div>
+        {bladDoZadan && <div role="status" style={{ fontSize: 12, color: "var(--accent-red)", marginBottom: 8 }}>{bladDoZadan}</div>}
         {selectedEvents.length === 0 ? (
           <EmptyState icon={<CalendarIcon size={26} />} message="Brak zaplanowanych zdarzeń tego dnia" />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {selectedEvents.map((ev) => (
-              <Link
+              <div
                 key={ev.id}
-                href={ev.href}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -181,18 +195,27 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
                   borderRadius: 8,
                   border: "1px solid var(--border)",
                   background: "var(--bg-surface)",
-                  textDecoration: "none",
                 }}
               >
                 <span style={{ width: 4, alignSelf: "stretch", borderRadius: 99, background: ev.accent, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <Link href={ev.href} style={{ flex: 1, minWidth: 0, textDecoration: "none" }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{ev.title}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                     {MODULE_META[ev.module].label}
                     {ev.at && ` · ${new Date(ev.at).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`}
                   </div>
-                </div>
-              </Link>
+                </Link>
+                {/* 115 (Z-INT-01): dowolna pozycja agendy → zadanie z terminem i odnośnikiem. */}
+                <button
+                  onClick={() => doZadan(ev)}
+                  disabled={dodaneDoZadan.has(ev.id)}
+                  title={t("doZadan")}
+                  aria-label={t("doZadan")}
+                  style={{ padding: 8, borderRadius: 8, border: "none", background: "none", color: dodaneDoZadan.has(ev.id) ? "var(--accent-green)" : "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}
+                >
+                  {dodaneDoZadan.has(ev.id) ? <Check size={15} /> : <ListTodo size={15} />}
+                </button>
+              </div>
             ))}
           </div>
         )}
