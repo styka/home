@@ -19,7 +19,7 @@
   powod?: "brak-konta"|"kwota-zero" }` zamiast `void`; typ wyeksportowany przez kontrakt.
   Gotowe, gdy: tsc czysto, dotychczasowi konsumenci (flota/services/shopping/rosliny) bez zmian
   zachowania, wpis manifestu bez zmian (to lib, nie akcja).
-- [ ] **T-2** — Migracje `0280_health_event_cost`, `0281_workshop_project_cost`,
+- [x] **T-2** — Migracje `0280_health_event_cost`, `0281_workshop_project_cost`,
   `0282_weather_pref_kalendarz` (DDL wg planu §2) + `schema.prisma` (3 kolumny) +
   `npx prisma migrate deploy` na lokalnej bazie + `prisma generate`.
   Gotowe, gdy: `npm run check:migrations` i `npm run check:schema-drift` zielone.

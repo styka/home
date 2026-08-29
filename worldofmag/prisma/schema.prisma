@@ -2231,6 +2231,8 @@ model HealthEvent {
   specialty    String?
   facility     String? // placówka / laboratorium
   location     String?
+  // 115: koszt wizyty/badania — księgowany do Portfela wyłącznie jawnym przyciskiem.
+  cost         Float?
   scheduledAt  DateTime
   status       String    @default("PLANNED")
   notes        String?
@@ -2881,6 +2883,8 @@ model WeatherPref {
   // "status" (lista posortowana po stanie) | "grouped" (sekcje po stanie) | "manual" (kolejność
   // dodania) — String + union TS (C-12).
   watchersLayout String   @default("status")
+  // 115: pasek prognozy we wspólnym kalendarzu (Z-INT-15); automat = wyłączalny.
+  kalendarzPrognoza Boolean @default(true)
   updatedAt      DateTime @updatedAt
 
   // 082: świadomie BEZ `@default(dbgenerated())`, którym legitymują się pozostałe modele.
@@ -3084,6 +3088,8 @@ model WorkshopProject {
   name        String
   description String?
   status      String    @default("planned") // "planned" | "active" | "done"
+  // 115: koszt projektu — jawne księgowanie do Portfela (Z-INT-05).
+  cost        Float?
   assignedTo  String?
   startedAt   DateTime?
   dueAt       DateTime?
