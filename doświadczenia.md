@@ -4,6 +4,66 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-08-29 — Rzutowanie `as` na granicy modułów ukrywa rozjazd, który wywala CAŁĄ stronę
+**Problem:** Wkład Roślin do kalendarza emitował `module: "rosliny"`, ale `MODULE_META` kalendarza
+nie znało tego klucza. Kompilator milczał, bo `assembleCalendar` rzutował w ciemno
+(`e.module as CalendarModule`) — a `CalendarPage` czytała `MODULE_META[ev.module].label`, więc
+jeden zabieg roślinny w widocznym miesiącu = TypeError i pusta strona kalendarza.
+**Rozwiązanie:** Wpis Roślin (potem Nawyków, Warsztatów, Kontaktów) w `MODULE_META`;
+`assembleCalendar` odrzuca nieznane moduły zamiast je przepuszczać; test `moduleMeta.test.ts`
+skanuje `src/modules/*/calendar.ts` i wymaga wpisu dla każdego emitowanego modułu.
+**Lekcja:** Rzutowanie `as` na wartości przychodzącej z INNEGO modułu to obietnica bez pokrycia —
+platformowy typ jest stringiem świadomie, więc zgodność trzeba wymusić testem albo filtrem w
+runtime, nigdy rzutowaniem. I gdy słownik metadanych jest indeksowany wartością z zewnątrz,
+`dict[klucz].pole` bez `?.` czyni z jednego rozjazdu awarię całego widoku.
+
+---
+
+## 2026-08-29 — Równoległe listy modułów rozjeżdżają się PO CICHU (agent miał 16, powłoka 13, typ 18)
+**Problem:** Lista modułów akcji asystenta istniała w trzech miejscach: unia `AIActionModule` (18),
+ręczne `MODULES` w trasie agenta (16 — bez roślin i YouTube) i `ACTIONABLE_MODULES` w powłoce (13).
+Skutki niewidoczne w buildzie: akcje Roślin przepisywane po cichu na `shopping` (potem „Nieznany
+typ akcji"), a z powłoki akcje 5 modułów nigdy nie trafiały do promptu.
+**Rozwiązanie:** `AI_ACTION_MODULES` jako tablica `as const` + typ pochodny w platformie — unii nie
+da się wyliczyć w runtime i to właśnie WYMUSZAŁO drugą listę. Trasa i powłoka importują tę tablicę;
+`normalizeActions` odrzuca nieznany moduł zamiast fallbacku.
+**Lekcja:** Gdy typ ma być też danymi w runtime, od razu definiuj tablicę `as const` i typ z niej —
+goła unia gwarantuje, że ktoś założy równoległą listę. Cichy fallback („nieznane → shopping")
+jest gorszy niż odrzucenie: przenosi błąd w miejsce, gdzie nikt go nie szuka.
+
+---
+
+## 2026-08-29 — „Dzisiaj" liczone w strefie procesu: jeden wzorzec błędu w sześciu miejscach naraz
+**Problem:** `todayISO()` / `new Date().toISOString().slice(0,10)` / `setHours(0,0,0,0)` na
+serwerze (Render = UTC) liczą dobę PROCESU. Między północą a 2:00 czasu polskiego: odhaczenie
+nawyku lądowało we wczorajszym dniu (strażnik przyszłości odrzucał przy tym „dzisiejszą" datę
+klienta), briefing pokazywał wczorajszy jadłospis, asystent odhaczał dawkę leku na wczoraj,
+granica „nadchodzące/minione" wizyt przesuwała się o 2 h.
+**Rozwiązanie:** `lib/userTime.ts` (`dataWStrefie`, `userDayBounds`) we wszystkich sześciu
+miejscach; funkcje statystyk nawyków dostały opcjonalny parametr `todayIso` (klient dalej liczy
+w strefie przeglądarki); klient wysyła dzień jawnie zamiast ufać „domyślnemu dziś" serwera.
+**Lekcja:** Po dodaniu poprawnego helpera zrób grep po CAŁYM repo za wzorcami, które on
+zastępuje (`toISOString().slice(0,10)`, `setHours(0`, `todayISO()` w plikach akcji) — naprawa
+jednego wystąpienia nie kończy błędu, który jest wzorcem. I nie pozwól serwerowi zgadywać dnia,
+który klient zna lepiej: przekazuj dzień z przeglądarki jawnie.
+
+---
+
+## 2026-08-29 — Lekarstwo istniało, ale w pliku, którego pacjent nie mógł zaimportować
+**Problem:** Głosowe „zatwierdź"/„potwierdź"/„odrzuć" w powłoce asystenta nigdy nie działały —
+regexy używały ASCII-owego `\b` po polskich literach (dokładnie błąd opisany w lekcji 112).
+Poprawka (`granicePolskie`) istniała od dawna… w `fastPath.ts`, który importuje `chatComplete`
+(kod serwerowy) — komponent kliencki nie mógł jej użyć bez wciągnięcia klienta LLM do bundla.
+**Rozwiązanie:** `granicePolskie` wydzielone do czystego `lib/ai/granice.ts` (re-eksport w
+`fastPath` dla starych konsumentów); powłoka używa tej samej funkcji.
+**Lekcja:** Wspólny helper naprawiający klasę błędów musi mieszkać w pliku BEZ importów
+serwerowych — inaczej połowa kodu (klient) zostaje z gorszą, ręczną wersją i błąd wraca tam,
+gdzie strażnika nie ma. Przy okazji: nasłuchiwacz klawiatury trzymający w domknięciu zwykłe
+funkcje komponentu (plan posiłków, strzałki tygodni) widzi je z PIERWSZEGO renderu — funkcje,
+po których stanie nawiguje efekt, muszą być w `useCallback` i w zależnościach efektu.
+
+---
+
 ## 2026-08-28 — Poprawka pod listę braków ma własne skutki uboczne: trzy z ośmiu ustaleń następnej recenzji
 **Problem:** Moduł Rośliny przeszedł trzy rundy recenzji świeżym okiem. Za każdym razem część
 nowych ustaleń dotyczyła **poprawek z rundy poprzedniej**, a nie oryginalnego kodu. Trzy przykłady

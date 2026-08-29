@@ -284,6 +284,58 @@
 
 ---
 
+## ETAP 7 — Ustalenia przeglądu całościowego 2026-08-29 (trzy recenzje świeżym okiem) — 🧑‍💻
+
+> Sesja „przeanalizuj cały projekt i popraw" (114). **Naprawione od ręki:** kalendarz wywalał się
+> na zdarzeniach Roślin (MODULE_META + strażnik-test), równoległe listy modułów asystenta
+> (AI_ACTION_MODULES), głosowe „zatwierdź" martwe przez ASCII-owe `\b`, „dzisiaj" w strefie
+> procesu w 6 miejscach, „Odłóż" liczone od starego terminu, kosz gubił harmonogram i historię
+> rośliny, SSRF w imporcie przepisu, 11 tras LLM bez userId (budżet), rotacja iCal przed kontrolą
+> env, kosz dla Kontaktów i Nawyków, urodziny w kalendarzu, wkłady kalendarzowe Nawyków/Warsztatów,
+> 0 warningów ESLint. **Poniżej to, co ŚWIADOMIE zostało na później:**
+
+### T-26 · ⬜ · 🧑‍💻 · Rośliny: `SPRAYING` z opieki zaśmieca ewidencję ŚOR
+- Odhaczenie zaplanowanego oprysku (`recordCare`) tworzy `PlantCareEvent{kind:"SPRAYING"}` bez pól
+  ustawowych → w ewidencji wiersz „(brak nazwy środka)", nieusuwalny i nieuzupełnialny. Do decyzji:
+  edycja/uzupełnianie wierszy ewidencji albo rozdzielenie „oprysk z agendy" od „zabieg ŚOR".
+  Powiązane: `deletePlace` zrywa `placeId` w historycznych wpisach ewidencji (twarde usunięcie bez
+  kosza — komunikat potwierdzenia o tym milczy).
+
+### T-27 · ⬜ · 🧑‍💻 · Rośliny: obsługa błędów i rola „tylko odczyt" w widokach
+- ~11 handlerów w `PrzestrzenPage`/`RoslinaSzczegol`/`Ewidencja` bez try/catch; `PrzestrzenDTO`
+  nie niesie flagi uprawnień, więc viewer widzi przyciski edycji i dostaje nieobsłużony błąd.
+  Mniejsze z tej samej recenzji: `updateCareTask` nie przelicza terminu po zmianie rodzaju;
+  `log_plant_care` z HARVEST/SOWING zakłada wieczne zadanie cykliczne; `createSpecies` cicho
+  zwraca istniejący wpis (UI wygląda jak awaria); okno pogodowe koryguje termin odległy o 14+ dni
+  deszczem z najbliższych 7; `historiaMiejsca` tnie po wpisach, nie sezonach (i nie ma konsumenta).
+
+### T-28 · ⬜ · 🧑‍💻 · Rate-limit na pozostałych trasach `/api/llm/**`
+- `sprawdzLimit` woła tylko agent i TTS; ~30 tras (w tym najdroższe vision/OCR: kitchen/ocr-image,
+  magazynowanie/scan, magazynowanie/document) chroni dopiero miesięczny budżet — czyli PO naliczeniu
+  kosztu. Dodać polityki okien/slotów jak `ai.agent`.
+
+### T-29 · ⬜ · 🧑‍💻 · Dialog konfliktu edycji (zadanie 16) — dokończyć wpięcie
+- `ConflictProvider`/`useConflict` zamontowane i bez ani jednego konsumenta; nikt nie łapie
+  `ConflictError` z `updateWithVersion`, `recordRejectedDraft` martwe. Użytkownik przy równoległej
+  edycji dostaje surowy błąd. Przy okazji: klienci nie przesyłają `expectedVersion` (np. Kontakty).
+
+### T-30 · ⬜ · 🤝 · Kosz dla pozostałych modułów treści użytkownika — decyzja zakresu
+- `TrashModule` po 114 obejmuje 8 modułów; twardo kasują m.in. przepisy (Kuchnia), zwierzęta,
+  wpisy Portfela, talie Języków. Użytkownik nie ma jak zgadnąć, że notatka wróci, a przepis nie.
+  Kuchnia/Zwierzęta wymagają migawek z relacjami (wzorzec: Rośliny).
+
+### T-31 · ⬜ · 🧑‍💻 · Drobne z przeglądu przekrojowego
+- `mealPlans`: TODO o unikalności wskazuje skasowane kolumny — docelowo `@@unique([workspaceId,
+  date, slot])` + upsert zamiast find→create w transakcji (duplikaty przy równoległym planowaniu).
+- `RecipeEditor`: `res.tags` z kategoryzacji AI cicho wyrzucane (użytkownik płaci za wynik,
+  którego nie widzi) — TODO(kitchen-v2) inline TagPicker.
+- `hasProjectRole` (tasks): pusty catch zamienia błąd infrastruktury na „Access denied".
+- Dashboard: wkłady `habits`/`warsztaty`/`contacts` (kalendarz już jest; `getMaintenanceOverview`
+  gotowe do remapowania); kalendarz: `magazynowanie` (`StorageBatch.expiresAt`), `portfel`
+  (`FinanceGoal.deadline`).
+
+---
+
 _**Postęp ETAP 2 — UKOŃCZONY (2026-06-27):** T-06 ✅ (Z-037 diagnostyka EXPLAIN), T-07 ✅ (Z-134 już
 spełnione architekturą operationType), T-08 ✅ (testy spójności katalogu warsztatów). Suite 332/332.
 **Następne: ETAP 3 (T-09…T-12) — deploy-zależne, podejmę na „rób dalej"; ETAP 1 (T-02…T-05) czeka na Twoje decyzje.**_
@@ -306,5 +358,8 @@ _**Postęp 2026-07-14:** **T-16 ✅** (FTS notatek — pg_trgm + ranking), **T-1
 świadomie odłożone do ~100 userów na prod — decyzja właściciela). tsc+lint+`next build` zielone.
 **Stan autonomiczny: WYCZERPANY** — wszystkie pozostałe zadania (T-13/14/15 = ETAP 4 konta/klucze;
 T-19…T-25 = ETAP 6 biznes/prawo) czekają na akcje/decyzje właściciela (patrz `PRZEWODNIK-WLASCICIELA.md`)._
+_**Postęp 2026-08-29 (przegląd całościowy, 114):** trzy równoległe recenzje świeżym okiem
+(Rośliny / przekrojowa / macierz zdolności modułów) → naprawione w tej sesji: patrz nagłówek
+ETAP 7; pozostałości = **T-26…T-31** powyżej. Suita jednostkowa i bramki build zielone._
 _Tracker roboczy — aktualizowany po każdym zadaniu (status ⬜/🟡/🔓/⏸️ → ✅). Utworzony 2026-06-27 z
 przeniesieniem rozdziału A.14 („Decyzje właściciela") w całości tutaj. Postęp historyczny `Z-NNN`: A.13._
