@@ -15,6 +15,9 @@ import { ensureJobWorker } from "@/lib/jobs/registry";
 import type { DateConfidence, NewsRefreshResult } from "../jobs/newsRefresh";
 import type { NewsItem, NewsSource } from "@prisma/client";
 import { wlasnoscOsobistaDoZapisu, filtrMoichRekordow, czyMojRekord } from "@/platform/workspaces/zapis";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createNote, notesModule } from "@/modules/notes/contract";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { przeliczGoraceTematy, type HotTopic, type WynikGoracychTematow } from "../lib/goraceTematy";
 import {
@@ -830,6 +833,34 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
   if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
   await prisma.newsItem.update({ where: { id: itemId }, data: { status: "ACKNOWLEDGED" } });
   revalidatePath("/wiadomosci");
+}
+
+/**
+ * 115 (Z-INT-11): „Zapisz jako notatkę" — opłacone streszczenie artykułu można utrwalić.
+ * Guard własności pozycji (jak `acknowledgeItem`) + uprawnienie modułu Notatki; notatka
+ * powstaje przez kontrakt Notatek, więc ląduje w przestrzeni WOŁAJĄCEGO z jego guardami.
+ */
+export async function saveItemAsNote(itemId: string): Promise<{ id: string }> {
+  const user = await requireAuth();
+  const session = await auth();
+  if (!hasPermission(session, notesModule.permission)) throw new Error("Brak dostępu do modułu Notatki");
+
+  const item = await prisma.newsItem.findUnique({
+    where: { id: itemId },
+    include: { topic: { select: { workspaceId: true } }, source: { select: { name: true } } },
+  });
+  if (!item || !(await czyMojRekord(item.topic, user.id))) throw new Error("Pozycja nie istnieje");
+
+  const streszczenie = item.summaryFailed ? "" : (item.summary ?? "").trim();
+  const zrodlo = [`Źródło: ${item.source?.name ?? "—"}`, item.url].join("\n");
+  const note = await createNote({
+    title: item.title,
+    content: [streszczenie || null, zrodlo].filter(Boolean).join("\n\n"),
+    isMarkdown: true,
+  });
+
+  revalidatePath("/notes");
+  return { id: note.id };
 }
 
 /**

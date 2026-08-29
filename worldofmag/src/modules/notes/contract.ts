@@ -17,6 +17,10 @@
  * własnego widoku, nie usługa dla innych modułów.
  */
 
+// 115 (Z-INT-11/12): deklaracja modułu dla konsumentów sprawdzających uprawnienie
+// `module.notes` przed zapisem cudzej treści jako notatki (wzorzec `tasksModule`).
+export { default as notesModule } from "./module";
+
 export {
   // notatki
   createNote,

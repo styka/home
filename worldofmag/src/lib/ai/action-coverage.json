@@ -1421,6 +1421,11 @@
     "reason": "interactive",
     "status": "excluded"
   },
+  "news:saveItemAsNote": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "news:setDefaultSummaryLength": {
     "access": "admin",
     "reason": "admin",

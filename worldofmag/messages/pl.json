@@ -1732,7 +1732,10 @@
         "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu.",
         "sprobujPonownie": "Spróbuj ponownie",
         "wygenerujPonownie": "Wygeneruj streszczenie ponownie",
-        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)"
+        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)",
+        "zapiszNotatke": "Zapisz jako notatkę",
+        "notatkaZapisana": "Zapisano notatkę",
+        "notatkaBlad": "Nie udało się zapisać notatki"
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",

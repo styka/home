@@ -59,7 +59,7 @@
   `/czat?r=<conv>#w-<msg>`) + ikona w pasku akcji dymka `WatekRozmowy`; i18n; manifest.
 
 ## Faza 3 — Mosty treści (Notatki/Języki)
-- [ ] **T-12** — Z-INT-11: `saveItemAsNote(itemId)` (summary+źródło+URL, markdown) + przycisk
+- [x] **T-12** — Z-INT-11: `saveItemAsNote(itemId)` (summary+źródło+URL, markdown) + przycisk
   w stopce `NewsItemCard` (props przez NewsStream/NewsTimeline*); i18n; manifest.
 - [ ] **T-13** `[P]` — Z-INT-12: `zapiszFilmJakoNotatke(videoId)` (streszczenie z pamięci treści,
   fallback opis; + kanał + adres) + przycisk w `FilmSzczegol`; i18n; manifest.
