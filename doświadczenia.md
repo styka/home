@@ -5930,3 +5930,17 @@ nie zajęty na `origin/develop`. Gdy kolizja już zaaplikowana na bazie: grandfa
 w komentarzu), nigdy rename. Reguła skryptu „nie dopisuj nowych numerów" ustępuje twardszej
 regule „nie przemianowuj zaaplikowanych migracji" — konflikt reguł rozstrzyga się na rzecz tej,
 której złamanie psuje bazę, nie estetykę.
+
+## 2026-08-29 — Ta sama kolizja numeracji, drugi wariant: migracja NIEzaaplikowana → rename, nie grandfather
+**Problem:** Godziny po kolizji `0275_*` (wpis wyżej) powtórka na `0276_*`: równoległa sesja
+wypchnęła `0276_raport_biznesplan_kompas` na `develop`, zanim moja `0276_biznesplan_moduly_branzowe`
+dotarła do merge'a. Ten sam objaw (bramka czerwona na develop), ale inna sytuacja: moja migracja
+NIE była nigdzie zaaplikowana — `check:migrations` stoi na POCZĄTKU builda, a `migrate.js` na samym
+końcu, więc czerwona bramka gwarantuje, że deploy nie zdążył jej wykonać.
+**Rozwiązanie:** `git mv` na kolejny wolny numer (`0277`), treść bez zmian, bramka zielona —
+zamiast dopisywania kolejnego wyjątku do `LEGACY_DUPLICATES`.
+**Lekcja:** Kolizja numeracji ma DWA warianty i test rozstrzygający: czy build z kolizją
+kiedykolwiek przeszedł na tym środowisku. Bramka czerwona = `migrate.js` nie ruszył = migracja
+niezaaplikowana = **rename** (właściwy, bo grandfather jest furtką tylko na przypadek bez wyjścia);
+obie zaaplikowane = **grandfather**. Kolejność kroków w `build` (bramki przed migracją) jest tu
+mechanizmem bezpieczeństwa — dzięki niej „wykryto po pushu" nie znaczy „wykonano na bazie".
