@@ -2,26 +2,32 @@
 // przeglądu (ActionDrawer) i executora (wykonuje). Trzymany w lib/ai (nie w
 // pliku API-route), bo to model domenowy używany po obu stronach klient/serwer.
 //
-// Lista modułów musi pokrywać `MODULES` w `agent/route.ts`.
-export type AIActionModule =
-  | "shopping"
-  | "tasks"
-  | "notes"
-  | "pets"
-  | "habits"
-  | "portfel"
-  | "kitchen"
-  | "flota"
-  | "magazynowanie"
-  | "warsztaty"
-  | "health"
-  | "languages"
-  | "news"
-  | "weather"
-  | "contacts"
-  | "reports"
-  | "youtube"
-  | "rosliny";
+// JEDYNE źródło listy modułów akcji. Do 114 trasa agenta trzymała RÓWNOLEGŁĄ ręczną listę
+// (`MODULES`), która została w tyle o `rosliny` i `youtube` — akcje tych modułów były po cichu
+// przepisywane na "shopping" i kończyły się „Nieznany typ akcji". Tablica + typ pochodny zamiast
+// gołej unii, bo unii nie da się wyliczyć w runtime — a to właśnie wymuszało drugą listę.
+export const AI_ACTION_MODULES = [
+  "shopping",
+  "tasks",
+  "notes",
+  "pets",
+  "habits",
+  "portfel",
+  "kitchen",
+  "flota",
+  "magazynowanie",
+  "warsztaty",
+  "health",
+  "languages",
+  "news",
+  "weather",
+  "contacts",
+  "reports",
+  "youtube",
+  "rosliny",
+] as const;
+
+export type AIActionModule = (typeof AI_ACTION_MODULES)[number];
 
 export interface AIAction {
   id: string;
