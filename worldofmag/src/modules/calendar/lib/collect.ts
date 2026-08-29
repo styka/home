@@ -1,4 +1,4 @@
-import { isoDay, type CalendarEvent, type CalendarModule } from "./index";
+import { isoDay, MODULE_META, type CalendarEvent, type CalendarModule } from "./index";
 import type { CalendarContribEvent } from "@/platform/calendar";
 
 /**
@@ -13,7 +13,14 @@ import type { CalendarContribEvent } from "@/platform/calendar";
  * Kto je zbiera, rozstrzyga `src/actions/calendarAgenda.ts`.
  */
 export function assembleCalendar(wniesione: CalendarContribEvent[]): CalendarEvent[] {
-  const events: CalendarEvent[] = wniesione.map((e) => ({ ...e, module: e.module as CalendarModule }));
+  // Wkład z modułem spoza `MODULE_META` NIE może przejść dalej: `CalendarPage` i legenda czytają
+  // `MODULE_META[ev.module].label`, więc jedna nieznana wartość wywalała CAŁĄ stronę kalendarza
+  // (tak wszedł moduł Rośliny w 113 — rzutowanie `as CalendarModule` uciszało kompilator).
+  // Odrzucamy taki wkład zamiast go przepuszczać; test `moduleMeta.test.ts` pilnuje, żeby każdy
+  // `calendar.ts` w modułach miał wpis w `MODULE_META`, więc odrzut tu to wyłącznie pas bezpieczeństwa.
+  const events: CalendarEvent[] = wniesione
+    .filter((e): e is CalendarContribEvent & { module: CalendarModule } => e.module in MODULE_META)
+    .map((e) => ({ ...e, module: e.module }));
 
   // Sortuj wg dnia, potem wg godziny (zdarzenia bez godziny na końcu dnia).
   events.sort((a, b) => {
