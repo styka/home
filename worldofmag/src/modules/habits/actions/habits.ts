@@ -18,6 +18,7 @@ import { createTask } from "@/modules/tasks/contract";
 import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { recordTrash } from "@/platform/trash/trash";
 
 async function assertHabitAccess(id: string, userId: string): Promise<void> {
   const h = await prisma.habit.findUnique({
@@ -190,8 +191,19 @@ export async function setHabitArchived(id: string, archived: boolean): Promise<v
 export async function deleteHabit(id: string): Promise<void> {
   const user = await requireAuth();
   await assertHabitAccess(id, user.id);
+  // Migawka do kosza PRZED usunięciem — kaskada zabiera też dziennik wykonań (`HabitEntry`),
+  // czyli miesiące odhaczeń i streaki. Dotąd „usuń" kasowało to bezpowrotnie.
+  const habit = await prisma.habit.findUnique({ where: { id }, include: { entries: true } });
+  if (!habit) throw new Error("Nawyk nie istnieje");
+  await recordTrash(user.id, {
+    module: "habits",
+    entityId: id,
+    title: `Nawyk: ${habit.name}`,
+    payload: habit,
+  });
   await prisma.habit.delete({ where: { id } });
   revalidatePath("/habits");
+  revalidatePath("/trash");
 }
 
 /** Przełącza wykonanie nawyku w danym dniu ("YYYY-MM-DD", domyślnie dziś). */

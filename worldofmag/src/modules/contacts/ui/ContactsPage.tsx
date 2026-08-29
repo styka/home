@@ -6,7 +6,7 @@ import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
+import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2, Cake } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "../actions/contacts";
@@ -243,6 +243,11 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           {contact.phone && <a href={`tel:${contact.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none" }}><Phone size={12} /> {contact.phone}</a>}
           {contact.email && <a href={`mailto:${contact.email}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none" }}><Mail size={12} /> {contact.email}</a>}
+          {contact.birthday && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
+              <Cake size={12} /> {contact.birthday.slice(5).split("-").reverse().join(".")}
+            </span>
+          )}
         </div>
         {contact.tags.length > 0 && (
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
@@ -267,6 +272,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
   const [phone, setPhone] = useState(contact?.phone ?? "");
   const [email, setEmail] = useState(contact?.email ?? "");
   const [company, setCompany] = useState(contact?.company ?? "");
+  const [birthday, setBirthday] = useState(contact?.birthday ?? "");
   const [tags, setTags] = useState(contact?.tags.join(", ") ?? "");
   const [notes, setNotes] = useState(contact?.notes ?? "");
   const [busy, setBusy] = useState(false);
@@ -278,8 +284,8 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
     setBusy(true); setError(null);
     const tagList = tags.split(",").map((t) => t.trim()).filter(Boolean);
     try {
-      if (contact) await updateContact(contact.id, { name, phone, email, company, tags: tagList, notes });
-      else await createContact({ name, phone, email, company, tags: tagList, notes });
+      if (contact) await updateContact(contact.id, { name, phone, email, company, birthday: birthday || null, tags: tagList, notes });
+      else await createContact({ name, phone, email, company, birthday: birthday || null, tags: tagList, notes });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać kontaktu");
@@ -295,6 +301,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Firma</label><input value={company} onChange={(e) => setCompany(e.target.value)} style={inputStyle} /></div>
+        <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Urodziny</label><input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} style={inputStyle} /></div>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Tagi (po przecinku)</label><input value={tags} onChange={(e) => setTags(e.target.value)} style={inputStyle} placeholder="klient, hydraulik" /></div>
       </div>
       <div><label style={labelStyle}>Notatki</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} /></div>

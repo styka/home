@@ -13,7 +13,9 @@ const RETENTION_DAYS = 30;
 // 113: „rosliny" = przestrzeń roślinna albo pojedyncza roślina. Snapshot przestrzeni niesie także
 // jej miejsca i rośliny, bo kaskada FK usunie je fizycznie — przywrócenie samej nazwy byłoby
 // przywróceniem pustej przestrzeni.
-export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat" | "rosliny";
+// 114: „contacts" = kontakt, „habits" = nawyk wraz z dziennikiem wykonań — oba to płaskie
+// rekordy (bez kaskad poza wpisami nawyku), więc migawka JSON wystarcza do pełnego powrotu.
+export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat" | "rosliny" | "contacts" | "habits";
 
 /**
  * 066 (zadanie 16) — WERSJA ROBOCZA ODRZUCONA PRZY KONFLIKCIE.

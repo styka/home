@@ -55,6 +55,8 @@ export async function restoreTrashItem(id: string): Promise<void> {
   else if (item.module === "youtube") await restoreYoutubeChannel(data);
   else if (item.module === "czat") await restoreChatMessage(data, item.userId);
   else if (item.module === "rosliny") await restoreRosliny(data);
+  else if (item.module === "contacts") await restoreContact(data);
+  else if (item.module === "habits") await restoreHabit(data);
   else throw new Error("Nieobsługiwany typ pozycji");
 
   await prisma.trashItem.delete({ where: { id } });
@@ -64,6 +66,8 @@ export async function restoreTrashItem(id: string): Promise<void> {
   revalidatePath("/pogoda/pomysly");
   revalidatePath("/youtube/kanaly");
   revalidatePath("/rosliny");
+  revalidatePath("/contacts");
+  revalidatePath("/habits");
 }
 
 export async function purgeTrashItem(id: string): Promise<void> {
@@ -174,6 +178,61 @@ async function restoreNote(d: Record<string, unknown>): Promise<void> {
         skipDuplicates: true,
       });
     }
+  }
+}
+
+/** 114: kontakt — płaski rekord, wraca w całości z migawki. */
+async function restoreContact(d: Record<string, unknown>): Promise<void> {
+  const id = d.id as string;
+  if (!id) throw new Error("Uszkodzona migawka kontaktu");
+  const exists = await prisma.contact.findUnique({ where: { id }, select: { id: true } });
+  if (exists) return;
+  await prisma.contact.create({
+    data: {
+      id,
+      name: (d.name as string) ?? "Przywrócony kontakt",
+      phone: (d.phone as string | null) ?? null,
+      email: (d.email as string | null) ?? null,
+      company: (d.company as string | null) ?? null,
+      birthday: asDate(d.birthday),
+      tags: (d.tags as string | null) ?? null,
+      notes: (d.notes as string | null) ?? null,
+      ...(await przestrzenZMigawki(d)),
+      createdAt: asDate(d.createdAt) ?? new Date(),
+    },
+  });
+}
+
+/** 114: nawyk wraz z dziennikiem wykonań (kaskada zabrała go razem z definicją). */
+async function restoreHabit(d: Record<string, unknown>): Promise<void> {
+  const id = d.id as string;
+  if (!id) throw new Error("Uszkodzona migawka nawyku");
+  const exists = await prisma.habit.findUnique({ where: { id }, select: { id: true } });
+  if (exists) return;
+  await prisma.habit.create({
+    data: {
+      id,
+      name: (d.name as string) ?? "Przywrócony nawyk",
+      description: (d.description as string | null) ?? null,
+      icon: (d.icon as string) ?? "✅",
+      color: (d.color as string) ?? "var(--accent-orange)",
+      daysOfWeek: (d.daysOfWeek as string | null) ?? null,
+      weeklyGoal: (d.weeklyGoal as number | null) ?? null,
+      reminderTime: (d.reminderTime as string | null) ?? null,
+      archived: (d.archived as boolean) ?? false,
+      sortOrder: (d.sortOrder as number) ?? 0,
+      ...(await przestrzenZMigawki(d)),
+      createdAt: asDate(d.createdAt) ?? new Date(),
+    },
+  });
+  const wpisy = (d.entries as Record<string, unknown>[] | undefined) ?? [];
+  if (wpisy.length > 0) {
+    await prisma.habitEntry.createMany({
+      data: wpisy
+        .filter((w) => typeof w.date === "string")
+        .map((w) => ({ id: w.id as string, habitId: id, date: w.date as string, createdAt: asDate(w.createdAt) ?? new Date() })),
+      skipDuplicates: true,
+    });
   }
 }
 

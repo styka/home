@@ -3,7 +3,7 @@
 
 export type CalendarModule =
   | "tasks" | "kitchen" | "health" | "flota" | "pets" | "languages" | "services" | "rosliny"
-  | "habits" | "warsztaty";
+  | "habits" | "warsztaty" | "contacts";
 
 export type CalendarEvent = {
   id: string;
@@ -28,6 +28,7 @@ export const MODULE_META: Record<CalendarModule, { label: string; accent: string
   rosliny: { label: "Rośliny", accent: "var(--accent-green)" },
   habits: { label: "Nawyki", accent: "var(--accent-orange)" },
   warsztaty: { label: "Warsztaty", accent: "var(--accent-amber)" },
+  contacts: { label: "Kontakty", accent: "var(--accent-green)" },
 };
 
 /** "YYYY-MM-DD" w czasie lokalnym dla podanej daty. */
