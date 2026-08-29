@@ -1476,8 +1476,10 @@ The flow is **`feature → develop → master`**:
   (`git merge-base --is-ancestor origin/master develop`) reads false, and every later run has to open
   with a `master → develop` sync merge — that is where the recurring "the target branch has a merge
   commit" messages and the empty merges in the graph come from. So: promote with `--ff-only`; if it
-  is refused, **stop and report** (never `--no-ff`, never force-push); record the release with
-  `git tag -a prod-<NNN>-<slug> -m "<feature> [produkcja]"` + `git push origin prod-<NNN>-<slug>`.
+  is refused, **stop and report** (never `--no-ff`, never force-push). **Tagi wydań: OPCJONALNE
+  (decyzja właściciela, 2026-08-29 — „nie interesują mnie tagi").** Sandbox i tak ucina push tagów;
+  nie twórz ich, nie ponawiaj i NIE raportuj właścicielowi ich braku — liczy się wyłącznie
+  fast-forward `master`.
   The point of the rule is that production runs **exactly** the commit that was tested on `develop`.
 - **Merge commits belong on the TARGET branch only.** `claude/* → develop` may create one (it lands
   on `develop` and travels onward to `master` with it) — that is fine and unchanged. What is
