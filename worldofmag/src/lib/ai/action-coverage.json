@@ -3184,6 +3184,11 @@
     "access": "owner",
     "status": "ai"
   },
+  "warsztat:addWorkshopLowStockToShoppingList": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "warsztat:addWorkshopProject": {
     "access": "owner",
     "action": "add_workshop_project",

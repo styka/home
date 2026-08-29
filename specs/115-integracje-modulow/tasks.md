@@ -71,7 +71,7 @@
   odpowiedzi; bez klucza LLM — czytelny błąd trasy pokazany w sekcji).
 
 ## Faza 4 — Automaty i odczyty
-- [ ] **T-15** — Z-INT-04: `addWorkshopLowStockToShoppingList(listId)` (assertListAccess +
+- [x] **T-15** — Z-INT-04: `addWorkshopLowStockToShoppingList(listId)` (assertListAccess +
   `addItemStructured`, deficyt do progu) + przycisk sekcyjny z wyborem listy w
   `MaintenanceAgenda`; i18n; manifest. Gotowe, gdy: fixture z brakiem tworzy pozycję listy.
 - [ ] **T-16** `[P]` — Z-INT-16: `completeShopping(opts += doSpizarni)` → po archiwizacji

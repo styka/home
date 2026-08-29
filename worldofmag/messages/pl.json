@@ -3007,6 +3007,12 @@
         "npGarazPiwnicaPokoj": "np. garaż, piwnica, pokój 2",
         "wlasciciel": "Właściciel",
         "utworzWarsztat": "Utwórz warsztat"
+      },
+      "LowStockDoZakupow": {
+        "lista": "Lista zakupów",
+        "dodajBraki": "Dodaj braki do listy zakupów",
+        "dodano": "Dodano pozycje: {n}",
+        "blad": "Nie udało się dodać do listy"
       }
     },
     "weather": {

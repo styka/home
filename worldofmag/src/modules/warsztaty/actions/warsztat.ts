@@ -10,6 +10,7 @@ import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { assertListAccess, addItemStructured } from "@/modules/shopping/contract";
 
 export type WarsztatMode = "home" | "pro";
 
@@ -346,6 +347,30 @@ export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
       .filter((i) => i.minQuantity != null && (i.quantity ?? 0) < i.minQuantity)
       .map((i) => ({ ...i, workshopName: nameById.get(i.workshopId) ?? "" })),
   };
+}
+
+/**
+ * 115 (Z-INT-04): materiały na wyczerpaniu → lista zakupów jednym przyciskiem
+ * (wzorzec `addLowStockToShoppingList` z Magazynowania). Ilość = deficyt do progu,
+ * a gdy stan nie jest znany liczbowo — sam próg. `addItemStructured` sam pilnuje
+ * dostępu do listy i kategoryzuje pozycję.
+ */
+export async function addWorkshopLowStockToShoppingList(listId: string): Promise<{ added: number }> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const { lowStock } = await getMaintenanceOverview();
+  let added = 0;
+  for (const i of lowStock) {
+    const deficyt =
+      i.minQuantity != null ? Math.max(i.minQuantity - (i.quantity ?? 0), 0) || i.minQuantity : null;
+    await addItemStructured(listId, i.name, deficyt, i.unit ?? null);
+    added += 1;
+  }
+
+  void trackActivity("warsztaty", "replenish", { listId, count: added });
+  revalidatePath(`/shopping/${listId}`);
+  return { added };
 }
 
 // ─── Projekty / zlecenia (Pro) ────────────────────────────────────────────────
