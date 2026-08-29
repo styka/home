@@ -101,7 +101,7 @@
   jak dotąd.
 
 ## Faza 7 — Bramki i domknięcie
-- [ ] **T-20** — Pełny `npm run build` (lokalny Postgres — C-13) + pełna suita `test:unit`
+- [x] **T-20** — Pełny `npm run build` (lokalny Postgres — C-13) + pełna suita `test:unit`
   — zielone; naprawy do skutku.
 - [ ] **T-21** — Z-INT-19: migracja-seed raportu „Integracje międzymodułowe — analiza"
   (numer z `next:migration`; treść = analiza.md rozdz. 1–6) + `migrate deploy` lokalnie;

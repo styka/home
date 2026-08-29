@@ -6004,3 +6004,20 @@ kiedykolwiek przeszedł na tym środowisku. Bramka czerwona = `migrate.js` nie r
 niezaaplikowana = **rename** (właściwy, bo grandfather jest furtką tylko na przypadek bez wyjścia);
 obie zaaplikowane = **grandfather**. Kolejność kroków w `build` (bramki przed migracją) jest tu
 mechanizmem bezpieczeństwa — dzięki niej „wykryto po pushu" nie znaczy „wykonano na bazie".
+
+---
+
+## 2026-08-29 — Seed w `catch` z ostrzeżeniem ukrywał, że nie działa od wielu wydań
+**Problem:** `scripts/migrate.js` sadził domyślne przypisania LLM zapytaniem
+`findUnique({ where: { operationType } })`, a klucz `LlmAssignment` jest ZŁOŻONY
+(`operationType`, `level`) od przebiegu 034. Prisma odrzucała zapytanie przy każdym
+buildzie, ale cały blok siedzi w `try/catch` z `console.warn("⚠ Failed to seed…")`,
+więc build był zielony — na świeżej bazie po prostu nie było żadnych przypisań
+i asystent nie miał modeli, a nikt nie wiedział dlaczego.
+**Rozwiązanie:** zapytanie i `create` przepisane na klucz złożony z poziomem
+`"standard"` (pozostałe poziomy dziedziczą). Zauważone dopiero, bo pełny build 115
+szedł na lokalnej, świeżo zasianej bazie i ktoś PRZECZYTAŁ log builda do końca.
+**Lekcja:** „nie-fatalny" seed z `catch`+`warn` to miejsce, gdzie regres może żyć
+latami — po każdej zmianie klucza/kształtu modelu grepnij seedy i skrypty deployu
+za starym kształtem (`findUnique({ where:` po zmienionym polu), bo `tsc` nie widzi
+plików `.js`, a build nie czerwienieje od ostrzeżenia.
