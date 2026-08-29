@@ -36,15 +36,15 @@
   Gotowe, gdy: `tsc -p tsconfig.test.json` + `npm run test:unit` (te pliki) zielone. Pokrywa AC-4, AC-9, AC-13, AC-15.
 
 ## Faza 2 — Warstwa serwera
-- [ ] **T-5** — `src/actions/skinAssets.ts`: `uploadSkinAsset` (MIME whitelist png/jpeg/webp,
+- [x] **T-5** — `src/actions/skinAssets.ts`: `uploadSkinAsset` (MIME whitelist png/jpeg/webp,
   500 kB/asset, kwota 20 MB/user, SHA-256 dedup → zwrot istniejącego id), `listSkinAssets`,
   `deleteSkinAsset` (guard: skan definicji — używany ⇒ odmowa z listą skórek),
   `getSkinAssetStats`; wpisy w `src/lib/ai/action-coverage.json`; teksty błędów PL.
   Gotowe, gdy: `npm run check:ai-coverage` zielone. Pokrywa AC-6, AC-7.
-- [ ] **T-6** — `src/app/api/skins/assets/[id]/route.ts`: sesja, odczyt, `Content-Type`
+- [x] **T-6** — `src/app/api/skins/assets/[id]/route.ts`: sesja, odczyt, `Content-Type`
   z rekordu, `Cache-Control: public, max-age=31536000, immutable`, `ETag`. Gotowe, gdy:
   ręczny odczyt na dev zwraca obraz z nagłówkami.
-- [ ] **T-7** — `src/actions/skins.ts`: `kind`/`definition` w create/update (walidacja przed
+- [x] **T-7** — `src/actions/skins.ts`: `kind`/`definition` w create/update (walidacja przed
   zapisem), `SkinView.kind`, kompilacja w `readActiveSkin` (`kind === "advanced"` →
   try/catch → fallback do samych tokenów), eksport/import `omniaSkin: 2` (import v1 bez zmian;
   assety raportowane jako brakujące / wiązane po hashu). Gotowe, gdy: istniejące testy skórek

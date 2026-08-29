@@ -2539,6 +2539,28 @@
     "reason": "internal",
     "status": "excluded"
   },
+  "skinAssets:deleteSkinAsset": {
+    "access": "owner",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skinAssets:getSkinAssetStats": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "skinAssets:listSkinAssets": {
+    "access": "self",
+    "kind": "read",
+    "reason": "settings",
+    "status": "excluded"
+  },
+  "skinAssets:uploadSkinAsset": {
+    "access": "self",
+    "reason": "settings",
+    "status": "excluded"
+  },
   "skins:createSkin": {
     "access": "admin",
     "reason": "admin",

@@ -81,8 +81,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // bez migotania bo renderowane po stronie serwera). data-skin-scheme steruje m.in.
   // widocznością natywnych ikon pól date/time.
   const skin = session?.user?.id
-    ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const }))
-    : { skinId: null, tokens: {}, colorScheme: "dark" as const };
+    ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const, atrybuty: {} }))
+    : { skinId: null, tokens: {}, colorScheme: "dark" as const, atrybuty: {} };
 
   // 029: przelicznik USD→PLN — do wskaźnika kosztu asystenta (kwoty USD z równowartością PLN).
   const usdPlnRate = await getUsdPlnRate();
