@@ -3327,6 +3327,11 @@
     "access": "owner",
     "status": "pending"
   },
+  "weather:getKalendarzPrognoza": {
+    "access": "self",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "weather:getLocations": {
     "access": "owner",
     "kind": "read",
@@ -3361,6 +3366,11 @@
   },
   "weather:setIdeaState": {
     "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "weather:setKalendarzPrognoza": {
+    "access": "self",
     "reason": "interactive",
     "status": "excluded"
   },

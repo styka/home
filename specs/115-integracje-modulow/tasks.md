@@ -79,7 +79,7 @@
   `dodanoDoSpizarni`); checkbox w `CompleteShoppingModal` (localStorage
   `wom_shopping_pantry`, domyślnie odznaczony); pre-check `module.kitchen` dla widoczności
   checkboxa; i18n. Gotowe, gdy: fixture tworzy pozycje spiżarni tylko przy opcji.
-- [ ] **T-17** `[P]` — Z-INT-15: weather — `getKalendarzPrognoza()` / `setKalendarzPrognoza(on)`
+- [x] **T-17** `[P]` — Z-INT-15: weather — `getKalendarzPrognoza()` / `setKalendarzPrognoza(on)`
   (+ kontrakt; eksport meta `wmo` przez kontrakt lub zmapowane pola w zwrotce); checkbox
   w ustawieniach Pogody; calendar — emoji+tMax w komórkach ≤7 dni (render warunkowy);
   i18n; manifest. Gotowe, gdy: wyłączenie chowa pasek bez przeładowania logiki siatki.

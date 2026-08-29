@@ -10,6 +10,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ListTodo, Check } 
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { getCalendarEvents } from "@/actions/calendarAgenda";
+import type { DzienPrognozyKalendarza } from "@/modules/weather/contract";
 import { isoDay, MODULE_META, type CalendarEvent, type CalendarModule } from "../lib";
 
 const MONTHS = ["Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec", "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"];
@@ -19,6 +20,8 @@ interface Props {
   initialYear: number;
   initialMonth0: number;
   initialEvents: CalendarEvent[];
+  /** 115 (Z-INT-15): prognoza z Pogody do komórek siatki (≤7 najbliższych dni; pusta = brak paska). */
+  prognoza?: DzienPrognozyKalendarza[];
   /**
    * 043: parametry adresu z serwera. Zastąpiły prop `initialModule` — filtr `?module=` czyta
    * i waliduje teraz `useViewState` po stronie klienta, więc serwer nie musi go liczyć drugi raz.
@@ -26,7 +29,7 @@ interface Props {
   viewParams?: RawParams;
 }
 
-export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewParams = {} }: Props) {
+export function CalendarPage({ initialYear, initialMonth0, initialEvents, prognoza = [], viewParams = {} }: Props) {
   const t = useTranslations("modules.calendar.CalendarPage");
   const [year, setYear] = useState(initialYear);
   const [month0, setMonth0] = useState(initialMonth0);
@@ -79,6 +82,8 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
 
   const cells = buildGrid(year, month0);
   const todayKey = isoDay(new Date());
+  // 115 (Z-INT-15): prognoza per dzień — mapa zamiast szukania w tablicy przy każdej komórce.
+  const prognozaByDay = useMemo(() => new Map(prognoza.map((d) => [d.date, d])), [prognoza]);
   const selectedEvents = byDay.get(selected) ?? [];
   const activeModules = allModules;
 
@@ -159,8 +164,13 @@ export function CalendarPage({ initialYear, initialMonth0, initialEvents, viewPa
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? "var(--accent-purple)" : "var(--text-secondary)" }}>
+                <span style={{ fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? "var(--accent-purple)" : "var(--text-secondary)", display: "flex", alignItems: "baseline", gap: 4 }}>
                   {cell.getDate()}
+                  {prognozaByDay.has(key) && (
+                    <span title={prognozaByDay.get(key)!.opis} style={{ fontSize: 9, fontWeight: 400, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                      {prognozaByDay.get(key)!.emoji} {Math.round(prognozaByDay.get(key)!.tMax)}°
+                    </span>
+                  )}
                 </span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                   {dayEvents.slice(0, 4).map((ev) => (

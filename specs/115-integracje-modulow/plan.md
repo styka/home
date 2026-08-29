@@ -233,5 +233,7 @@ AC-16 — pełny `npm run build`.
 2. Wkłady pulpitu wchodzą do ISTNIEJĄCYCH sekcji (`today`, `modules`) — bez nowych kluczy
    personalizacji (7 kluczy sekcji zostaje; AC-13 spełnione przez personalizację tych sekcji).
 3. Prognoza w kalendarzu domyślnie WŁĄCZONA (czysty odczyt, zero kosztu AI), wyłączalna
-   w ustawieniach Pogody (`WeatherPref.kalendarzPrognoza`).
+   w Pogodzie (`WeatherPref.kalendarzPrognoza`). *Odchylenie (C-54, implement):* Pogoda nie ma
+   osobnego widoku ustawień — przełącznik stanął w kolumnie sterowania listy obserwatorów
+   (`WatchersPanel`), tam gdzie mieszka już wybór układu, czyli jedyne „ustawienia" modułu.
 4. Idempotencja kosztu trasy Trucka: skrót (start, cel, dzień) jako `sourceId`.

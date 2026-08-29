@@ -3071,7 +3071,8 @@
         "ukladSekcje": "Sekcje wg stanu",
         "ukladKolejnosc": "Kolejność dodania",
         "bezOceny": "Bez oceny",
-        "przeanalizujNaNowo": "Przeanalizuj pogodę na nowo"
+        "przeanalizujNaNowo": "Przeanalizuj pogodę na nowo",
+        "prognozaWKalendarzu": "Prognoza we wspólnym kalendarzu"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",

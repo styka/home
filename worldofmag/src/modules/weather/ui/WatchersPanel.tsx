@@ -20,6 +20,7 @@ import {
   deleteWatcher,
   updateWatcher,
   setWatchersView,
+  setKalendarzPrognoza,
   type WatcherDTO,
   type WatcherVerdict,
   type WatcherStatus,
@@ -89,6 +90,8 @@ export function WatchersPanel({
   // 082: układ i filtr listy. Stan lokalny + zapis w tle, żeby klik był natychmiastowy —
   // preferencja układu nie jest danymi, na które warto czekać.
   const [layout, setLayout] = useState<WatchersLayout>(pref.watchersLayout);
+  // 115 (Z-INT-15): prognoza we wspólnym kalendarzu — przełącznik zapisuje od razu (jak układ).
+  const [kalendarz, setKalendarz] = useState(pref.kalendarzPrognoza);
 
   /**
    * 080 (Z11): `force` znaczy „użytkownik właśnie o to poprosił".
@@ -386,6 +389,19 @@ export function WatchersPanel({
                 </button>
               ))}
             </div>
+
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <input
+                type="checkbox"
+                checked={kalendarz}
+                onChange={(e) => {
+                  setKalendarz(e.target.checked);
+                  void setKalendarzPrognoza(e.target.checked);
+                }}
+                className="h-4 w-4"
+              />
+              {t("prognozaWKalendarzu")}
+            </label>
           </div>
 
           {sekcje

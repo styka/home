@@ -16,6 +16,10 @@ export {
   getWeather,
   getLocations,
   getWatchers,
+  // 115 (Z-INT-15): prognoza we wspólnym kalendarzu (odczyt dla modułu Kalendarz)
+  getKalendarzPrognoza,
+  type KalendarzPrognozaDTO,
+  type DzienPrognozyKalendarza,
   // lokalizacje
   addLocationByName,
   deleteLocation,
