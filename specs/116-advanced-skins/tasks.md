@@ -62,12 +62,12 @@
   wszystkie trzy warianty działają na dev, mobile bez zmian. Pokrywa AC-5.
 
 ## Faza 4 — AI / generowanie
-- [ ] **T-10** — Polityka `"ai.skorki"` w `src/platform/rateLimit/polityki.ts` + wpięcie
+- [x] **T-10** — Polityka `"ai.skorki"` w `src/platform/rateLimit/polityki.ts` + wpięcie
   limitera w `/api/llm/skins/generate` (oba tryby). Gotowe, gdy: test polityk zielony.
   Pokrywa AC-12.
-- [ ] **T-11** — `src/platform/ai/generatorObrazow.ts`: interfejs + `resolveGeneratorObrazow()`
+- [x] **T-11** — `src/platform/ai/generatorObrazow.ts`: interfejs + `resolveGeneratorObrazow()`
   zwracający `null` („brak dostawcy"). Gotowe, gdy: kompiluje się, jest skonsumowany w T-12.
-- [ ] **T-12** — `skinGenerate.ts` tryb `advanced`: prompt z katalogu generowanego z kodu
+- [x] **T-12** — `skinGenerate.ts` tryb `advanced`: prompt z katalogu generowanego z kodu
   (komponenty/animacje/layout/sloty assetów), wyjście przez `walidujDefinicje`, `odrzucone`
   w odpowiedzi, `assets[].status: "missing"` gdy generatora brak; trasa przekazuje tryb;
   wpisy w `cost-badge-coverage.json`/`content-memory-coverage.json` (sprawdzić istniejący).

@@ -102,6 +102,21 @@ export const POLITYKI = {
    * kilkanaście minut, więc kilka żądań na minutę to i tak zapas na kilka urządzeń naraz. Zgadywanie
    * tokenu przy takim limicie przestaje być wykonalne w jakimkolwiek sensownym czasie.
    */
+  /**
+   * 116 — generowanie skórek z opisu słownego (proste i zaawansowane). Jedna generacja
+   * to jedno wywołanie operacji `generation`; trasa działała dotąd BEZ limitu, a klik
+   * „generuj" jest najłatwiejszą do zapętlenia operacją AI w aplikacji. Slot 1 —
+   * drugi klik przed końcem pierwszej generacji to zawsze pomyłka, nie potrzeba.
+   */
+  "ai.skorki": {
+    naMinute: 5,
+    naGodzine: 30,
+    rownolegle: 1,
+    dzierzawaSek: 120,
+    komunikatMinuta: "Za dużo generowań skórki w krótkim czasie. Spróbuj za chwilę.",
+    komunikatGodzina: "Wyczerpano godzinny limit generowania skórek. Spróbuj później.",
+    komunikatSlot: "Poprzednia skórka jeszcze się generuje. Poczekaj na wynik.",
+  },
   "kalendarz.feed": {
     naMinute: 10,
     naGodzine: 120,
