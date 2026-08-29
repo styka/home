@@ -37,7 +37,9 @@ export const DASHBOARD_CONTRIBUTORS: Record<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   () => Promise<{ default: DashboardContributor<Partial<DashboardSnapshot>> }>
 > = {
+  contacts: () => import("@/modules/contacts/dashboard"),
   flota: () => import("@/modules/flota/dashboard"),
+  habits: () => import("@/modules/habits/dashboard"),
   health: () => import("@/modules/health/dashboard"),
   kitchen: () => import("@/modules/kitchen/dashboard"),
   languages: () => import("@/modules/languages/dashboard"),
@@ -49,4 +51,6 @@ export const DASHBOARD_CONTRIBUTORS: Record<
   reports: () => import("@/modules/reports/dashboard"),
   shopping: () => import("@/modules/shopping/dashboard"),
   tasks: () => import("@/modules/tasks/dashboard"),
+  warsztaty: () => import("@/modules/warsztaty/dashboard"),
+  weather: () => import("@/modules/weather/dashboard"),
 };

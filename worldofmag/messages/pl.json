@@ -1395,7 +1395,9 @@
         "posilkiDzis": "Posiłki dziś",
         "wygasajace": "Wygasające",
         "przegladOcWkrotce": "Przegląd / OC wkrótce",
-        "magazynDoUzupelnienia": "Magazyn: do uzupełnienia"
+        "magazynDoUzupelnienia": "Magazyn: do uzupełnienia",
+        "nawykiDzis": "Nawyki dziś",
+        "warsztatBraki": "Warsztat: materiały na wyczerpaniu"
       },
       "QuickStats": {
         "zadanDzis": "zadań dziś",
@@ -1403,7 +1405,8 @@
       },
       "TodaySnapshot": {
         "powtorki": "Powtórki",
-        "posilki": "Posiłki"
+        "posilki": "Posiłki",
+        "przegladyLink": "Przeglądy"
       }
     },
     "kitchen": {

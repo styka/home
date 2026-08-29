@@ -92,6 +92,40 @@ export interface DashboardSnapshot {
   /** 113: ile zabiegów w module Rośliny jest zaległych albo wypada dziś. */
   plantCareDue: number;
   plantAgenda: PlantAgendaItem[];
+  /** 115 (Z-INT-17): odhaczone / zaplanowane na dziś nawyki (agregat, jak wkład do kalendarza). */
+  habitsTodayDone: number;
+  habitsTodayTotal: number;
+  /** 115 (Z-INT-17): najbliższe przeglądy sprzętu warsztatowego + liczba materiałów na wyczerpaniu. */
+  workshopDue: WorkshopDueItem[];
+  workshopLowStock: number;
+  /** 115 (Z-INT-17): urodziny kontaktów w najbliższych 30 dniach. */
+  upcomingBirthdays: UpcomingBirthday[];
+  /** 115 (Z-INT-17): bieżąca pogoda domyślnej lokalizacji — null, gdy brak lokalizacji albo timeout. */
+  weatherToday: WeatherTodayInfo | null;
+}
+
+/** 115: pozycja przeglądu warsztatowego na pulpicie. */
+export interface WorkshopDueItem {
+  id: string;
+  name: string;
+  workshopName: string;
+  dueAt: string | null;
+  overdue: boolean;
+}
+
+/** 115: nadchodzące urodziny kontaktu — `date` to "YYYY-MM-DD" najbliższej rocznicy. */
+export interface UpcomingBirthday {
+  id: string;
+  name: string;
+  date: string;
+}
+
+/** 115: skrót bieżącej pogody na pulpit (temperatura zaokrąglona, etykieta = nazwa lokalizacji). */
+export interface WeatherTodayInfo {
+  temp: number;
+  opis: string;
+  emoji: string;
+  label: string;
 }
 
 /** 113: pozycja agendy roślinnej na pulpicie — nazwa zabiegu, roślina i adres, pod który prowadzi. */
@@ -130,6 +164,12 @@ export const EMPTY_SNAPSHOT: DashboardSnapshot = {
   plantAgenda: [],
   storageLowStock: 0,
   storageExpiring: 0,
+  habitsTodayDone: 0,
+  habitsTodayTotal: 0,
+  workshopDue: [],
+  workshopLowStock: 0,
+  upcomingBirthdays: [],
+  weatherToday: null,
 };
 
 /** Sekcja pulpitu — kolejność i widoczność zapisuje `DashboardPref` (per użytkownik). */

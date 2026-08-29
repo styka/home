@@ -85,7 +85,7 @@
   i18n; manifest. Gotowe, gdy: wyłączenie chowa pasek bez przeładowania logiki siatki.
 
 ## Faza 5 — Pulpit
-- [ ] **T-18** — Z-INT-17: pola `habitsTodayDone/habitsTodayTotal`, `workshopDue[]`,
+- [x] **T-18** — Z-INT-17: pola `habitsTodayDone/habitsTodayTotal`, `workshopDue[]`,
   `workshopLowStock`, `upcomingBirthdays[]`, `weatherToday|null` w `DashboardSnapshot` +
   `EMPTY_SNAPSHOT`; wkłady `habits|warsztaty|contacts|weather/dashboard.ts` (try/catch → zera;
   weather z `Promise.race` 3 s); wpisy `DASHBOARD_CONTRIBUTORS`; propsy `HomePage` + render

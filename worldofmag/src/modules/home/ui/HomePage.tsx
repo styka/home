@@ -21,6 +21,7 @@ import { buildAssistantStarters } from "@/lib/ai/assistantStarters";
 import type { FavoriteViewDTO } from "@/platform/favorites/favoriteViews";
 import { SectionHeading, pageContainerStyle, pageInnerStyle } from "@/components/ui/home";
 import type { TaskPriority, CareAgendaItem } from "@/types";
+import type { WorkshopDueItem, UpcomingBirthday, WeatherTodayInfo } from "../contract";
 
 interface ActivityItem {
   module: string;
@@ -100,6 +101,13 @@ interface HomePageProps {
   healthUpcoming: HealthUpcoming[];
   storageLowStock: number;
   storageExpiring: number;
+  /** 115 (Z-INT-17): nawyki, przeglądy warsztatowe, urodziny i pogoda na pulpicie. */
+  habitsTodayDone: number;
+  habitsTodayTotal: number;
+  workshopDue: WorkshopDueItem[];
+  workshopLowStock: number;
+  upcomingBirthdays: UpcomingBirthday[];
+  weatherToday: WeatherTodayInfo | null;
   recentActivity: ActivityItem[];
   adminStats: AdminStats | null;
   dashboardPrefs?: { order: string[]; hidden: string[] };
@@ -181,6 +189,12 @@ export function HomePage({
   healthUpcoming,
   storageLowStock,
   storageExpiring,
+  habitsTodayDone,
+  habitsTodayTotal,
+  workshopDue,
+  workshopLowStock,
+  upcomingBirthdays,
+  weatherToday,
   recentActivity,
   adminStats,
   dashboardPrefs,
@@ -207,7 +221,9 @@ export function HomePage({
     petAgenda.length > 0 ||
     vehicleAlerts.length > 0 ||
     languageDecks.length > 0 ||
-    healthUpcoming.length > 0;
+    healthUpcoming.length > 0 ||
+    workshopDue.length > 0 ||
+    upcomingBirthdays.length > 0;
 
   // H1: personalizacja pulpitu — kolejność i ukrywanie sekcji.
   const [editing, setEditing] = useState(false);
@@ -273,6 +289,10 @@ export function HomePage({
           healthUpcoming={healthUpcomingCount}
           storageLowStock={storageLowStock}
           storageExpiring={storageExpiring}
+          habitsTodayDone={habitsTodayDone}
+          habitsTodayTotal={habitsTodayTotal}
+          workshopLowStock={workshopLowStock}
+          weatherToday={weatherToday}
         />
       </div>
     ) : (
@@ -304,12 +324,16 @@ export function HomePage({
           vehicleAlerts={vehicleAlerts}
           languageDecks={languageDecks}
           healthUpcoming={healthUpcoming}
+          workshopDue={workshopDue}
+          upcomingBirthdays={upcomingBirthdays}
           hasTasksAccess={has("module.tasks")}
           hasKitchenAccess={has("module.kitchen")}
           hasPetsAccess={has("module.pets")}
           hasFlotaAccess={has("module.flota")}
           hasLanguagesAccess={has("module.languages")}
           hasHealthAccess={has("module.health")}
+          hasWarsztatyAccess={has("module.warsztaty")}
+          hasContactsAccess={has("module.contacts")}
         />
       </div>
     ) : null,
