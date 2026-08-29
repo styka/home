@@ -129,7 +129,9 @@ export function HabitsPage({ habits: initial }: { habits: HabitWithStats[] }) {
     );
     startTransition(async () => {
       try {
-        await toggleHabitDay(id);
+        // Dzień liczony w PRZEGLĄDARCE (prawdziwa strefa użytkownika) i przekazany jawnie —
+        // serwer na Renderze żyje w UTC, więc „domyślne dziś" po północy czasu PL było wczoraj.
+        await toggleHabitDay(id, today);
         router.refresh();
       } catch {
         router.refresh(); // przywróć stan z serwera przy błędzie

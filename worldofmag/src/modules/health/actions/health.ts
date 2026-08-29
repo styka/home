@@ -7,6 +7,7 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { userDayBounds } from "@/lib/userTime";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
@@ -82,9 +83,9 @@ export async function getHealthEvents(filter?: {
 }
 
 function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  // Północ w strefie UŻYTKOWNIKA — `setHours(0,…)` na serwerze (Render = UTC) przesuwało granicę
+  // „nadchodzące/minione" o 2 h: wizyta z wczorajszego wieczora wisiała w „nadchodzących" do 2:00.
+  return userDayBounds().start;
 }
 
 export async function createHealthEvent(data: {

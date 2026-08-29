@@ -6,13 +6,14 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import type { Habit, HabitWithStats } from "@/types";
 import {
-  todayISO,
   isoDate,
+  fromISO,
   computeStreaks,
   isScheduledOn,
   weekProgress,
   weekDoneCount,
 } from "@/lib/habitStats";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 import { createTask } from "@/modules/tasks/contract";
 import { normalizeDays, normalizeGoal, normalizeReminder } from "../domain/harmonogram";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
@@ -59,19 +60,21 @@ export async function getHabits(opts?: { includeArchived?: boolean }): Promise<H
     },
   });
 
-  const today = todayISO();
-  const now = new Date();
+  // „Dziś" w strefie UŻYTKOWNIKA, nie procesu — na Renderze (UTC) między północą a 2:00 czasu PL
+  // loader liczył wczorajszy dzień: haczyk „dziś" znikał po odświeżeniu, a streak się rwał.
+  const today = dataWStrefie(userTimeZone());
+  const todayNoon = fromISO(today);
 
   return habits.map((h) => {
     const entryDates = h.entries.map((e) => e.date);
     const set = new Set(entryDates);
-    const { currentStreak, longestStreak } = computeStreaks(entryDates, h.daysOfWeek);
+    const { currentStreak, longestStreak } = computeStreaks(entryDates, h.daysOfWeek, today);
     // HA2: tryb celu tygodniowego (N×/tydz., dowolne dni) lub klasyczny tryb dni tygodnia.
     const goal = h.weeklyGoal && h.weeklyGoal > 0 ? h.weeklyGoal : null;
     const { done: weekDone, target: weekTarget } = goal
-      ? { done: weekDoneCount(entryDates), target: goal }
-      : weekProgress(entryDates, h.daysOfWeek);
-    const scheduledToday = goal ? weekDone < goal : isScheduledOn(h.daysOfWeek, now);
+      ? { done: weekDoneCount(entryDates, today), target: goal }
+      : weekProgress(entryDates, h.daysOfWeek, today);
+    const scheduledToday = goal ? weekDone < goal : isScheduledOn(h.daysOfWeek, todayNoon);
     return {
       id: h.id,
       name: h.name,
@@ -195,9 +198,13 @@ export async function deleteHabit(id: string): Promise<void> {
 export async function toggleHabitDay(id: string, date?: string): Promise<{ done: boolean }> {
   const user = await requireAuth();
   await assertHabitAccess(id, user.id);
-  const day = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : todayISO();
+  // „Dziś" w strefie użytkownika (ciasteczko `tz`) — `todayISO()` na serwerze liczy dobę procesu
+  // (UTC), więc nocne odhaczenie lądowało we wczorajszym dniu, a strażnik przyszłości odrzucał
+  // dzisiejszą datę przysłaną przez klienta.
+  const dzisiaj = dataWStrefie(userTimeZone());
+  const day = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : dzisiaj;
   // Nie pozwalamy odhaczać przyszłości.
-  if (day > todayISO()) throw new Error("Nie można odhaczyć przyszłego dnia");
+  if (day > dzisiaj) throw new Error("Nie można odhaczyć przyszłego dnia");
 
   const existing = await prisma.habitEntry.findUnique({
     where: { habitId_date: { habitId: id, date: day } },
