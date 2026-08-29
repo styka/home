@@ -35,7 +35,7 @@
   (kind income), `saveVetToContacts` (reuse `kontaktZWpisu`); UI: akcje w wierszu wizyty
   (`VetSection`/`Row` z `actions`) i sprzedaży (`PetBreeding`); i18n; manifest.
   Gotowe, gdy: przychód ląduje z `kind:"income"` i dodatnią deltą (fixture).
-- [ ] **T-5** `[P]` — Z-INT-05: `WorkshopProject.cost` w formularzu/wierszu `ProjectsTab`
+- [x] **T-5** `[P]` — Z-INT-05: `WorkshopProject.cost` w formularzu/wierszu `ProjectsTab`
   (create/update przyjmują cost); akcja `bookProjectCost(projectId)`; i18n; manifest.
 - [ ] **T-6** `[P]` — Z-INT-06: akcja `saveProviderToContacts(providerId)` (reuse
   `kontaktZWpisu`; phone z `ServiceProvider`, notatka z adresem profilu); przyciski:

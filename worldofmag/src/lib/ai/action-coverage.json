@@ -3396,5 +3396,10 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "owner"
+  },
+  "warsztat:bookProjectCost": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   }
 }

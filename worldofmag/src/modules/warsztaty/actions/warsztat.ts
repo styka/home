@@ -9,6 +9,7 @@ import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { bookAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 
 export type WarsztatMode = "home" | "pro";
 
@@ -355,6 +356,8 @@ export interface WorkshopProjectInput {
   status?: string | null;
   assignedTo?: string | null;
   dueAt?: Date | string | null;
+  /** 115 (Z-INT-05): koszt projektu — księgowany do Portfela jawnym przyciskiem. */
+  cost?: number | null;
 }
 
 const PROJECT_STATUSES = ["planned", "active", "done"];
@@ -372,6 +375,7 @@ export async function addWorkshopProject(workshopId: string, data: WorkshopProje
       status,
       assignedTo: data.assignedTo?.trim() || null,
       dueAt: toDate(data.dueAt) ?? null,
+      cost: typeof data.cost === "number" && Number.isFinite(data.cost) && data.cost > 0 ? data.cost : null,
       startedAt: status === "active" ? new Date() : null,
       doneAt: status === "done" ? new Date() : null,
     },
@@ -393,6 +397,7 @@ export async function updateWorkshopProject(
   if (patch.description !== undefined) data.description = patch.description?.trim() || null;
   if (patch.assignedTo !== undefined) data.assignedTo = patch.assignedTo?.trim() || null;
   if (patch.dueAt !== undefined) data.dueAt = toDate(patch.dueAt);
+  if (patch.cost !== undefined) data.cost = typeof patch.cost === "number" && Number.isFinite(patch.cost) && patch.cost > 0 ? patch.cost : null;
   if (patch.status !== undefined) {
     const status = PROJECT_STATUSES.includes(patch.status ?? "") ? patch.status! : project.status;
     data.status = status;
@@ -403,6 +408,33 @@ export async function updateWorkshopProject(
   const updated = await prisma.workshopProject.update({ where: { id }, data });
   revalidatePath(`/warsztaty/${project.workshopId}`);
   return updated;
+}
+
+/**
+ * 115 (Z-INT-05): jawne księgowanie kosztu projektu warsztatowego w Portfelu.
+ * Idempotentnie po (warsztaty, projekt-<id>) — powtórne kliknięcie koryguje kwotę.
+ */
+export async function bookProjectCost(id: string): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  const project = await prisma.workshopProject.findUnique({
+    where: { id },
+    select: { workshopId: true, name: true, cost: true, doneAt: true, dueAt: true },
+  });
+  if (!project) throw new Error("Projekt nie istnieje");
+  await assertWorkshopAccess(project.workshopId, user.id);
+  if (!project.cost || project.cost <= 0) throw new Error("Wpisz najpierw koszt projektu");
+  const wynik = await bookAutoExpense(user.id, {
+    module: "warsztaty",
+    sourceId: `projekt-${id}`,
+    amount: project.cost,
+    category: "Warsztat",
+    note: project.name,
+    date: project.doneAt ?? project.dueAt ?? null,
+    force: true,
+  });
+  revalidatePath(`/warsztaty/${project.workshopId}`);
+  revalidatePath("/portfel");
+  return wynik;
 }
 
 export async function deleteWorkshopProject(id: string): Promise<void> {

@@ -2965,7 +2965,12 @@
         "nastepnyPrzeglad": "Następny przegląd",
         "sprzetKtoryWartoMiec": "Sprzęt, który warto mieć w warsztacie typu",
         "zaznaczBrakiIDodaj": ". Zaznacz braki i dodaj je do wyposażenia jednym kliknięciem.",
-        "brakProjektowDodajZlecenie": "Brak projektów. Dodaj zlecenie realizowane w tym warsztacie."
+        "brakProjektowDodajZlecenie": "Brak projektów. Dodaj zlecenie realizowane w tym warsztacie.",
+        "kosztPlaceholder": "Koszt (zł)",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "WorkshopsList": {
         "nieMaszJeszczeZadnego": "Nie masz jeszcze żadnego warsztatu.",
