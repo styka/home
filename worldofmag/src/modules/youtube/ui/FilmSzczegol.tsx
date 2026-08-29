@@ -2,11 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Youtube, ExternalLink, FileText, MessageCircleQuestion } from "lucide-react";
+import { Youtube, ExternalLink, FileText, MessageCircleQuestion, NotebookPen, Check } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
 import { AiContentMeta } from "@/components/ui/AiContentMeta";
 import { streszczenie, zapytajOFilm, type DlugoscStreszczenia } from "../actions/ai";
-import type { FilmSzczegolDTO } from "../actions/filmy";
+import { zapiszFilmJakoNotatke, type FilmSzczegolDTO } from "../actions/filmy";
 
 const przyciskStyl: React.CSSProperties = {
   padding: "7px 12px", borderRadius: 8, background: "var(--bg-elevated)",
@@ -36,6 +36,16 @@ export function FilmSzczegol({ film, domyslnaDlugosc }: { film: FilmSzczegolDTO;
   const [pytanie, setPytanie] = useState("");
   const [odpowiedz, setOdpowiedz] = useState<string | null>(null);
   const [pokazTranskrypcje, setPokazTranskrypcje] = useState(false);
+  // 115 (Z-INT-12): zapis do Notatek — po sukcesie przycisk zostaje ptaszkiem (duplikatom mówimy nie).
+  const [notatka, setNotatka] = useState<"spoczynek" | "praca" | "ok" | "blad">("spoczynek");
+
+  function doNotatki() {
+    if (notatka === "praca" || notatka === "ok") return;
+    setNotatka("praca");
+    zapiszFilmJakoNotatke(film.videoId)
+      .then(() => setNotatka("ok"))
+      .catch(() => setNotatka("blad"));
+  }
 
   function generuj(d: DlugoscStreszczenia, force = false) {
     setDlugosc(d);
@@ -72,6 +82,24 @@ export function FilmSzczegol({ film, domyslnaDlugosc }: { film: FilmSzczegolDTO;
           <ExternalLink size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
           {t("otworzNaYoutube")}
         </a>
+        <button
+          type="button"
+          onClick={doNotatki}
+          disabled={notatka === "praca"}
+          style={{ ...przyciskStyl, marginLeft: 8 }}
+        >
+          {notatka === "ok" ? (
+            <Check size={13} style={{ verticalAlign: "-2px", marginRight: 6, color: "var(--accent-green)" }} aria-hidden />
+          ) : (
+            <NotebookPen size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          )}
+          {notatka === "ok" ? t("notatkaZapisana") : t("zapiszNotatke")}
+        </button>
+        {notatka === "blad" && (
+          <p role="status" style={{ fontSize: 12, color: "var(--accent-red)", margin: "8px 0 0" }}>
+            {t("notatkaBlad")}
+          </p>
+        )}
       </section>
 
       <section style={sekcjaStyl}>

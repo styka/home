@@ -7,6 +7,9 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis";
 import { enqueue, MAX_ACTIVE_JOBS_PER_OWNER } from "@/platform/jobs/queue";
 import { ensureJobWorker } from "@/lib/jobs/registry";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createNote, notesModule } from "@/modules/notes/contract";
 import { naDto, adresFilmu, type FilmDTO } from "../domain/film";
 
 /**
@@ -79,6 +82,53 @@ export async function getFilm(videoId: string): Promise<FilmSzczegolDTO | null> 
     transkrypcjaJezyk: r.transkrypcjaJezyk,
     adresYoutube: adresFilmu(r.videoId),
   };
+}
+
+/**
+ * 115 (Z-INT-12): „Zapisz jako notatkę" — podsumowanie filmu trafia do bazy wiedzy.
+ *
+ * Treść = **zapamiętane** streszczenie z `AiContent` (czytamy zapis, niczego nie generujemy —
+ * zapis do notatki nie może kosztować tokenów); przy jego braku opis filmu. Z trzech długości
+ * bierzemy najświeższą — to ją użytkownik oglądał ostatnio. Guard: własność filmu (filtr
+ * przestrzeni) + uprawnienie modułu Notatki (wzorzec `saveItemAsNote` z Wiadomości).
+ */
+export async function zapiszFilmJakoNotatke(videoId: string): Promise<{ id: string }> {
+  const user = await requireAuth();
+  const session = await auth();
+  if (!hasPermission(session, notesModule.permission)) throw new Error("Brak dostępu do modułu Notatki");
+
+  const moje = await filtrMoichRekordow(user.id);
+  const film = await prisma.youtubeVideo.findUnique({
+    where: { workspaceId_videoId: { ...moje, videoId } },
+    include: { channel: { select: { title: true } } },
+  });
+  if (!film) throw new Error("Film nie istnieje");
+
+  const zapis = await prisma.aiContent.findFirst({
+    where: { ...moje, kind: "youtube.streszczenie", scopeKey: { startsWith: `${videoId}:` } },
+    orderBy: { updatedAt: "desc" },
+    select: { content: true },
+  });
+  let streszczenie = "";
+  if (zapis) {
+    try {
+      const odczyt = JSON.parse(zapis.content);
+      if (typeof odczyt === "string") streszczenie = odczyt.trim();
+    } catch {
+      // uszkodzony zapis traktujemy jak jego brak — notatka powstanie z opisu
+    }
+  }
+
+  const tresc = [
+    streszczenie || film.description.trim() || null,
+    `Kanał: ${film.channel?.title ?? "—"}\n${adresFilmu(film.videoId)}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  const note = await createNote({ title: film.title, content: tresc, isMarkdown: true });
+
+  revalidatePath("/notes");
+  return { id: note.id };
 }
 
 export async function ustawStan(videoId: string, stan: StanFilmu): Promise<void> {

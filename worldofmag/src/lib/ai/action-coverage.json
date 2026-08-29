@@ -616,6 +616,11 @@
     "action": "mark_youtube_watched",
     "status": "ai"
   },
+  "filmy:zapiszFilmJakoNotatke": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "flota:addFuelLog": {
     "access": "owner",
     "status": "ai"

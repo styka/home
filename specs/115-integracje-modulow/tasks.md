@@ -61,7 +61,7 @@
 ## Faza 3 — Mosty treści (Notatki/Języki)
 - [x] **T-12** — Z-INT-11: `saveItemAsNote(itemId)` (summary+źródło+URL, markdown) + przycisk
   w stopce `NewsItemCard` (props przez NewsStream/NewsTimeline*); i18n; manifest.
-- [ ] **T-13** `[P]` — Z-INT-12: `zapiszFilmJakoNotatke(videoId)` (streszczenie z pamięci treści,
+- [x] **T-13** `[P]` — Z-INT-12: `zapiszFilmJakoNotatke(videoId)` (streszczenie z pamięci treści,
   fallback opis; + kanał + adres) + przycisk w `FilmSzczegol`; i18n; manifest.
 - [ ] **T-14** `[P]` — Z-INT-13: sekcja „Fiszki z filmu" w `FilmSzczegol` (tylko gdy
   transkrypcja jest i są talie): select talii (`getDecks`), fetch `/api/llm/languages/extract`
