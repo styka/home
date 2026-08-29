@@ -55,7 +55,7 @@
 - [x] **T-9** `[P]` — Z-INT-08: `createTaskFromContact(id)` + ikona w `ContactRow`; i18n; manifest.
 - [x] **T-10** `[P]` — Z-INT-09: `createTaskFromNote(noteId)` + ikona w pasku akcji `NoteRow`;
   i18n; manifest.
-- [ ] **T-11** `[P]` — Z-INT-10: `zadanieZWiadomosci(messageId)` (guard uczestnictwa; link
+- [x] **T-11** `[P]` — Z-INT-10: `zadanieZWiadomosci(messageId)` (guard uczestnictwa; link
   `/czat?r=<conv>#w-<msg>`) + ikona w pasku akcji dymka `WatekRozmowy`; i18n; manifest.
 
 ## Faza 3 — Mosty treści (Notatki/Języki)

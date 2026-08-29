@@ -3387,6 +3387,11 @@
     "reason": "interactive",
     "status": "excluded"
   },
+  "wiadomosci:zadanieZWiadomosci": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "workspaceSettings:getWorkspaceLocaleSettings": {
     "access": "owner",
     "kind": "read",

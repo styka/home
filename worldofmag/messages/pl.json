@@ -1275,7 +1275,10 @@
         "usun": "Usuń",
         "usunacWiadomosc": "Usunąć wiadomość?",
         "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
-        "przeczytanePrzez": "Przeczytane: {kto}"
+        "przeczytanePrzez": "Przeczytane: {kto}",
+        "doZadan": "Dodaj do zadań",
+        "zadanieDodane": "Dodano zadanie",
+        "zadanieBlad": "Nie udało się utworzyć zadania"
       },
       "PoleWiadomosci": {
         "napisz": "Napisz wiadomość…",

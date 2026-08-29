@@ -6,6 +6,9 @@ import { requireAuth } from "@/platform/auth/serverUtils";
 import { stronaZWierszy, zapytanieKursorowe } from "@/platform/pagination";
 import { notifyUser } from "@/lib/notify";
 import { recordTrash } from "@/platform/trash/trash";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { nazwaOsoby } from "../domain/rozmowa";
 import { assertAutor, assertUczestnik } from "../lib/dostep";
 import { sygnalRozmowy } from "../lib/sygnal";
@@ -241,6 +244,35 @@ export async function przelaczReakcje(wiadomoscId: string, emoji: string): Promi
     await prisma.chatReaction.create({ data: { messageId: wiadomoscId, userId: user.id, emoji: znak } });
   }
   await powiadomOZmianie(wiadomosc.conversationId);
+}
+
+/**
+ * 115 (Z-INT-10): „Do zadań" z dymka wiadomości — ustalenia z rozmów domowników nie giną.
+ * Guard uczestnictwa rozmowy + uprawnienie modułu Zadania (wzorzec `addIdeaToTasks`); zadanie
+ * powstaje przez kontrakt Zadań, więc jest zadaniem WOŁAJĄCEGO, nie autora wiadomości.
+ */
+export async function zadanieZWiadomosci(wiadomoscId: string): Promise<{ id: string }> {
+  const user = await requireAuth();
+  const session = await auth();
+  if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
+
+  const wiadomosc = await prisma.chatMessage.findUnique({
+    where: { id: wiadomoscId },
+    select: { conversationId: true, tresc: true, deletedAt: true, autor: { select: { name: true, email: true } } },
+  });
+  if (!wiadomosc || wiadomosc.deletedAt) throw new Error("Wiadomość nie istnieje");
+  await assertUczestnik(user.id, wiadomosc.conversationId);
+
+  const tresc = wiadomosc.tresc.trim();
+  const tytul = tresc.length > 80 ? `${tresc.slice(0, 79)}…` : tresc;
+  const autor = nazwaOsoby(wiadomosc.autor, BEZ_AUTORA);
+  const task = await createTask({
+    title: tytul || "Zadanie z czatu",
+    description: `${tresc}\n\n— ${autor}\nRozmowa: /czat?r=${wiadomosc.conversationId}#w-${wiadomoscId}`,
+  });
+
+  revalidatePath("/tasks");
+  return { id: task.id };
 }
 
 /** Wspólny ogon edycji/usunięcia/reakcji: sygnał do kart uczestników + unieważnienie ścieżki. */
