@@ -170,6 +170,11 @@ Brak otwartych pytań — właściciel rozstrzygnął w zleceniu, a resztę przy
   narzędziowe mają w macierzy głównie rozstrzygnięcia „hub/brak sensu" z uzasadnieniem.
 - **Założenie:** integracje z usługami zewnętrznymi (Gmail, Google Calendar) pozostają poza
   zakresem — czekają na decyzje/klucze właściciela (tracker T-15).
+- **Założenia doprecyzowane na etapie planu (C-54):** zapamiętanie wyboru „dodaj do spiżarni"
+  = wygoda per przeglądarka (jak zapamiętany tryb sortowania Zakupów) — operacja i tak jest
+  jawna przy każdym zakończeniu zakupów; nowe dane pulpitu wchodzą do ISTNIEJĄCYCH sekcji
+  personalizowanych (bez nowych kluczy personalizacji); prognoza w kalendarzu domyślnie
+  włączona (czysty odczyt bez kosztu AI), wyłączalna w ustawieniach Pogody.
 
 ## 9. Ryzyka
 
