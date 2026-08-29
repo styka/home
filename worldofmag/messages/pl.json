@@ -1244,7 +1244,10 @@
     "contacts": {
       "ContactsPage": {
         "usun": "Usuń",
-        "imieNazwa": "Imię / nazwa *"
+        "imieNazwa": "Imię / nazwa *",
+        "utworzZadanie": "Utwórz zadanie (follow-up)",
+        "zadanieUtworzone": "Zadanie utworzone — znajdziesz je w Zadaniach.",
+        "zadanieBlad": "Nie udało się utworzyć zadania."
       }
     },
     "czat": {

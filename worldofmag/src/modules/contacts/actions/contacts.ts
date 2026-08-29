@@ -8,6 +8,9 @@ import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { parseBirthday } from "../domain/urodziny";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createTask, tasksModule } from "@/modules/tasks/contract";
 
 export type ContactDTO = {
   id: string;
@@ -158,4 +161,27 @@ export async function deleteContact(id: string): Promise<void> {
   await prisma.contact.delete({ where: { id } });
   revalidatePath("/contacts");
   revalidatePath("/trash");
+}
+
+/**
+ * 115 (Z-INT-08): follow-up z kontaktu — „Skontaktuj się: <nazwa>" w Zadaniach,
+ * z telefonem/e-mailem w opisie i odnośnikiem do Kontaktów. Najtańsza namiastka
+ * historii interakcji lekkiego CRM.
+ */
+export async function createTaskFromContact(id: string): Promise<{ id: string }> {
+  const { userId } = await getUserScope();
+  const session = await auth();
+  if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
+  const contact = await prisma.contact.findUnique({ where: { id } });
+  await assertOwnership(contact, userId);
+  const c = contact!;
+  const opis = [
+    c.phone ? `Telefon: ${c.phone}` : null,
+    c.email ? `E-mail: ${c.email}` : null,
+    c.company ? `Firma: ${c.company}` : null,
+    "Kontakt: /contacts",
+  ].filter(Boolean).join("\n");
+  const task = await createTask({ title: `Skontaktuj się: ${c.name}`, description: opis });
+  revalidatePath("/tasks");
+  return { id: task.id };
 }

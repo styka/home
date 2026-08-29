@@ -52,7 +52,7 @@
   `hasPermission(tasksModule.permission)`); UI: przycisk przy pozycji listy dnia (wiersz
   `<Link>` → wrapper + przycisk); komunikat sukcesu; i18n; manifest.
   Gotowe, gdy: pozycja dowolnego modułu tworzy zadanie z terminem i linkiem (fixture).
-- [ ] **T-9** `[P]` — Z-INT-08: `createTaskFromContact(id)` + ikona w `ContactRow`; i18n; manifest.
+- [x] **T-9** `[P]` — Z-INT-08: `createTaskFromContact(id)` + ikona w `ContactRow`; i18n; manifest.
 - [ ] **T-10** `[P]` — Z-INT-09: `createTaskFromNote(noteId)` + ikona w pasku akcji `NoteRow`;
   i18n; manifest.
 - [ ] **T-11** `[P]` — Z-INT-10: `zadanieZWiadomosci(messageId)` (guard uczestnictwa; link

@@ -3416,5 +3416,10 @@
     "status": "excluded",
     "reason": "interactive",
     "access": "self"
+  },
+  "contacts:createTaskFromContact": {
+    "status": "excluded",
+    "reason": "interactive",
+    "access": "owner"
   }
 }
