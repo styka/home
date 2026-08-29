@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Star, MessageSquare, Share2, Check } from "lucide-react";
+import { ArrowLeft, MapPin, Star, MessageSquare, Share2, Check, UserPlus } from "lucide-react";
 import { SectionHeading, cardStyle, cardHoverHandlers } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { Heart } from "lucide-react";
 import { RatingStars, formatPrice, VerifiedBadge, secondaryButtonStyle } from "./serviceUi";
 import { setProviderVerified } from "../actions/services";
+import { saveProviderToContacts } from "../actions/parts/providers";
 import { toggleFavorite } from "../actions/parts/favorites";
 import type { PriceModel } from "../lib/services";
 
@@ -34,6 +35,18 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
   const [verified, setVerified] = useState(provider.verified);
   const [favored, setFavored] = useState(provider.isFavorite);
   const [copied, setCopied] = useState(false);
+  const [kontaktInfo, setKontaktInfo] = useState<string | null>(null);
+
+  // 115 (Z-INT-06): wykonawca do prywatnego CRM.
+  async function doKontaktow() {
+    try {
+      const w = await saveProviderToContacts(provider.id);
+      setKontaktInfo(w.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"));
+    } catch (e) {
+      setKontaktInfo(e instanceof Error ? e.message : t("bladOperacji"));
+    }
+    setTimeout(() => setKontaktInfo(null), 5000);
+  }
   const [pending, startTransition] = useTransition();
 
   function share() {
@@ -67,12 +80,20 @@ export function ProviderPublicPage({ provider, isAdmin = false }: { provider: Pr
       title={provider.displayName}
       subtitle={provider.tagline ?? provider.area ?? undefined}
       headerAction={
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <button onClick={doKontaktow} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-secondary)", fontSize: 13, cursor: "pointer" }} title={t("zapiszWKontaktach")}>
+          <UserPlus size={14} /> {t("zapiszWKontaktach")}
+        </button>
         <button onClick={share} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)", color: copied ? "var(--accent-green)" : "var(--text-secondary)", fontSize: 13, cursor: "pointer" }} title="Skopiuj link do profilu">
           {copied ? <Check size={14} /> : <Share2 size={14} />} {copied ? "Skopiowano" : "Udostępnij"}
         </button>
+        </div>
       }
     >
 
+      {kontaktInfo && (
+        <div role="status" style={{ fontSize: 12, color: "var(--accent-green)" }}>{kontaktInfo}</div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <RatingStars avg={provider.ratingAvg} count={provider.ratingCount} size={15} />
         <button onClick={onToggleFav} disabled={pending} title={favored ? "Usuń z ulubionych" : "Dodaj do ulubionych"}

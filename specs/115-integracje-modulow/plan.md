@@ -74,7 +74,7 @@ nakładka):
   po pozycjach `quantity<minQuantity` w moich warsztatach; zwraca liczbę dodanych.
 - **Z-05** `warsztaty/actions/warsztat.ts`: projekt przyjmuje `cost`; `bookProjectCost(projectId)`
   (kategoria "Warsztat").
-- **Z-06** `services/actions/services.ts`: `saveProviderToContacts(providerId)` — czyta
+- **Z-06** `services/actions/parts/providers.ts` (barrel `services.ts` re-eksportuje): `saveProviderToContacts(providerId)` — czyta
   `displayName/phone/area/slug`; dedup: `getContacts(displayName)` → dokładna nazwa = komunikat
   `{istnial:true}`; inaczej `createContact({name, phone, company:area, tags:["wykonawca"],
   notes:"Profil: /services/providers/<id>"})`.
@@ -143,7 +143,7 @@ Punkty wpięcia (z rekonesansu, plik → miejsce):
 | 03/07 | `pets/ui/PetSections.tsx` (`VetSection` 330-347), `pets/ui/PetBreeding.tsx` (230-247) | akcje w wierszu wizyty (rozszerzenie `Row` o `actions`) i wierszu sprzedaży |
 | 04 | `warsztaty/ui/MaintenanceAgenda.tsx` (sekcja braków 45-71) | przycisk sekcyjny + prosty wybór listy (`getLists` przez kontrakt Zakupów, select) |
 | 05 | `warsztaty/ui/WorkshopDetail.tsx` (`ProjectsTab` 446-501) | pole kosztu w formularzu/wierszu + przycisk księgowania |
-| 06 | `services/ui/ProviderPublicPage.tsx` (headerAction 69-73), `MyRequestsPage.tsx` (akcje 125-148) | „Zapisz w kontaktach" |
+| 06 | `services/ui/ProviderPublicPage.tsx` (headerAction) | „Zapisz w kontaktach" — TYLKO profil publiczny: `RequestDTO` niesie `providerName` bez id wykonawcy, więc karta zlecenia nie ma czego przekazać (odnotowane, C-54) |
 | 08 | `contacts/ui/ContactsPage.tsx` (`ContactRow` 261-264) | ikona `ListTodo` |
 | 09 | `notes/ui/NoteRow.tsx` (pasek akcji 543-595) | ikona `ListTodo` |
 | 10 | `czat/ui/WatekRozmowy.tsx` (pasek akcji dymka 267-299) | ikona `ListTodo` |

@@ -37,7 +37,7 @@
   Gotowe, gdy: przychód ląduje z `kind:"income"` i dodatnią deltą (fixture).
 - [x] **T-5** `[P]` — Z-INT-05: `WorkshopProject.cost` w formularzu/wierszu `ProjectsTab`
   (create/update przyjmują cost); akcja `bookProjectCost(projectId)`; i18n; manifest.
-- [ ] **T-6** `[P]` — Z-INT-06: akcja `saveProviderToContacts(providerId)` (reuse
+- [x] **T-6** `[P]` — Z-INT-06: akcja `saveProviderToContacts(providerId)` (reuse
   `kontaktZWpisu`; phone z `ServiceProvider`, notatka z adresem profilu); przyciski:
   `ProviderPublicPage` (headerAction) + karta zlecenia w `MyRequestsPage` (gdy DTO niesie id
   wykonawcy — sprawdzić; brak → tylko profil, odnotować w plan.md); i18n; manifest.
