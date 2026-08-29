@@ -1,6 +1,8 @@
 import { prisma } from "@/platform/db/prisma";
-import { ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
+import { zakresPrzestrzeni } from "../lib/sharingGuard";
+import { kubelekAgendy } from "../domain/agenda";
+import { userDayBounds } from "@/lib/userTime";
 
 /**
  * 113: narzędzia ODCZYTU tego modułu.
@@ -22,10 +24,15 @@ const LIMIT = 40;
 
 export const readTools: Record<string, AiReadToolHandler> = {
   list_plant_spaces: async (_args, userId) => {
+    // Zakres DOKŁADNIE ten sam co agenda/kalendarz/pulpit (`zakresPrzestrzeni` = moje + nadane
+    // mi przestrzenie). Asystent był czwartym czytelnikiem tych samych zadań i jako jedyny nie
+    // widział przestrzeni udostępnionych — „co dziś podlać?" odpowiadało „nic" opiekunowi ogrodu.
     const przestrzenie = await prisma.plantSpace.findMany({
       take: LIMIT,
-      where: await ownedWhereAsync(userId),
-      select: { id: true, name: true, kind: true, _count: { select: { plants: true } } },
+      where: await zakresPrzestrzeni(userId),
+      // Licznik tylko ACTIVE — ta sama definicja co kafelek przestrzeni („ile mam",
+      // nie „ile kiedykolwiek miałem"); asystent zawyżał liczbę o zakończone rośliny.
+      select: { id: true, name: true, kind: true, _count: { select: { plants: { where: { status: "ACTIVE" } } } } },
       orderBy: { createdAt: "asc" },
     });
     return przestrzenie.map((p) => ({
@@ -45,9 +52,13 @@ export const readTools: Record<string, AiReadToolHandler> = {
       take: LIMIT,
       skip: offset,
       where: {
-        ...(await ownedWhereAsync(userId)),
+        space: {
+          is: {
+            ...(await zakresPrzestrzeni(userId)),
+            ...(przestrzen ? { name: { contains: przestrzen, mode: "insensitive" } } : {}),
+          },
+        },
         ...(tylkoAktywne ? { status: "ACTIVE" } : {}),
-        ...(przestrzen ? { space: { is: { name: { contains: przestrzen, mode: "insensitive" } } } } : {}),
       },
       select: {
         name: true,
@@ -90,7 +101,7 @@ export const readTools: Record<string, AiReadToolHandler> = {
       where: {
         active: true,
         nextDueAt: { lte: horyzont },
-        space: { is: await ownedWhereAsync(userId) },
+        space: { is: await zakresPrzestrzeni(userId) },
       },
       select: {
         title: true,
@@ -105,14 +116,18 @@ export const readTools: Record<string, AiReadToolHandler> = {
       orderBy: { nextDueAt: "asc" },
     });
 
-    const teraz = Date.now();
+    const teraz = new Date();
+    const koniecDnia = userDayBounds().end;
     return zadania.map((z) => ({
       zabieg: z.title,
       rodzaj: z.kind,
       roslina: z.plant?.name ?? null,
       przestrzen: z.space.name,
       termin: z.nextDueAt?.toISOString().slice(0, 10) ?? null,
-      zalegly: z.nextDueAt ? z.nextDueAt.getTime() < teraz : false,
+      // Ta sama definicja co widok agendy (`kubelekAgendy`): „zaległe" zaczyna się dobę po
+      // terminie. Surowe `< teraz` kazało asystentowi alarmować o zadaniu, które UI pokazuje
+      // jako „na dziś" — ta sama dana, dwie sprzeczne odpowiedzi w tej samej minucie.
+      zalegly: kubelekAgendy(z.nextDueAt, teraz, koniecDnia) === "OVERDUE",
       // Uzasadnienie idzie do modelu, żeby odpowiedź brzmiała „podlej, bo od 9 dni bez deszczu",
       // a nie „podlej". Użytkownik, który rozumie powód, przestaje pytać o to samo.
       dlaczego: z.reason,

@@ -348,6 +348,42 @@ async function przywrocDzieciRosliny(
   const wpisy = (p.journal as Record<string, unknown>[]) ?? [];
   const pomiary = (p.measurements as Record<string, unknown>[]) ?? [];
   const zdrowie = (p.healthEvents as Record<string, unknown>[]) ?? [];
+  // Harmonogram opieki: przy migawce POJEDYNCZEJ rośliny (`deletePlant` zbiera `careTasks`).
+  // W migawce przestrzeni zadania leżą na poziomie `space.careTasks` i przywraca je tamta gałąź —
+  // tu lista jest wtedy pusta i to jest poprawny no-op, nie dziura.
+  const zadaniaOpieki = (p.careTasks as Record<string, unknown>[]) ?? [];
+  if (zadaniaOpieki.length > 0) {
+    // Wskazanie miejsca wraca tylko wtedy, gdy miejsce nadal istnieje — inaczej klucz obcy
+    // odrzuciłby cały zapis (miejsce mogło zostać usunięte osobno, jego FK to SET NULL).
+    const wskazaneMiejsca = Array.from(
+      new Set(zadaniaOpieki.map((z) => z.placeId).filter((x): x is string => typeof x === "string")),
+    );
+    const istniejaceMiejsca = new Set(
+      wskazaneMiejsca.length > 0
+        ? (
+            // paginacja: kompletny — to test istnienia dla skończonej listy id z migawki;
+            // ucięty wynik odpinałby zadania od miejsc, które wciąż istnieją.
+            await tx.plantPlace.findMany({ where: { id: { in: wskazaneMiejsca } }, select: { id: true } })
+          ).map((m) => m.id)
+        : [],
+    );
+    await tx.plantCareTask.createMany({
+      data: zadaniaOpieki.map((z) => ({
+        id: z.id as string,
+        spaceId: z.spaceId as string,
+        plantId: (z.plantId as string | null) ?? null,
+        placeId: typeof z.placeId === "string" && istniejaceMiejsca.has(z.placeId) ? z.placeId : null,
+        kind: (z.kind as string) ?? "WATERING",
+        title: (z.title as string) ?? "",
+        recurring: (z.recurring as string | null) ?? null,
+        lastDoneAt: asDate(z.lastDoneAt),
+        nextDueAt: asDate(z.nextDueAt),
+        reason: (z.reason as string | null) ?? null,
+        active: (z.active as boolean) ?? true,
+      })),
+      skipDuplicates: true,
+    });
+  }
 
   if (wpisy.length > 0) {
     await tx.plantJournalEntry.createMany({
@@ -547,6 +583,18 @@ async function restoreRosliny(d: Record<string, unknown>): Promise<void> {
         skipDuplicates: true,
       });
       await przywrocDzieciRosliny(tx, p);
+
+      // Zdarzenia opieki przeżyły usunięcie z `plantId = NULL` (SET NULL) — samo odtworzenie
+      // wiersza z tym samym `id` niczego nie relinkuje, kolumna została już nadpisana. Migawka
+      // niesie identyfikatory, więc przypinamy historię jawnie; warunek `plantId: null` pilnuje,
+      // żeby nie ukraść zdarzenia, które ktoś w międzyczasie przypiął gdzie indziej.
+      const idZdarzen = (d.careEventIds as string[] | undefined) ?? [];
+      if (idZdarzen.length > 0) {
+        await tx.plantCareEvent.updateMany({
+          where: { id: { in: idZdarzen }, plantId: null },
+          data: { plantId: p.id as string },
+        });
+      }
     });
     return;
   }

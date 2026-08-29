@@ -140,6 +140,7 @@ export async function harvestToPantry(
     select: {
       id: true,
       spaceId: true,
+      kind: true,
       quantity: true,
       quantityUnit: true,
       pantryItemId: true,
@@ -147,6 +148,10 @@ export async function harvestToPantry(
     },
   });
   if (!zdarzenie) throw new Error("Zbiór nie istnieje");
+  // Do spiżarni idzie wyłącznie ZBIÓR — Server Action jest wywoływalna z dowolnym id, więc bez
+  // tego warunku dowolne zdarzenie z mojego zakresu (np. wpis ewidencji oprysku) dało się wysłać
+  // do Kuchni jako „1 kg <nazwa rośliny>".
+  if (zdarzenie.kind !== "HARVEST") throw new Error("To zdarzenie nie jest zbiorem");
   await assertSpaceAccess(zdarzenie.spaceId, user.id, true);
   if (zdarzenie.pantryItemId) return { pantryItemId: zdarzenie.pantryItemId };
 

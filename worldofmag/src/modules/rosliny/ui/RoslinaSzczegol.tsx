@@ -201,7 +201,10 @@ export function RoslinaSzczegol({
         // Odstęp trafia do `recurring` w tym samym kształcie, którego używa reguła terminu.
         // Pusty albo niedodatni znaczy „bez własnego odstępu", a wtedy reguła bierze swoje 14 dni —
         // moduł nie zna zabiegu JEDNORAZOWEGO i etykieta pola mówi to wprost.
-        recurring: Number.isFinite(co) && co > 0 ? JSON.stringify({ interval: co }) : null,
+        // Dla PODLEWANIA odstęp nie istnieje z definicji (termin liczy reguła domenowa z gatunku,
+        // światła, pory roku i prognozy) — formularz pola wtedy nie pokazuje, a tu nie zapisujemy
+        // wartości, której żaden czytelnik nie użyje.
+        recurring: noweZadanie.kind !== "WATERING" && Number.isFinite(co) && co > 0 ? JSON.stringify({ interval: co }) : null,
       });
       // Lista pochodzi z serwera, bo to serwer rozstrzyga TERMIN — a dla gatunku bez cyklu
       // podlewania rozstrzyga, że terminu nie ma. Doklejenie własnej wersji wiersza pokazywałoby
@@ -605,6 +608,11 @@ export function RoslinaSzczegol({
               <button type="button" style={przycisk} disabled={pending} onClick={() => startTransition(async () => { await markHealthOutcome(diagnoza.eventId, "no_change"); })}>
                 {t("bezZmian")}
               </button>
+              {/* „Pogorszyło się" to najważniejszy z trzech sygnałów — mówi, że zalecenie AI
+                  zaszkodziło. UI oferował dwa z trzech wariantów `WynikLeczenia`. */}
+              <button type="button" style={przycisk} disabled={pending} onClick={() => startTransition(async () => { await markHealthOutcome(diagnoza.eventId, "worse"); })}>
+                {t("pogorszylo")}
+              </button>
               {diagnoza.usage && (
                 <AiCostBadge usage={diagnoza.usage} akcja={t("akcjaDiagnoza")} swiezy />
               )}
@@ -645,7 +653,7 @@ export function RoslinaSzczegol({
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
             {dziennik.map((w) => (
               <li key={w.id} style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                <span style={drobny}>{w.occurredAt.slice(0, 10)}</span>{" "}
+                <span style={drobny}>{dzienLokalny(w.occurredAt)}</span>{" "}
                 {w.text}
                 {w.photoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -686,7 +694,7 @@ export function RoslinaSzczegol({
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
             {pomiary.slice(-10).reverse().map((p) => (
               <li key={p.id} style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                <span style={drobny}>{p.measuredAt.slice(0, 10)}</span>{" "}
+                <span style={drobny}>{dzienLokalny(p.measuredAt)}</span>{" "}
                 {t(`pomiar.${p.kind}`)}: {p.value} {p.unit}
               </li>
             ))}
@@ -741,15 +749,22 @@ export function RoslinaSzczegol({
                 <option key={k} value={k}>{t(`zabieg.${k}`)}</option>
               ))}
             </select>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={noweZadanie.coIleDni}
-              onChange={(e) => setNoweZadanie({ ...noweZadanie, coIleDni: e.target.value })}
-              placeholder={t("coIleDniPlaceholder")}
-              aria-label={t("coIleDniEtykieta")}
-              style={{ ...pole, flex: "0 1 200px" }}
-            />
+            {/* Podlewanie nie ma odstępu do wpisania: termin wyznacza reguła domenowa (gatunek ×
+                światło × pora roku × prognoza). Pole z etykietą „Co ile dni" obiecywało sterowanie,
+                którego reguła świadomie nie daje — dla WATERING pokazujemy zamiast niego wyjaśnienie. */}
+            {noweZadanie.kind === "WATERING" ? (
+              <span style={{ ...drobny, alignSelf: "center", flex: "0 1 260px" }}>{t("podlewanieBezOdstepu")}</span>
+            ) : (
+              <input
+                type="text"
+                inputMode="numeric"
+                value={noweZadanie.coIleDni}
+                onChange={(e) => setNoweZadanie({ ...noweZadanie, coIleDni: e.target.value })}
+                placeholder={t("coIleDniPlaceholder")}
+                aria-label={t("coIleDniEtykieta")}
+                style={{ ...pole, flex: "0 1 200px" }}
+              />
+            )}
             <button type="button" style={przyciskGlowny} onClick={dodajZadanie} disabled={pending}>
               {t("dodajZadanie")}
             </button>
@@ -802,7 +817,7 @@ export function RoslinaSzczegol({
             {zbiory.map((z) => (
               <li key={z.id} style={{ display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                  <span style={drobny}>{z.occurredAt.slice(0, 10)}</span>{" "}
+                  <span style={drobny}>{dzienLokalny(z.occurredAt)}</span>{" "}
                   {z.quantity ?? "?"} {z.quantityUnit ?? ""}
                 </span>
                 {/* Trzy wyjścia z modułu — każde przez kontrakt innego modułu, żadne zbudowane u siebie. */}
@@ -843,7 +858,7 @@ export function RoslinaSzczegol({
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
             {zdarzenia.map((z) => (
               <li key={z.id} style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                <span style={drobny}>{z.occurredAt.slice(0, 10)}</span>{" "}
+                <span style={drobny}>{dzienLokalny(z.occurredAt)}</span>{" "}
                 {t(`zabieg.${z.kind}`)}
                 {z.outcome !== "DONE" && <span style={drobny}> ({t(`wynik.${z.outcome}`)})</span>}
                 {z.note && <span style={drobny}> — {z.note}</span>}

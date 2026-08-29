@@ -7,7 +7,7 @@ import { SUFIT_LISTY } from "@/platform/pagination";
 import { recordTrash } from "@/platform/trash/trash";
 import { requireRoslinyAccess, sprawdzWskazania, zakresPrzestrzeni } from "../lib/sharingGuard";
 import { assertSpaceAccess } from "./przestrzenie";
-import { bladZmianyStanu, roslinaNaDTO, statusZakonczony, type RoslinaDTO } from "../domain/roslina";
+import { bladZmianyStanu, roslinaNaDTO, statusZakonczony, wymaganaDodatniaLicznosc, type RoslinaDTO } from "../domain/roslina";
 import { zalozHarmonogramPodlewania } from "../lib/terminy";
 import type { JednostkaLicznosci, StatusRosliny } from "../lib/typy";
 
@@ -156,6 +156,8 @@ export async function createPlant(data: {
   // wyrażonym po cichu inną drogą.
   const ilosc = data.quantity !== undefined && data.quantity > 0 ? data.quantity : 1;
 
+  // (przy edycji ta sama reguła jest BŁĘDEM, nie domyślnikiem — patrz `wymaganaDodatniaLicznosc`)
+
   const roslina = await prisma.plant.create({
     data: {
       // **Własność bierze się z PRZESTRZENI, nie z parametru wołającego.** Roślina nie ma
@@ -229,7 +231,7 @@ export async function updatePlant(
       ...(data.placeId !== undefined ? { placeId: data.placeId } : {}),
       ...(data.speciesId !== undefined ? { speciesId: data.speciesId } : {}),
       ...(data.customSpecies !== undefined ? { customSpecies: data.customSpecies } : {}),
-      ...(data.quantity !== undefined && data.quantity > 0 ? { quantity: data.quantity } : {}),
+      ...(data.quantity !== undefined ? { quantity: wymaganaDodatniaLicznosc(data.quantity) } : {}),
       ...(data.quantityUnit !== undefined ? { quantityUnit: data.quantityUnit } : {}),
       ...(data.stage !== undefined ? { stage: data.stage } : {}),
       ...(data.sownAt !== undefined ? { sownAt: data.sownAt } : {}),
@@ -266,7 +268,10 @@ export async function setPlantStatus(
     where: { id },
     data: {
       status,
-      statusReason: reason?.trim() || null,
+      // Brak podanego powodu ZOSTAWIA dotychczasowy — nadpisywanie nullem kasowało wpisaną
+      // wcześniej przyczynę przy każdej korekcie stanu (np. pomyłkowe DEAD → HARVESTED),
+      // czyli daną, o której cały moduł mówi, że jest najcenniejsza.
+      ...(reason?.trim() ? { statusReason: reason.trim() } : {}),
       statusAt: statusZakonczony(status) ? new Date() : null,
     },
     select: { spaceId: true },
@@ -354,15 +359,28 @@ export async function deletePlant(id: string): Promise<void> {
       journal: true,
       measurements: true,
       healthEvents: true,
+      // Kaskada (`PlantCareTask.plant → Cascade`) usuwa też harmonogram opieki, a zakłada go
+      // wyłącznie `createPlant`/`propagatePlant` — bez tej linii przywrócona roślina po cichu
+      // znikała z agendy, kalendarza i powiadomień NA ZAWSZE.
+      careTasks: true,
     },
   });
   if (!roslina) throw new Error("Roślina nie istnieje");
+
+  // Zdarzenia opieki NIE giną (plantId → SET NULL), ale samo odtworzenie rośliny z tym samym `id`
+  // niczego nie relinkuje — SET NULL już nadpisał kolumnę. Zapisujemy identyfikatory, żeby
+  // przywrócenie mogło jawnie przypiąć historię z powrotem.
+  const careEventIds = (
+    // paginacja: kompletny — częściowa lista identyfikatorów = częściowo przypięta historia po
+    // przywróceniu, bez żadnego sygnału, że czegoś brakuje.
+    await prisma.plantCareEvent.findMany({ where: { plantId: id }, select: { id: true } })
+  ).map((e) => e.id);
 
   await recordTrash(user.id, {
     module: "rosliny",
     entityId: roslina.id,
     title: `Roślina: ${roslina.name}`,
-    payload: { rodzaj: "plant", plant: roslina },
+    payload: { rodzaj: "plant", plant: roslina, careEventIds },
   });
 
   await prisma.plant.delete({ where: { id } });

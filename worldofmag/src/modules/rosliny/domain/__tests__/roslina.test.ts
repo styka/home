@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bladZmianyStanu, powodWymagany, roslinaNaDTO, statusZakonczony, type WierszRosliny } from "../roslina";
+import { bladZmianyStanu, powodWymagany, roslinaNaDTO, statusZakonczony, wymaganaDodatniaLicznosc, type WierszRosliny } from "../roslina";
 
 const wiersz = (over: Partial<WierszRosliny> = {}): WierszRosliny => ({
   id: "p1",
@@ -88,5 +88,13 @@ test("stany zakończone znikają z listy aktywnych, ACTIVE nie", () => {
   assert.equal(statusZakonczony("ACTIVE"), false);
   for (const s of ["SOLD", "HARVESTED", "DEAD", "ARCHIVED"] as const) {
     assert.equal(statusZakonczony(s), true, `${s} powinien być stanem zakończonym`);
+  }
+});
+
+test("wymaganaDodatniaLicznosc: dodatnia przechodzi, zero/ujemna/NaN rzucają", () => {
+  assert.equal(wymaganaDodatniaLicznosc(3), 3);
+  assert.equal(wymaganaDodatniaLicznosc(0.5), 0.5);
+  for (const zla of [0, -1, NaN, Infinity]) {
+    assert.throws(() => wymaganaDodatniaLicznosc(zla), /dodatnia/);
   }
 });

@@ -10,7 +10,11 @@ import { RoslinaSzczegol } from "@/modules/rosliny/ui/RoslinaSzczegol";
 
 export default async function RoslinaPage({ params }: { params: { spaceId: string; plantId: string } }) {
   const roslina = await getPlant(params.plantId);
-  if (!roslina) notFound();
+  // Zgodność rośliny z przestrzenią Z ADRESU jest częścią poprawności widoku: `tryb` (widoczność
+  // pól BBCH, liczności, ewidencji) brał się z przestrzeni z URL, więc ręcznie sklejony adres
+  // renderował roślinę domową w trybie polowym (wbrew AC-2), a niedostępna przestrzeń z adresu
+  // kończyła się błędem 500 zamiast 404.
+  if (!roslina || roslina.spaceId !== params.spaceId) notFound();
 
   const [przestrzen, dziennik, pomiary, zdarzenia, zbiory, zadania] = await Promise.all([
     getSpace(params.spaceId),

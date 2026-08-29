@@ -255,7 +255,12 @@ export async function recordCare(data: {
   });
 
   if (data.outcome === "POSTPONED") {
-    const odKtorej = zadanie.nextDueAt ?? kiedy;
+    // Punkt odniesienia = PÓŹNIEJSZA z dat (termin, dziś). Liczenie zawsze od starego terminu
+    // psuło odłożenie dokładnie tam, gdzie jest potrzebne: zadanie zaległe od miesiąca po
+    // „odłóż o 2 dni" dostawało termin sprzed 26 dni — wciąż zaległe, wciąż na czele listy,
+    // a UI zdejmowało pozycję z ekranu, więc wyglądało to na sukces aż do odświeżenia.
+    const termin = zadanie.nextDueAt;
+    const odKtorej = termin && termin.getTime() > kiedy.getTime() ? termin : kiedy;
     const oIle = data.odlozOIle && data.odlozOIle > 0 ? data.odlozOIle : 2;
     await prisma.plantCareTask.update({
       where: { id: data.taskId },

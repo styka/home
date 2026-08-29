@@ -2,6 +2,7 @@ import { prisma } from "@/platform/db/prisma";
 import { asStr, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import { ownedWhereAsync } from "@/platform/auth/serverUtils";
+import { zakresPrzestrzeni } from "../lib/sharingGuard";
 import { createSpace } from "../actions/przestrzenie";
 import { createPlant } from "../actions/rosliny";
 import { recordCare } from "../actions/opieka";
@@ -16,9 +17,11 @@ import { TRYBY_PRZESTRZENI, type JednostkaLicznosci, type RodzajPomiaru, type Ro
  * obejściem kontroli dostępu, którego nikt by nie zauważył (test „bypass" pilnuje właśnie tego).
  */
 
-/** Znajduje przestrzeń po nazwie. Jedna przestrzeń = nie pytamy; brak = mówimy wprost, czego brakuje. */
+/** Znajduje przestrzeń po nazwie. Jedna przestrzeń = nie pytamy; brak = mówimy wprost, czego brakuje.
+ *  Zakres = `zakresPrzestrzeni` (moje + nadane mi) — ten sam co agenda/kalendarz/widoki; węższy
+ *  `ownedWhereAsync` sprawiał, że opiekun udostępnionego ogrodu słyszał „Nie znaleziono rośliny". */
 async function znajdzPrzestrzen(userId: string, nazwa: string | undefined): Promise<string> {
-  const zakres = await ownedWhereAsync(userId);
+  const zakres = await zakresPrzestrzeni(userId);
 
   if (nazwa) {
     const trafiona = await prisma.plantSpace.findFirst({
@@ -42,7 +45,7 @@ async function znajdzPrzestrzen(userId: string, nazwa: string | undefined): Prom
 async function znajdzRosline(userId: string, nazwa: string | undefined): Promise<{ id: string; name: string }> {
   if (!nazwa) throw new Error("Powiedz, o którą roślinę chodzi");
   const roslina = await prisma.plant.findFirst({
-    where: { ...(await ownedWhereAsync(userId)), name: { contains: nazwa, mode: "insensitive" } },
+    where: { space: { is: await zakresPrzestrzeni(userId) }, name: { contains: nazwa, mode: "insensitive" } },
     select: { id: true, name: true },
     orderBy: { updatedAt: "desc" },
   });

@@ -107,3 +107,15 @@ export function bladZmianyStanu(status: StatusRosliny, reason: string | null | u
   }
   return null;
 }
+
+/**
+ * Liczność przy EDYCJI: wartość niedodatnia to błąd użytkownika, nie sygnał „weź domyślną".
+ * (Przy TWORZENIU brak/zero ma domyślnik 1 — tam użytkownik jeszcze nic nie zadeklarował;
+ * przy edycji ciche pominięcie pola zwracało „sukces", po którym liczność zostawała stara.)
+ */
+export function wymaganaDodatniaLicznosc(quantity: number): number {
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw new Error("Liczność musi być dodatnia — usunięcie rośliny ma własny przycisk");
+  }
+  return quantity;
+}

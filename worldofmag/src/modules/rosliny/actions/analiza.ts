@@ -16,7 +16,8 @@ import { assertPlantAccess } from "./rosliny";
 import { assertSpaceAccess } from "./przestrzenie";
 import { prognozaDlaPrzestrzeni } from "../lib/pogoda";
 import { etykietaFazy } from "../lib/fenologia";
-import type { PewnoscDiagnozy, RodzajZabiegu, TrybPrzestrzeni } from "../lib/typy";
+import type { PewnoscDiagnozy, RodzajZabiegu } from "../lib/typy";
+import { trybLubDomyslny } from "../domain/agenda";
 
 /** Rodzaje zabiegu, które model może zaproponować w zaleceniu — sprawdzane przed zapisem. */
 const RODZAJE_ZABIEGU = [
@@ -186,7 +187,9 @@ export async function diagnosePlant(data: { plantId: string; zdjecieUrl?: string
     prognozaDlaPrzestrzeni(roslina.space.weatherLocationId),
   ]);
 
-  const tryb = roslina.space.kind as TrybPrzestrzeni;
+  // Przez `trybLubDomyslny` jak cała reszta modułu — kolumna jest Stringiem, więc rzutowanie
+  // wpuszczałoby wartość spoza unii surową do promptu diagnozy i do `etykietaFazy`.
+  const tryb = trybLubDomyslny(roslina.space.kind);
   const kontekst = [
     `Roślina: ${roslina.name}`,
     `Gatunek: ${roslina.species?.namePl ?? roslina.customSpecies ?? "nieznany"}${roslina.species?.nameLatin ? ` (${roslina.species.nameLatin})` : ""}`,
