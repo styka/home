@@ -3,7 +3,9 @@ import Link from "next/link";
 import { auth } from "@/platform/auth/session";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { listAvailableSkins } from "@/actions/skins";
+import { getSkinAssetStats } from "@/actions/skinAssets";
 import { SystemSkinManager } from "@/components/admin/SystemSkinManager";
+import { SkinAssetsPanel } from "@/components/admin/SkinAssetsPanel";
 import { ChevronLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
@@ -15,6 +17,8 @@ export default async function AdminSkinsPage() {
   if (!hasPermission(session, PERMISSIONS.ADMIN)) redirect("/");
 
   const skins = (await listAvailableSkins()).filter((s) => s.isSystem);
+  // 116: magazyn grafik skórek zaawansowanych — statystyki + zarządzanie.
+  const assetStats = await getSkinAssetStats();
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
@@ -28,6 +32,8 @@ export default async function AdminSkinsPage() {
         </Link>
 
         <SystemSkinManager skins={skins} />
+
+        <SkinAssetsPanel stats={assetStats} />
       </div>
     </div>
   );

@@ -74,15 +74,15 @@
   Gotowe, gdy: `check:cost-badge` + `check:content-memory` zielone. Pokrywa AC-2 (część serwerowa).
 
 ## Faza 5 — UI
-- [ ] **T-13** — `SkinAiPanel.tsx`: przełącznik „Prosta / Zaawansowana", tryb zaawansowany
+- [x] **T-13** — `SkinAiPanel.tsx`: przełącznik „Prosta / Zaawansowana", tryb zaawansowany
   z podglądem (kompilacja czystą funkcją), listą odrzuconych, ostrzeżeniem kontrastowym
   i zapisem przez `createSkin`; aktywacja osobnym, świadomym krokiem. `SkinPreview` przyjmuje
   skompilowane tokeny. Teksty w `messages/pl.json`. Gotowe, gdy: pełny przepływ opis →
   podgląd → zapis → aktywacja działa na dev. Pokrywa AC-2, AC-3, AC-11, AC-15 (część UI).
-- [ ] **T-14** `[P]` — `SkinPicker.tsx`: odznaka „zaawansowana", edycja ograniczona do
+- [x] **T-14** `[P]` — `SkinPicker.tsx`: odznaka „zaawansowana", edycja ograniczona do
   nazwy/opisu/udostępnienia + regeneracja. Gotowe, gdy: picker rozróżnia rodzaje, proste
   edytują się jak dotąd (AC-1).
-- [ ] **T-15** `[P]` — `/admin/skins`: sekcja statystyk (skórki per rodzaj, liczba/rozmiar
+- [x] **T-15** `[P]` — `/admin/skins`: sekcja statystyk (skórki per rodzaj, liczba/rozmiar
   assetów, największe, osierocone) + `SkinAssetsPanel` (tabela, upload systemowego, usuwanie
   z guardem używanych). Gotowe, gdy: AC-8 spełnione ręcznie na dev, AC-7 pokazuje odmowę.
 

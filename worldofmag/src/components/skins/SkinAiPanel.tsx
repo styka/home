@@ -2,11 +2,14 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { Sparkles, AlertTriangle } from "lucide-react";
+import { Sparkles, AlertTriangle, ImageOff } from "lucide-react";
 import { AiCostBadge } from "@/components/ui/AiCostBadge";
 import type { AiUsageInfo } from "@/platform/ai/usage";
 import { SkinPreview } from "./SkinPreview";
 import { ALL_CONTROLS, type SkinTokens } from "@/lib/skins";
+import { createSkin } from "@/actions/skins";
+import { kompilujDefinicje } from "@/lib/skins/kompilacja";
+import type { DefinicjaZaawansowana } from "@/lib/skins/zaawansowane";
 
 /**
  * 045 — „opisz, jak ma wyglądać" → komplet tokenów.
@@ -30,6 +33,17 @@ interface GeneratedSkin {
   rejected: string[];
 }
 
+/** 116: wynik trybu zaawansowanego (pełna definicja zamiast mapy tokenów). */
+interface GeneratedAdvanced {
+  name: string;
+  description: string;
+  colorScheme: "light" | "dark";
+  rationale: string;
+  definition: DefinicjaZaawansowana;
+  rejected: string[];
+  brakujaceGrafiki: string[];
+}
+
 const EXAMPLES = [
   "konsola statku kosmicznego — bursztyn i granat, wersaliki",
   "stary terminal z zielonym fosforem",
@@ -37,13 +51,24 @@ const EXAMPLES = [
   "japoński minimalizm — dużo światła, jeden akcent",
 ];
 
-export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => void }) {
+export function SkinAiPanel({
+  onApply,
+  onSavedAdvanced,
+}: {
+  onApply: (skin: GeneratedSkin) => void;
+  /** 116: wywoływane po zapisaniu skórki ZAAWANSOWANEJ (id nowej skórki). Bez tego
+   *  propa przełącznik trybu się nie pokazuje — panel działa jak przed 116. */
+  onSavedAdvanced?: (id: string) => void;
+}) {
   const t = useTranslations("components.skins.SkinAiPanel");
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GeneratedSkin | null>(null);
+  const [advanced, setAdvanced] = useState<GeneratedAdvanced | null>(null);
+  const [tryb, setTryb] = useState<"simple" | "advanced">("simple");
   const [usage, setUsage] = useState<AiUsageInfo | null>(null);
 
   async function generate() {
@@ -55,19 +80,52 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
       const res = await fetch("/api/llm/skins/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed }),
+        body: JSON.stringify({ prompt: trimmed, tryb }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Nie udało się wygenerować skórki");
-      setResult(data.skin as GeneratedSkin);
+      if (tryb === "advanced") {
+        setAdvanced(data.skin as GeneratedAdvanced);
+        setResult(null);
+      } else {
+        setResult(data.skin as GeneratedSkin);
+        setAdvanced(null);
+      }
       setUsage((data.usage ?? null) as AiUsageInfo | null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Nie udało się wygenerować skórki");
       setResult(null);
+      setAdvanced(null);
     } finally {
       setBusy(false);
     }
   }
+
+  /** 116: zapis skórki zaawansowanej — definicja przechodzi walidację serwerową
+   *  w `createSkin` jeszcze raz; klient niczego nie „przemyca". */
+  async function saveAdvanced() {
+    if (!advanced || !onSavedAdvanced) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const id = await createSkin({
+        name: advanced.name,
+        description: advanced.description || null,
+        colorScheme: advanced.colorScheme,
+        tokens: {},
+        definition: advanced.definition,
+      });
+      onSavedAdvanced(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Nie udało się zapisać skórki");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Podgląd zaawansowanej: kompilacja czystą funkcją (bez assetów — sloty `missing`
+  // i tak są jeszcze pominięte) + ostrzeżenia (kontrast) z tej samej kompilacji.
+  const advancedPreview = advanced ? kompilujDefinicje(advanced.definition, []) : null;
 
   if (!open) {
     return (
@@ -117,6 +175,39 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
           {t("zwin")}
         </button>
       </div>
+
+      {/* 116: przełącznik rodzaju. Segmenty, nie menu (lekcja 100) — widać, co jest
+          dostępne i co wybrane. Pokazuje się tylko tam, gdzie jest komu odebrać zapis
+          skórki zaawansowanej (prop onSavedAdvanced). */}
+      {onSavedAdvanced && (
+        <div style={{ display: "flex", gap: 6 }}>
+          {(["simple", "advanced"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setTryb(m)}
+              aria-pressed={tryb === m}
+              style={{
+                padding: "5px 12px",
+                borderRadius: "var(--radius-pill)",
+                border: "var(--border-width) var(--border-style) var(--border)",
+                background: tryb === m ? "var(--bg-elevated)" : "transparent",
+                color: tryb === m ? "var(--text-primary)" : "var(--text-secondary)",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {m === "simple" ? t("trybProsty") : t("trybZaawansowany")}
+            </button>
+          ))}
+        </div>
+      )}
+      {onSavedAdvanced && tryb === "advanced" && (
+        <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
+          {t("opisTrybuZaawansowanego")}
+        </span>
+      )}
 
       <textarea
         value={prompt}
@@ -250,6 +341,87 @@ export function SkinAiPanel({ onApply }: { onApply: (skin: GeneratedSkin) => voi
           </div>
 
           <SkinPreview tokens={result.tokens} />
+        </div>
+      )}
+
+      {/* 116: wynik trybu zaawansowanego — podgląd ze skompilowanych zmiennych,
+          ostrzeżenia (kontrast, brakujące grafiki), jawna lista odrzuconych pól
+          i zapis dopiero po decyzji użytkownika (AC-2). */}
+      {advanced && advancedPreview && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) 220px",
+            gap: 14,
+            alignItems: "start",
+            padding: 12,
+            borderRadius: "var(--radius-lg)",
+            border: "var(--border-width) var(--border-style) var(--border)",
+            background: "var(--bg-surface)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{advanced.name}</span>
+            {advanced.description && (
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{advanced.description}</span>
+            )}
+            {advanced.rationale && (
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>{advanced.rationale}</span>
+            )}
+
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {t("warstwyDefinicji", {
+                tokeny: Object.keys(advanced.definition.tokens ?? {}).length,
+                komponenty: Object.keys(advanced.definition.components ?? {}).length,
+                animacje: Object.keys(advanced.definition.animations ?? {}).length,
+              })}
+            </span>
+
+            {advancedPreview.ostrzezenia.map((o) => (
+              <span key={o} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: "var(--accent-amber)" }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                {o}
+              </span>
+            ))}
+
+            {advanced.brakujaceGrafiki.length > 0 && (
+              <span style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: "var(--text-muted)" }}>
+                <ImageOff size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                {t("brakGeneratoraGrafik", { ile: advanced.brakujaceGrafiki.length })}
+              </span>
+            )}
+
+            {advanced.rejected.length > 0 && (
+              <span style={{ fontSize: 11, color: "var(--accent-amber)" }}>
+                {t("pominietoPol", { ile: advanced.rejected.length })}{" "}
+                {advanced.rejected.slice(0, 4).join(", ")}
+                {advanced.rejected.length > 4 ? "…" : ""}
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={saveAdvanced}
+              disabled={saving}
+              style={{
+                alignSelf: "flex-start",
+                minHeight: 40,
+                padding: "0 16px",
+                borderRadius: "var(--radius-control)",
+                background: "var(--accent-blue)",
+                border: "none",
+                color: "var(--on-accent)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: saving ? "wait" : "pointer",
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {t("zapiszIAktywuj")}
+            </button>
+          </div>
+
+          <SkinPreview tokens={advancedPreview.tokens} />
         </div>
       )}
     </div>

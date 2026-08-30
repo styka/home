@@ -329,6 +329,12 @@ export function SkinEditor({
           if (generated.name) setName(generated.name);
           if (generated.description) setDescription(generated.description);
         }}
+        // 116: skórka ZAAWANSOWANA zapisuje się w panelu (model → walidacja → zapis),
+        // z pominięciem edytora tokenów — nie ma tam czego dostrajać ręcznie.
+        onSavedAdvanced={(id) => {
+          onSaved?.(id);
+          onClose();
+        }}
       />
 
       {/* 045: przenośność — skórka jako plik. */}
