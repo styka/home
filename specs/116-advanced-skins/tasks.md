@@ -1,7 +1,7 @@
 # Zadania: Advanced Skins — zaawansowane skórki generowane z języka naturalnego
 
 - **Plan:** ./plan.md (116-advanced-skins)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-08-29
 
 > Kolejność od najłatwiejszego do najtrudniejszego i zgodna z zależnościami. `[P]` = można
@@ -87,14 +87,14 @@
   z guardem używanych). Gotowe, gdy: AC-8 spełnione ręcznie na dev, AC-7 pokazuje odmowę.
 
 ## Faza 6 — Bramki i domknięcie
-- [ ] **T-16** — Pełna weryfikacja: `npm run check:migrations`, `check:ai-coverage`,
+- [x] **T-16** — Pełna weryfikacja: `npm run check:migrations`, `check:ai-coverage`,
   `check:cost-badge`, `check:content-memory`, `check:i18n`, `check:pagination`,
   `check:client-safe`, `tsc -p tsconfig.test.json`, `next lint`, `next build`
   (lokalny Postgres — C-13, NIGDY prod). Gotowe, gdy: wszystko zielone.
-- [ ] **T-17** — `docs/skorki/zaawansowane.md`: architektura, format, warstwy, jak dodać
+- [x] **T-17** — `docs/skorki/zaawansowane.md`: architektura, format, warstwy, jak dodać
   komponent/właściwość/animację/wariant układu, jak podłączyć generator obrazów, bezpieczeństwo,
   wersjonowanie, użycie przez LLM. Gotowe, gdy: dokument kompletny wg pkt 28 zlecenia.
-- [ ] **T-18** — Mapowanie AC → wynik (input do `/verify`) + wpis do `doświadczenia.md`,
+- [x] **T-18** — Mapowanie AC → wynik (input do `/verify`) + wpis do `doświadczenia.md`,
   jeśli był nieoczywisty problem (C-51).
 
 ## Mapowanie AC → zadania

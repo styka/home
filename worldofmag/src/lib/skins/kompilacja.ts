@@ -202,7 +202,11 @@ export function kompilujDefinicje(
   }
 
   // ── bramki → atrybuty ─────────────────────────────────────────────────────────
-  for (const brama of bramki) atrybuty[`data-${brama}`] = "1";
+  // forEach, nie for-of: główny tsconfig celuje niżej niż testowy i iteracja Set
+  // wymagałaby downlevelIteration.
+  bramki.forEach((brama) => {
+    atrybuty[`data-${brama}`] = "1";
+  });
 
   // ── responsive: telefon ───────────────────────────────────────────────────────
   //

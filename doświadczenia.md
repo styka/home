@@ -6021,3 +6021,21 @@ szedł na lokalnej, świeżo zasianej bazie i ktoś PRZECZYTAŁ log builda do ko
 latami — po każdej zmianie klucza/kształtu modelu grepnij seedy i skrypty deployu
 za starym kształtem (`findUnique({ where:` po zmienionym polu), bo `tsc` nie widzi
 plików `.js`, a build nie czerwienieje od ostrzeżenia.
+
+---
+
+## 2026-08-30 — Zmiennej CSS ustawionej inline na <html> nie nadpisze żadna media query
+**Problem:** Skórka zaawansowana (116) miała nadpisywać kilka tokenów na telefonie
+(`responsive.mobile.tokens`). Tokeny skórki są aplikowane inline na `<html>`
+(`style={tokensToStyle(...)}`), a styl inline wygrywa z każdą regułą arkusza — także
+z `@media (max-width: …) { :root { --token: … } }`. Reguła mobilna była więc martwa
+dokładnie wtedy, gdy skórka ustawiała ten token, czyli zawsze.
+**Rozwiązanie:** Kompilator przenosi nadpisywany token do PARY nowych zmiennych
+(`--d-font-size-base` / `--m-font-size-base`), USUWA go z mapy inline i ustawia bramkę
+`data-resp-mobile`; statyczne reguły w globals.css składają właściwą wartość po obu
+stronach progu md (`:root[data-resp-mobile] { --font-size-base: var(--d-…) }` + media
+query z wariantem `--m-…`). Cykli nie ma, bo nazwy są różne; wartości dopełnia kompilator.
+**Lekcja:** Responsywność wartości niesionej inline wymaga POŚREDNICTWA nazw: inline może
+nieść tylko warianty (`--d-*`/`--m-*`), a wybór między nimi musi zostać w arkuszu, bo tylko
+on widzi media queries. Przy okazji: `:root[data-x]` (0,2,0) świadomie przebija `:root`
+(0,1,0) — samo `html[data-x]` (0,1,1) przegrałoby z `:root` z globals.css.
