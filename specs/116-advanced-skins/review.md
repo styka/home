@@ -13,7 +13,7 @@ przechodzą `sanitizeValueOfKind` z zamkniętych katalogów, `url()`/`var()` w w
 niemożliwe (whitelisty funkcji per rodzaj), klucze i wartości atrybutów `data-*`
 w `{...skin.atrybuty}` pochodzą wyłącznie ze stałych katalogów kompilatora (nie da się
 wstrzyknąć `onload` itp.), `url()` buduje tylko kompilator z cuid-a zweryfikowanego
-w magazynie. Rename w pickerze nie zeruje definicji; migracja 0284 spójna ze schematem.
+w magazynie. Rename w pickerze nie zeruje definicji; migracja 0285 spójna ze schematem.
 
 ## Ustalenia (od najpoważniejszego) — wszystkie NANIESIONE w ramach recenzji
 
@@ -57,3 +57,13 @@ Uwagi (nieblokujące, poza zakresem 116):
   bezpieczeństwa (kaskada usuwania konta), plan §2.
 - Generator obrazów = abstrakcja z providerem „brak" (decyzja właściciela) — sloty
   grafik działają, podłączenie dostawcy opisane w `docs/skorki/zaawansowane.md` §7.
+
+## Dopisek integracyjny (2026-08-30, przed merge)
+
+`origin/develop` zdążył dostać równoległe commity 116 (raport „Brakujące moduły" +
+przebudowa treści generowanych) z **migracją 0284** — kolizja numeru z naszą
+`0284_advanced_skins`. Nasza migracja nigdy nie dotknęła zdalnych baz (tylko lokalny
+dev), więc zgodnie z C-11 przemianowano JĄ (nie tamtą, już zaaplikowaną na teście) na
+**`0285_advanced_skins`**; `check:migrations` zielone (następny wolny: 0286), lokalna
+baza uzgodniona. Przy okazji: decyzja właściciela z 2026-08-29 („nie interesują mnie
+tagi") — promocja `develop → master` idzie wyłącznie fast-forwardem, bez taga.

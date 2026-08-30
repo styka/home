@@ -16,7 +16,7 @@
 | `npm run check:pagination` | ✅ (2 nowe `findMany` z komentarzem `paginacja: kompletny` + uzasadnienie) |
 | `npm run check:client-safe` / `check:owner-columns` / `check:boundaries` / `check:module-registry` / `check:ui-contract` / `check:tailwind` | ✅ |
 | `npm run check:schema-drift` | ✅ migracje odtwarzają dokładnie `schema.prisma` |
-| `npx prisma migrate deploy` (lokalny PG) | ✅ 0284 aplikuje się czysto |
+| `npx prisma migrate deploy` (lokalny PG) | ✅ 0285 aplikuje się czysto |
 | `next lint --dir src` | ✅ „No ESLint warnings or errors" |
 | `tsc --noEmit -p tsconfig.test.json` | ✅ |
 | `npm run test:unit` (pełny) | ✅ fail 0 (w tym 15 nowych testów `zaawansowane.test.ts`) |
@@ -90,7 +90,7 @@
 
 ## Zgodność z konstytucją
 
-C-01/02 ✅ (tylko `worldofmag/`, aliasy) · C-10/11/15 ✅ (ręczna migracja 0284, DDL pisany
+C-01/02 ✅ (tylko `worldofmag/`, aliasy) · C-10/11/15 ✅ (ręczna migracja 0285, DDL pisany
 ręcznie) · C-12 ✅ (`kind`/`status` jako String+unia) · C-13 ✅ (lokalny PG, build bez
 `migrate.js`) · C-20 ✅ (`revalidatePath` we wszystkich mutacjach) · C-21 ✅ (własność wg
 wzorca `Skin`; `SkinAsset` świadomie bez `workspaceId` — precedens `Job`) · C-22 —

@@ -38,8 +38,8 @@ z każdą animacją skórki.
   - Relacje do `User`/`Team` z `onDelete: Cascade` (jak `Skin`).
   - „Które skórki używają assetu" — **wyliczane skanem definicji** (tabela skórek jest
     mała, odczyt admin-only); bez tabeli złączeniowej (C-53).
-- **Migracja (C-10, C-11):** numer z `npm run next:migration` = **0284** →
-  `prisma/migrations/0284_advanced_skins/migration.sql`:
+- **Migracja (C-10, C-11):** numer z `npm run next:migration` = **0285** →
+  `prisma/migrations/0285_advanced_skins/migration.sql`:
   `ALTER TABLE "Skin" ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'simple', ADD COLUMN "definition" TEXT;`
   + `CREATE TABLE "SkinAsset" (…)` + indeksy + FK. Ręczny DDL (bez ślepego `migrate diff`,
   C-15). Bez seedu — nie ma nowych uprawnień ani raportów.
@@ -161,7 +161,7 @@ type DefinicjaZaawansowana = {
 
 | Plik | Akcja | Po co |
 |------|-------|-------|
-| `prisma/schema.prisma` + `prisma/migrations/0284_advanced_skins/migration.sql` | edycja/nowy | `Skin.kind`/`definition`, model `SkinAsset` |
+| `prisma/schema.prisma` + `prisma/migrations/0285_advanced_skins/migration.sql` | edycja/nowy | `Skin.kind`/`definition`, model `SkinAsset` |
 | `src/lib/skins/zaawansowane.ts` | nowy | typy definicji, katalogi (komponenty/animacje/layout), walidacja, migrator wersji |
 | `src/lib/skins/kompilacja.ts` | nowy | definicja → tokeny `--c-*` + `data-nav` + url-e assetów + ostrzeżenia |
 | `src/lib/skins.ts` | edycja | `ADVANCED_COMPONENT_CONTROLS` (nowe rodziny `--c-*`), bez zmian w `ALL_CONTROLS` |
@@ -212,7 +212,7 @@ type DefinicjaZaawansowana = {
 
 ## 10. Zgodność z konstytucją — checklista
 
-- [x] C-10..C-15 — ręczna migracja 0284, bez enumów, bez `migrate diff` na ślepo
+- [x] C-10..C-15 — ręczna migracja 0285, bez enumów, bez `migrate diff` na ślepo
 - [x] C-20..C-25 — Server Actions + revalidatePath, własność wg wzorca `Skin` (tabela
   wyjątkowa z `ownerId`), bez nowej `AIAction` (generator „kliknięciem"), audyt nie dotyczy
   (brak zmian RBAC/konfiguracji), trash poza zakresem (spec §6)

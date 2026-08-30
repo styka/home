@@ -11,7 +11,7 @@
 - `[ ]` do zrobienia · `[x]` zrobione · `[~]` w trakcie · `[!]` zablokowane (patrz notatka)
 
 ## Faza 0 — Fundament danych
-- [x] **T-1** — Migracja `prisma/migrations/0284_advanced_skins/migration.sql`:
+- [x] **T-1** — Migracja `prisma/migrations/0285_advanced_skins/migration.sql`:
   `Skin.kind`/`Skin.definition` + `CREATE TABLE "SkinAsset"` + indeksy + FK (plan §2);
   aktualizacja `schema.prisma` (bez `workspaceId` na `SkinAsset` — precedens `Job`/0245).
   Gotowe, gdy: `npm run check:migrations` i `npx prisma generate` czyste, lokalny
