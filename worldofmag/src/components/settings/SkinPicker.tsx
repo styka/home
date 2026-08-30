@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { SkinPreview } from "@/components/skins/SkinPreview";
 import { SkinEditor } from "@/components/skins/SkinEditor";
-import { setActiveSkin, deleteSkin, type SkinView } from "@/actions/skins";
+import { setActiveSkin, deleteSkin, updateSkin, type SkinView } from "@/actions/skins";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type TeamOpt = { id: string; name: string };
@@ -30,6 +30,19 @@ export function SkinPicker({
   const [pending, start] = useTransition();
   const [active, setActive] = useState<string | null>(activeId);
   const [editor, setEditor] = useState<EditorState>({ open: false });
+  // 116: skórka zaawansowana nie otwiera edytora tokenów (nie ma tam czego stroić) —
+  // edycji podlega tylko nazwa i opis, w miniformularzu na karcie.
+  const [rename, setRename] = useState<{ id: string; name: string; description: string } | null>(null);
+
+  function saveRename() {
+    if (!rename) return;
+    const { id, name, description } = rename;
+    setRename(null);
+    start(async () => {
+      await updateSkin(id, { name, description: description || null });
+      router.refresh();
+    });
+  }
 
   function choose(id: string | null) {
     setActive(id);
@@ -88,19 +101,65 @@ export function SkinPicker({
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 {s.isSystem && <Badge>systemowa</Badge>}
+                {s.kind === "advanced" && <Badge>{t("zaawansowana")}</Badge>}
                 {!s.isSystem && s.isOwn && <Badge>moja</Badge>}
                 {!s.isSystem && !s.isOwn && <Badge>{t("udostepniona")}</Badge>}
                 {s.isPublic && !s.isSystem && <Badge>publiczna</Badge>}
               </div>
               <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-                <IconBtn title="Duplikuj i edytuj" onClick={() => duplicate(s)}><Copy size={13} /></IconBtn>
-                {s.isOwn && (
+                {/* 116: skórka zaawansowana nie ma edytora tokenów — duplikat/edycja
+                    otwierałyby formularz, który nie wyraża jej definicji. Edytuje się
+                    nazwę/opis; nową wersję robi się nowym opisem w generatorze. */}
+                {s.kind !== "advanced" && (
+                  <IconBtn title="Duplikuj i edytuj" onClick={() => duplicate(s)}><Copy size={13} /></IconBtn>
+                )}
+                {s.isOwn && s.kind !== "advanced" && (
                   <IconBtn title="Edytuj" onClick={() => setEditor({ open: true, initial: s, existingId: s.id })}><Pencil size={13} /></IconBtn>
+                )}
+                {s.isOwn && s.kind === "advanced" && (
+                  <IconBtn
+                    title={t("zmienNazwe")}
+                    onClick={() => setRename({ id: s.id, name: s.name, description: s.description ?? "" })}
+                  >
+                    <Pencil size={13} />
+                  </IconBtn>
                 )}
                 {s.isOwn && !s.isSystem && (
                   <IconBtn title={t("usun")} onClick={() => remove(s.id)} danger><Trash2 size={13} /></IconBtn>
                 )}
               </div>
+              {rename?.id === s.id && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                  <input
+                    value={rename.name}
+                    maxLength={60}
+                    onChange={(e) => setRename({ ...rename, name: e.target.value })}
+                    aria-label={t("nazwa")}
+                    style={{ background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text-primary)", padding: "6px 8px", fontSize: 12 }}
+                  />
+                  <input
+                    value={rename.description}
+                    maxLength={200}
+                    onChange={(e) => setRename({ ...rename, description: e.target.value })}
+                    aria-label={t("opis")}
+                    placeholder={t("opis")}
+                    style={{ background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text-primary)", padding: "6px 8px", fontSize: 12 }}
+                  />
+                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    <button type="button" onClick={() => setRename(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>
+                      {t("anuluj")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveRename}
+                      disabled={pending || !rename.name.trim()}
+                      style={{ background: "var(--accent-blue)", border: "none", borderRadius: 6, color: "var(--on-accent)", fontSize: 12, fontWeight: 600, padding: "5px 12px", cursor: "pointer" }}
+                    >
+                      {t("zapisz")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

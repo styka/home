@@ -271,7 +271,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
   return (
     <aside
-      className="hidden md:flex flex-col h-full border-r"
+      /* 116: `omnia-nawigacja` to hak dla bramkowanych reguł skórki zaawansowanej
+         (wariant sidebar-prawy przez `order`, tło z grafiki, poświata nawigacji). */
+      className="omnia-nawigacja hidden md:flex flex-col h-full border-r"
       style={{
         width: "var(--sidebar-width)",
         backgroundColor: "var(--bg-surface)",

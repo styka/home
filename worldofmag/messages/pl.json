@@ -778,6 +778,29 @@
       },
       "PowrotDoPanelu": {
         "panelAdministratora": "Panel administratora"
+      },
+      "SkinAssetsPanel": {
+        "naglowek": "Grafiki skórek zaawansowanych",
+        "skorkiProste": "Skórki proste",
+        "skorkiZaawansowane": "Skórki zaawansowane",
+        "liczbaGrafik": "Grafiki",
+        "rozmiarLacznie": "Łączny rozmiar",
+        "osierocone": "Osierocone",
+        "wgrajSystemowa": "Wgraj grafikę systemową",
+        "limitWgrywania": "PNG/JPEG/WebP, do 500 kB. Grafika systemowa jest dostępna każdej skórce.",
+        "brakGrafik": "Brak grafik w magazynie.",
+        "kolPodglad": "Podgląd",
+        "kolNazwa": "Nazwa",
+        "kolTyp": "Typ",
+        "kolRozmiar": "Rozmiar",
+        "kolWlasciciel": "Właściciel",
+        "kolUzycie": "Używana przez",
+        "systemowy": "systemowa",
+        "uzytkownika": "użytkownika",
+        "osierocony": "osierocona",
+        "usun": "Usuń",
+        "usunZablokowane": "Nie można usunąć — używana przez skórkę",
+        "usunacGrafike": "Usunąć grafikę „{name}”?"
       }
     },
     "assistant": {
@@ -970,7 +993,13 @@
       "SkinPicker": {
         "udostepniona": "udostępniona",
         "usun": "Usuń",
-        "utworzWlasnaSkorke": "Utwórz własną skórkę"
+        "utworzWlasnaSkorke": "Utwórz własną skórkę",
+        "zaawansowana": "zaawansowana",
+        "zmienNazwe": "Zmień nazwę lub opis",
+        "zapisz": "Zapisz",
+        "anuluj": "Anuluj",
+        "nazwa": "Nazwa",
+        "opis": "Opis"
       },
       "UserFactsSection": {
         "teInformacjeTrafiajaDo": "Te informacje trafiają do podpowiedzi w innych modułach (np. propozycji w Pogodzie). Możesz je poprawić, potwierdzić albo odrzucić — odrzucone nie wracają.",
@@ -1170,7 +1199,14 @@
         "nicNieZostaloJeszcze": "Nic nie zostało jeszcze zapisane — po wstawieniu możesz dostroić każdy token ręcznie.",
         "zwin": "Zwiń",
         "uzyjTejPropozycji": "Użyj tej propozycji",
-        "ustawionoTokenow": "Ustawiono {ile} z {wszystkich} tokenów motywu"
+        "ustawionoTokenow": "Ustawiono {ile} z {wszystkich} tokenów motywu",
+        "trybProsty": "Prosta",
+        "trybZaawansowany": "Zaawansowana (beta)",
+        "opisTrybuZaawansowanego": "Skórka zaawansowana zmienia więcej niż kolory: komponenty i ich stany, układ nawigacji, animacje i grafiki. Powstaje w całości z opisu — bez ręcznego strojenia.",
+        "warstwyDefinicji": "Definicja: {tokeny} tokenów · {komponenty} komponentów · {animacje} animacji",
+        "brakGeneratoraGrafik": "{ile, plural, one {# grafika zostanie dodana} few {# grafiki zostaną dodane} other {# grafik zostanie dodanych}}, gdy generator obrazów będzie podłączony — do tego czasu skórka używa gradientów.",
+        "pominietoPol": "Pominięto {ile, plural, one {# niedozwolone pole} few {# niedozwolone pola} other {# niedozwolonych pól}}:",
+        "zapiszIAktywuj": "Zapisz i aktywuj skórkę"
       },
       "SkinEditor": {
         "wlasnaCubicBezier": "własna (cubic-bezier)",

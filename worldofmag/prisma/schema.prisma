@@ -78,6 +78,7 @@ model User {
   serviceReviews          ServiceReview[]       @relation("AuthoredServiceReviews")
   menuPref                UserMenuPref?
   skins                   Skin[]                @relation("SkinOwner")
+  skinAssets              SkinAsset[]           @relation("SkinAssetOwner")
   skinPref                UserSkinPref?
   warsztatSettings        WarsztatSettings?
   notifications           Notification[]        @relation("UserNotifications")
@@ -239,6 +240,8 @@ model Skin {
   isSystem    Boolean  @default(false)
   colorScheme String   @default("dark") // "dark" | "light" — schemat natywnych kontrolek
   tokens      String   @default("{}") // JSON: { "--bg-base":"#..", "--radius":"8px", ... }
+  kind        String   @default("simple") // 116: "simple" | "advanced" — rodzaj skórki
+  definition  String? // 116: JSON definicji zaawansowanej (NULL dla prostych)
   ownerId     String?
   ownerTeamId String?
   isPublic    Boolean  @default(false)
@@ -254,6 +257,31 @@ model Skin {
   @@index([ownerId])
   @@index([ownerTeamId])
   @@index([workspaceId])
+}
+
+// 116 — trwały magazyn grafik skórek zaawansowanych (tła, tekstury, dekoracje).
+// Wzorzec własności jak `Skin` (NULL/NULL = asset systemowy); ŚWIADOMIE bez
+// `workspaceId` (precedens `Job` po 0245). `hash` = SHA-256 treści — deduplikacja
+// w obrębie właściciela i assetów systemowych (indeks, nie unique: globalny unique
+// łamałby kaskadę usuwania konta).
+model SkinAsset {
+  id          String   @id @default(cuid())
+  hash        String
+  data        Bytes
+  mimeType    String // whitelist: image/png | image/jpeg | image/webp (bez SVG — wektor XSS)
+  size        Int
+  kind        String // "background" | "texture" | "pattern" | "logo" | "decoration"
+  name        String
+  ownerId     String?
+  ownerTeamId String?
+  createdAt   DateTime @default(now())
+
+  owner     User? @relation("SkinAssetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerTeam Team? @relation("SkinAssetTeam", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+
+  @@index([hash])
+  @@index([ownerId])
+  @@index([ownerTeamId])
 }
 
 // Wybrana przez użytkownika skórka (null ⇒ domyślna ciemna).
@@ -399,6 +427,7 @@ model Team {
   petShares            PetShare[]            @relation("TeamPetShares")
   serviceCategories    ServiceCategory[]     @relation("TeamServiceCategories")
   skins                Skin[]                @relation("SkinTeam")
+  skinAssets           SkinAsset[]           @relation("SkinAssetTeam")
   workspace            Workspace?            @relation("TeamWorkspace")
 
   @@index([ownerId])

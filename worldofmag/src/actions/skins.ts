@@ -11,6 +11,13 @@ import {
   validateTokens,
   type SkinTokens,
 } from "@/lib/skins";
+import {
+  parseDefinicja,
+  walidujDefinicje,
+  type DefinicjaZaawansowana,
+  type SkinKind,
+} from "@/lib/skins/zaawansowane";
+import { kompilujDefinicje } from "@/lib/skins/kompilacja";
 
 export type SkinView = {
   id: string;
@@ -19,6 +26,9 @@ export type SkinView = {
   isSystem: boolean;
   colorScheme: "light" | "dark";
   tokens: SkinTokens;
+  /** 116: rodzaj skórki. Zaawansowana niesie też zwalidowaną definicję. */
+  kind: SkinKind;
+  definition: DefinicjaZaawansowana | null;
   ownerId: string | null;
   ownerTeamId: string | null;
   isPublic: boolean;
@@ -30,6 +40,8 @@ export type ActiveSkin = {
   skinId: string | null;
   tokens: SkinTokens;
   colorScheme: "light" | "dark";
+  /** 116: atrybuty `data-*` na <html> (bramki reguł skórki zaawansowanej). Puste dla prostych. */
+  atrybuty: Record<string, string>;
 };
 
 function scheme(v: string): "light" | "dark" {
@@ -37,14 +49,49 @@ function scheme(v: string): "light" | "dark" {
 }
 
 /** Aktywna skórka użytkownika — czytane z layoutu (bez ponownej autoryzacji).
- *  Brak preferencji lub wskazana skórka niedostępna ⇒ domyślna ciemna. */
+ *  Brak preferencji lub wskazana skórka niedostępna ⇒ domyślna ciemna.
+ *
+ *  116: skórka zaawansowana KOMPILUJE się tutaj do tej samej mapy zmiennych, którą
+ *  aplikuje layout. Każdy błąd kompilacji degraduje do warstwy tokenów (zapisanej
+ *  w `Skin.tokens` przy tworzeniu), a błąd i tam — do domyślnej ciemnej. Aplikacja
+ *  nie ma prawa się wywrócić od zepsutej definicji (AC-9). */
 export async function readActiveSkin(userId: string): Promise<ActiveSkin> {
-  const fallback: ActiveSkin = { skinId: null, tokens: {}, colorScheme: "dark" };
+  const fallback: ActiveSkin = { skinId: null, tokens: {}, colorScheme: "dark", atrybuty: {} };
   const pref = await prisma.userSkinPref.findUnique({ where: { userId } }).catch(() => null);
   if (!pref?.skinId) return fallback;
   const skin = await prisma.skin.findUnique({ where: { id: pref.skinId } }).catch(() => null);
   if (!skin) return fallback;
-  return { skinId: skin.id, tokens: parseTokens(skin.tokens), colorScheme: scheme(skin.colorScheme) };
+
+  const prosty: ActiveSkin = {
+    skinId: skin.id,
+    tokens: parseTokens(skin.tokens),
+    colorScheme: scheme(skin.colorScheme),
+    atrybuty: {},
+  };
+  if (skin.kind !== "advanced" || !skin.definition) return prosty;
+
+  try {
+    const definicja = parseDefinicja(skin.definition);
+    // Recenzja 116 (ust. 3): `parseDefinicja` nie rzuca — uszkodzony rekord albo przyszła
+    // wersja schematu daje PUSTĄ definicję. Wtedy degradujemy do lustrzanej warstwy
+    // tokenów (po to istnieje), a nie do skompilowanej pustki, czyli domyślnej ciemnej.
+    const pustaDefinicja =
+      !definicja.tokens && !definicja.components && !definicja.states &&
+      !definicja.layout && !definicja.animations && !definicja.assets && !definicja.responsive;
+    if (pustaDefinicja) return prosty;
+    const ids = (definicja.assets ?? []).map((a) => a.id).filter(Boolean);
+    const assety = ids.length
+      ? await prisma.skinAsset.findMany({
+          where: { id: { in: ids } },
+          take: ids.length,
+          select: { id: true, mimeType: true },
+        })
+      : [];
+    const w = kompilujDefinicje(definicja, assety);
+    return { skinId: skin.id, tokens: w.tokens, colorScheme: scheme(skin.colorScheme), atrybuty: w.atrybuty };
+  } catch {
+    return prosty;
+  }
 }
 
 /** Id aktywnej skórki — dla UI (picker). */
@@ -57,11 +104,13 @@ export async function getActiveSkinId(): Promise<string | null> {
 function toView(
   s: {
     id: string; name: string; description: string | null; isSystem: boolean;
-    colorScheme: string; tokens: string; ownerId: string | null;
+    colorScheme: string; tokens: string; kind: string; definition: string | null;
+    ownerId: string | null;
     ownerTeamId: string | null; isPublic: boolean; sortOrder: number;
   },
   canEdit: boolean,
 ): SkinView {
+  const kind: SkinKind = s.kind === "advanced" ? "advanced" : "simple";
   return {
     id: s.id,
     name: s.name,
@@ -69,6 +118,8 @@ function toView(
     isSystem: s.isSystem,
     colorScheme: scheme(s.colorScheme),
     tokens: parseTokens(s.tokens),
+    kind,
+    definition: kind === "advanced" && s.definition ? parseDefinicja(s.definition) : null,
     ownerId: s.ownerId,
     ownerTeamId: s.ownerTeamId,
     isPublic: s.isPublic,
@@ -124,11 +175,32 @@ export type SkinInput = {
   description?: string | null;
   colorScheme: "light" | "dark";
   tokens: SkinTokens;
+  /** 116: surowa definicja zaawansowana (np. z generatora LLM). Jej obecność czyni
+   *  skórkę zaawansowaną; przechodzi pełną walidację przed zapisem, a warstwa tokenów
+   *  z definicji jest lustrzana w `tokens` (fallback + miniatura w pickerze). */
+  definition?: unknown;
   isSystem?: boolean;
   isPublic?: boolean;
   ownerTeamId?: string | null;
   sortOrder?: number;
 };
+
+/** Wspólne wyprowadzenie pól zapisu z wejścia (116): definicja → kind/definition/tokens. */
+function poleSkorki(input: Pick<SkinInput, "tokens" | "definition">): {
+  kind: SkinKind;
+  definition: string | null;
+  tokens: string;
+} {
+  if (input.definition === undefined || input.definition === null) {
+    return { kind: "simple", definition: null, tokens: JSON.stringify(validateTokens(input.tokens)) };
+  }
+  const { definicja } = walidujDefinicje(input.definition);
+  return {
+    kind: "advanced",
+    definition: JSON.stringify(definicja),
+    tokens: JSON.stringify(definicja.tokens ?? {}),
+  };
+}
 
 /** Tworzy nową skórkę. isSystem wymaga admina; w przeciwnym razie user-owned. */
 export async function createSkin(input: SkinInput): Promise<string> {
@@ -137,7 +209,7 @@ export async function createSkin(input: SkinInput): Promise<string> {
   if (!userId) throw new Error("Unauthorized");
 
   const name = input.name.trim().slice(0, 60) || "Skórka";
-  const tokens = validateTokens(input.tokens);
+  const pola = poleSkorki(input);
   const colorScheme = input.colorScheme === "light" ? "light" : "dark";
 
   if (input.isSystem) {
@@ -149,7 +221,7 @@ export async function createSkin(input: SkinInput): Promise<string> {
         isSystem: true,
         isPublic: true,
         colorScheme,
-        tokens: JSON.stringify(tokens),
+        ...pola,
         sortOrder: input.sortOrder ?? 100,
       },
     });
@@ -171,7 +243,7 @@ export async function createSkin(input: SkinInput): Promise<string> {
       isSystem: false,
       isPublic: !!input.isPublic,
       colorScheme,
-      tokens: JSON.stringify(tokens),
+      ...pola,
       ownerId: ownerTeamId ? null : userId,
       ownerTeamId,
     },
@@ -202,7 +274,15 @@ export async function updateSkin(id: string, patch: Partial<SkinInput>): Promise
   if (patch.name !== undefined) data.name = patch.name.trim().slice(0, 60) || "Skórka";
   if (patch.description !== undefined) data.description = patch.description?.trim() || null;
   if (patch.colorScheme !== undefined) data.colorScheme = patch.colorScheme === "light" ? "light" : "dark";
-  if (patch.tokens !== undefined) data.tokens = JSON.stringify(validateTokens(patch.tokens));
+  if (patch.definition !== undefined) {
+    // Zmiana definicji przelicza też lustrzaną warstwę tokenów (fallback + miniatura).
+    const pola = poleSkorki({ tokens: patch.tokens ?? {}, definition: patch.definition });
+    data.kind = pola.kind;
+    data.definition = pola.definition;
+    data.tokens = pola.tokens;
+  } else if (patch.tokens !== undefined) {
+    data.tokens = JSON.stringify(validateTokens(patch.tokens));
+  }
   if (patch.isPublic !== undefined) data.isPublic = !!patch.isPublic;
   if (patch.sortOrder !== undefined) data.sortOrder = patch.sortOrder;
   await prisma.skin.update({ where: { id }, data });
@@ -217,14 +297,20 @@ export async function deleteSkin(id: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-/** Format pliku skórki (045). Wersjonowany, żeby przyszła zmiana kształtu dała się
- *  rozpoznać, zamiast po cichu zaimportować śmieci. */
+/** Format pliku skórki (045, 116). Wersjonowany, żeby przyszła zmiana kształtu dała się
+ *  rozpoznać, zamiast po cichu zaimportować śmieci. Wersja 1 = skórka prosta (bez zmian);
+ *  wersja 2 = zaawansowana: + definicja + hashe assetów. Danych binarnych plik NIE niesie —
+ *  przy imporcie referencje wiążą się po hashu z assetami dostępnymi w tej instalacji,
+ *  a nieodnalezione są jawnie oznaczane jako brakujące (AC-14). */
 export type SkinFile = {
-  omniaSkin: 1;
+  omniaSkin: 1 | 2;
   name: string;
   description: string | null;
   colorScheme: "light" | "dark";
   tokens: SkinTokens;
+  definition?: DefinicjaZaawansowana;
+  /** id assetu z definicji → SHA-256 treści (do ponownego wiązania przy imporcie). */
+  assetHashes?: Record<string, string>;
 };
 
 /** Eksport skórki do JSON-a (do pobrania jako plik).
@@ -233,6 +319,27 @@ export async function exportSkin(id: string): Promise<string> {
   const available = await listAvailableSkins();
   const skin = available.find((s) => s.id === id);
   if (!skin) throw new Error("Skin not available");
+
+  if (skin.kind === "advanced" && skin.definition) {
+    const ids = (skin.definition.assets ?? []).map((a) => a.id).filter(Boolean);
+    const assety = ids.length
+      ? await prisma.skinAsset.findMany({
+          where: { id: { in: ids } },
+          take: ids.length,
+          select: { id: true, hash: true },
+        })
+      : [];
+    const file: SkinFile = {
+      omniaSkin: 2,
+      name: skin.name,
+      description: skin.description,
+      colorScheme: skin.colorScheme,
+      tokens: skin.tokens,
+      definition: skin.definition,
+      assetHashes: Object.fromEntries(assety.map((a) => [a.id, a.hash])),
+    };
+    return JSON.stringify(file, null, 2);
+  }
 
   const file: SkinFile = {
     omniaSkin: 1,
@@ -283,6 +390,50 @@ export async function importSkin(json: string, name?: string): Promise<SkinImpor
     (typeof src.name === "string" && src.name.trim()) ||
     "Zaimportowana skórka";
 
+  // 116: plik wersji 2 niesie definicję zaawansowaną. Definicja jest OBCA — pełna
+  // walidacja; referencje assetów wiążemy po hashu z assetami dostępnymi importującemu
+  // (własne + systemowe), a nieodnalezione oznaczamy `missing`, żeby kompilator jawnie
+  // je pominął zamiast pokazywać cudze/nieistniejące id.
+  let pola: { kind: SkinKind; definition: string | null; tokens: string } = {
+    kind: "simple",
+    definition: null,
+    tokens: JSON.stringify(tokens),
+  };
+  if (src.definition !== undefined) {
+    const { definicja, odrzucone } = walidujDefinicje(src.definition);
+    rejected.push(...odrzucone.map((o) => `definition.${o}`));
+    const hashes =
+      src.assetHashes && typeof src.assetHashes === "object" && !Array.isArray(src.assetHashes)
+        ? (src.assetHashes as Record<string, unknown>)
+        : {};
+    if (definicja.assets?.length) {
+      const szukane = definicja.assets
+        .map((r) => hashes[r.id])
+        .filter((h): h is string => typeof h === "string" && /^[0-9a-f]{64}$/.test(h));
+      const znalezione = szukane.length
+        ? await prisma.skinAsset.findMany({
+            where: {
+              hash: { in: szukane },
+              OR: [{ ownerId: user.id }, { ownerId: null, ownerTeamId: null }],
+            },
+            take: szukane.length,
+            select: { id: true, hash: true },
+          })
+        : [];
+      const poHashu = new Map(znalezione.map((a) => [a.hash, a.id]));
+      definicja.assets = definicja.assets.map((r) => {
+        const hash = hashes[r.id];
+        const noweId = typeof hash === "string" ? poHashu.get(hash) : undefined;
+        return noweId ? { ...r, id: noweId, status: "ready" as const } : { ...r, id: "", status: "missing" as const };
+      });
+    }
+    pola = {
+      kind: "advanced",
+      definition: JSON.stringify(definicja),
+      tokens: JSON.stringify(definicja.tokens ?? {}),
+    };
+  }
+
   const skin = await prisma.skin.create({
     data: {
       name: importedName.slice(0, 60),
@@ -290,7 +441,7 @@ export async function importSkin(json: string, name?: string): Promise<SkinImpor
       isSystem: false,
       isPublic: false,
       colorScheme: src.colorScheme === "light" ? "light" : "dark",
-      tokens: JSON.stringify(tokens),
+      ...pola,
       ownerId: user.id,
     },
   });
@@ -302,6 +453,11 @@ export async function importSkin(json: string, name?: string): Promise<SkinImpor
 /** Duplikuje skórkę jako nową, edytowalną skórkę użytkownika. */
 export async function duplicateSkin(id: string, name?: string): Promise<string> {
   const user = await requireAuth();
+  // Recenzja 116 (ust. 5): duplikować wolno tylko skórkę, którą użytkownik i tak widzi
+  // w pickerze (ten sam guard co eksport) — 116 rozszerzył kopię o pełną definicję,
+  // więc `findUnique` po samym id oddawałoby cudzą prywatną definicję temu, kto zna id.
+  const available = await listAvailableSkins();
+  if (!available.some((s) => s.id === id)) throw new Error("Skin not available");
   const src = await prisma.skin.findUnique({ where: { id } });
   if (!src) throw new Error("Not found");
   const skin = await prisma.skin.create({
@@ -312,6 +468,9 @@ export async function duplicateSkin(id: string, name?: string): Promise<string> 
       isPublic: false,
       colorScheme: src.colorScheme,
       tokens: JSON.stringify(validateTokens(parseTokens(src.tokens))),
+      // 116: kopia skórki zaawansowanej zachowuje definicję (rewalidowaną przy odczycie).
+      kind: src.kind === "advanced" ? "advanced" : "simple",
+      definition: src.kind === "advanced" ? src.definition : null,
       ownerId: user.id,
     },
   });
