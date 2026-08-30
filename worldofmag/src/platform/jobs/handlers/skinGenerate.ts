@@ -375,6 +375,10 @@ async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
   let definicja: DefinicjaZaawansowana = { schemaVersion: 1 };
   let odrzucone: string[] = [];
   let parsed: Record<string, unknown> = {};
+  // Recenzja 116 (ust. 6): do diagnozy porażki idzie liczba pól PRZYSŁANYCH przez model
+  // (kontrakt `opisPorazki` z 080), nie liczność listy odrzuconych ścieżek — te dwa
+  // rozjeżdżają się, gdy walidacja odrzuca całe sekcje.
+  let przyslanychPol = 0;
 
   for (let podejscie = 1; podejscie <= SKIN_MAX_ATTEMPTS; podejscie++) {
     const result = await chatComplete({
@@ -398,6 +402,7 @@ async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
     }
     if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
 
+    przyslanychPol = Object.keys(parsed).length;
     // Model jest źródłem równie obcym jak cudzy plik — pełna walidacja definicji.
     const w = walidujDefinicje(parsed);
     definicja = w.definicja;
@@ -420,7 +425,7 @@ async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
   }
 
   if (!definicja.tokens && !definicja.components) {
-    throw new JobError(opisPorazki(odrzucone.length, odrzucone), 502);
+    throw new JobError(opisPorazki(przyslanychPol, odrzucone), 502);
   }
 
   // 116: zamówione grafiki — bez dostawcy obrazów zostają `missing` (jawnie, nie cicho).

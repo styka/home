@@ -30,7 +30,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return new NextResponse(Buffer.from(asset.data), {
     headers: {
       "Content-Type": asset.mimeType,
-      "Cache-Control": "public, max-age=31536000, immutable",
+      // `private` (recenzja 116, ust. 1): odpowiedź jest bramkowana sesją, więc `public`
+      // pozwoliłoby cache'om współdzielonym (CDN/proxy) serwować grafikę bez sesji.
+      // Agresywne cache'owanie per przeglądarka zostaje — o to chodziło od początku.
+      "Cache-Control": "private, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
       ETag: `"${asset.hash}"`,
     },
   });

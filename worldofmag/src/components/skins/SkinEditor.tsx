@@ -331,10 +331,17 @@ export function SkinEditor({
         }}
         // 116: skórka ZAAWANSOWANA zapisuje się w panelu (model → walidacja → zapis),
         // z pominięciem edytora tokenów — nie ma tam czego dostrajać ręcznie.
-        onSavedAdvanced={(id) => {
-          onSaved?.(id);
-          onClose();
-        }}
+        // Tylko w edytorze użytkownika (recenzja 116, ust. 4): w trybie admina zapis
+        // stworzyłby PRYWATNĄ skórkę konta administratora — niewidoczną na liście
+        // systemowych, wbrew obietnicy przycisku.
+        onSavedAdvanced={
+          mode === "user"
+            ? (id) => {
+                onSaved?.(id);
+                onClose();
+              }
+            : undefined
+        }
       />
 
       {/* 045: przenośność — skórka jako plik. */}

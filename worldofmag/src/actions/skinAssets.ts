@@ -15,7 +15,7 @@ import { createHash } from "crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/platform/db/prisma";
 import { auth } from "@/platform/auth/session";
-import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
+import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { SUFIT_LISTY } from "@/platform/pagination";
 
@@ -27,6 +27,21 @@ const KWOTA_UZYTKOWNIKA = 20 * 1024 * 1024; // 20 MB łącznie na konto
 const DOZWOLONE_MIME = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 const RODZAJE = new Set(["background", "texture", "pattern", "logo", "decoration"]);
+
+/** Sygnatury (magic bytes) dozwolonych formatów — weryfikowane przy uploadzie. */
+function zgodnaSygnatura(data: Buffer, mimeType: string): boolean {
+  if (data.length < 12) return false;
+  switch (mimeType) {
+    case "image/png":
+      return data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47;
+    case "image/jpeg":
+      return data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+    case "image/webp":
+      return data.subarray(0, 4).toString("ascii") === "RIFF" && data.subarray(8, 12).toString("ascii") === "WEBP";
+    default:
+      return false;
+  }
+}
 
 export type SkinAssetView = {
   id: string;
@@ -93,6 +108,12 @@ export async function uploadSkinAsset(formData: FormData): Promise<UploadSkinAss
   if (jakoSystemowy && !isAdmin) throw new Error("Forbidden");
 
   const data = Buffer.from(await file.arrayBuffer());
+  // Recenzja 116 (ust. 1): klienckiemu `file.type` nie ufamy — deklarowany MIME musi
+  // zgadzać się z sygnaturą pliku, inaczej pod `image/png` dałoby się wgrać dowolne
+  // bajty serwowane potem z tym nagłówkiem.
+  if (!zgodnaSygnatura(data, mimeType)) {
+    throw new Error("Zawartość pliku nie zgadza się z deklarowanym typem obrazu");
+  }
   const hash = createHash("sha256").update(data).digest("hex");
 
   // Deduplikacja: identyczna treść u tego samego właściciela / w assetach systemowych.

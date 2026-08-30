@@ -72,6 +72,13 @@ export async function readActiveSkin(userId: string): Promise<ActiveSkin> {
 
   try {
     const definicja = parseDefinicja(skin.definition);
+    // Recenzja 116 (ust. 3): `parseDefinicja` nie rzuca — uszkodzony rekord albo przyszła
+    // wersja schematu daje PUSTĄ definicję. Wtedy degradujemy do lustrzanej warstwy
+    // tokenów (po to istnieje), a nie do skompilowanej pustki, czyli domyślnej ciemnej.
+    const pustaDefinicja =
+      !definicja.tokens && !definicja.components && !definicja.states &&
+      !definicja.layout && !definicja.animations && !definicja.assets && !definicja.responsive;
+    if (pustaDefinicja) return prosty;
     const ids = (definicja.assets ?? []).map((a) => a.id).filter(Boolean);
     const assety = ids.length
       ? await prisma.skinAsset.findMany({
@@ -446,6 +453,11 @@ export async function importSkin(json: string, name?: string): Promise<SkinImpor
 /** Duplikuje skórkę jako nową, edytowalną skórkę użytkownika. */
 export async function duplicateSkin(id: string, name?: string): Promise<string> {
   const user = await requireAuth();
+  // Recenzja 116 (ust. 5): duplikować wolno tylko skórkę, którą użytkownik i tak widzi
+  // w pickerze (ten sam guard co eksport) — 116 rozszerzył kopię o pełną definicję,
+  // więc `findUnique` po samym id oddawałoby cudzą prywatną definicję temu, kto zna id.
+  const available = await listAvailableSkins();
+  if (!available.some((s) => s.id === id)) throw new Error("Skin not available");
   const src = await prisma.skin.findUnique({ where: { id } });
   if (!src) throw new Error("Not found");
   const skin = await prisma.skin.create({
