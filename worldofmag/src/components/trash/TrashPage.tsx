@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Trash2, RotateCcw, FileText, CheckSquare, Loader2, User, Repeat } from "lucide-react";
+import { Trash2, RotateCcw, FileText, CheckSquare, Loader2, User, Repeat, FolderTree } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { restoreTrashItem, purgeTrashItem, emptyTrash, type TrashItemDTO } from "@/actions/trash";
@@ -13,6 +13,7 @@ const MODULE_META: Record<string, { label: string; icon: React.ReactNode; color:
   tasks: { label: "Zadanie", icon: <CheckSquare size={14} />, color: "var(--accent-blue)" },
   contacts: { label: "Kontakt", icon: <User size={14} />, color: "var(--accent-green)" },
   habits: { label: "Nawyk", icon: <Repeat size={14} />, color: "var(--accent-orange)" },
+  obszary: { label: "Obszar (Zadania)", icon: <FolderTree size={14} />, color: "var(--accent-blue)" },
 };
 
 export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; retentionDays: number }) {

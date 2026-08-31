@@ -773,6 +773,11 @@
             "nazwa": "Zgłoś błąd lub sugestię",
             "opis": "Wskaż element na ekranie i opisz, co jest z nim nie tak.",
             "hasla": "zglos blad sugestia feedback wskaz element"
+          },
+          "kosz": {
+            "nazwa": "Kosz — przywracanie zasobów",
+            "opis": "Wszystkie usunięte zasoby użytkowników (także po opróżnieniu kosza i retencji) z możliwością przywrócenia właścicielowi.",
+            "hasla": "kosz przywracanie usuniete zasoby odzyskiwanie trash restore"
           }
         }
       },
@@ -801,6 +806,22 @@
         "usun": "Usuń",
         "usunZablokowane": "Nie można usunąć — używana przez skórkę",
         "usunacGrafike": "Usunąć grafikę „{name}”?"
+      },
+      "KoszAdmina": {
+        "tytul": "Kosz — przywracanie zasobów",
+        "opis": "Wpisy kosza wszystkich użytkowników. Opróżnienie kosza i retencja tylko oznaczają wpis — dane pozostają w bazie i można je stąd przywrócić właścicielowi.",
+        "status_all": "Wszystkie",
+        "status_active": "W koszu",
+        "status_emptied": "Opróżnione",
+        "status_expired": "Wygasłe",
+        "status_restored": "Przywrócone",
+        "szukaj": "Szukaj",
+        "szukajPodpowiedz": "Tytuł albo e-mail właściciela…",
+        "brakWpisow": "Brak wpisów kosza dla wybranych filtrów.",
+        "przywroc": "Przywróć",
+        "przywrocPytanie": "Przywrócić „{tytul}” właścicielowi ({email})?",
+        "ladowanie": "Ładowanie…",
+        "zaladujWiecej": "Załaduj więcej"
       }
     },
     "assistant": {
