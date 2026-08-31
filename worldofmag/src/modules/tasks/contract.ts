@@ -39,6 +39,13 @@ export {
 
 export { getTaskTags, createTaskTag } from "./actions/taskTags";
 
+/**
+ * 117: dla restoratora kosza (`src/lib/trash/przywracanie.ts`) — odtworzenie drzewa obszarów
+ * z migawki wymaga kolejności rodzic→dziecko; definicja drzewa jest regułą tego modułu,
+ * więc wychodzi przez kontrakt (wzorzec `wierszRoslinyZMigawki` z Roślin).
+ */
+export { sortujTopologicznie, type WezelObszaru } from "./lib/obszary";
+
 export {
   getProjectGroups,
   createProjectGroup,
