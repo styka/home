@@ -763,6 +763,7 @@ model TaskProject {
   updatedAt    DateTime @updatedAt
 
   tasks   Task[]
+  areas   TaskArea[]
   members TaskProjectMember[]
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
@@ -847,6 +848,7 @@ model Task {
   category        String    @default("Other")
   order           Float     @default(0)
   projectId       String?
+  areaId          String? // 117: obszar w drzewie projektu (dokładnie jeden albo żaden)
   parentTaskId    String?
   previousTaskId  String? // 022: domknięte wystąpienie cykliczne, które utworzyło to zadanie
   createdById     String?
@@ -855,6 +857,7 @@ model Task {
   updatedAt       DateTime  @updatedAt
 
   project         TaskProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  area            TaskArea?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
   parent          Task?            @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subtasks        Task[]           @relation("TaskSubtasks")
   previous        Task?            @relation("TaskRecurrence", fields: [previousTaskId], references: [id], onDelete: SetNull)
@@ -880,6 +883,28 @@ model Task {
   @@index([previousTaskId])
   @@index([createdById])
   @@index([assigneeId])
+  @@index([areaId])
+}
+
+// 117: OBSZAR — drzewo porządkujące zadania WEWNĄTRZ projektu (obszar może zawierać zadania
+// i/lub kolejne obszary). Tabela-dziecko projektu jak TaskProjectMember: bez workspaceId,
+// własność i dostęp rozstrzyga projekt (assertProjectAccess). parentId ma Cascade świadomie —
+// tryb „usuń całe poddrzewo" to delete korzenia; tryb „scal do rodzica" najpierw przepina dzieci.
+model TaskArea {
+  id        String   @id @default(cuid())
+  projectId String
+  parentId  String?
+  name      String
+  order     Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  TaskProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent   TaskArea?   @relation("TaskAreaTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children TaskArea[]  @relation("TaskAreaTree")
+  tasks    Task[]
+
+  @@index([projectId, parentId])
 }
 
 model TaskTaskTag {
@@ -2075,10 +2100,16 @@ model TrashItem {
   title     String // czytelna etykieta
   payload   String // migawka JSON
   deletedAt DateTime @default(now())
+  // 117: NIEUSUWALNOŚĆ — wpis kosza nigdy nie jest twardo kasowany (wyjątek: RODO, kaskada po
+  // User). "active" | "emptied" | "expired" | "restored" (TrashStatus w platform/trash) —
+  // opróżnienie kosza i retencja tylko oznaczają wiersz; admin przywraca w /admin/kosz.
+  status     String    @default("active")
+  resolvedAt DateTime? // kiedy opróżniono / wygasł / przywrócono
 
   user User @relation("UserTrashItems", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, deletedAt])
+  @@index([status, deletedAt])
 }
 
 model ExchangeRate {
