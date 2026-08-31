@@ -6039,3 +6039,17 @@ query z wariantem `--m-…`). Cykli nie ma, bo nazwy są różne; wartości dope
 nieść tylko warianty (`--d-*`/`--m-*`), a wybór między nimi musi zostać w arkuszu, bo tylko
 on widzi media queries. Przy okazji: `:root[data-x]` (0,2,0) świadomie przebija `:root`
 (0,1,0) — samo `html[data-x]` (0,1,1) przegrałoby z `:root` z globals.css.
+
+## 2026-08-31 — Bramka może być czerwona już na develop: build feature'a pada na cudzym pliku
+**Problem:** Pełny `npm run build` gałęzi 117 padł na `check:ownership-scope` w
+`src/actions/skinAssets.ts` — pliku z feature'a 116 (advanced skins), którego 117 nie dotykał.
+116 dodał ręczny zakres własności (`ownerTeamId: { in: … }`, poprawny — grafiki skórek mają gałąź
+systemową jak `skins.ts`), ale nie dopisał wyjątku do `ownership-scope-coverage.json`; rozjazd
+wszedł na develop i pierwszy pełny build PO merge'u go ujawnił.
+**Rozwiązanie:** Wpis wyjątku z uzasadnieniem (wzorem `skins.ts`) dodany w 117, z adnotacją skąd
+się wziął. To samo dotyczyło zapadki `check:domain` (36 > 33 pomocników w plikach akcji): 116 dodał
+`poleSkorki` i `toView` assetów w akcjach — wyprowadzone do `src/lib/skins/zapis.ts` (eksportowalne,
+testowalne), a własny `doDTO` w `obszary.ts` zastąpiony `select` Prismy. Build od tego miejsca zielony.
+**Lekcja:** Gdy build pada na pliku spoza własnego diffa, najpierw `git log -- <plik>` — czerwień
+mogła przyjechać z bazą. Naprawę i tak robimy u siebie (czekanie na cudzy fix to też czekanie),
+ale w komunikacie/commicie nazywamy źródło, żeby recenzent nie szukał związku z bieżącym feature'em.

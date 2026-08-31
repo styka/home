@@ -22,10 +22,6 @@ export interface ObszarDTO extends WezelObszaru {
 
 export type TrybUsunieciaObszaru = "scal" | "poddrzewo";
 
-function doDTO(a: { id: string; projectId: string; parentId: string | null; name: string; order: number }): ObszarDTO {
-  return { id: a.id, projectId: a.projectId, parentId: a.parentId, name: a.name, order: a.order };
-}
-
 /** Wszystkie obszary projektu — płaska lista, drzewo składa `splaszczDrzewo` po stronie widoku. */
 export async function getProjectAreas(projectId: string): Promise<ObszarDTO[]> {
   const user = await requireAuth();
@@ -35,8 +31,9 @@ export async function getProjectAreas(projectId: string): Promise<ObszarDTO[]> {
   const rows = await prisma.taskArea.findMany({
     where: { projectId },
     orderBy: [{ order: "asc" }, { name: "asc" }],
+    select: { id: true, projectId: true, parentId: true, name: true, order: true },
   });
-  return rows.map(doDTO);
+  return rows;
 }
 
 export async function createArea(
@@ -63,10 +60,11 @@ export async function createArea(
 
   const area = await prisma.taskArea.create({
     data: { projectId, parentId, name: nazwa, order: (ostatni?.order ?? 0) + 1 },
+    select: { id: true, projectId: true, parentId: true, name: true, order: true },
   });
   revalidatePath("/tasks");
   revalidatePath(`/tasks/${projectId}`);
-  return doDTO(area);
+  return area;
 }
 
 export async function renameArea(id: string, name: string): Promise<void> {

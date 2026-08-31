@@ -18,6 +18,7 @@ import { auth } from "@/platform/auth/session";
 import { getUserTeamIds } from "@/platform/auth/serverUtils";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { widokAssetuSkorki } from "@/lib/skins/zapis";
 
 /** Twarde limity magazynu — chronią bazę, nie użytkownika. */
 const MAKS_ROZMIAR_ASSETU = 500 * 1024; // 500 kB na plik
@@ -62,24 +63,9 @@ export type UploadSkinAssetResult = {
   odrzucono?: string;
 };
 
-function toView(
-  a: { id: string; name: string; kind: string; mimeType: string; size: number; hash: string; ownerId: string | null; ownerTeamId: string | null; createdAt: Date },
-  userId: string,
-  isAdmin: boolean,
-): SkinAssetView {
-  const isSystem = a.ownerId === null && a.ownerTeamId === null;
-  return {
-    id: a.id,
-    name: a.name,
-    kind: a.kind,
-    mimeType: a.mimeType,
-    size: a.size,
-    hash: a.hash,
-    isSystem,
-    isOwn: a.ownerId === userId || (isSystem && isAdmin),
-    createdAt: a.createdAt.toISOString(),
-  };
-}
+// 117: ciało w `src/lib/skins/zapis.ts` — pomocnik w pliku "use server" łamał zapadkę
+// `check:domain` (funkcja stąd jest niesprawdzalna testem). Kształt zwrotu = `SkinAssetView`.
+const toView = widokAssetuSkorki;
 
 /** Wgraj grafikę do magazynu. Pola formularza: `file`, `kind`, opcjonalnie `name`
  *  i `system` ("1" — tylko admin: asset systemowy, dostępny każdej skórce). */

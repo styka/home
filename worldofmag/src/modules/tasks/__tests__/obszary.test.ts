@@ -6,7 +6,7 @@ import {
   czyRuchTworzyCykl,
   sortujTopologicznie,
   type WezelObszaru,
-} from "@/modules/tasks/lib/obszary";
+} from "../lib/obszary";
 
 /**
  * 117 (AC-1, AC-5): drzewo obszarów — jedna definicja dla trzech wariantów widoku i restoratora

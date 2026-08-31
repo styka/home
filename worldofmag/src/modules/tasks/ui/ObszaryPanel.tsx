@@ -33,7 +33,7 @@ export function ObszaryPanel({
   const t = useTranslations("modules.tasks.ObszaryPanel");
   const [wybor, setWybor] = useState<Wybor>({ rodzaj: "wszystkie" });
 
-  const bezObszaru = dane.zadaniaWObszarze.get(null) ?? [];
+  const bezObszaru = useMemo(() => dane.zadaniaWObszarze.get(null) ?? [], [dane]);
   const wszystkie = useMemo(() => {
     // Kolejność drzewa: sekcjami obszarów, na końcu bez obszaru — spójna z wariantem sekcji.
     const listy = dane.drzewo.map((w) => dane.zadaniaWObszarze.get(w.obszar.id) ?? []);
