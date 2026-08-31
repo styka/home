@@ -133,6 +133,17 @@
     "reason": "admin",
     "status": "excluded"
   },
+  "adminTrash:adminRestoreTrashItem": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "adminTrash:getAdminTrash": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
   "ai:streszczenie": {
     "access": "owner",
     "reason": "interactive",
