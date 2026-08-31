@@ -1,7 +1,7 @@
 # Spec: Obszary w module Zadania + trwała odzyskiwalność usuniętych zasobów
 
 - **ID:** 117-zadania-obszary
-- **Status:** draft
+- **Status:** done
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-31
 - **Moduł(y):** Tasks (obszary) + platforma kosza / panel admina (odzyskiwalność)

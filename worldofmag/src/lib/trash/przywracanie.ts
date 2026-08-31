@@ -299,6 +299,17 @@ async function restoreObszary(d: Record<string, unknown>, korzenId: string): Pro
   const korzen = wezly.find((w) => w.id === korzenId);
   const poScaleniu = tryb === "scal" ? korzen?.parentId ?? null : null;
 
+  // Recenzja 117 (ust. 2): „scal" przepiął pod-obszary korzenia na dziadka — przywrócenie
+  // przepina je z powrotem, ale tylko te, które NADAL wiszą tam, gdzie zostawiło je usunięcie
+  // (ten sam wzorzec „nie kradnij" co przy zadaniach: ręczne przenosiny z międzyczasu zostają).
+  const childIds = (d.childIds as string[] | undefined) ?? [];
+  if (tryb === "scal" && childIds.length > 0) {
+    await prisma.taskArea.updateMany({
+      where: { id: { in: childIds }, projectId, parentId: poScaleniu },
+      data: { parentId: korzenId },
+    });
+  }
+
   const przypisania = (d.taskAssignments as { taskId?: unknown; areaId?: unknown }[] | undefined) ?? [];
   const poObszarze = new Map<string, string[]>();
   for (const p of przypisania) {

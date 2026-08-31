@@ -821,7 +821,8 @@
         "przywroc": "Przywróć",
         "przywrocPytanie": "Przywrócić „{tytul}” właścicielowi ({email})?",
         "ladowanie": "Ładowanie…",
-        "zaladujWiecej": "Załaduj więcej"
+        "zaladujWiecej": "Załaduj więcej",
+        "bladPrzywracania": "Nie udało się przywrócić tej pozycji."
       }
     },
     "assistant": {

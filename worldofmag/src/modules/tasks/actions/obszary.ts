@@ -156,6 +156,10 @@ export async function deleteArea(id: string, tryb: TrybUsunieciaObszaru): Promis
       tryb,
       projectId: area.projectId,
       areas: migawkaObszarow,
+      // Recenzja 117 (ust. 2): w trybie „scal" pod-obszary przechodzą do dziadka i migawka
+      // korzenia by o nich nie wiedziała — bez tej listy przywrócenie oddawałoby obszar
+      // z zadaniami, ale jego dawne pod-obszary zostawałoby pod dziadkiem na zawsze.
+      childIds: wszystkie.filter((a) => a.parentId === id).map((a) => a.id),
       taskAssignments: przypisania.map((t) => ({ taskId: t.id, areaId: t.areaId })),
     },
   });

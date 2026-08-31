@@ -287,7 +287,14 @@ export async function updateTask(
     if (!area || !targetProjectId || area.projectId !== targetProjectId) {
       throw new Error("Obszar nie należy do projektu tego zadania");
     }
-  } else if (patch.areaId === undefined && patch.projectId && patch.projectId !== existing.projectId && existing.areaId) {
+  } else if (
+    patch.areaId === undefined &&
+    patch.projectId !== undefined &&
+    patch.projectId !== existing.projectId &&
+    existing.areaId
+  ) {
+    // Recenzja 117 (ust. 1): także przenosiny DO BRAKU projektu (`projectId: null`) odpinają
+    // obszar — inaczej zadanie bez projektu nosiłoby wskazanie na obszar cudzego drzewa.
     patch = { ...patch, areaId: null };
   }
 

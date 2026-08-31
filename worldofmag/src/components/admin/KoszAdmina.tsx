@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, ArchiveRestore, Loader2, RotateCcw, Search } from "lucide-react";
+import { ArchiveRestore, Loader2, RotateCcw, Search } from "lucide-react";
+import { PowrotDoPanelu } from "@/components/admin/PowrotDoPanelu";
 import { getAdminTrash, adminRestoreTrashItem, type AdminTrashItemDTO, type AdminTrashPage } from "@/actions/adminTrash";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import type { TrashStatus } from "@/platform/trash/trash";
@@ -27,6 +27,7 @@ export function KoszAdmina({ initial }: { initial: AdminTrashPage }) {
   const [szukaj, setSzukaj] = useState("");
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [blad, setBlad] = useState<string | null>(null);
 
   function przeladuj(nowyStatus: FiltrStatusu, fraza: string) {
     startTransition(async () => {
@@ -53,10 +54,15 @@ export function KoszAdmina({ initial }: { initial: AdminTrashPage }) {
   async function przywroc(it: AdminTrashItemDTO) {
     if (!(await confirmDialog({ title: t("przywrocPytanie", { tytul: it.title, email: it.ownerEmail }) }))) return;
     setBusyId(it.id);
+    setBlad(null);
     startTransition(async () => {
       try {
         await adminRestoreTrashItem(it.id);
         setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status: "restored" } : x)));
+      } catch (e) {
+        // Restorator mówi po polsku, DLACZEGO nie mógł przywrócić (np. projekt już nie istnieje) —
+        // cichy spinner byłby dla admina nieodróżnialny od sukcesu (recenzja, ust. 4).
+        setBlad(e instanceof Error ? e.message : t("bladPrzywracania"));
       } finally {
         setBusyId(null);
       }
@@ -73,9 +79,7 @@ export function KoszAdmina({ initial }: { initial: AdminTrashPage }) {
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg-base)", padding: "32px 24px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <Link href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", textDecoration: "none", marginBottom: 20 }}>
-          <ChevronLeft size={14} /> Admin
-        </Link>
+        <PowrotDoPanelu odstep={20} />
         <div className="flex items-center gap-3 mb-2">
           <ArchiveRestore size={20} style={{ color: "var(--accent-green)" }} />
           <h1 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{t("tytul")}</h1>
@@ -117,6 +121,12 @@ export function KoszAdmina({ initial }: { initial: AdminTrashPage }) {
             </button>
           </div>
         </div>
+
+        {blad && (
+          <p className="mb-3 rounded px-3 py-2 text-xs" style={{ color: "var(--accent-red)", border: "1px solid var(--accent-red)" }} role="alert">
+            {blad}
+          </p>
+        )}
 
         {items.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("brakWpisow")}</p>

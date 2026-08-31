@@ -62,10 +62,13 @@ export async function restoreTrashItem(id: string): Promise<void> {
 
 export async function purgeTrashItem(id: string): Promise<void> {
   const user = await requireAuth();
-  const item = await prisma.trashItem.findUnique({ where: { id } });
-  if (!item || item.userId !== user.id) return;
-  // 117: „usuń z kosza" = oznaczenie, nie DELETE — admin nadal może przywrócić.
-  await prisma.trashItem.update({ where: { id }, data: { status: "emptied", resolvedAt: new Date() } });
+  // 117: „usuń z kosza" = oznaczenie, nie DELETE — admin nadal może przywrócić. Warunek
+  // `status: "active"` w zapytaniu (recenzja, ust. 6): stale załadowana druga karta nie może
+  // przestemplować wpisu już przywróconego na „opróżniony".
+  await prisma.trashItem.updateMany({
+    where: { id, userId: user.id, status: "active" },
+    data: { status: "emptied", resolvedAt: new Date() },
+  });
   revalidatePath("/trash");
 }
 

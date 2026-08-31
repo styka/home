@@ -118,8 +118,12 @@ export function ObszaryWidok({ obszary, zadania, projectId, statusConfig, warian
     if (dialog?.typ !== "usun") return;
     const obszar = dialog.obszar;
     startTransition(async () => {
-      await deleteArea(obszar.id, tryb);
-      setDialog(null);
+      try {
+        await deleteArea(obszar.id, tryb);
+        setDialog(null);
+      } catch {
+        // Błąd serwera — dialog zostaje otwarty, użytkownik może ponowić (recenzja, ust. 4).
+      }
     });
   }
 
