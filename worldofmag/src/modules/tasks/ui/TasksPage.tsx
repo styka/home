@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -20,6 +20,9 @@ import { ProjectScopeFilter } from "./ProjectScopeFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useIsNarrowScreen } from "@/hooks/useVisualViewport";
 import { odczytajUklad, zapiszUklad, ograniczSzerokosc, UKLAD_DOMYSLNY } from "../lib/ukladSzczegolow";
+import { odczytajWariantObszarow, zapiszWariantObszarow, WARIANT_DOMYSLNY, type WariantObszarow } from "../lib/wariantObszarow";
+import { ObszaryWidok } from "./ObszaryWidok";
+import type { ObszarDTO } from "../actions/obszary";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "../actions/tasks";
@@ -45,6 +48,8 @@ interface TasksPageProps {
   scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
   /** Id zapisanej grupy projektów (gdy widok otwarty z grupy) — do edycji. */
   multiGroupId?: string;
+  /** 117: obszary bieżącego projektu (tylko widok projektu; widoki wirtualne dostają pustą). */
+  areas?: ObszarDTO[];
   /**
    * 043: parametry adresu przekazane z serwera (`page.tsx` → `searchParams`). Stan widoku czytamy
    * stąd, a NIE z `window` w pierwszym renderze — inaczej serwer wyrenderowałby widok domyślny,
@@ -53,7 +58,7 @@ interface TasksPageProps {
   viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, areas = [], viewParams = {} }: TasksPageProps) {
   // 085 (AC-8): administracyjny eksport listy do schowka jest DODATKIEM dla administratora, więc
   // znika razem z resztą, gdy tryb administratora jest wyłączony.
   const { wlaczony: trybAdmina } = useTrybAdmina();
@@ -85,7 +90,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     // i to była cała przyczyna pustego ekranu po zmianie statusu zadania.
     projekty: idList(),
     groupBy: oneOf(["default", "priority"] as const, "default"),
-    layout: oneOf(["list", "kanban", "timeline"] as const, "list"),
+    layout: oneOf(["list", "kanban", "timeline", "obszary"] as const, "list"),
+    // 117 (AC-4): wariant przeglądania „wg obszarów" w ADRESIE (widok ulubiony wraca taki, jaki
+    // był); ostatnio użyty wariant z localStorage wchodzi tylko, gdy adres go nie niesie.
+    obszary: oneOf(["sekcje", "drill", "panel"] as const, WARIANT_DOMYSLNY),
   }), [statusConfig]);
   const [view, setView] = useViewState(viewSpec, viewParams);
 
@@ -147,8 +155,23 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
   const groupBy = view.groupBy;
   const setGroupBy = useCallback((value: "default" | "priority") => setView({ groupBy: value }), [setView]);
-  const layout = view.layout;
-  const setLayout = useCallback((value: "list" | "kanban" | "timeline") => setView({ layout: value }), [setView]);
+  const setLayout = useCallback((value: "list" | "kanban" | "timeline" | "obszary") => setView({ layout: value }), [setView]);
+  // 117: widok „wg obszarów" istnieje tylko w realnym projekcie (obszary należą do projektu);
+  // adres z `layout=obszary` w widoku wirtualnym degraduje NIESZKODLIWIE do listy (zasada z 080).
+  const obszaryDostepne = viewMode === "project";
+  const layout = view.layout === "obszary" && !obszaryDostepne ? "list" : view.layout;
+  const wariantObszarow = view.obszary;
+  const setWariantObszarow = useCallback(
+    (w: WariantObszarow) => { zapiszWariantObszarow(w); setView({ obszary: w }); },
+    [setView],
+  );
+  // Ostatnio użyty wariant jako domyślny przy wejściu bez parametru; adres zawsze wygrywa (AC-4).
+  useEffect(() => {
+    if (viewParams.obszary !== undefined) return;
+    const zapamietany = odczytajWariantObszarow();
+    if (zapamietany !== WARIANT_DOMYSLNY) setView({ obszary: zapamietany });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazowo na wejściu do widoku
+  }, []);
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
   // Bulkowa (zbiorcza) edycja — tryb zaznaczania + zaznaczone id + kotwica zakresu (Shift).
@@ -658,6 +681,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               { key: "list", label: "Lista", Icon: ListIcon },
               { key: "kanban", label: "Kanban", Icon: Columns3 },
               { key: "timeline", label: "Timeline", Icon: CalendarRange },
+              // 117: przeglądanie projektu po obszarach — tylko realny projekt ma drzewo.
+              ...(obszaryDostepne ? ([{ key: "obszary", label: "Obszary", Icon: FolderTree }] as const) : []),
             ] as const).map(({ key, label, Icon }) => (
               <button
                 key={key}
@@ -935,6 +960,20 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           <KanbanBoard tasks={kanbanTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
         ) : layout === "timeline" ? (
           <TimelineView tasks={timelineTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+        ) : layout === "obszary" ? (
+          /* 117: te same zadania co lista (zakładka statusu + tagi + szukaj) — jeden zbiór,
+             trzy prezentacje; różni się wyłącznie render (AC-3). */
+          <ObszaryWidok
+            obszary={areas}
+            zadania={visibleTasks}
+            projectId={projectId}
+            statusConfig={statusConfig}
+            wariant={wariantObszarow}
+            onWariant={setWariantObszarow}
+            focusedTaskId={focusedTaskId}
+            onFocus={setFocusedTaskId}
+            onOpen={(id) => setOpenTaskId(id)}
+          />
         ) : (
           <TaskList
             tasks={displayedTasks}
@@ -1010,6 +1049,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                 task={openTask}
                 allTags={allTags}
                 allProjects={allProjects}
+                obszary={areas}
                 statusConfig={statusConfig}
                 szeroki={uklad.pelny}
                 onPrzelaczSzeroki={() => zapiszIUstawUklad({ pelny: !uklad.pelny })}
@@ -1037,6 +1077,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               task={openTask}
               allTags={allTags}
               allProjects={allProjects}
+              obszary={areas}
               statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}

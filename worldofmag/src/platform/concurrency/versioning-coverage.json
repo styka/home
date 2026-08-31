@@ -5,6 +5,14 @@
     "src/modules/kitchen/actions/mealPlans.ts": {
       "model": "Recipe",
       "powod": "Zapisuje JEDNO pole znacznikowe: `lastCookedAt` przy odhaczeniu ugotowanego posiłku. Nikt się o tę datę nie ściga — to skutek uboczny innej czynności (domknięcia wpisu w planie), a nie edycja przepisu. Kontrola wersji odrzucałaby tu zapis tylko wtedy, gdy ktoś RÓWNOLEGLE edytuje przepis, i odbierałaby użytkownikowi odhaczenie posiłku z powodu, którego nie umiałby zrozumieć."
+    },
+    "src/modules/tasks/actions/obszary.ts": {
+      "model": "Task",
+      "powod": "Zapisuje JEDNO pole wskaźnikowe: `areaId` przy scalaniu usuwanego obszaru do rodzica (updateMany po wielu zadaniach naraz). To systemowy skutek operacji na DRZEWIE, nie edycja treści zadania — nikt się o tę wartość nie ściga formularzem, a wpis kosza niesie mapę przypisań, więc stan da się odtworzyć."
+    },
+    "src/lib/trash/przywracanie.ts": {
+      "model": "Task",
+      "powod": "Restorator kosza (117): przy przywracaniu obszaru przypina z powrotem `areaId` zadań (`updateMany` z warunkiem na bieżącej wartości — nie kradnie ręcznych przenosin). To odtwarzanie stanu z migawki, nie współbieżna edycja formularzem; wersja zadania celowo nietknięta."
     }
   }
 }

@@ -18,6 +18,7 @@ import {
   type SkinKind,
 } from "@/lib/skins/zaawansowane";
 import { kompilujDefinicje } from "@/lib/skins/kompilacja";
+import { poleSkorki } from "@/lib/skins/zapis";
 
 export type SkinView = {
   id: string;
@@ -184,23 +185,6 @@ export type SkinInput = {
   ownerTeamId?: string | null;
   sortOrder?: number;
 };
-
-/** Wspólne wyprowadzenie pól zapisu z wejścia (116): definicja → kind/definition/tokens. */
-function poleSkorki(input: Pick<SkinInput, "tokens" | "definition">): {
-  kind: SkinKind;
-  definition: string | null;
-  tokens: string;
-} {
-  if (input.definition === undefined || input.definition === null) {
-    return { kind: "simple", definition: null, tokens: JSON.stringify(validateTokens(input.tokens)) };
-  }
-  const { definicja } = walidujDefinicje(input.definition);
-  return {
-    kind: "advanced",
-    definition: JSON.stringify(definicja),
-    tokens: JSON.stringify(definicja.tokens ?? {}),
-  };
-}
 
 /** Tworzy nową skórkę. isSystem wymaga admina; w przeciwnym razie user-owned. */
 export async function createSkin(input: SkinInput): Promise<string> {

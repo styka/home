@@ -133,6 +133,17 @@
     "reason": "admin",
     "status": "excluded"
   },
+  "adminTrash:adminRestoreTrashItem": {
+    "access": "admin",
+    "reason": "admin",
+    "status": "excluded"
+  },
+  "adminTrash:getAdminTrash": {
+    "access": "admin",
+    "kind": "read",
+    "reason": "admin",
+    "status": "excluded"
+  },
   "ai:streszczenie": {
     "access": "owner",
     "reason": "interactive",
@@ -1580,6 +1591,32 @@
   "notifications:syncReminders": {
     "access": "self",
     "reason": "internal",
+    "status": "excluded"
+  },
+  "obszary:createArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:deleteArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:getProjectAreas": {
+    "access": "shared",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:moveArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:renameArea": {
+    "access": "shared",
+    "reason": "interactive",
     "status": "excluded"
   },
   "opieka:createCareTask": {

@@ -7,7 +7,9 @@ import { prisma } from "@/platform/db/prisma";
 // 090 (zadanie 14): doszła kategoria `sharing`. Rozdz. 12.3 wymienia „nadania i odwołania dostępu
 // do dziennika" jako OBOWIĄZEK zgodności, nie funkcję — zmiana dostępu do cudzych danych musi
 // zostawiać ślad tak samo, jak zmiana roli w RBAC.
-export type AuditCategory = "rbac" | "config" | "sharing";
+// 117: "admin" = operacje administratora na cudzych zasobach (np. przywrócenie z kosza) —
+// muszą zostawiać ślad (C-25), a nie są ani RBAC, ani konfiguracją.
+export type AuditCategory = "rbac" | "config" | "sharing" | "admin";
 
 /** Zapisuje wpis audytu. Błędy logowania nie blokują operacji (best-effort). */
 export async function logAudit(category: AuditCategory, action: string, target?: string | null, detail?: string | null): Promise<void> {

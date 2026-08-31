@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { Trash2, RotateCcw, FileText, CheckSquare, Loader2, User, Repeat } from "lucide-react";
+import { Trash2, RotateCcw, FileText, CheckSquare, Loader2, User, Repeat, FolderTree } from "lucide-react";
 import { EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { restoreTrashItem, purgeTrashItem, emptyTrash, type TrashItemDTO } from "@/actions/trash";
@@ -13,6 +13,7 @@ const MODULE_META: Record<string, { label: string; icon: React.ReactNode; color:
   tasks: { label: "Zadanie", icon: <CheckSquare size={14} />, color: "var(--accent-blue)" },
   contacts: { label: "Kontakt", icon: <User size={14} />, color: "var(--accent-green)" },
   habits: { label: "Nawyk", icon: <Repeat size={14} />, color: "var(--accent-orange)" },
+  obszary: { label: "Obszar (Zadania)", icon: <FolderTree size={14} />, color: "var(--accent-blue)" },
 };
 
 export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; retentionDays: number }) {
@@ -26,12 +27,12 @@ export function TrashPage({ items, retentionDays }: { items: TrashItemDTO[]; ret
     startTransition(async () => { await restoreTrashItem(id); setBusyId(null); });
   }
   async function purge(id: string) {
-    if (!(await confirmDialog({ title: "Usunąć trwale? Tej operacji nie można cofnąć.", destructive: true }))) return;
+    if (!(await confirmDialog({ title: "Usunąć z kosza? Pozycja zniknie z tej listy; w razie potrzeby administrator może ją jeszcze przywrócić.", destructive: true }))) return;
     setBusyId(id);
     startTransition(async () => { await purgeTrashItem(id); setBusyId(null); });
   }
   async function empty() {
-    if (!(await confirmDialog({ title: "Opróżnić cały kosz? Wszystkie pozycje zostaną usunięte trwale.", destructive: true }))) return;
+    if (!(await confirmDialog({ title: "Opróżnić cały kosz? Pozycje znikną z tej listy; w razie potrzeby administrator może je jeszcze przywrócić.", destructive: true }))) return;
     startTransition(() => { emptyTrash(); });
   }
 

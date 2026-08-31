@@ -773,6 +773,11 @@
             "nazwa": "Zgłoś błąd lub sugestię",
             "opis": "Wskaż element na ekranie i opisz, co jest z nim nie tak.",
             "hasla": "zglos blad sugestia feedback wskaz element"
+          },
+          "kosz": {
+            "nazwa": "Kosz — przywracanie zasobów",
+            "opis": "Wszystkie usunięte zasoby użytkowników (także po opróżnieniu kosza i retencji) z możliwością przywrócenia właścicielowi.",
+            "hasla": "kosz przywracanie usuniete zasoby odzyskiwanie trash restore"
           }
         }
       },
@@ -801,6 +806,23 @@
         "usun": "Usuń",
         "usunZablokowane": "Nie można usunąć — używana przez skórkę",
         "usunacGrafike": "Usunąć grafikę „{name}”?"
+      },
+      "KoszAdmina": {
+        "tytul": "Kosz — przywracanie zasobów",
+        "opis": "Wpisy kosza wszystkich użytkowników. Opróżnienie kosza i retencja tylko oznaczają wpis — dane pozostają w bazie i można je stąd przywrócić właścicielowi.",
+        "status_all": "Wszystkie",
+        "status_active": "W koszu",
+        "status_emptied": "Opróżnione",
+        "status_expired": "Wygasłe",
+        "status_restored": "Przywrócone",
+        "szukaj": "Szukaj",
+        "szukajPodpowiedz": "Tytuł albo e-mail właściciela…",
+        "brakWpisow": "Brak wpisów kosza dla wybranych filtrów.",
+        "przywroc": "Przywróć",
+        "przywrocPytanie": "Przywrócić „{tytul}” właścicielowi ({email})?",
+        "ladowanie": "Ładowanie…",
+        "zaladujWiecej": "Załaduj więcej",
+        "bladPrzywracania": "Nie udało się przywrócić tej pozycji."
       }
     },
     "assistant": {
@@ -1241,7 +1263,7 @@
       "TrashPage": {
         "oproznijKosz": "Opróżnij kosz",
         "przywroc": "Przywróć",
-        "usunTrwale": "Usuń trwale"
+        "usunTrwale": "Usuń z kosza"
       }
     },
     "ui": {
@@ -2993,6 +3015,50 @@
       },
       "SzybkieDodanieZadania": {
         "noweZadanie": "Nowe zadanie"
+      },
+      "WyborObszaru": {
+        "przypiszObszar": "Przypisz obszar",
+        "brakObszaru": "— bez obszaru —"
+      },
+      "ObszaryWidok": {
+        "wariantSekcje": "Sekcje",
+        "wariantDrill": "Wgłąb",
+        "wariantPanel": "Panel",
+        "wyborWariantu": "Wariant przeglądania po obszarach",
+        "nowyObszar": "Nowy obszar",
+        "nowyObszarTytul": "Nowy obszar",
+        "zmianaNazwyTytul": "Zmień nazwę obszaru",
+        "nazwaObszaru": "Nazwa obszaru",
+        "anuluj": "Anuluj",
+        "zapisz": "Zapisz",
+        "przenies": "Przenieś",
+        "przeniesTytul": "Przenieś obszar „{nazwa}”",
+        "szczytDrzewa": "— na szczyt drzewa —",
+        "usunTytul": "Usunąć obszar „{nazwa}”?",
+        "usunOpis": "Wybierz, co zrobić z zawartością: scalenie przenosi podobszary i zadania do obszaru nadrzędnego; usunięcie poddrzewa zabiera też wszystkie podobszary, a zadania zostają w projekcie bez obszaru. Obszar trafi do kosza i można go przywrócić.",
+        "usunScal": "Scal do rodzica",
+        "usunPoddrzewo": "Usuń poddrzewo",
+        "usunPoddrzewoN": "Usuń poddrzewo ({n} obszarów)",
+        "akcjeObszaru": "Akcje obszaru",
+        "zmienNazwe": "Zmień nazwę",
+        "nowyPodobszar": "Nowy podobszar",
+        "usun": "Usuń"
+      },
+      "ObszarySekcje": {
+        "brakObszarow": "Ten projekt nie ma jeszcze obszarów. Utwórz pierwszy przyciskiem „Nowy obszar”.",
+        "bezObszaru": "Bez obszaru"
+      },
+      "ObszaryDrill": {
+        "wstecz": "Wstecz",
+        "szczyt": "Wszystkie obszary",
+        "bezObszaru": "Bez obszaru",
+        "pustyObszar": "Ten obszar jest pusty."
+      },
+      "ObszaryPanel": {
+        "drzewoObszarow": "Drzewo obszarów",
+        "wszystkieZadania": "Wszystkie zadania",
+        "bezObszaru": "Bez obszaru",
+        "brakZadan": "Brak zadań w tym obszarze."
       }
     },
     "truck": {

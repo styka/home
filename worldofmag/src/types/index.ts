@@ -185,6 +185,7 @@ export type Task = {
   category: string;
   order: number;
   projectId: string | null;
+  areaId: string | null; // 117: obszar w drzewie projektu (dokładnie jeden albo żaden)
   parentTaskId: string | null;
   previousTaskId: string | null;
   createdById: string | null;

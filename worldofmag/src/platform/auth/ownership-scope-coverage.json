@@ -1,6 +1,7 @@
 {
   "_opis": "057 (etap 3B krok 1): miejsca, które ŚWIADOMIE piszą zakres własności ręcznie, zamiast używać `ownedWhere`/`ownedOr`. Bramka `check:ownership-scope` sprawdza manifest w obie strony — wpis dotyczący pliku, który warunku już nie zawiera, też wywala build.",
   "wyjatki": {
-    "src/actions/skins.ts": "Skórki nie mają zakresu własności w rozumieniu C-21: widać systemowe (`isSystem`), swoje, zespołowe I PUBLICZNE (`isPublic`). Wstawienie tu `ownedWhere` sugerowałoby, że to ta sama reguła, co w modułach — a jest szersza o dwie gałęzie, których helper nie zna i nie ma znać. 079: `Skin` zostaje przy `ownerId` na stałe (`workspace-nullable.json` — skórka systemowa nie ma właściciela), więc ten wyjątek nie jest już przejściowy."
+    "src/actions/skins.ts": "Skórki nie mają zakresu własności w rozumieniu C-21: widać systemowe (`isSystem`), swoje, zespołowe I PUBLICZNE (`isPublic`). Wstawienie tu `ownedWhere` sugerowałoby, że to ta sama reguła, co w modułach — a jest szersza o dwie gałęzie, których helper nie zna i nie ma znać. 079: `Skin` zostaje przy `ownerId` na stałe (`workspace-nullable.json` — skórka systemowa nie ma właściciela), więc ten wyjątek nie jest już przejściowy.",
+    "src/actions/skinAssets.ts": "Grafiki skórek (116) dziedziczą regułę skórek, nie modułów: widać własne, zespołowe I SYSTEMOWE (`ownerId/ownerTeamId NULL`). `ownedWhere` nie zna gałęzi systemowej — jak w `skins.ts` obok; `SkinAsset` trzyma `ownerId` z tego samego powodu, co `Skin` (rekord systemowy nie ma właściciela). Wpis uzupełniony w 117: bramka czerwona na develop po merge 116."
   }
 }
