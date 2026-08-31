@@ -63,9 +63,14 @@ their hobbies — usually in a simplified form. The proof already in the codebas
 **Pets** (hobbyist care vs. professional breeding in one module) and the **Dom/Pro
 mode** pattern in Magazynowanie and Warsztaty — new business modules should follow
 that same "one entity, two scales" philosophy (cf. Rośliny 113: the same entity
-from windowsill to hectare) rather than forking into separate apps. The business
-plan for commercialization lives in the admin report
-`/reports/omnia-biznesplan-rok-pierwszy` (seeded by migration 0275).
+from windowsill to hectare) rather than forking into separate apps. **The business
+plan being executed** is the admin report
+`/reports/omnia-biznesplan-rok-pierwszy` (seeded by migration 0275, updated by 0277 with the
+industry-module map) — when work references "the business plan", it means THIS one. The two other
+business-plan reports in the app (`biznesplan-ksef-mikrofirmy-2026` — „Projekt Sekunda", and
+`biznesplan-obowiazki-mikrofirm-2026` — „Projekt Kompas"; root files `biznesplan-projekt-*.md`)
+are idea documents for **entirely different projects**: they stay as admin reports but are NOT
+Omnia's roadmap — do not link them as the plan.
 
 ### UX Philosophy
 - Keyboard-first (vim-style shortcuts: j/k, x, e, d)
