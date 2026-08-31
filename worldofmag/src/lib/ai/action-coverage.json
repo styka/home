@@ -1582,6 +1582,32 @@
     "reason": "internal",
     "status": "excluded"
   },
+  "obszary:createArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:deleteArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:getProjectAreas": {
+    "access": "shared",
+    "kind": "read",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:moveArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
+  "obszary:renameArea": {
+    "access": "shared",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "opieka:createCareTask": {
     "access": "owner",
     "status": "pending"

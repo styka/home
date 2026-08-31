@@ -38,7 +38,7 @@ export function splaszczDrzewo<T extends WezelObszaru>(obszary: T[]): ObszarZGle
     lista.push(o);
     poRodzicu.set(klucz, lista);
   }
-  for (const lista of poRodzicu.values()) lista.sort(porownajRodzenstwo);
+  poRodzicu.forEach((lista) => lista.sort(porownajRodzenstwo));
 
   const wynik: ObszarZGlebokoscia<T>[] = [];
   const odwiedz = (rodzicId: string | null, glebokosc: number) => {

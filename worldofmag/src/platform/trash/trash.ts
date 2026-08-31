@@ -15,7 +15,9 @@ const RETENTION_DAYS = 30;
 // przywróceniem pustej przestrzeni.
 // 114: „contacts" = kontakt, „habits" = nawyk wraz z dziennikiem wykonań — oba to płaskie
 // rekordy (bez kaskad poza wpisami nawyku), więc migawka JSON wystarcza do pełnego powrotu.
-export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat" | "rosliny" | "contacts" | "habits";
+// 117: „obszary" = obszar (lub poddrzewo obszarów) z modułu Zadania — migawka niesie usuwane
+// węzły drzewa i mapę przypisań zadań, bo FK `SetNull` nadpisuje `Task.areaId` przy kasowaniu.
+export type TrashModule = "notes" | "tasks" | "weather" | "youtube" | "czat" | "rosliny" | "contacts" | "habits" | "obszary";
 
 /**
  * 066 (zadanie 16) — WERSJA ROBOCZA ODRZUCONA PRZY KONFLIKCIE.
