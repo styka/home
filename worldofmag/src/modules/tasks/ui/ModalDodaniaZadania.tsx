@@ -39,7 +39,7 @@ export function ModalDodaniaZadania({
   }, []);
 
   return (
-    <Modal title={t("tytul")} onClose={onClose} className="md:mx-4">
+    <Modal title={t("tytul")} onClose={onClose}>
       <FormularzZadania
         ref={formularzRef}
         projectId={projectId}
