@@ -1,7 +1,7 @@
 # Zadania: Paczka poprawek UI/UX ze zgłoszeń administratora
 
 - **Plan:** ./plan.md (118-poprawki-ui-ux)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-09-01
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -79,12 +79,12 @@
 
 ## Faza 5 — Bramki i domknięcie
 
-- [ ] **T-13** — `npm run check:i18n`, `npm run check:ui-contract`, `next lint`,
+- [x] **T-13** — `npm run check:i18n`, `npm run check:ui-contract`, `next lint`,
   `tsc` testowy, `next build` (lokalny Postgres, C-13 — build bez `migrate.js` na prod).
   Gotowe, gdy: wszystko zielone.
-- [ ] **T-14** — Mapowanie AC-1…AC-9 → wynik (input do `/verify`); przegląd regresji AC-9
+- [x] **T-14** — Mapowanie AC-1…AC-9 → wynik (input do `/verify`); przegląd regresji AC-9
   (playground + paski akcji Pogoda/Wiadomości/Magazynowanie).
-- [ ] **T-15** — Wpis(y) do `doświadczenia.md`, jeśli był nieoczywisty problem (C-51);
+- [x] **T-15** — Wpis(y) do `doświadczenia.md`, jeśli był nieoczywisty problem (C-51);
   commit + merge `claude/*` → `develop` wg C-52.
 
 ## Mapowanie kryteriów akceptacji
@@ -103,3 +103,7 @@
 ## Notatki / blokady
 - Ścieżka krytyczna: T-4 → T-5 → T-12 (dane → akcje → sidebar); reszta faz niezależna.
 - T-10 zależy od T-9 tylko wizualnie (ten sam pasek narzędzi) — robić po kolei w tym samym pliku.
+- Bramki (2026-09-01): pełna bateria `npm run build` zielona do `next build` + `check:perf`
+  włącznie (42 znaczniki ✓). Końcowy `scripts/migrate.js` pominięty zgodnie z C-13/C-50
+  (krok prod-DB); migracja 0288 zweryfikowana osobno `prisma migrate deploy` na lokalnym
+  Postgresie. Merge do `develop` wykona `/review` (C-52).
