@@ -1,6 +1,6 @@
 # Zadania: Odporność generatora skórek AI na kształt odpowiedzi modelu
 
-- **Plan:** ./plan.md (117-skin-generate-format-fix)
+- **Plan:** ./plan.md (119-skin-generate-format-fix)
 - **Status:** done
 - **Data:** 2026-08-30
 

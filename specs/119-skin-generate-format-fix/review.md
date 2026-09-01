@@ -1,9 +1,9 @@
-# Recenzja: Odporność generatora skórek AI na kształt odpowiedzi modelu (117)
+# Recenzja: Odporność generatora skórek AI na kształt odpowiedzi modelu (119)
 
 - **Spec:** ./spec.md · **Weryfikacja:** ./verify.md (GOTOWE Z UWAGAMI)
 - **Data:** 2026-08-30
 - **Zakres:** commit `3e7893e` — 1 plik kodu (`skinGenerate.ts`, +95/-12), testy (+82),
-  lekcja C-51, artefakty specs/117
+  lekcja C-51, artefakty specs/119
 - **Metoda:** pełne przejście diffa świeżym okiem (diff mały — bez subagenta, C-53)
 
 ## Ustalenia

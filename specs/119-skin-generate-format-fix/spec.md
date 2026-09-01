@@ -1,6 +1,6 @@
 # Spec: Odporność generatora skórek AI na kształt odpowiedzi modelu
 
-- **ID:** 117-skin-generate-format-fix
+- **ID:** 119-skin-generate-format-fix
 - **Status:** draft
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-08-30

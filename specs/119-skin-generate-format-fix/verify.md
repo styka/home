@@ -1,4 +1,4 @@
-# Weryfikacja: Odporność generatora skórek AI na kształt odpowiedzi modelu (117)
+# Weryfikacja: Odporność generatora skórek AI na kształt odpowiedzi modelu (119)
 
 - **Spec:** ./spec.md · **Zadania:** ./tasks.md (5/5 odhaczone)
 - **Data:** 2026-08-30
@@ -17,18 +17,18 @@
 
 Uwaga procesowa: pierwszy przebieg pełnego `test:unit` pokazał 109 porażek — przyczyną
 był **niedziałający lokalny Postgres po restarcie kontenera** (testy integracyjne DB nie
-łączyły się z bazą), nie kod 117; po `pg_ctlcluster 16 main start` cały zestaw zielony.
+łączyły się z bazą), nie kod 119; po `pg_ctlcluster 16 main start` cały zestaw zielony.
 
 ## Kryteria akceptacji
 
-- **AC-1 (płotki / tekst wokół JSON-a) — ✅.** Testy `117/odczyt: płotki markdown
+- **AC-1 (płotki / tekst wokół JSON-a) — ✅.** Testy `119/odczyt: płotki markdown
   z językiem`, `znak nowej linii PO płotku zamykającym` (dokładnie kształt, na którym padał
   stary regex `/```$/`) i `tekst przed i po obiekcie JSON` — wszystkie przechodzą przez
   `odczytajOdpowiedzJson`, wpięty w OBA tryby (`skinGenerate.ts`, oba miejsca po dawnym
   `JSON.parse`).
 - **AC-2 (luźny odczyt + pojemniki tokenów) — ✅.** Odczyt stoi na istniejącym
   `parseJsonLoose` (płotki, wycięcie pierwszego `{…}`); tryb prosty czyta mapę przez
-  `wyodrebnijTokeny` — test `117/tryb prosty: mapa tokenów w pojemniku variables`
+  `wyodrebnijTokeny` — test `119/tryb prosty: mapa tokenów w pojemniku variables`
   + istniejące testy `mapowanie.test.ts` (kształty 081) bez zmian oczekiwań.
 - **AC-3 (ucięta odpowiedź → ponowienie, nie enigmatyczny błąd) — ✅.** Rozpoznanie
   ucięcia z flagi `truncated` (test `odpowiedź ucięta w połowie obiektu → „ucieta"`);
@@ -46,7 +46,7 @@ był **niedziałający lokalny Postgres po restarcie kontenera** (testy integrac
 - **AC-5 (regresja zero) — ✅.** Wszystkie istniejące testy generatora (9 z 080/081)
   i skórek przechodzą **bez modyfikacji oczekiwań**; pełny `test:unit` fail 0; ścieżki
   sukcesu (poprawny JSON, odmowa `not-a-theme`) nietknięte.
-- **AC-6 (testy odtwarzające zgłoszone przypadki) — ✅.** 9 nowych testów `117/*`
+- **AC-6 (testy odtwarzające zgłoszone przypadki) — ✅.** 9 nowych testów `119/*`
   odtwarza dokładnie kształty kończące się wcześniej „błędem formatu": płotki (2 warianty),
   proza wokół, ucięcie, śmieci, tablica/pusta odpowiedź, komunikaty, pojemnik tokenów.
 

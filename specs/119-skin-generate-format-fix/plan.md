@@ -1,6 +1,6 @@
 # Plan techniczny: Odporność generatora skórek AI na kształt odpowiedzi modelu
 
-- **Spec:** ./spec.md (117-skin-generate-format-fix)
+- **Spec:** ./spec.md (119-skin-generate-format-fix)
 - **Status:** draft
 - **Data:** 2026-08-30
 

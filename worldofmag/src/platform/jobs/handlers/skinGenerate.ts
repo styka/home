@@ -337,7 +337,7 @@ export function opisPorazki(przyslanych: number, odrzucone: string[]): string {
   );
 }
 
-// ─── 117: odczyt odpowiedzi modelu — tolerancja na KSZTAŁT, nie na treść ────────
+// ─── 119: odczyt odpowiedzi modelu — tolerancja na KSZTAŁT, nie na treść ────────
 //
 // Zgłoszenie użytkownika: „błąd o formacie" przy generowaniu skórki. Przyczyna: oba
 // tryby czytały odpowiedź twardym `JSON.parse` po naiwnym zdjęciu płotków (regex nie
@@ -452,7 +452,7 @@ async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
     if (!result.ok) throw new JobError(result.message, result.status);
     wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
 
-    // 117: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // 119: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
     // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
     const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
     if (!odczyt.ok) {
@@ -559,7 +559,7 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     if (!result.ok) throw new JobError(result.message, result.status);
     wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
 
-    // 117: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // 119: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
     // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
     const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
     if (!odczyt.ok) {
@@ -580,7 +580,7 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     // przechodzi tu przez tę samą sanityzację co import. Sanityzacji NIE luzujemy pod
     // żaden opis: to jest bramka bezpieczeństwa (wstrzyknięcie CSS), a nie próg jakości.
     //
-    // 117: mapę tokenów czytamy przez `wyodrebnijTokeny` (081) — modele oddają ją też
+    // 119: mapę tokenów czytamy przez `wyodrebnijTokeny` (081) — modele oddają ją też
     // w pojemnikach `variables`/`theme`/… i w parach-liczbach; import istniał, ścieżka nie.
     const rawTokens = wyodrebnijTokeny(parsed).tokeny;
     tokens = validateTokens(rawTokens);
