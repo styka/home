@@ -115,7 +115,7 @@ export function KatalogGatunkow({
       state="ready"
       actions={
         <button type="button" style={przyciskGlowny} onClick={() => setWlasny((v) => !v)}>
-          <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Plus size={13} aria-hidden />
           {t("wlasnyGatunek")}
         </button>
       }
@@ -142,7 +142,7 @@ export function KatalogGatunkow({
             ))}
           </select>
           <button type="button" style={przycisk} onClick={szukaj} disabled={pending}>
-            <Search size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Search size={13} aria-hidden />
             {t("szukaj")}
           </button>
         </div>
@@ -197,7 +197,7 @@ export function KatalogGatunkow({
                   <span style={drobny}>{t("juzMam")}</span>
                 ) : (
                   <button type="button" style={przyciskGlowny} onClick={() => dodaj(g)} disabled={pending}>
-                    <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    <Plus size={13} aria-hidden />
                     {t("dodajDoSwoich")}
                   </button>
                 )}

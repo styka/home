@@ -14,13 +14,13 @@
 
 ## Faza 0 — Poprawki jednoliniowe (bez zależności)
 
-- [ ] **T-1** `[P]` — **Zgł. 10:** `src/modules/tasks/ai/executor.ts`, gałąź `submit_feedback`:
+- [x] **T-1** `[P]` — **Zgł. 10:** `src/modules/tasks/ai/executor.ts`, gałąź `submit_feedback`:
   `navigateTo` → `` `/tasks/${res.projectId}?task=${res.taskId}` ``. Gotowe, gdy: link zawiera
   `?task=` i `tsc` czysty (AC-8).
-- [ ] **T-2** `[P]` — **Zgł. 5/8/9 (część wspólna):** `src/components/ui/Button.tsx` — dodać
+- [x] **T-2** `[P]` — **Zgł. 5/8/9 (część wspólna):** `src/components/ui/Button.tsx` — dodać
   `whitespace-nowrap` do `base`. Gotowe, gdy: klasa w bazie, szybki grep konsumentów `Button`
   nie pokazuje miejsca z celowo wielowierszową etykietą.
-- [ ] **T-3** `[P]` — **Zgł. 3/5/8/9 (Rośliny):** `src/modules/rosliny/ui/style.ts` —
+- [x] **T-3** `[P]` — **Zgł. 3/5/8/9 (Rośliny):** `src/modules/rosliny/ui/style.ts` —
   `przycisk`: `display:"inline-flex", alignItems:"center", gap:6, whiteSpace:"nowrap"`;
   `naglowekSekcji`: `display:"flex", alignItems:"center", gap:6`. Potem audyt ikon w
   `RoslinyPage/PrzestrzenPage/RoslinaSzczegol/AgendaOpieki/Ewidencja/KatalogGatunkow`

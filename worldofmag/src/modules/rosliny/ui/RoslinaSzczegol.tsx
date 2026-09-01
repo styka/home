@@ -394,18 +394,18 @@ export function RoslinaSzczegol({
           aria-pressed={zaawansowane}
           onClick={() => setZaawansowane((v) => !v)}
         >
-          <Settings2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Settings2 size={13} aria-hidden />
           {t("zaawansowane")}
         </button>
       }
       actions={
         <>
           <button type="button" style={przycisk} onClick={sadzonka} disabled={pending}>
-            <Scissors size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Scissors size={13} aria-hidden />
             {t("sadzonka")}
           </button>
           <button type="button" style={przycisk} onClick={usun} disabled={pending}>
-            <Trash2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Trash2 size={13} aria-hidden />
             {t("usun")}
           </button>
         </>
@@ -483,7 +483,7 @@ export function RoslinaSzczegol({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <ScanSearch size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <ScanSearch size={13} aria-hidden />
           {t("rozpoznajTytul")}
         </h2>
         <p style={{ ...drobny, margin: "0 0 8px" }}>{t("rozpoznajOpis")}</p>
@@ -547,7 +547,7 @@ export function RoslinaSzczegol({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <Stethoscope size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <Stethoscope size={13} aria-hidden />
           {t("diagnozaTytul")}
         </h2>
         <p style={{ ...drobny, margin: "0 0 8px" }}>{t("diagnozaOpis")}</p>
@@ -593,7 +593,7 @@ export function RoslinaSzczegol({
                         onClick={() => zaplanuj(i, z.zabieg, z.tresc)}
                         disabled={pending}
                       >
-                        <CalendarPlus size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                        <CalendarPlus size={12} aria-hidden />
                         {t("zaplanujZabieg")}
                       </button>
                     )}
@@ -623,7 +623,7 @@ export function RoslinaSzczegol({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <NotebookPen size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <NotebookPen size={13} aria-hidden />
           {t("dziennikTytul")}
         </h2>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -667,7 +667,7 @@ export function RoslinaSzczegol({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <Ruler size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <Ruler size={13} aria-hidden />
           {t("pomiaryTytul")}
         </h2>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -726,7 +726,7 @@ export function RoslinaSzczegol({
                       onClick={() => void wylaczZadanie(z)}
                       disabled={pending}
                     >
-                      <BellOff size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      <BellOff size={12} aria-hidden />
                       {t("wylaczZadanie")}
                     </button>
                   )}
@@ -786,7 +786,7 @@ export function RoslinaSzczegol({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <Wheat size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <Wheat size={13} aria-hidden />
           {t("zbiorTytul")}
         </h2>
         <p style={{ ...drobny, margin: "0 0 8px" }}>{t("zbiorOpis")}</p>

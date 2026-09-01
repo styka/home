@@ -68,7 +68,7 @@ export function RoslinyPage({
       }}
       actions={
         <button type="button" style={przyciskGlowny} onClick={() => setFormularz((v) => !v)}>
-          <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Plus size={13} aria-hidden />
           {t("nowaPrzestrzen")}
         </button>
       }
@@ -112,7 +112,7 @@ export function RoslinyPage({
       {pilne.length > 0 && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>
-            <CalendarCheck size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+            <CalendarCheck size={13} aria-hidden />
             {t("naDzisTytul", { ile: pilne.length })}
           </h2>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
