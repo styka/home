@@ -40,15 +40,15 @@
 
 ## Faza 2 — UI: Rośliny
 
-- [ ] **T-6** `[P]` — **Zgł. 4:** `PrzestrzenPage.tsx` — formularze „Nowa roślina" i „Nowe
+- [x] **T-6** `[P]` — **Zgł. 4:** `PrzestrzenPage.tsx` — formularze „Nowa roślina" i „Nowe
   miejsce" do `Modal` (stan `formularz` zostaje; sekcja ustawień gear — bez zmian). Gotowe,
   gdy: obie akcje otwierają modal, treść strony nie rozsuwa się (AC-4).
-- [ ] **T-7** `[P]` — **Zgł. 6:** `src/app/rosliny/page.tsx` dokłada `getWeatherOptions()` do
+- [x] **T-7** `[P]` — **Zgł. 6:** `src/app/rosliny/page.tsx` dokłada `getWeatherOptions()` do
   `Promise.all`; `RoslinyPage.tsx` — opcjonalny select lokalizacji w formularzu tworzenia
   (pusta lista → brak pola), `createSpace({ …, weatherLocationId })`, optimistic wpis z wartością.
   Gotowe, gdy: nowa przestrzeń z lokalizacją ma ją ustawioną od razu; bez wyboru działa jak
   dotąd (AC-5).
-- [ ] **T-8** `[P]` — **Zgł. 7:** `PrzestrzenPage.tsx` + `RoslinaSzczegol.tsx` — `title` +
+- [x] **T-8** `[P]` — **Zgł. 7:** `PrzestrzenPage.tsx` + `RoslinaSzczegol.tsx` — `title` +
   `aria-label` na „Pokaż zaawansowane" opisujące odsłaniane pola (teksty w `pl.json`).
   Gotowe, gdy: tooltip widoczny, zestaw pól bez zmian (AC-6).
 

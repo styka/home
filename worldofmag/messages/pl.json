@@ -2149,7 +2149,9 @@
           "garden": "Ogród",
           "production": "Produkcja / kwiaciarnia",
           "field": "Pole"
-        }
+        },
+        "lokalizacjaEtykieta": "Lokalizacja pogodowa (opcjonalnie)",
+        "bezLokalizacji": "Bez lokalizacji pogodowej"
       },
       "PrzestrzenPage": {
         "wroc": "← Wróć do przestrzeni",
@@ -2214,7 +2216,8 @@
           "partial": "półcień",
           "shade": "cień",
           "unknown": "nieokreślone"
-        }
+        },
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. liczność i jednostkę partii, fazę rozwoju oraz powierzchnię miejsc"
       },
       "AgendaOpieki": {
         "tytul": "Opieka",
@@ -2364,7 +2367,8 @@
         "wylaczZadanie": "Nie przypominaj",
         "wylaczZadaniePytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie.",
         "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę.",
-        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy."
+        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy.",
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. fazę rozwoju (BBCH) i szczegóły partii"
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",

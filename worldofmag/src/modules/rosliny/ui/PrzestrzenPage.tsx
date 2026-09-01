@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sprout, Plus, MapPin, Settings2, Wand2, Share2, ListPlus, CloudSun, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
+import { Modal } from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
@@ -254,6 +255,10 @@ export function PrzestrzenPage({
           type="button"
           style={{ ...przycisk, background: zaawansowane ? "var(--bg-hover)" : "var(--bg-elevated)" }}
           aria-pressed={zaawansowane}
+          // 118 (zgł. 7): przełącznik mówi, CO odsłania — bez tego użytkownik musiał go włączyć,
+          // żeby się dowiedzieć. Tooltip + pełna nazwa dostępna; zestaw pól bez zmian (lib/tryb).
+          title={t("zaawansowaneOpis")}
+          aria-label={`${t("zaawansowane")} — ${t("zaawansowaneOpis")}`}
           onClick={() => setZaawansowane((v) => !v)}
         >
           <Settings2 size={13} aria-hidden />
@@ -307,9 +312,18 @@ export function PrzestrzenPage({
         </section>
       )}
 
+      {/* 118 (zgł. 4): oba formularze w MODALU — jak „Udostępnij". Rozsuwana sekcja spychała
+          treść strony przy każdym otwarciu; modal leży NAD treścią i niczego nie przesuwa. */}
       {formularz === "roslina" && (
-        <section style={sekcja}>
-          <h2 style={naglowekSekcji}>{t("nowaRoslina")}</h2>
+        <Modal
+          title={t("nowaRoslina")}
+          onClose={() => { setFormularz(null); setOstrzezenie(null); }}
+          footer={
+            <button type="button" style={przyciskGlowny} onClick={dodajRosline} disabled={pending}>
+              {t("dodaj")}
+            </button>
+          }
+        >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input
               type="text"
@@ -353,15 +367,12 @@ export function PrzestrzenPage({
                 </select>
               </>
             )}
-            <button type="button" style={przyciskGlowny} onClick={dodajRosline} disabled={pending}>
-              {t("dodaj")}
-            </button>
           </div>
           {ostrzezenie && (
             <p
               style={{
                 fontSize: 12,
-                margin: "10px 0 0",
+                margin: 0,
                 color: ostrzezenie.poziom === "warn" ? "var(--accent-amber)" : "var(--text-secondary)",
               }}
             >
@@ -369,27 +380,29 @@ export function PrzestrzenPage({
               {ostrzezenie.tresc}
             </p>
           )}
-        </section>
+        </Modal>
       )}
 
       {formularz === "miejsce" && (
-        <section style={sekcja}>
-          <h2 style={naglowekSekcji}>{t("noweMiejsce")}</h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              type="text"
-              value={nazwaMiejsca}
-              onChange={(e) => setNazwaMiejsca(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") dodajMiejsce(); }}
-              placeholder={t("nazwaMiejscaPlaceholder")}
-              aria-label={t("nazwaMiejscaEtykieta")}
-              style={{ ...pole, flex: "1 1 220px" }}
-            />
+        <Modal
+          title={t("noweMiejsce")}
+          onClose={() => setFormularz(null)}
+          footer={
             <button type="button" style={przyciskGlowny} onClick={dodajMiejsce} disabled={pending}>
               {t("dodaj")}
             </button>
-          </div>
-        </section>
+          }
+        >
+          <input
+            type="text"
+            value={nazwaMiejsca}
+            onChange={(e) => setNazwaMiejsca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") dodajMiejsce(); }}
+            placeholder={t("nazwaMiejscaPlaceholder")}
+            aria-label={t("nazwaMiejscaEtykieta")}
+            style={pole}
+          />
+        </Modal>
       )}
 
       <section style={sekcja}>

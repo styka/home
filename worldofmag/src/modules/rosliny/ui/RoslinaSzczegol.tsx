@@ -392,6 +392,9 @@ export function RoslinaSzczegol({
           type="button"
           style={{ ...przycisk, background: zaawansowane ? "var(--bg-hover)" : "var(--bg-elevated)" }}
           aria-pressed={zaawansowane}
+          // 118 (zgł. 7): przełącznik mówi, CO odsłania — tooltip zamiast zgadywania.
+          title={t("zaawansowaneOpis")}
+          aria-label={`${t("zaawansowane")} — ${t("zaawansowaneOpis")}`}
           onClick={() => setZaawansowane((v) => !v)}
         >
           <Settings2 size={13} aria-hidden />
