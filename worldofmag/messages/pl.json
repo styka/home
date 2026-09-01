@@ -1130,7 +1130,9 @@
         "ksiazki": "Książki",
         "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
         "stronaGlowna": "Strona główna",
-        "wiecej": "Więcej…"
+        "wiecej": "Więcej…",
+        "zwinMenu": "Zwiń menu do ikon",
+        "rozwinMenu": "Rozwiń menu"
       },
       "NotificationBell": {
         "ladowanie": "Ładowanie…",

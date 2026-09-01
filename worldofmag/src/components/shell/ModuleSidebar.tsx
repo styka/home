@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition, type ComponentType } from "react";
-import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus } from "lucide-react";
+import { Calendar, Settings, Mail, Shield, FolderOpen, Tag, Lock, BookOpen, Package, BookMarked, CalendarDays, MoreHorizontal, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AppName } from "@/components/brand/AppName";
 import { NotificationBell } from "./NotificationBell";
@@ -118,6 +118,7 @@ function NavItem({
   accentColor,
   iconColor,
   locked,
+  zwiniete = false,
   children,
 }: {
   href: string;
@@ -128,6 +129,8 @@ function NavItem({
   accentColor?: string;
   iconColor?: string;
   locked?: boolean;
+  /** 118 (zgł. 11): wariant zwiniętego menu — sama ikona, nazwa w podpowiedzi i dla czytnika. */
+  zwiniete?: boolean;
   children?: React.ReactNode;
 }) {
   const t = useTranslations("components.shell.ModuleSidebar");
@@ -137,17 +140,21 @@ function NavItem({
   // znaczyłoby dwa miejsca do poprawiania przy każdej zmianie.
   const isActive = exact ? pathname === href : pathname.startsWith(href);
   const activeColor = accentColor ?? "var(--text-primary)";
+  // Zwinięte: ikona wyśrodkowana, cel dotyku/kliku nie maleje (py-2 + min. 44 px szerokości wiersza).
+  const ukladKlasy = zwiniete
+    ? "flex items-center justify-center px-0 py-2.5 mx-2 rounded text-sm"
+    : "flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm";
 
   if (locked) {
     return (
       <div
-        className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
+        className={cn(ukladKlasy)}
         style={{ opacity: 0.35, cursor: "not-allowed", color: "var(--text-secondary)" }}
-        title={t("niedostepneDlaTwojejRoli")}
+        title={zwiniete ? `${label} — ${t("niedostepneDlaTwojejRoli")}` : t("niedostepneDlaTwojejRoli")}
       >
         {iconColor ? <span style={{ color: iconColor, flexShrink: 0, display: "flex" }}>{icon}</span> : icon}
-        <span>{label}</span>
-        <Lock size={10} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />
+        {!zwiniete && <span>{label}</span>}
+        {!zwiniete && <Lock size={10} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />}
       </div>
     );
   }
@@ -159,7 +166,9 @@ function NavItem({
       // `aria-current` jest tu, a nie tylko przy Stronie głównej, bo problem dotyczył wszystkich
       // pozycji menu — poprawka w jednym miejscu obsługuje je wszystkie naraz.
       aria-current={isActive ? "page" : undefined}
-      className={cn("flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm")}
+      title={zwiniete ? label : undefined}
+      aria-label={zwiniete ? label : undefined}
+      className={cn(ukladKlasy)}
       style={{
         backgroundColor: isActive ? "var(--bg-elevated)" : undefined,
         color: isActive ? activeColor : "var(--text-secondary)",
@@ -178,8 +187,8 @@ function NavItem({
       }}
     >
       {iconColor ? <span style={{ color: iconColor, flexShrink: 0, display: "flex" }}>{icon}</span> : icon}
-      <span>{label}</span>
-      {children}
+      {!zwiniete && <span>{label}</span>}
+      {!zwiniete && children}
     </Link>
   );
 }
@@ -241,6 +250,20 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
   const [moreOpen, setMoreOpen] = useState(false);
   const [, startTransition] = useTransition();
 
+  /**
+   * 118 (zgł. 11): ZWINIĘCIE MENU DO SAMYCH IKON — stan per użytkownik (`UserMenuPref`), nie per
+   * przeglądarka. Start z wartości odczytanej na serwerze (zero mrugnięcia), przełączenie działa
+   * optymistycznie i dopiero potem zapisuje się w tle — dokładnie wzorzec `favoritesCollapsed`.
+   */
+  const [zwiniete, setZwiniete] = useState(menuPrefs.sidebarCollapsed);
+  function przelaczZwiniecie() {
+    const next = !zwiniete;
+    setZwiniete(next);
+    startTransition(async () => {
+      await updateMenuPrefs({ sidebarCollapsed: next });
+    });
+  }
+
   const { enabled, more } = resolveMenu(userPermissions, menuPrefs);
   // 109: Strona główna NIE jest pozycją `resolveMenu` (nie da się jej przestawić ani schować) —
   // to stały wiersz panelu, czytany wprost z deklaracji modułu.
@@ -263,8 +286,9 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
     const active = m.exact ? pathname === m.href : pathname.startsWith(m.href);
     return (
       <div key={m.id}>
-        <NavItem href={m.href} label={m.label} icon={<m.Icon size={18} />} pathname={pathname} exact={m.exact} iconColor={m.color} />
-        {active && <ModuleSubNav id={m.id} pathname={pathname} />}
+        <NavItem href={m.href} label={m.label} icon={<m.Icon size={18} />} pathname={pathname} exact={m.exact} iconColor={m.color} zwiniete={zwiniete} />
+        {/* Zwinięte menu nie mieści sub-nawigacji (jest tekstowa) — wraca razem z rozwinięciem. */}
+        {active && !zwiniete && <ModuleSubNav id={m.id} pathname={pathname} />}
       </div>
     );
   }
@@ -273,9 +297,11 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
     <aside
       /* 116: `omnia-nawigacja` to hak dla bramkowanych reguł skórki zaawansowanej
          (wariant sidebar-prawy przez `order`, tło z grafiki, poświata nawigacji). */
-      className="omnia-nawigacja hidden md:flex flex-col h-full border-r"
+      className={cn("omnia-nawigacja hidden md:flex flex-col h-full border-r", zwiniete && "omnia-nawigacja--zwinieta")}
       style={{
-        width: "var(--sidebar-width)",
+        // 118 (zgł. 11): zwinięte menu to wąska kolumna samych ikon. Modyfikator klasy zostaje
+        // OBOK haka `omnia-nawigacja` (116) — skórki zaawansowane celują w hak, nie w szerokość.
+        width: zwiniete ? 64 : "var(--sidebar-width)",
         backgroundColor: "var(--bg-surface)",
         borderColor: "var(--border)",
         flexShrink: 0,
@@ -295,19 +321,26 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * się jak jedno z narzędzi konta. Dwa nienazwane wejścia zastąpił jeden nazwany wiersz pod
        * spodem; marka przestaje konkurować z nawigacją.
        */}
-      <div className="flex items-center gap-2 px-4 h-12 border-b" style={{ borderColor: "var(--border)" }}>
+      {/* 118 (zgł. 11): w zwiniętym menu wiersz marki niesie samo logo, a ikony konta schodzą do
+          pionowej kolumny chromu niżej — 64 px nie pomieści czterech ikon obok nazwy, a żadna
+          z nich nie może zniknąć (dzwonek to jedyne wejście do powiadomień na komputerze). */}
+      <div className={cn("flex items-center border-b h-12", zwiniete ? "justify-center" : "gap-2 px-4")} style={{ borderColor: "var(--border)" }}>
         <div className="flex min-w-0 items-center gap-2">
           <BrandLogo px={20} />
-          <span className="truncate" style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
-            <AppName />
-          </span>
+          {!zwiniete && (
+            <span className="truncate" style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+              <AppName />
+            </span>
+          )}
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <PrzelacznikTrybuAdmina />
-          <NotificationBell placement="chrome" />
-          {/* 107: czat ZA dzwonkiem — ta sama kolejność co w górnym pasku telefonu. */}
-          <IkonaCzatu placement="chrome" />
-        </div>
+        {!zwiniete && (
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <PrzelacznikTrybuAdmina />
+            <NotificationBell placement="chrome" />
+            {/* 107: czat ZA dzwonkiem — ta sama kolejność co w górnym pasku telefonu. */}
+            <IkonaCzatu placement="chrome" />
+          </div>
+        )}
       </div>
 
       {/**
@@ -334,6 +367,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
             pathname={pathname}
             exact={stronaGlowna.exact}
             locked={isLocked(stronaGlowna.href)}
+            zwiniete={zwiniete}
           />
         </div>
       )}
@@ -355,9 +389,38 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
        * w wierszu nazwy aplikacji od 087. Ściągawka jest TYLKO tutaj (na telefonie skróty
        * klawiszowe nie mają zastosowania).
        */}
-      <div className="omnia-chrom-konta mx-2 mb-1 flex items-center gap-1 border-b px-2 pb-2" style={{ borderColor: "var(--border)" }}>
+      <div
+        className={cn(
+          "omnia-chrom-konta mx-2 mb-1 border-b pb-2",
+          zwiniete ? "flex flex-col items-center gap-1 px-0 pt-1" : "flex items-center gap-1 px-2",
+        )}
+        style={{ borderColor: "var(--border)" }}
+      >
+        {/* 118 (zgł. 11): w zwiniętym wariancie tu lądują też ikony z wiersza marki (patrz wyżej). */}
+        {zwiniete && (
+          <>
+            <PrzelacznikTrybuAdmina />
+            <NotificationBell placement="chrome" />
+            <IkonaCzatu placement="chrome" />
+          </>
+        )}
         <FavoriteStarButton favorites={favoriteViews} placement="chrome" />
         <ShortcutsButton />
+        {/* 118 (zgł. 11): przełącznik zwijania — zawsze na końcu rzędu chromu, więc stoi w tym
+            samym miejscu w obu wariantach i jest jedyną drogą powrotną ze zwiniętego stanu. */}
+        <button
+          type="button"
+          onClick={przelaczZwiniecie}
+          aria-pressed={zwiniete}
+          title={zwiniete ? t("rozwinMenu") : t("zwinMenu")}
+          aria-label={zwiniete ? t("rozwinMenu") : t("zwinMenu")}
+          className={cn("flex items-center justify-center rounded p-1.5 focus:outline-none", !zwiniete && "ml-auto")}
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+        >
+          {zwiniete ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
       </div>
 
       {/* Moduły — tylko dostępne i włączone, w kolejności użytkownika */}
@@ -373,23 +436,33 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
           <>
             <button
               onClick={() => setMoreOpen((v) => !v)}
-              className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+              className={cn(
+                "flex items-center mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none",
+                zwiniete ? "justify-center px-0 py-2.5" : "gap-3 px-4 py-2",
+              )}
               style={{ color: "var(--text-muted)" }}
+              title={zwiniete ? t("wiecej") : undefined}
+              aria-label={zwiniete ? t("wiecej") : undefined}
+              aria-expanded={moreOpen}
             >
               <MoreHorizontal size={18} />
-              <span>{t("wiecej")}</span>
+              {!zwiniete && <span>{t("wiecej")}</span>}
             </button>
             {moreOpen && more.map((m) => (
               <button
                 key={m.id}
                 onClick={() => enableModule(m.id)}
-                className="flex items-center gap-3 px-4 py-2 mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none"
+                className={cn(
+                  "flex items-center mx-2 rounded text-sm w-[calc(100%-1rem)] focus:outline-none",
+                  zwiniete ? "justify-center px-0 py-2.5" : "gap-3 px-4 py-2",
+                )}
                 style={{ color: "var(--text-secondary)", opacity: 0.85 }}
                 title={`Włącz „${m.label}" w menu`}
+                aria-label={zwiniete ? m.label : undefined}
               >
                 <span style={{ color: m.color, flexShrink: 0, display: "flex" }}><m.Icon size={18} /></span>
-                <span>{m.label}</span>
-                <Plus size={13} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />
+                {!zwiniete && <span>{m.label}</span>}
+                {!zwiniete && <Plus size={13} style={{ marginLeft: "auto", color: "var(--text-muted)" }} />}
               </button>
             ))}
           </>
@@ -399,7 +472,7 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
 
       {/* Bottom: Zaproszenia + Ustawienia + Admin. Rząd chromu wyszedł stąd na górę panelu (086). */}
       <div className="py-2 border-t" style={{ borderColor: "var(--border)" }}>
-        <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")}>
+        <NavItem href="/invitations" label="Zaproszenia" icon={<Mail size={18} />} pathname={pathname} locked={isLocked("/invitations")} zwiniete={zwiniete}>
           {invitationCount > 0 && !isLocked("/invitations") && (
             <span
               style={{
@@ -418,10 +491,10 @@ export function ModuleSidebar({ invitationCount = 0, isAdmin = false, userRoles 
           )}
         </NavItem>
 
-        <NavItem href="/settings" label="Ustawienia" icon={<Settings size={18} />} pathname={pathname} locked={isLocked("/settings")} />
+        <NavItem href="/settings" label="Ustawienia" icon={<Settings size={18} />} pathname={pathname} locked={isLocked("/settings")} zwiniete={zwiniete} />
 
         {isAdmin && (
-          <NavItem href="/admin" label="Admin" icon={<Shield size={18} />} pathname={pathname} accentColor="var(--accent-purple)" />
+          <NavItem href="/admin" label="Admin" icon={<Shield size={18} />} pathname={pathname} accentColor="var(--accent-purple)" zwiniete={zwiniete} />
         )}
       </div>
     </aside>

@@ -70,7 +70,7 @@
 
 ## Faza 4 — UI: powłoka (zgł. 11)
 
-- [ ] **T-12** — `ModuleSidebar.tsx`: przełącznik zwiń/rozwiń (chevron, `aria-pressed`,
+- [x] **T-12** — `ModuleSidebar.tsx`: przełącznik zwiń/rozwiń (chevron, `aria-pressed`,
   tooltip) w rzędzie ikon chromu konta; wariant zwinięty (wąska szerokość ~64px zamiast
   `var(--sidebar-width)`, same ikony 44×44 z `title`+`aria-label`, ukryte etykiety/liczniki/
   ulubione, „Więcej…" jako ikona); stan optymistyczny + `updateMenuPrefs`; renderowany tylko

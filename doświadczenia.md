@@ -6053,3 +6053,21 @@ testowalne), a własny `doDTO` w `obszary.ts` zastąpiony `select` Prismy. Build
 **Lekcja:** Gdy build pada na pliku spoza własnego diffa, najpierw `git log -- <plik>` — czerwień
 mogła przyjechać z bazą. Naprawę i tak robimy u siebie (czekanie na cudzy fix to też czekanie),
 ale w komunikacie/commicie nazywamy źródło, żeby recenzent nie szukał związku z bieżącym feature'em.
+
+---
+
+## 2026-09-01 — Ikona inline + brak `nowrap` = etykieta przycisku łamie się POD ikonę
+**Problem:** Właściciel zgłosił cztery osobne usterki („Nowa przestrzeń", „Usuń przestrzeń",
+rząd akcji przestrzeni, nagłówek „Pomiary"), które wyglądały na cztery bugi, a były JEDNYM:
+ikony wstawiane inline (`<Icon style={{verticalAlign:-2, marginRight:4}}/>{tekst}`) w elemencie
+bez reguły łamania. W ciasnym rzędzie flex przeglądarka łamała linię zaraz za ikoną i etykieta
+lądowała pod nią. Wspólny `Button` miał ten sam brak (`inline-flex` bez `whitespace-nowrap`).
+**Rozwiązanie:** Reguła w STYLU WSPÓLNYM, nie w miejscach zgłoszeń: `whitespace-nowrap` w bazie
+`components/ui/Button`, a w module Rośliny `przycisk` dostał `inline-flex + alignItems + gap +
+nowrap` i `naglowekSekcji` `flex + gap` — po czym hack `verticalAlign/marginRight` zszedł z ~30
+ikon (w kontenerze flex `vertical-align` i tak nie działa, a `marginRight` dublował `gap`).
+Ikony inline w akapitach (`<p>`) świadomie zostały po staremu.
+**Lekcja:** Gdy kilka zgłoszeń opisuje ten sam symptom w różnych miejscach, najpierw szukaj
+wspólnego wzorca stylu — poprawka per zgłoszenie zostawiłaby tę samą minę w każdym kolejnym
+przycisku. Przycisk to etykieta akcji, nie akapit: w kontenerach akcji z `flex-wrap` zawijać ma
+się CAŁY przycisk, nigdy jego wnętrze — `whitespace-nowrap` należy do prymitywu.
