@@ -144,6 +144,12 @@ export type MenuPrefs = {
    * a zmiana domyślnej byłaby cichą przeprowadzką układu u wszystkich użytkowników naraz.
    */
   handedness: Reka;
+  /**
+   * 118 (zgł. 11): czy menu boczne na komputerze jest zwinięte do samych ikon. Domyślnie nie —
+   * pełne menu to stan, który aplikacja miała zawsze; zwinięcie jest świadomym wyborem
+   * użytkownika i wraca na każdym urządzeniu (nośnik: `UserMenuPref`, nie localStorage).
+   */
+  sidebarCollapsed: boolean;
 };
 
 export function defaultMenuPrefs(): MenuPrefs {
@@ -153,6 +159,7 @@ export function defaultMenuPrefs(): MenuPrefs {
     tabBar: [...DEFAULT_TAB_BAR],
     favoritesCollapsed: true,
     handedness: "right",
+    sidebarCollapsed: false,
   };
 }
 

@@ -225,6 +225,10 @@ model UserMenuPref {
   // ją czyta na każdej stronie, więc dialog nie dokłada zapytania. Data, a nie znacznik czasu, bo
   // reguła brzmi „nie częściej niż raz dziennie" — porównanie dat wyraża ją wprost i bez arytmetyki.
   promptyPokazane    String   @default("{}")
+  // 118 (zgł. 11): menu boczne na komputerze zwinięte do samych ikon. Nośnikiem jest ta tabela
+  // z tego samego powodu co `favoritesCollapsed`: powłoka i tak ją czyta na każdej stronie,
+  // a stan ma wracać na każdym urządzeniu — localStorage by tego nie dał.
+  sidebarCollapsed   Boolean  @default(false)
   updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

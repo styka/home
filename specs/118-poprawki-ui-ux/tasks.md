@@ -30,11 +30,11 @@
 
 ## Faza 1 — Fundament danych (zgł. 11)
 
-- [ ] **T-4** — Migracja `0288_sidebar_collapsed` (numer zweryfikować `npm run next:migration`):
+- [x] **T-4** — Migracja `0288_sidebar_collapsed` (numer zweryfikować `npm run next:migration`):
   `ALTER TABLE "UserMenuPref" ADD COLUMN "sidebarCollapsed" BOOLEAN NOT NULL DEFAULT false;`
   + `schema.prisma` + `prisma generate` + `npm run check:migrations`. Gotowe, gdy: obie bramki
   czyste i `migrate deploy` przechodzi na lokalnym Postgresie.
-- [ ] **T-5** — `src/actions/menuPrefs.ts` + `src/lib/modules.tsx` (`MenuPrefs`,
+- [x] **T-5** — `src/actions/menuPrefs.ts` + `src/lib/modules.tsx` (`MenuPrefs`,
   `defaultMenuPrefs`): odczyt/zapis `sidebarCollapsed`. Gotowe, gdy: `updateMenuPrefs({
   sidebarCollapsed: true })` zapisuje i `readMenuPrefs` zwraca pole.
 
