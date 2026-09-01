@@ -207,11 +207,12 @@ model ItemHistory {
 - **Region:** eu-central-1 (Frankfurt)
 - **Connection string:**
   ```
-  postgresql://neondb_owner:npg_CIVYo0Lv7mpy@ep-crimson-scene-al05719e.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
+  postgresql://neondb_owner:<HASŁO-Z-NEON>@ep-delicate-paper-als39kns-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
   ```
+  *(hasło NIE jest już zapisywane w repo — poprzednie wyciekło do historii gita i zostało zrotowane 2026-09-01; aktualne trzymaj wyłącznie w env vars Rendera i lokalnym `.env.local`)*
 - **Env vars w Render:**
   - `DATABASE_URL` = powyższy string
-  - `DIRECT_URL` = powyższy string (bez pgbouncer dla migracji)
+  - `DIRECT_URL` = powyższy string, ale host **bez** `-pooler` (`ep-delicate-paper-als39kns.c-3.…`) — migracje idą bezpośrednio, nie przez poolera
 
 ### Render
 - **Konto:** tyka.szymon@gmail.com (przez GitHub)
@@ -256,8 +257,8 @@ npm run dev
 
 Lub z Neon (produkcyjna baza):
 ```bash
-echo 'DATABASE_URL="postgresql://neondb_owner:npg_CIVYo0Lv7mpy@ep-crimson-scene-al05719e.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"' > .env.local
-echo 'DIRECT_URL="postgresql://neondb_owner:npg_CIVYo0Lv7mpy@ep-crimson-scene-al05719e.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"' >> .env.local
+echo 'DATABASE_URL="postgresql://neondb_owner:<HASŁO-Z-NEON>@ep-delicate-paper-als39kns-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env.local
+echo 'DIRECT_URL="postgresql://neondb_owner:<HASŁO-Z-NEON>@ep-delicate-paper-als39kns.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' >> .env.local
 npm run dev
 ```
 

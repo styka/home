@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-NEON_URL="postgresql://neondb_owner:npg_CIVYo0Lv7mpy@ep-crimson-scene-al05719e.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+# Hasło do bazy nie jest trzymane w repo — podaj connection string przy uruchomieniu:
+#   NEON_URL="postgresql://..." ./deploy.sh
+NEON_URL="${NEON_URL:?Ustaw NEON_URL (connection string Neon) w środowisku}"
 
 echo ""
 echo "╔══════════════════════════════════╗"

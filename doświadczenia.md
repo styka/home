@@ -6053,3 +6053,14 @@ testowalne), a własny `doDTO` w `obszary.ts` zastąpiony `select` Prismy. Build
 **Lekcja:** Gdy build pada na pliku spoza własnego diffa, najpierw `git log -- <plik>` — czerwień
 mogła przyjechać z bazą. Naprawę i tak robimy u siebie (czekanie na cudzy fix to też czekanie),
 ale w komunikacie/commicie nazywamy źródło, żeby recenzent nie szukał związku z bieżącym feature'em.
+
+## 2026-09-01 — Hasło do produkcyjnej bazy leżało jawnie w repo (CONTEXT.md, deploy.sh)
+**Problem:** Connection string Neona z hasłem był zapisany jawnym tekstem w `worldofmag/CONTEXT.md`
+(sekcja infrastruktury + instrukcja lokalnego uruchomienia) i w martwym skrypcie `deploy.sh` —
+czyli także w całej historii gita publicznie dostępnego repozytorium.
+**Rozwiązanie:** Rotacja hasła i endpointu w Neonie; w repo zostaje wyłącznie host i placeholder
+`<HASŁO-Z-NEON>`, a prawdziwy string żyje tylko w env vars Rendera (`DATABASE_URL` przez pooler,
+`DIRECT_URL` bez `-pooler`) i lokalnym `.env.local`. `deploy.sh` wymaga teraz `NEON_URL` ze środowiska.
+**Lekcja:** Sekret raz scommitowany zostaje w historii na zawsze — usunięcie z pliku nic nie daje,
+trzeba zrotować sekret u źródła. Dokumentacja infrastruktury może wskazywać GDZIE sekret jest
+(Render env vars), ale nigdy nie powinna go zawierać.
