@@ -173,6 +173,8 @@ test.describe("105 — UX tworzenia i przeglądania zadań", () => {
     await page.goto(`/tasks/${projectId}`);
     await page.waitForLoadState("load").catch(() => {});
 
+    // 118 (zgł. 2): formularz nie stoi już na stałe nad listą — otwiera go skrót `a` (modal).
+    await page.keyboard.press("a");
     const pole = page.getByPlaceholder(/Dodaj zadanie/);
     await expect(pole).toBeVisible({ timeout: 15_000 });
 

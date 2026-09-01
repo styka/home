@@ -2968,7 +2968,9 @@
         "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)",
         "usunacZadanie": "Usunąć zadanie?",
         "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić.",
-        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania"
+        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania",
+        "dodajZadanie": "Dodaj zadanie",
+        "dodajZadanieSkrot": "Dodaj zadanie (a lub n)"
       },
       "TasksSideNav": {
         "nowaGrupaProjektow": "Nowa grupa projektów",
@@ -2981,10 +2983,6 @@
       },
       "TimelineView": {
         "brakZadanDoPokazania": "Brak zadań do pokazania."
-      },
-      "QuickAddTask": {
-        "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
-        "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
       },
       "ProjectScopeFilter": {
         "filtrProjektow": "Filtr projektów",
@@ -3063,6 +3061,9 @@
         "wszystkieZadania": "Wszystkie zadania",
         "bezObszaru": "Bez obszaru",
         "brakZadan": "Brak zadań w tym obszarze."
+      },
+      "ModalDodaniaZadania": {
+        "tytul": "Nowe zadanie"
       }
     },
     "truck": {

@@ -54,18 +54,18 @@
 
 ## Faza 3 — UI: Zadania
 
-- [ ] **T-9** — **Zgł. 1:** `TaskFilters.tsx` — jeden wiersz: zakładki (`flex-1 min-w-0
+- [x] **T-9** — **Zgł. 1:** `TaskFilters.tsx` — jeden wiersz: zakładki (`flex-1 min-w-0
   overflow-x-auto`) + `FiltrTagow` (`ml-auto shrink-0`) + chipy w tym samym rzędzie;
   `FiltrTagow.tsx` — neutralny padding. Kanban (`showStatusTabs=false`): filtr sam w rzędzie.
   Gotowe, gdy: bez wybranych tagów pasek to 1 wiersz stałej wysokości; semantyka filtru
   nietknięta (AC-1).
-- [ ] **T-10** — **Zgł. 2:** nowy `ModalDodaniaZadania.tsx` (Modal + `FormularzZadania`,
+- [x] **T-10** — **Zgł. 2:** nowy `ModalDodaniaZadania.tsx` (Modal + `FormularzZadania`,
   autofocus, zamknięcie po `onCreated`); `TasksPage.tsx` — przycisk „+ Dodaj zadanie"
   (nowrap) w pasku narzędzi, skróty `a`/`n` otwierają modal, usunięcie inline
   `<QuickAddTask/>`; kasacja `QuickAddTask.tsx` jeśli bez konsumentów; teksty w `pl.json`.
   Gotowe, gdy: AC-2 w całości (klik/skrót → modal, Enter dodaje, Esc zamyka, lista odświeżona
   bez przeładowania, panel szczegółów otwiera się jak dotąd).
-- [ ] **T-11** — Grep `e2e/` pod scenariusze inline pola dodawania zadania; dostosować do
+- [x] **T-11** — Grep `e2e/` pod scenariusze inline pola dodawania zadania; dostosować do
   modalu. Gotowe, gdy: żaden spec nie celuje w usunięty inline formularz.
 
 ## Faza 4 — UI: powłoka (zgł. 11)
