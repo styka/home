@@ -18,6 +18,13 @@ export const przycisk: CSSProperties = {
   cursor: "pointer",
   // C-31: minimalny cel dotyku. Przyciski w tym module stoją gęsto obok siebie na telefonie.
   minHeight: 40,
+  // 118 (zgł. 5/8/9): ikona i etykieta stoją OBOK siebie i nigdy się nie rozłamują — w ciasnym
+  // rzędzie tekst łamał się pod ikonę („Usuń przestrzeń", „+ Nowa przestrzeń"). Flex zamiast
+  // `verticalAlign` na każdej ikonie z osobna; zawija się cały przycisk, nie jego wnętrze.
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  whiteSpace: "nowrap",
 };
 
 export const przyciskGlowny: CSSProperties = {
@@ -41,6 +48,11 @@ export const naglowekSekcji: CSSProperties = {
   fontWeight: 600,
   color: "var(--text-primary)",
   margin: "0 0 8px",
+  // 118 (zgł. 3): nagłówek z ikoną („POMIARY") łamał tekst POD ikonę. Flex trzyma ikonę we
+  // własnej kolumnie — dłuższy tytuł zawija się we własnym polu, nigdy pod ikoną.
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 export const pole: CSSProperties = {

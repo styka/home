@@ -235,12 +235,12 @@ export function Ewidencja({ pozycje: poczatkowe, przestrzenie, magazyn = [] }: {
         <>
         {przestrzenie.length > 0 && (
           <button type="button" style={przycisk} onClick={() => setFormularz((v) => !v)}>
-            <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Plus size={13} aria-hidden />
             {t("nowyZabieg")}
           </button>
         )}
         <button type="button" style={przyciskGlowny} onClick={eksportuj} disabled={pending}>
-          <Download size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Download size={13} aria-hidden />
           {t("eksportuj")}
         </button>
         </>

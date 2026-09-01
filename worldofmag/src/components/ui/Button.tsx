@@ -9,8 +9,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size
 }
 
+// 118: `whitespace-nowrap` — etykieta przycisku to nazwa akcji, nie akapit. Bez tej reguły w
+// ciasnym rzędzie flex tekst łamał się POD ikonę („Nowa przestrzeń" → plus nad napisem);
+// kontenery akcji mają `flex-wrap`, więc zawijać ma się cały przycisk, nigdy jego wnętrze.
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] disabled:opacity-50 disabled:pointer-events-none"
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] disabled:opacity-50 disabled:pointer-events-none"
 
 // 045: tekst na tle akcentowym to `--on-accent`, nigdy `text-white` (C-30). Skórka
 // z jasnym akcentem (np. bursztyn „Mostka") daje białym napisem kontrast ~1.8:1 —

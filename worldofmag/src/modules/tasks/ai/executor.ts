@@ -34,10 +34,12 @@ export async function executeTasksAction(action: AIAction, userId: string, curre
     const description = asStr(params.description) ?? "";
     const res = await submitFeedbackTask({ title, description });
     // „Przejdź do zadania" proponujemy TYLKO, gdy użytkownik może je otworzyć (AC-20).
+    // 118: link celuje w KONKRETNE zadanie (`?task=` — wejście, które TasksRouteView już czyta),
+    // nie w samą listę — inaczej zgłaszający musiał szukać świeżego zgłoszenia wzrokiem.
     return res.canRead
       ? {
           message: `Zgłoszenie „${title}" trafiło do administratora.`,
-          navigateTo: `/tasks/${res.projectId}`,
+          navigateTo: `/tasks/${res.projectId}?task=${res.taskId}`,
           navigateLabel: "Otwórz w zadaniach",
         }
       : { message: `Zgłoszenie „${title}" trafiło do administratora. Dziękujemy!` };

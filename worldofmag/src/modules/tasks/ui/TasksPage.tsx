@@ -2,14 +2,14 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
 import { TimelineView } from "./TimelineView";
 import { TaskDetail } from "./TaskDetail";
 import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
-import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
+import { ModalDodaniaZadania } from "./ModalDodaniaZadania";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { useTrybAdmina } from "@/platform/admin/trybAdmina";
@@ -180,7 +180,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [bulkPending, startBulkTransition] = useTransition();
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
-  const quickAddRef = useRef<QuickAddTaskHandle>(null);
+  // 118 (zgł. 2): dodawanie zadania w modalu — stały formularz nad listą zabierał jej przestrzeń.
+  const [dodawanie, setDodawanie] = useState(false);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
   // Pasek akcji na wąskich ekranach przewija się poziomo. Bez wizualnej wskazówki użytkownik nie wie,
@@ -516,7 +517,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const handlers = useMemo(
     () => ({
       onQuickAdd: () => {
-        setTimeout(() => quickAddRef.current?.focus(), 10);
+        setDodawanie(true);
       },
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
@@ -641,6 +642,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             role="toolbar"
             aria-label={t("pasekAkcjiListyPrzewin")}
           >
+          {/* 118 (zgł. 2): dodawanie zadania — pierwsza pozycja paska (najczęstsza akcja).
+              Etykieta obok ikony i `whitespace-nowrap`: przycisk nigdy nie łamie się pod ikonę. */}
+          <button
+            onClick={() => setDodawanie(true)}
+            className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-medium whitespace-nowrap focus:outline-none"
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+            title={t("dodajZadanieSkrot")}
+            aria-label={t("dodajZadanieSkrot")}
+          >
+            <Plus size={15} />
+            <span className="hidden sm:inline">{t("dodajZadanie")}</span>
+          </button>
+
           {/* 080 (Z3): filtr projektów tylko w widokach ZBIORCZYCH. W widoku jednego projektu
               zawężanie do projektów nie ma sensu — pokazywałby jedną pozycję, zawsze zaznaczoną. */}
           {isVirtualView && allProjects.length > 1 && (
@@ -920,11 +934,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
-      <QuickAddTask
-        ref={quickAddRef}
-        projectId={addProjectId}
-        onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
-      />
+      {/* 118 (zgł. 2): formularz dodawania tylko na żądanie — przycisk w pasku akcji albo `a`/`n`.
+          Po utworzeniu ta sama ścieżka co przy starym formularzu: panel szczegółów nowego zadania. */}
+      {dodawanie && (
+        <ModalDodaniaZadania
+          projectId={addProjectId}
+          onClose={() => setDodawanie(false)}
+          onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
+        />
+      )}
 
       <TaskFilters
         active={activeFilter}

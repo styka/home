@@ -28,13 +28,14 @@ export async function readMenuPrefs(userId: string): Promise<MenuPrefs> {
       tabBar: Array.isArray(tabBar) && tabBar.length ? tabBar.filter((id: unknown): id is string => typeof id === "string") : def.tabBar,
       favoritesCollapsed: row.favoritesCollapsed,
       handedness: czytajReke(row.handedness),
+      sidebarCollapsed: row.sidebarCollapsed,
     };
   } catch {
     return def;
   }
 }
 
-export async function updateMenuPrefs(patch: { order?: string[]; disabled?: string[]; tabBar?: string[]; favoritesCollapsed?: boolean; handedness?: Reka }): Promise<void> {
+export async function updateMenuPrefs(patch: { order?: string[]; disabled?: string[]; tabBar?: string[]; favoritesCollapsed?: boolean; handedness?: Reka; sidebarCollapsed?: boolean }): Promise<void> {
   const user = await requireAuth();
   const current = await readMenuPrefs(user.id);
 
@@ -54,11 +55,12 @@ export async function updateMenuPrefs(patch: { order?: string[]; disabled?: stri
   ).slice(0, MAKS_MODULOW_W_PASKU);
   const favoritesCollapsed = patch.favoritesCollapsed ?? current.favoritesCollapsed;
   const handedness = czytajReke(patch.handedness ?? current.handedness);
+  const sidebarCollapsed = patch.sidebarCollapsed ?? current.sidebarCollapsed;
 
   await prisma.userMenuPref.upsert({
     where: { userId: user.id },
-    create: { userId: user.id, order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed, handedness },
-    update: { order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed, handedness },
+    create: { userId: user.id, order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed, handedness, sidebarCollapsed },
+    update: { order: JSON.stringify(order), disabled: JSON.stringify(disabled), tabBar: JSON.stringify(tabBar), favoritesCollapsed, handedness, sidebarCollapsed },
   });
 
   revalidatePath("/", "layout");

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sprout, Plus, MapPin, Settings2, Wand2, Share2, ListPlus, CloudSun, AlertTriangle, Trash2, Pencil } from "lucide-react";
 import { ModuleView } from "@/components/ui/view";
+import { Modal } from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { AiContentMeta, AiContentPending } from "@/components/ui/AiContentMeta";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
@@ -236,15 +237,15 @@ export function PrzestrzenPage({
       actions={
         <>
           <button type="button" style={przycisk} onClick={() => setUdostepnianie(true)}>
-            <Share2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Share2 size={13} aria-hidden />
             {t("udostepnij")}
           </button>
           <button type="button" style={przycisk} onClick={() => setFormularz(formularz === "miejsce" ? null : "miejsce")}>
-            <MapPin size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <MapPin size={13} aria-hidden />
             {t("noweMiejsce")}
           </button>
           <button type="button" style={przyciskGlowny} onClick={() => setFormularz(formularz === "roslina" ? null : "roslina")}>
-            <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Plus size={13} aria-hidden />
             {t("nowaRoslina")}
           </button>
         </>
@@ -254,9 +255,13 @@ export function PrzestrzenPage({
           type="button"
           style={{ ...przycisk, background: zaawansowane ? "var(--bg-hover)" : "var(--bg-elevated)" }}
           aria-pressed={zaawansowane}
+          // 118 (zgł. 7): przełącznik mówi, CO odsłania — bez tego użytkownik musiał go włączyć,
+          // żeby się dowiedzieć. Tooltip + pełna nazwa dostępna; zestaw pól bez zmian (lib/tryb).
+          title={t("zaawansowaneOpis")}
+          aria-label={`${t("zaawansowane")} — ${t("zaawansowaneOpis")}`}
           onClick={() => setZaawansowane((v) => !v)}
         >
-          <Settings2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Settings2 size={13} aria-hidden />
           {t("zaawansowane")}
         </button>
       }
@@ -276,7 +281,7 @@ export function PrzestrzenPage({
       {ustawienia && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>
-            <CloudSun size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+            <CloudSun size={13} aria-hidden />
             {t("lokalizacjaTytul")}
           </h2>
           <p style={{ ...drobny, margin: "0 0 10px" }}>{t("lokalizacjaOpis")}</p>
@@ -301,15 +306,24 @@ export function PrzestrzenPage({
           <h2 style={{ ...naglowekSekcji, marginTop: 18 }}>{t("usunTytul")}</h2>
           <p style={{ ...drobny, margin: "0 0 10px" }}>{t("usunOpis")}</p>
           <button type="button" style={przycisk} onClick={usunPrzestrzen} disabled={pending}>
-            <Trash2 size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+            <Trash2 size={13} aria-hidden />
             {t("usunPrzestrzen")}
           </button>
         </section>
       )}
 
+      {/* 118 (zgł. 4): oba formularze w MODALU — jak „Udostępnij". Rozsuwana sekcja spychała
+          treść strony przy każdym otwarciu; modal leży NAD treścią i niczego nie przesuwa. */}
       {formularz === "roslina" && (
-        <section style={sekcja}>
-          <h2 style={naglowekSekcji}>{t("nowaRoslina")}</h2>
+        <Modal
+          title={t("nowaRoslina")}
+          onClose={() => { setFormularz(null); setOstrzezenie(null); }}
+          footer={
+            <button type="button" style={przyciskGlowny} onClick={dodajRosline} disabled={pending}>
+              {t("dodaj")}
+            </button>
+          }
+        >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input
               type="text"
@@ -353,15 +367,12 @@ export function PrzestrzenPage({
                 </select>
               </>
             )}
-            <button type="button" style={przyciskGlowny} onClick={dodajRosline} disabled={pending}>
-              {t("dodaj")}
-            </button>
           </div>
           {ostrzezenie && (
             <p
               style={{
                 fontSize: 12,
-                margin: "10px 0 0",
+                margin: 0,
                 color: ostrzezenie.poziom === "warn" ? "var(--accent-amber)" : "var(--text-secondary)",
               }}
             >
@@ -369,27 +380,29 @@ export function PrzestrzenPage({
               {ostrzezenie.tresc}
             </p>
           )}
-        </section>
+        </Modal>
       )}
 
       {formularz === "miejsce" && (
-        <section style={sekcja}>
-          <h2 style={naglowekSekcji}>{t("noweMiejsce")}</h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input
-              type="text"
-              value={nazwaMiejsca}
-              onChange={(e) => setNazwaMiejsca(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") dodajMiejsce(); }}
-              placeholder={t("nazwaMiejscaPlaceholder")}
-              aria-label={t("nazwaMiejscaEtykieta")}
-              style={{ ...pole, flex: "1 1 220px" }}
-            />
+        <Modal
+          title={t("noweMiejsce")}
+          onClose={() => setFormularz(null)}
+          footer={
             <button type="button" style={przyciskGlowny} onClick={dodajMiejsce} disabled={pending}>
               {t("dodaj")}
             </button>
-          </div>
-        </section>
+          }
+        >
+          <input
+            type="text"
+            value={nazwaMiejsca}
+            onChange={(e) => setNazwaMiejsca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") dodajMiejsce(); }}
+            placeholder={t("nazwaMiejscaPlaceholder")}
+            aria-label={t("nazwaMiejscaEtykieta")}
+            style={pole}
+          />
+        </Modal>
       )}
 
       <section style={sekcja}>
@@ -465,11 +478,11 @@ export function PrzestrzenPage({
                       onClick={() => setEdytowane({ id: m.id, name: m.name, sun: m.sun })}
                       disabled={pending}
                     >
-                      <Pencil size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      <Pencil size={12} aria-hidden />
                       {t("edytuj")}
                     </button>
                     <button type="button" style={przycisk} onClick={() => usunMiejsce(m)} disabled={pending}>
-                      <Trash2 size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                      <Trash2 size={12} aria-hidden />
                       {t("usun")}
                     </button>
                   </div>
@@ -482,7 +495,7 @@ export function PrzestrzenPage({
 
       <section style={sekcja}>
         <h2 style={naglowekSekcji}>
-          <Wand2 size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+          <Wand2 size={13} aria-hidden />
           {t("planTytul")}
         </h2>
         {plan.pending ? (
@@ -513,7 +526,7 @@ export function PrzestrzenPage({
                         onClick={() => doZadan(p, i)}
                         disabled={pending}
                       >
-                        <ListPlus size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                        <ListPlus size={12} aria-hidden />
                         {t("doZadan")}
                       </button>
                     )}

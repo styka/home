@@ -94,19 +94,19 @@ export function AgendaOpieki({ pozycje: poczatkowe }: { pozycje: PozycjaAgendy[]
                 {p.reason && <p style={{ ...drobny, margin: 0 }}>{p.reason}</p>}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <button type="button" style={przycisk} disabled={pending} onClick={() => wykonaj(p, "DONE")}>
-                    <Check size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    <Check size={13} aria-hidden />
                     {t("zrobione")}
                   </button>
                   <button type="button" style={przycisk} disabled={pending} onClick={() => wykonaj(p, "POSTPONED")}>
-                    <Clock size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    <Clock size={13} aria-hidden />
                     {t("odloz")}
                   </button>
                   <button type="button" style={przycisk} disabled={pending} onClick={() => wykonaj(p, "SKIPPED")}>
-                    <SkipForward size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    <SkipForward size={13} aria-hidden />
                     {t("pomin")}
                   </button>
                   <button type="button" style={przycisk} disabled={pending} onClick={() => wylacz(p)}>
-                    <BellOff size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+                    <BellOff size={13} aria-hidden />
                     {t("wylacz")}
                   </button>
                 </div>

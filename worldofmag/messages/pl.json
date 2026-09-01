@@ -1130,7 +1130,9 @@
         "ksiazki": "Książki",
         "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
         "stronaGlowna": "Strona główna",
-        "wiecej": "Więcej…"
+        "wiecej": "Więcej…",
+        "zwinMenu": "Zwiń menu do ikon",
+        "rozwinMenu": "Rozwiń menu"
       },
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
@@ -2149,7 +2151,9 @@
           "garden": "Ogród",
           "production": "Produkcja / kwiaciarnia",
           "field": "Pole"
-        }
+        },
+        "lokalizacjaEtykieta": "Lokalizacja pogodowa (opcjonalnie)",
+        "bezLokalizacji": "Bez lokalizacji pogodowej"
       },
       "PrzestrzenPage": {
         "wroc": "← Wróć do przestrzeni",
@@ -2214,7 +2218,8 @@
           "partial": "półcień",
           "shade": "cień",
           "unknown": "nieokreślone"
-        }
+        },
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. liczność i jednostkę partii, fazę rozwoju oraz powierzchnię miejsc"
       },
       "AgendaOpieki": {
         "tytul": "Opieka",
@@ -2364,7 +2369,8 @@
         "wylaczZadanie": "Nie przypominaj",
         "wylaczZadaniePytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie.",
         "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę.",
-        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy."
+        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy.",
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. fazę rozwoju (BBCH) i szczegóły partii"
       },
       "KatalogGatunkow": {
         "tytul": "Katalog gatunków",
@@ -2964,7 +2970,9 @@
         "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)",
         "usunacZadanie": "Usunąć zadanie?",
         "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić.",
-        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania"
+        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania",
+        "dodajZadanie": "Dodaj zadanie",
+        "dodajZadanieSkrot": "Dodaj zadanie (a lub n)"
       },
       "TasksSideNav": {
         "nowaGrupaProjektow": "Nowa grupa projektów",
@@ -2977,10 +2985,6 @@
       },
       "TimelineView": {
         "brakZadanDoPokazania": "Brak zadań do pokazania."
-      },
-      "QuickAddTask": {
-        "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
-        "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
       },
       "ProjectScopeFilter": {
         "filtrProjektow": "Filtr projektów",
@@ -3059,6 +3063,9 @@
         "wszystkieZadania": "Wszystkie zadania",
         "bezObszaru": "Bez obszaru",
         "brakZadan": "Brak zadań w tym obszarze."
+      },
+      "ModalDodaniaZadania": {
+        "tytul": "Nowe zadanie"
       }
     },
     "truck": {

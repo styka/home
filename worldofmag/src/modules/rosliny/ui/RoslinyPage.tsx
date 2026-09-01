@@ -21,14 +21,18 @@ import { drobny, kolorKubelka, naglowekSekcji, pole, przycisk, przyciskGlowny, s
 export function RoslinyPage({
   przestrzenie: poczatkowe,
   agenda,
+  lokalizacje,
 }: {
   przestrzenie: PrzestrzenDTO[];
   agenda: PozycjaAgendy[];
+  /** 118 (zgł. 6): lokalizacje z modułu Pogoda — pusta lista chowa pole, niczego nie blokuje. */
+  lokalizacje: { id: string; label: string }[];
 }) {
   const t = useTranslations("modules.rosliny.RoslinyPage");
   const [przestrzenie, setPrzestrzenie] = useState(poczatkowe);
   const [nazwa, setNazwa] = useState("");
   const [tryb, setTryb] = useState<TrybPrzestrzeni>("home");
+  const [lokalizacja, setLokalizacja] = useState("");
   const [formularz, setFormularz] = useState(false);
   const [blad, setBlad] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -41,12 +45,13 @@ export function RoslinyPage({
     setBlad(null);
     startTransition(async () => {
       try {
-        const { id } = await createSpace({ name: wartosc, kind: tryb });
+        const { id } = await createSpace({ name: wartosc, kind: tryb, weatherLocationId: lokalizacja || null });
         setPrzestrzenie((p) => [
           ...p,
-          { id, name: wartosc, kind: tryb, weatherLocationId: null, notes: null, liczbaRoslin: 0, liczbaMiejsc: 0, zespol: null },
+          { id, name: wartosc, kind: tryb, weatherLocationId: lokalizacja || null, notes: null, liczbaRoslin: 0, liczbaMiejsc: 0, zespol: null },
         ]);
         setNazwa("");
+        setLokalizacja("");
         setFormularz(false);
       } catch (e) {
         setBlad(e instanceof Error ? e.message : t("bladOgolny"));
@@ -68,7 +73,7 @@ export function RoslinyPage({
       }}
       actions={
         <button type="button" style={przyciskGlowny} onClick={() => setFormularz((v) => !v)}>
-          <Plus size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} aria-hidden />
+          <Plus size={13} aria-hidden />
           {t("nowaPrzestrzen")}
         </button>
       }
@@ -101,6 +106,21 @@ export function RoslinyPage({
                 </option>
               ))}
             </select>
+            {/* 118 (zgł. 6): lokalizację pogodową da się wskazać już przy zakładaniu — dotąd
+                trzeba było wracać do ustawień przestrzeni. Pominięcie działa jak dotychczas. */}
+            {lokalizacje.length > 0 && (
+              <select
+                value={lokalizacja}
+                onChange={(e) => setLokalizacja(e.target.value)}
+                aria-label={t("lokalizacjaEtykieta")}
+                style={{ ...pole, flex: "0 1 220px" }}
+              >
+                <option value="">{t("bezLokalizacji")}</option>
+                {lokalizacje.map((l) => (
+                  <option key={l.id} value={l.id}>{l.label}</option>
+                ))}
+              </select>
+            )}
             <button type="button" style={przyciskGlowny} onClick={zaloz} disabled={pending}>
               {t("zaloz")}
             </button>
@@ -112,7 +132,7 @@ export function RoslinyPage({
       {pilne.length > 0 && (
         <section style={sekcja}>
           <h2 style={naglowekSekcji}>
-            <CalendarCheck size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} aria-hidden />
+            <CalendarCheck size={13} aria-hidden />
             {t("naDzisTytul", { ile: pilne.length })}
           </h2>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
