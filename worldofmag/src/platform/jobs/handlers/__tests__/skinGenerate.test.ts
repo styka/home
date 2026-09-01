@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { korekta, opisPorazki, SKIN_MAX_ATTEMPTS } from "@/platform/jobs/handlers/skinGenerate";
+import {
+  korekta,
+  opisPorazki,
+  odczytajOdpowiedzJson,
+  korektaFormatu,
+  opisPorazkiFormatu,
+  SKIN_MAX_ATTEMPTS,
+} from "@/platform/jobs/handlers/skinGenerate";
+import { wyodrebnijTokeny } from "@/lib/skins/mapowanie";
 
 // 080 (Z10). Zgłoszenie: opis „Skórka nawiązująca stylem do kosmicznej sagi Star Trek" kończył się
 // zdaniem „Model nie zwrócił ani jednego poprawnego tokenu — spróbuj ponownie". Zdanie było
@@ -64,4 +72,76 @@ test("opisPorazki: nie odsyła użytkownika do klucza API", () => {
   for (const tekst of [opisPorazki(0, []), opisPorazki(5, ["--x"])]) {
     assert.doesNotMatch(tekst, /API/i);
   }
+});
+
+// ─── 117. Zgłoszenie: „błąd o formacie" przy generowaniu skórki. Odczyt odpowiedzi
+// modelu ma tolerować OPAKOWANIE (płotki markdown, tekst wokół JSON-a, luźne kształty)
+// i rozpoznawać UCIĘCIE z flagi transportu — a komunikaty porażki mają nazywać
+// przyczynę, nie mówić „nieprawidłowy format". Te przypadki wcześniej kończyły się
+// twardym 502 na pierwszym podejściu.
+
+test("117/odczyt: płotki markdown z językiem są zdejmowane", () => {
+  const w = odczytajOdpowiedzJson('```json\n{"name":"Mostek","tokens":{"--bg-base":"#050a18"}}\n```', false);
+  assert.ok(w.ok);
+  assert.equal((w.parsed as { name?: string }).name, "Mostek");
+});
+
+test("117/odczyt: znak nowej linii PO płotku zamykającym nie psuje odczytu", () => {
+  // Dokładnie ten kształt wywalał stary regex `/```$/` (kotwica na samym końcu).
+  const w = odczytajOdpowiedzJson('```\n{"name":"Zen"}\n```\n', false);
+  assert.ok(w.ok);
+});
+
+test("117/odczyt: tekst przed i po obiekcie JSON nie jest błędem formatu", () => {
+  const w = odczytajOdpowiedzJson('Oto Twoja skórka:\n{"name":"Papier","tokens":{}}\nMiłego dnia!', false);
+  assert.ok(w.ok);
+  assert.equal((w.parsed as { name?: string }).name, "Papier");
+});
+
+test("117/odczyt: odpowiedź ucięta w połowie obiektu → przyczyna „ucieta” z flagi", () => {
+  const w = odczytajOdpowiedzJson('{"name":"Terminal","tokens":{"--bg-base":"#0', true);
+  assert.ok(!w.ok);
+  assert.equal(w.przyczyna, "ucieta");
+});
+
+test("117/odczyt: śmieci bez JSON-a → przyczyna „brak-json”", () => {
+  const w = odczytajOdpowiedzJson("przepraszam, nie mogę pomóc", false);
+  assert.ok(!w.ok);
+  assert.equal(w.przyczyna, "brak-json");
+});
+
+test("117/odczyt: tablica ani pusta odpowiedź nie udają skórki", () => {
+  const tablica = odczytajOdpowiedzJson('[{"name":"x"}]', false);
+  assert.ok(!tablica.ok);
+  const pusta = odczytajOdpowiedzJson("", false);
+  assert.ok(!pusta.ok);
+  assert.equal(pusta.przyczyna, "brak-json");
+});
+
+test("117/komunikaty: korekta formatu mówi modelowi, CO poprawić", () => {
+  assert.match(korektaFormatu("ucieta"), /UCIĘTA/);
+  assert.match(korektaFormatu("ucieta"), /zwięźlej/);
+  assert.match(korektaFormatu("brak-json"), /WYŁĄCZNIE jeden obiekt JSON/);
+});
+
+test("117/komunikaty: porażka formatu rozróżnia ucięcie od braku JSON-a i wskazuje panel LLM", () => {
+  const ucieta = opisPorazkiFormatu("ucieta");
+  const brak = opisPorazkiFormatu("brak-json");
+  assert.match(ucieta, /ucięta/);
+  assert.match(ucieta, /generation/);
+  assert.match(brak, /nie zwrócił obiektu JSON/);
+  assert.match(brak, /generation/);
+  assert.notEqual(ucieta, brak);
+  // Stary, bezużyteczny komunikat nie ma prawa wrócić.
+  assert.doesNotMatch(ucieta, /nieprawidłowy format/);
+  assert.doesNotMatch(brak, /nieprawidłowy format/);
+});
+
+test("117/tryb prosty: mapa tokenów w pojemniku `variables` jest odzyskiwana (081 wpięte)", () => {
+  // Kontener inny niż `tokens` — wcześniej handler czytał wyłącznie `parsed.tokens`,
+  // więc taka odpowiedź kończyła się „modelem bez tokenów" mimo poprawnej treści.
+  const w = odczytajOdpowiedzJson('{"variables":{"--bg-base":"#101010"}}', false);
+  assert.ok(w.ok);
+  const mapa = wyodrebnijTokeny(w.parsed);
+  assert.equal(mapa.tokeny["--bg-base"], "#101010");
 });

@@ -337,6 +337,64 @@ export function opisPorazki(przyslanych: number, odrzucone: string[]): string {
   );
 }
 
+// ─── 117: odczyt odpowiedzi modelu — tolerancja na KSZTAŁT, nie na treść ────────
+//
+// Zgłoszenie użytkownika: „błąd o formacie" przy generowaniu skórki. Przyczyna: oba
+// tryby czytały odpowiedź twardym `JSON.parse` po naiwnym zdjęciu płotków (regex nie
+// radził sobie nawet ze znakiem nowej linii po ``` zamykającym) i rzucały 502 BEZ
+// ponowienia — mimo że `parseJsonLoose` był w tym pliku zaimportowany od 081, a
+// `chatComplete` od 032 zwraca flagę `truncated` (ucięte wyjście). Tolerancja dotyczy
+// WYŁĄCZNIE opakowania: odzyskana treść i tak przechodzi pełną walidację (116).
+
+export type PrzyczynaFormatu = "ucieta" | "brak-json";
+
+export function odczytajOdpowiedzJson(
+  content: string | null | undefined,
+  truncated: boolean,
+): { ok: true; parsed: Record<string, unknown> } | { ok: false; przyczyna: PrzyczynaFormatu } {
+  const parsed = parseJsonLoose<unknown>(content ?? "");
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    return { ok: true, parsed: parsed as Record<string, unknown> };
+  }
+  // Ucięcie znamy z FLAGI transportu, nie z wróżenia po treści — to rozróżnienie
+  // decyduje, czy naprawa leży w budżecie wyjścia, czy w samym modelu.
+  return { ok: false, przyczyna: truncated ? "ucieta" : "brak-json" };
+}
+
+/** Komunikat korygujący drugiego podejścia — jak `korekta`, ale o KSZTAŁCIE odpowiedzi. */
+export function korektaFormatu(przyczyna: PrzyczynaFormatu): string {
+  if (przyczyna === "ucieta") {
+    return (
+      "Twoja poprzednia odpowiedź została UCIĘTA — skończył się budżet wyjścia. " +
+      "Odpowiedz zwięźlej: wyłącznie jeden obiekt JSON, bez komentarzy i bez markdown, " +
+      "„rationale” najwyżej jedno zdanie."
+    );
+  }
+  return (
+    "W twojej poprzedniej odpowiedzi nie dało się znaleźć obiektu JSON. " +
+    "Zwróć WYŁĄCZNIE jeden obiekt JSON w ustalonym kształcie — bez tekstu przed ani po " +
+    "i bez płotków markdown."
+  );
+}
+
+/** Komunikat ostatecznej porażki formatu — mówi CO zawiodło i GDZIE szukać naprawy,
+ *  wzorem `opisPorazki` (080): enigmatyczne „nieprawidłowy format" niczego nie naprawia. */
+export function opisPorazkiFormatu(przyczyna: PrzyczynaFormatu): string {
+  if (przyczyna === "ucieta") {
+    return (
+      "Odpowiedź modelu została ucięta (skończył się budżet wyjścia) i nie dało się z niej " +
+      "odczytać skórki — także po ponowieniu. Spróbuj ponownie albo uprość opis; jeśli problem " +
+      "wraca, sprawdź model przypisany do operacji „generation” w panelu LLM — modele rozumujące " +
+      "zużywają część budżetu na myślenie."
+    );
+  }
+  return (
+    "Model nie zwrócił obiektu JSON, z którego dałoby się odczytać skórkę — także po ponowieniu. " +
+    "To wygląda na problem z modelem, nie z opisem: spróbuj ponownie, a jeśli się powtarza, " +
+    "sprawdź model przypisany do operacji „generation” w panelu LLM."
+  );
+}
+
 export interface GenerateSkinPayload {
   prompt?: string;
   /** 116: rodzaj generowanej skórki. Domyślnie `simple` — dotychczasowe zachowanie. */
@@ -394,12 +452,18 @@ async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
     if (!result.ok) throw new JobError(result.message, result.status);
     wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
 
-    try {
-      const cleaned = (result.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
-      parsed = JSON.parse(cleaned);
-    } catch {
-      throw new JobError("Model zwrócił nieprawidłowy format", 502);
+    // 117: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
+    const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
+    if (!odczyt.ok) {
+      if (podejscie < SKIN_MAX_ATTEMPTS) {
+        historia.push({ role: "assistant", content: result.content ?? "" });
+        historia.push({ role: "user", content: korektaFormatu(odczyt.przyczyna) });
+        continue;
+      }
+      throw new JobError(opisPorazkiFormatu(odczyt.przyczyna), 502);
     }
+    parsed = odczyt.parsed;
     if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
 
     przyslanychPol = Object.keys(parsed).length;
@@ -495,12 +559,18 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     if (!result.ok) throw new JobError(result.message, result.status);
     wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
 
-    try {
-      const cleaned = (result.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
-      parsed = JSON.parse(cleaned);
-    } catch {
-      throw new JobError("Model zwrócił nieprawidłowy format", 502);
+    // 117: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
+    const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
+    if (!odczyt.ok) {
+      if (podejscie < SKIN_MAX_ATTEMPTS) {
+        historia.push({ role: "assistant", content: result.content ?? "" });
+        historia.push({ role: "user", content: korektaFormatu(odczyt.przyczyna) });
+        continue;
+      }
+      throw new JobError(opisPorazkiFormatu(odczyt.przyczyna), 502);
     }
+    parsed = odczyt.parsed;
 
     // Odmowa opisu jest odpowiedzią, nie awarią — ponowienie nie ma czego poprawić.
     if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
@@ -509,7 +579,10 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     // url() z obrazkiem tła albo font-family z nazwą czcionki z sieci — jedno i drugie
     // przechodzi tu przez tę samą sanityzację co import. Sanityzacji NIE luzujemy pod
     // żaden opis: to jest bramka bezpieczeństwa (wstrzyknięcie CSS), a nie próg jakości.
-    const rawTokens = (parsed.tokens ?? {}) as Record<string, unknown>;
+    //
+    // 117: mapę tokenów czytamy przez `wyodrebnijTokeny` (081) — modele oddają ją też
+    // w pojemnikach `variables`/`theme`/… i w parach-liczbach; import istniał, ścieżka nie.
+    const rawTokens = wyodrebnijTokeny(parsed).tokeny;
     tokens = validateTokens(rawTokens);
     rejected = Object.keys(rawTokens).filter((k) => !(k in tokens));
     ostatnieOdrzucone = Object.keys(rawTokens).length;

@@ -6039,3 +6039,25 @@ query z wariantem `--m-…`). Cykli nie ma, bo nazwy są różne; wartości dope
 nieść tylko warianty (`--d-*`/`--m-*`), a wybór między nimi musi zostać w arkuszu, bo tylko
 on widzi media queries. Przy okazji: `:root[data-x]` (0,2,0) świadomie przebija `:root`
 (0,1,0) — samo `html[data-x]` (0,1,1) przegrałoby z `:root` z globals.css.
+
+---
+
+## 2026-08-30 — Twardy JSON.parse obok gotowego parseJsonLoose — martwy import to nie wpięta ochrona
+**Problem:** Generator skórek (oba tryby) zbijał użytkownika komunikatem „Model zwrócił
+nieprawidłowy format" przy pierwszej odpowiedzi w niekanonicznym kształcie. W pliku od 081
+leżały ZAIMPORTOWANE `parseJsonLoose` (tolerancyjny odczyt) i `wyodrebnijTokeny` (pojemniki
+`variables`/`theme`), ale ścieżka odczytu używała twardego `JSON.parse` po naiwnym zdjęciu
+płotków — regex `/```$/` nie znosił nawet znaku nowej linii po płotku zamykającym. Do tego
+`chatComplete` od 032 zwraca flagę `truncated` (ucięte wyjście), której nikt nie czytał,
+więc ucięcie i śmieci zgłaszały się identycznym, bezużytecznym zdaniem — bez ponowienia,
+mimo że pętla ponowień (080) stała trzy linie niżej.
+**Rozwiązanie:** `odczytajOdpowiedzJson(content, truncated)` na `parseJsonLoose` z przyczyną
+`"ucieta" | "brak-json"`; nieudany odczyt = nieudane PODEJŚCIE (komunikat korygujący o
+kształcie + ponowienie w ramach istniejącego limitu), ostateczna porażka = komunikat
+nazywający przyczynę i kierunek naprawy (`opisPorazkiFormatu`). Tryb prosty czyta mapę
+tokenów przez `wyodrebnijTokeny`. Testy odtwarzają każdy kształt, który wcześniej padał.
+**Lekcja:** Import bez wywołania to obietnica bez pokrycia — mechanizm ochronny istnieje
+dopiero wtedy, gdy leży NA ŚCIEŻCE danych, i to powinien łapać test odtwarzający realny
+kształt wejścia, nie code review. Druga połowa lekcji: transport często WIE więcej niż
+treść (flaga `truncated`) — diagnoza z flagi bije wróżenie z zepsutego tekstu, bo mówi,
+czy naprawa leży w budżecie wyjścia, czy w modelu.
