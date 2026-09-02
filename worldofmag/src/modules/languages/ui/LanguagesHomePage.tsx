@@ -64,7 +64,8 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
       });
       // Jeśli podano tekst — od razu wygeneruj słówka przez AI.
       if (sourceText.trim()) {
-        const res = await llm.languages.extract({ sourceText, nativeLang, targetLang, max: 25 });
+        // 121: bez `max` — ekstrakcja obejmuje wszystkie słówka z tekstu.
+        const res = await llm.languages.extract({ sourceText, nativeLang, targetLang });
         if (res.words?.length) {
           await bulkAddWords(deck.id, res.words);
         }

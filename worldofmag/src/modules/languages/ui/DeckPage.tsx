@@ -37,6 +37,8 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   const [genText, setGenText] = useState("");
   const [genBusy, setGenBusy] = useState(false);
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
+  /** 121: tekst przekroczył obsługiwany zakres — słówka pochodzą z jego początku (nigdy po cichu). */
+  const [zrodloPrzyciete, setZrodloPrzyciete] = useState(false);
   const [showGen, setShowGen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editTerm, setEditTerm] = useState("");
@@ -56,13 +58,14 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
     if (!genText.trim()) return;
     setGenBusy(true);
     try {
+      // 121: bez `max` — ekstrakcja obejmuje wszystkie słówka z tekstu.
       const res = await llm.languages.extract({
         sourceText: genText,
         nativeLang: deck.nativeLang,
         targetLang: deck.targetLang,
-        max: 25,
       });
       setAiUsage(res.usage);
+      setZrodloPrzyciete(Boolean(res.sourceTruncated));
       if (res.words?.length) {
         await bulkAddWords(deck.id, res.words);
         setGenText("");
@@ -163,6 +166,11 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
           <button onClick={() => setShowGen(true)} className="flex items-center gap-2 px-3 py-2 rounded text-sm self-start" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)", border: "none" }}>
             <Sparkles size={14} style={{ color: "var(--accent-amber)" }} /> {t("dodajSlowkaZTekstu")}
           </button>
+        )}
+
+        {/* 121: nota widoczna także po zamknięciu panelu (po udanym generowaniu panel znika). */}
+        {zrodloPrzyciete && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("tekstPrzyciety")}</p>
         )}
 
         {/* Lista słówek */}

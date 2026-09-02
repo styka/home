@@ -207,7 +207,9 @@ export const llm = {
   },
 
   languages: {
-    extract: (input: { sourceText: string; nativeLang: string; targetLang: string; max?: number }) =>
+    // 121: bez `max` — ekstrakcja zwraca WSZYSTKIE słówka z tekstu; `sourceTruncated` mówi,
+    // że tekst przekroczył obsługiwany zakres i słówka pochodzą z jego początku.
+    extract: (input: { sourceText: string; nativeLang: string; targetLang: string }) =>
       post<{
         words?: Array<{
           term: string;
@@ -215,6 +217,7 @@ export const llm = {
           example: string | null;
           partOfSpeech: string | null;
         }>;
+        sourceTruncated?: boolean;
         error?: string;
       }>("/api/llm/languages/extract", input),
   },

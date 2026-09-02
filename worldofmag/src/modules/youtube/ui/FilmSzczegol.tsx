@@ -84,7 +84,7 @@ export function FilmSzczegol({ film, domyslnaDlugosc }: { film: FilmSzczegolDTO;
         sourceText: film.transkrypcja.slice(0, 12_000),
         nativeLang: talia.nativeLang,
         targetLang: talia.targetLang,
-        max: 20,
+        // 121: bez `max` — propozycje obejmują całe słownictwo materiału, wybór należy do użytkownika.
       });
       if (res.error) throw new Error(res.error);
       setFiszkiUsage(res.usage);
