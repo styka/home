@@ -72,3 +72,26 @@ test("Anthropic: stop_reason 'max_tokens' = ucięcie", () => {
   assert.equal(isTruncatedAnthropicResponse({ stop_reason: "end_turn" }), false);
   assert.equal(isTruncatedAnthropicResponse(null), false);
 });
+
+// ── 113: przy UCIĘCIU komunikat musi mówić o limicie długości, nie o brakujących krokach ──────────
+//
+// Zgłoszenie: użytkownik dostał „zabrakło kroków na dokończenie odpowiedzi", co sugerowało, że
+// pomogłoby więcej iteracji. Nie pomogłoby — każda kolejna też zostałaby ucięta. Gałąź ucięcia
+// istniała w `describeBlocker` od 032, ale nie mogła zostać użyta, bo flaga ucięcia była kasowana
+// przez pusty obiekt podstawiany za brakującą treść.
+
+test("describeBlocker: ucięcie ma pierwszeństwo przed 'zabrakło kroków' (AC-3)", () => {
+  const logBezBledow: PartialRunLogEntry[] = [{ results: [{}] }];
+  assert.match(describeBlocker(logBezBledow, true), /długoś|dopuszczaln/i, "ma mówić o limicie długości");
+  assert.doesNotMatch(describeBlocker(logBezBledow, true), /zabrakło kroków/);
+});
+
+test("partialRunFallbackMessage: przy ucięciu nie obiecuje, że pomogą kolejne kroki (AC-3)", () => {
+  const komunikat = partialRunFallbackMessage([{ results: [{}] }], true);
+  assert.doesNotMatch(komunikat, /zabrakło kroków/, "to była nieprawda w zgłoszonej sesji");
+  assert.match(komunikat, /długoś|dopuszczaln/i);
+});
+
+test("bez ucięcia komunikat o brakujących krokach zostaje (dorobek 032 nietknięty)", () => {
+  assert.match(describeBlocker([{ results: [{}] }], false), /zabrakło kroków/);
+});

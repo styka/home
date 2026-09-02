@@ -127,3 +127,62 @@ export function salvageAnswerText(content: string): string {
   const raw = cleaned.replace(/^[{[\s]+/, "").replace(/[}\]\s]+$/, "").trim();
   return (raw || SALVAGE_FALLBACK).slice(0, SALVAGE_MAX_CHARS);
 }
+
+/**
+ * 113: ODZYSK KOMPLETNYCH AKCJI Z UCIĘTEGO PLANU.
+ *
+ * Gdy model buduje plan większy niż budżet wyjścia, odpowiedź wraca urwana w połowie — zwykle
+ * w środku którejś akcji. Do 113 lądowała w koszu w całości, choć zawierała kilkanaście gotowych,
+ * poprawnych akcji. Zgłoszona sesja: kilkanaście obowiązków psa do przeniesienia, pięć uciętych
+ * odpowiedzi, użytkownik bez ani jednej akcji.
+ *
+ * Wyciągamy z tablicy `"actions"` wyłącznie obiekty ZBALANSOWANE — ten urwany na końcu pomijamy.
+ * Świadomość stringów i escape'ów jest tu konieczna z tego samego powodu co w `firstBalancedObject`:
+ * nawias klamrowy wewnątrz opisu akcji („zabieg {co 3 miesiące}") nie może przesunąć głębokości.
+ *
+ * Funkcja jest CZYSTA i celowo NIE waliduje semantyki akcji — odzyskane obiekty przechodzą dalej
+ * przez `normalizeActions` i kontrakt akcji, czyli tę samą bramkę co akcje z pełnego planu.
+ */
+export function odzyskajAkcjeZUcietego(content: string): Record<string, unknown>[] {
+  const text = stripFences(content ?? "");
+  const klucz = /"actions"\s*:\s*\[/.exec(text);
+  if (!klucz) return [];
+
+  const out: Record<string, unknown>[] = [];
+  let i = klucz.index + klucz[0].length;
+  while (i < text.length) {
+    // Do początku kolejnego obiektu; napotkany `]` kończy tablicę akcji.
+    while (i < text.length && text[i] !== "{" && text[i] !== "]") i++;
+    if (i >= text.length || text[i] === "]") break;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let koniec = -1;
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          koniec = j;
+          break;
+        }
+      }
+    }
+    // Obiekt niedomknięty = ten urwany limitem. Nic po nim nie będzie kompletne.
+    if (koniec === -1) break;
+
+    const kandydat = tryParseObject(stripTrailingCommas(text.slice(i, koniec + 1)));
+    if (kandydat) out.push(kandydat);
+    i = koniec + 1;
+  }
+  return out;
+}

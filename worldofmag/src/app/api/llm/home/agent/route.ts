@@ -18,7 +18,7 @@ import { sprawdzLimit, zajmijSlot, POLITYKI } from "@/platform/rateLimit";
 import { ustalJezykZadania } from "@/platform/i18n/kontekst";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
 import { classifyIntent, granicePolskie, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
-import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
+import { extractJsonLoose, odzyskajAkcjeZUcietego, salvageAnswerText } from "@/platform/ai/agentProtocol";
 import {
   compactToolResults,
   collapseUsedToolData,
@@ -293,6 +293,23 @@ function normalizeActions(raw: unknown): AIAction[] {
     .filter((a): a is AIAction => a !== null);
 }
 
+/**
+ * 113: plan CZĘŚCIOWY odzyskany z uciętej odpowiedzi — jeden helper, dwa miejsca użycia.
+ *
+ * Wołają go blok degradacji w pętli i wywołanie domykające przebieg. Jeden helper, bo obie ścieżki
+ * muszą oddawać ten sam kształt; dwie kopie rozjechałyby się przy pierwszej zmianie, a objawem byłby
+ * plan bez ostrzeżenia o niekompletności w jednej z nich.
+ *
+ * Zwraca `null`, gdy nie ma czego odzyskiwać — wołający zostaje wtedy przy dotychczasowym zachowaniu.
+ */
+function planZUcietego(content: string): { actions: AIAction[]; niepelny: true } | null {
+  const odzyskane = odzyskajAkcjeZUcietego(content);
+  if (odzyskane.length === 0) return null;
+  const actions = normalizeActions(odzyskane);
+  if (actions.length === 0) return null;
+  return { actions, niepelny: true };
+}
+
 interface LoopResult {
   status?: number;
   body: Record<string, unknown>;
@@ -487,6 +504,23 @@ async function runAgentLoopRaw(
     }
 
     if (!parsed) {
+      // 113: zanim zdegradujemy do tekstu — spróbuj ODZYSKAĆ gotowe akcje z uciętego planu. Do 113
+      // kilkanaście poprawnych akcji lądowało w koszu razem z tą jedną urwaną na końcu.
+      const czesciowy = lastTruncated ? planZUcietego(lastContent) : null;
+      if (czesciowy) {
+        log.push({ iter, step: "plan", thought: "", actionsCount: czesciowy.actions.length });
+        const dialogCz = messages.filter((m) => m.role !== "system");
+        return {
+          body: {
+            step: "plan",
+            actions: czesciowy.actions,
+            thought: "",
+            niepelny: true,
+            log,
+            messages: dialogCz,
+          },
+        };
+      }
       // 030 (decyzja właściciela): zamiast technicznego błędu „LLM zwrócił nieprawidłowy
       // format" — oddaj użytkownikowi oczyszczoną treść ostatniej odpowiedzi jako zwykły
       // krok "answer" (bez akcji mutujących). `degraded` zostaje w body do diagnostyki.
@@ -671,6 +705,7 @@ async function runAgentLoopRaw(
         actions: domkniecie.actions,
         thought: domkniecie.thought,
         limitReached: true,
+        ...(domkniecie.niepelny ? { niepelny: true } : {}),
         log,
         messages: dialog,
       },
@@ -710,7 +745,7 @@ async function finishPartialRun(
   op: AgentOp,
   truncated: boolean,
   systemBlocks?: { stable: string; variable: string }
-): Promise<{ answer: string } | { actions: AIAction[]; thought: string }> {
+): Promise<{ answer: string } | { actions: AIAction[]; thought: string; niepelny?: true }> {
   // 112 (AC-8): gdy NIC się nie udało pobrać, nie ma z czego dokańczać — nie wołamy modelu i
   // oddajemy dotychczasowy, uczciwy komunikat „nie dokończyłem + dlaczego". Dorobek 032 zostaje.
   if (countSuccessfulReads(log) === 0) {
@@ -757,6 +792,15 @@ async function finishPartialRun(
     }
     const answer = typeof parsed?.answer === "string" ? parsed.answer.trim() : "";
     if (answer) return { answer };
+    // 113: domknięcie też potrafi wrócić UCIĘTE (zmierzone: 2800 tokenów co do jednego). Zamiast
+    // wyrzucić je w całości — odzyskaj gotowe akcje. Ten sam helper co w pętli, żeby obie ścieżki
+    // oddawały ten sam kształt.
+    if (res.truncated) {
+      const czesciowy = planZUcietego(res.content);
+      if (czesciowy) {
+        return { actions: czesciowy.actions, thought: "", niepelny: true };
+      }
+    }
   } catch {
     /* awaria dokończenia → składamy komunikat niżej */
   }

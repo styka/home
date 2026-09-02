@@ -1,7 +1,7 @@
 # Zadania: Asystent dowozi DUŻY plan
 
 - **Plan:** ./plan.md (113-asystent-duzy-plan)
-- **Status:** todo
+- **Status:** in-progress
 - **Data:** 2026-09-01
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna
@@ -45,7 +45,7 @@
   odpowiedzi bez kroku jest **ograniczona i mała**. → **AC-2**
   *Zależy od:* T-2.
 
-- [ ] **T-4** `[P]` — **Komunikat mówi prawdę o przyczynie.**
+- [x] **T-4** `[P]` — **Komunikat mówi prawdę o przyczynie.**
   Po T-1/T-2 `describeBlocker` powinien już trafiać w gałąź ucięcia bez zmian w swoim pliku —
   **weryfikujemy to testem, zamiast zakładać**.
   *Gotowe, gdy:* test — log przebiegu zakończonego ucięciem daje komunikat o **limicie długości**,
@@ -80,7 +80,7 @@
 
 ## Faza 2 — Częściowy plan zamiast wyrzucenia całości
 
-- [ ] **T-8** — **Odzysk kompletnych akcji z uciętego planu.**
+- [x] **T-8** — **Odzysk kompletnych akcji z uciętego planu.**
   Czysta funkcja `odzyskajAkcjeZUcietego(content)` w `src/platform/ai/agentProtocol.ts` — wyciąga
   **zbalansowane** obiekty z tablicy `"actions"`, pomijając urwany na końcu. Mechanika jak
   w istniejącym `firstBalancedObject` (świadomym stringów i escape'ów).
@@ -88,7 +88,7 @@
   stringu** nie psuje odzysku; brak tablicy `actions` → pusta lista; pełny plan → wszystkie akcje.
   → **AC-7**
 
-- [ ] **T-9** — **Wpięcie odzysku w obu miejscach, przez jeden helper.**
+- [x] **T-9** — **Wpięcie odzysku w obu miejscach, przez jeden helper.**
   Blok degradacji w pętli **oraz** `finishPartialRun`: gdy odpowiedź była **ucięta** i dało się
   odzyskać choć jedną akcję → zwracamy `step:"plan"` z polami `niepelny: true` i `pominietoAkcji`.
   Dwa wywołania tego samego helpera, żeby ścieżki nie rozjechały się przy pierwszej zmianie.
@@ -96,7 +96,7 @@
   potwierdzenia), a `DESTRUCTIVE_ACTION_TYPES` i logika 041 są **nietknięte**. → **AC-7**, **AC-9**
   *Zależy od:* T-8.
 
-- [ ] **T-10** — **Użytkownik WIDZI, że plan jest niepełny.**
+- [x] **T-10** — **Użytkownik WIDZI, że plan jest niepełny.**
   `AICommandSheet` buduje turę planu z zaszytą treścią „Zaproponowano N akcji" i **ignoruje `thought`
   z serwera** — dlatego informacja musi iść osobnym polem (plan §5). Rozszerzamy treść tury o zdanie
   o niekompletności; tekst do `messages/pl.json`, czytany przez `useTranslations`.
@@ -108,12 +108,12 @@
 
 ## Faza 3 — Bramki i domknięcie
 
-- [ ] **T-11** — **Nie naruszyliśmy dorobku 112.**
+- [x] **T-11** — **Nie naruszyliśmy dorobku 112.**
   Przegląd diffu: zero zmian w `czyCachowacKatalog`, `compactToolResults`, `offsetOf` i w
   `list_tasks` (`offset`/`includeDescription`).
   *Gotowe, gdy:* `git diff` na tych obszarach jest pusty i zapisane w `verify.md`. → **AC-14**
 
-- [ ] **T-12** — **Bramki (C-50, lokalny Postgres — nigdy prod, C-13).**
+- [x] **T-12** — **Bramki (C-50, lokalny Postgres — nigdy prod, C-13).**
   Kolejno: `check:migrations` · `check:actions` · `check:ai-coverage` · `check:cost-badge` ·
   `check:i18n` · `check:logs` · `check:boundaries` · `check:module-registry` · `check:ui-contract` ·
   `test:unit` · `tsc --noEmit -p tsconfig.test.json` · `next lint --dir src` · `next build` ·
@@ -121,7 +121,7 @@
   *Gotowe, gdy:* wszystkie zielone.
   *Zależy od:* T-1…T-11.
 
-- [ ] **T-13** — **Rachunek: czy naprawdę taniej (bramka, nie formalność).**
+- [x] **T-13** — **Rachunek: czy naprawdę taniej (bramka, nie formalność).**
   Przeliczenie zmierzonej sesji z liczników tokenów i cennika z `LlmModelPrice`; porównanie z
   **1,42 zł**. Wymagane: taniej, mimo większego budżetu wyjścia.
   *Gotowe, gdy:* liczby wpisane do `verify.md`. **Jeśli wyjdzie drożej** — obniż próg „po odczycie"
@@ -129,7 +129,7 @@
   rozjazd. → **AC-13**
   *Zależy od:* T-12.
 
-- [ ] **T-14** — **Ślad w dokumentacji projektu.**
+- [x] **T-14** — **Ślad w dokumentacji projektu.**
   `doświadczenia.md` — lekcja wg C-51: **wartość domyślna, która ukrywa błąd** („jak nie ma treści,
   weź pusty obiekt") wyłączyła strażnik i zamieniła prawdziwą diagnozę w fałszywą; plus obserwacja,
   że budżet ustalany z treści **wiadomości** nie może przewidzieć rozmiaru **odpowiedzi**.
