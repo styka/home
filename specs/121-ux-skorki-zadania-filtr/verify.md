@@ -61,9 +61,20 @@ Aktualizacja oczekiwań klikaczy po 111–120 pozostaje osobną robotą (odnotow
 - e2e obszaru zmiany (zestawy, potwierdzenia w zadaniach, tryb pełny panelu) — zielone;
   23 porażki suity = stan zastany develop (dowód wyżej).
 
+## Runda 2 — weryfikacja poprawek z recenzji (T-10..T-12)
+
+| Sprawdzenie | Wynik |
+|-------------|-------|
+| Pełny `npm run build` (lokalny Postgres) | ✅ EXIT=0; budżet wydajnościowy w pasmie (suma 74734 kB) |
+| `tsc` + `check:i18n` + `next lint` | ✅ czysto / zero literałów / 0 ostrzeżeń |
+| e2e obszaru zmiany (`zadania-zestawy.spec.ts`) | ✅ 6/6 passed |
+| T-10 (sygnał dla sidebara) | ✅ `ogloszZmianeZestawow()` po **wszystkich czterech** mutacjach (zapis ad hoc, zapisz zmiany, zapisz jako nowy, usuń); nasłuch w `TasksSideNav` z poprawnym sprzątaniem (`removeEventListener` w cleanupie efektu) |
+| T-11 (stan po zapisie) | ✅ `zapiszZmiany` przyjmuje rekord zwrócony przez `updateProjectGroup` (znormalizowany serwerowo) — `zmieniony` gaśnie po udanym zapisie |
+| T-12 (widoczne błędy) | ✅ `blad` ustawiany w trzech `catch`, czyszczony przy edycji pól/zaznaczeń i po sukcesie; render z `role="alert"`, kolor `var(--accent-red)`; `aria-label` kotwicy w trybie zestawu = „Zakres i ustawienia zestawu" |
+
 ## Werdykt końcowy
 
-**GOTOWE Z UWAGAMI**
+**GOTOWE Z UWAGAMI** (po rundzie 2 — ustalenia 1-3 recenzji naprawione i zweryfikowane)
 1. Suita e2e ma zastany dług oczekiwań po 111–120 (23 czerwone testy, w tym `[105-AC5]` padający
    identycznie na czystym develop) — poza zakresem 121 (C-53), odnotowane już przy 116.
 2. Wygląd dialogu skórki i scalonego wiersza tytułu do obejrzenia na `develop` po deploy'u
