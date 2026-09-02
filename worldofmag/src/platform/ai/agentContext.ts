@@ -43,6 +43,72 @@
  * @param numerWywolania numer wywołania modelu w przebiegu, licząc od 1
  * @param czyDomykajace czy to ostatnie wywołanie przebiegu (podsumowanie/dokończenie)
  */
+/**
+ * 113: BUDŻET TOKENÓW WYJŚCIA — dobierany do etapu tury, nie do treści wiadomości użytkownika.
+ *
+ * Do 113 budżet był liczony RAZ, przed pętlą: wklejona długa lista → 4000, prośba o raport → 2800,
+ * wszystko inne → 1200. „Duży plan" nie jest żadną z tych kategorii i **z zasady nie da się go
+ * rozpoznać po wiadomości** — o rozmiarze odpowiedzi decyduje ilość danych, które asystent
+ * PRZECZYTAŁ, a nie długość prośby. Zgłoszona sesja: prośba na trzy zdania, plan na kilkanaście
+ * akcji, pięć odpowiedzi uciętych na 1200 tokenach i wyrzuconych.
+ *
+ * Bierzemy MAKSIMUM z mających zastosowanie progów — próg to dolna granica potrzeby, a nie wybór
+ * spośród wykluczających się wariantów: raport zbudowany z odczytanych danych potrzebuje i jednego,
+ * i drugiego zapasu.
+ */
+export const BAZOWY_BUDZET_WYJSCIA = 1200;
+export const DUZY_BUDZET_WYJSCIA = 4000;
+export const RAPORT_BUDZET_WYJSCIA = 2800;
+
+export function budzetWyjscia(opcje: {
+  /** Czy do kontekstu trafiły już wyniki odczytu — czyli czy jest z czego budować dużą odpowiedź. */
+  maDaneWKontekscie: boolean;
+  /** 080: wiadomość rozpoznana jako zlecenie wsadowe (wklejona długa lista pozycji). */
+  wsadowe?: boolean;
+  /** Użytkownik prosi o raport (krok „report"). */
+  raport?: boolean;
+}): number {
+  const progi = [BAZOWY_BUDZET_WYJSCIA];
+  if (opcje.maDaneWKontekscie) progi.push(DUZY_BUDZET_WYJSCIA);
+  if (opcje.wsadowe) progi.push(DUZY_BUDZET_WYJSCIA);
+  if (opcje.raport) progi.push(RAPORT_BUDZET_WYJSCIA);
+  return Math.max(...progi);
+}
+
+/**
+ * 113: kroki protokołu, które pętla agenta potrafi wykonać. Odpowiedź niosąca którykolwiek z nich
+ * jest UŻYTECZNA — reszta (obiekt bez `step`, `step` spoza listy) jest jałowym obrotem.
+ *
+ * Lista stoi tutaj, a nie w trasie, bo używają jej dwie decyzje naraz: „czy wolno uznać, że ucięcia
+ * nie było" i „czy ten obrót pętli cokolwiek wniósł". Dwie kopie rozjechałyby się przy pierwszym
+ * nowym kroku protokołu, a objawem byłaby pętla kręcąca się na kroku, którego nie umie wykonać.
+ */
+export const KROKI_PROTOKOLU = ["query", "clarify", "answer", "navigate", "plan", "report"] as const;
+
+/** Czy sparsowana odpowiedź modelu niesie krok, który pętla potrafi wykonać. */
+export function czyUzytecznyKrok(parsed: Record<string, unknown> | null): boolean {
+  const step = parsed?.step;
+  return typeof step === "string" && (KROKI_PROTOKOLU as readonly string[]).includes(step);
+}
+
+/**
+ * 113: ile odpowiedzi BEZ użytecznego kroku wolno jeszcze przyjąć, zanim zamkniemy przebieg.
+ *
+ * Dziś odpowiedź bez znanego kroku kosztuje dopisanie „Nieznany step…" i **kolejny obrót pętli** —
+ * bez żadnego licznika. W zgłoszonej sesji spaliło to pięć iteracji po 1200 tokenów wyjścia, każda
+ * wyrzucona. To jest ten sam rodzaj jałowego obrotu, przed którym 032 chroni po stronie ODCZYTÓW
+ * (`unproductiveIterations`); tutaj chodzi o jałowe ODPOWIEDZI.
+ *
+ * Próg jest taki sam jak dla ucięcia (`truncationRetries`): jedna szansa na poprawę, po drugiej
+ * nieudanej wychodzimy z tym, co mamy.
+ */
+export const MAX_ODPOWIEDZI_BEZ_KROKU = 2;
+
+/** Czy po tylu odpowiedziach bez użytecznego kroku należy zakończyć przebieg. */
+export function czyPrzerwacBezKroku(licznik: number): boolean {
+  return licznik >= MAX_ODPOWIEDZI_BEZ_KROKU;
+}
+
 export function czyCachowacKatalog(numerWywolania: number, czyDomykajace = false): boolean {
   if (czyDomykajace) return false;
   return numerWywolania >= 2;

@@ -22,14 +22,14 @@
 
 ## Faza 0 — Rozpoznanie ucięcia (musi być PRZED Fazą 1)
 
-- [ ] **T-1** — **Ucięcie przestaje udawać poprawną odpowiedź.**
+- [x] **T-1** — **Ucięcie przestaje udawać poprawną odpowiedź.**
   W `callAgent` (`src/app/api/llm/home/agent/route.ts`) zwracamy `result.content ?? ""` zamiast
   `result.content || "{}"`. Pusta treść ma wyglądać na pustą.
   *Gotowe, gdy:* test pokazuje, że pusta treść modelu daje `parsed === null`, oraz **próba
   mutacyjna** — przywrócenie `|| "{}"` musi wywalić ten test. Komentarz przy zmianie mówi, **dlaczego**
   (pusty obiekt parsuje się poprawnie, więc kasował flagę ucięcia i wyłączał strażnik). → **AC-1**
 
-- [ ] **T-2** — **Flaga ucięcia zerowana dopiero przy UŻYTECZNYM kroku.**
+- [x] **T-2** — **Flaga ucięcia zerowana dopiero przy UŻYTECZNYM kroku.**
   Dziś `if (parsed) lastTruncated = false;` — wystarczy jakikolwiek sparsowany obiekt. Zerujemy
   dopiero, gdy odpowiedź niesie krok z protokołu (`query`/`clarify`/`answer`/`navigate`/`plan`/
   `report`).
@@ -37,7 +37,7 @@
   krokiem ją kasuje (bez tego drugiego przypadku zepsulibyśmy dorobek 032). → **AC-1**
   *Zależy od:* T-1.
 
-- [ ] **T-3** — **Marnowanie wywołań ma twardy sufit.**
+- [x] **T-3** — **Marnowanie wywołań ma twardy sufit.**
   Licznik odpowiedzi **bez użytecznego kroku**, bliźniaczy do istniejącego `truncationRetries`: po
   drugiej takiej odpowiedzi kończymy przebieg, zamiast dobijać do limitu iteracji. Dziś „Nieznany
   step…" nie ma żadnego licznika i to on spalił pięć iteracji.
@@ -55,21 +55,21 @@
 
 ## Faza 1 — Budżet wyjścia dobierany do etapu tury
 
-- [ ] **T-5** — **Czysta polityka budżetu.**
+- [x] **T-5** — **Czysta polityka budżetu.**
   `budzetWyjscia({ maDaneWKontekscie, wsadowe, raport })` w `src/platform/ai/agentContext.ts` (obok
   `czyCachowacKatalog` — ten plik jest już „polityką pętli"). Zwraca **maksimum** z mających
   zastosowanie progów: brak danych → 1200, dane w kontekście → 4000, wsadowe → 4000, raport → 2800.
   *Gotowe, gdy:* test odtwarza całą tabelę z planu §6.3, w tym przypadki mieszane (raport + dane →
   4000). → **AC-4**, **AC-5**
 
-- [ ] **T-6** — **Budżet liczony PER WYWOŁANIE, nie raz przed pętlą.**
+- [x] **T-6** — **Budżet liczony PER WYWOŁANIE, nie raz przed pętlą.**
   W pętli agenta ustawiamy `maDaneWKontekscie` po **pierwszym udanym kroku `query`** i liczymy
   budżet tuż przed każdym `callAgent`.
   *Gotowe, gdy:* zwykła tura bez odczytu ma budżet **identyczny jak przed 113** (AC-5 to wymóg
   „bez zmian", nie „prawie bez zmian"); tura po odczycie ma większy. → **AC-4**, **AC-5**
   *Zależy od:* T-5.
 
-- [ ] **T-7** — **Domknięcie nie może mieć mniej miejsca niż krok, któremu go zabrakło.**
+- [x] **T-7** — **Domknięcie nie może mieć mniej miejsca niż krok, któremu go zabrakło.**
   `finishPartialRun` dostaje `Math.max(REPORT_MAX_TOKENS, budżet pętli)`. Dziś ma 2800 przy pętli
   4000, co jest odwrotnością sensu — i dlatego domykające wywołanie też wróciło ucięte.
   *Gotowe, gdy:* test/przegląd potwierdza, że budżet domknięcia ≥ budżet ostatniego wywołania pętli.
