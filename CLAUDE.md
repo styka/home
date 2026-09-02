@@ -541,6 +541,30 @@ successful reads the model is not called at all and 032's honest message stands.
 `/reports/asystent-koszt-tury-rozbicie` (migration 0271) carries the arithmetic, because "is the amount
 counted right?" will be asked again.
 
+**120 — 112 naprawiło odczyt; 120 naprawiło to, co asystent z tym odczytem robi.** Owner repeated the
+*same* request on the deployed 112 code and still got nothing: the read was fixed (one call, whole
+project with descriptions) and the cache policy held, but **five consecutive calls ended at exactly
+the 1200-token output cap** and were thrown away, then a closing call at exactly 2800. Root cause was
+one line — `callAgent` returned `result.content || "{}"`, and **`extractJsonLoose("{}")` returns a
+truthy object**. A truncated answer with no usable text therefore *looked parsed*: it erased
+`lastTruncated`, so the `truncationRetries` guard (which lives entirely in the `!parsed` branch)
+never ran, and the loop fell through to "Nieznany step" — an unlimited free spin. The tell was a
+number that contradicted the theory: input grew **~38 tokens** per call, not ~1200, because what
+reached the conversation was `"{}"` plus a short correction, never the model's text. Fixes: no
+substitute for empty content; `lastTruncated` cleared only on a **usable protocol step**
+(`KROKI_PROTOKOLU`); a counter for step-less answers with the same ceiling as truncation; and
+`budzetWyjscia()` in `platform/ai/agentContext` replacing three constants and the pre-loop choice
+between them — it takes the **maximum** of applicable floors (base 1200, **data already in context
+4000**, bulk 4000, report 2800) and is computed **before every call**, because the size of the answer
+follows the amount of data the assistant *read*, which a three-sentence request cannot predict. The
+closing call now gets `max(2800, loop budget)` — it used to have *less* room than the step that had
+just run out. Finally `odzyskajAkcjeZUcietego()` salvages the **complete** actions from a truncated
+plan (brace-depth aware, so `{co 3 miesiące}` inside a description doesn't shift depth) and returns
+them as a real plan with `niepelny: true`; `AICommandSheet` builds the plan turn's text itself and
+ignores the server's `thought`, so the incompleteness notice had to travel as its own field.
+Projected on the reported session: **−59 %** when the plan fits, **−33 %** when it doesn't — and in
+both cases the user gets actions instead of "nie dokończyłem".
+
 **The "magic icon" / AI assistant** (`home/AICommandSheet.tsx`): a global Sparkles
 floating action button (bottom-right, in `AppShell`) opening a **conversational chat
 sheet** — persistent message thread (user/assistant bubbles), free back-and-forth

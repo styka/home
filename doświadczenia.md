@@ -4,6 +4,66 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-09-02 — Wartość domyślna, która ukryła błąd: pusty obiekt udający poprawną odpowiedź
+**Problem:** Właściciel powtórzył **to samo polecenie**, które naprawialiśmy w 112 („załóż psa Raj na
+podstawie zadań"), już na wdrożonym kodzie — i znów nie dostał wyniku. Dorobek 112 zadziałał
+bezbłędnie: cały projekt z opisami przyszedł w **jednym** odczycie, pamięć podręczna promptu
+zachowała się dokładnie wg polityki, wywołanie domykające nic nie zapisało. Zawiódł **następny krok
+w łańcuchu**: zbudowanie planu.
+
+W logu: **pięć wywołań pod rząd kończących się dokładnie na 1200 tokenach wyjścia** i szóste na
+2800 — czyli pięć odcięć limitem, nie odpowiedzi. Użytkownik dostał „zabrakło kroków na dokończenie
+odpowiedzi", co było **nieprawdą**: więcej iteracji nic by nie dało, bo każda kolejna też zostałaby
+ucięta. 1,42 zł, z czego ~40 % za treść wyrzuconą.
+
+Czytając sam kod spodziewałbym się **dwóch** wywołań, nie pięciu — bo w pętli stoi strażnik
+„jedna szansa na skrócenie, przy drugim ucięciu wychodzimy". Rozjazd między tym, co kod deklaruje,
+a tym, co pokazał log, okazał się jedną linijką:
+
+```
+return { content: result.content || "{}", truncated: ... }
+```
+
+`extractJsonLoose("{}")` zwraca **prawdziwy, pusty obiekt**. Gdy z uciętej odpowiedzi nie zostawała
+użyteczna treść, podstawiany pusty obiekt **parsował się poprawnie** — i uruchamiał lawinę trzech
+skutków naraz:
+1. `if (parsed) lastTruncated = false` **kasowało informację o ucięciu**,
+2. strażnik `truncationRetries` **nigdy nie wchodził**, bo cały żyje w gałęzi „nie sparsowano",
+3. pętla widziała obiekt bez znanego kroku → dopisywała „Nieznany step…" → **kolejny obrót**, bez
+   żadnego licznika.
+
+Potwierdzeniem był szczegół, który początkowo wyglądał na sprzeczność: wejście rosło o **~38 tokenów**
+na wywołanie, a nie o ~1200. Gdyby ucięta odpowiedź trafiała do rozmowy, rosłoby o jej długość. Do
+rozmowy trafiał `"{}"` i krótka korekta.
+
+Drugą przyczyną było to, że **budżet wyjścia był ustalany PRZED pętlą, z treści wiadomości
+użytkownika**. Prośba o psa Raj ma trzy zdania; plan to kilkanaście akcji z polskimi opisami.
+O rozmiarze odpowiedzi decyduje ilość danych, które asystent **przeczytał** — a wiadomość o tym nic
+nie mówi i nigdy nie powie.
+
+**Rozwiązanie:** Koniec podstawiania `"{}"` (pusta treść ma wyglądać na pustą). Flaga ucięcia
+zerowana dopiero przy **użytecznym kroku protokołu**, a nie na sam fakt sparsowania. Licznik
+odpowiedzi bez kroku — ten sam próg co przy ucięciu. Budżet liczony **przed każdym wywołaniem**
+z `budzetWyjscia()`, biorącej **maksimum** z progów (baza 1200, dane w kontekście 4000, wsadowe 4000,
+raport 2800); domknięcie dostaje nie mniej niż pętla. I odzysk: z uciętego planu wyciągamy
+**kompletne** akcje zamiast wyrzucać wszystko, a użytkownik dostaje je z jawną informacją, że plan
+jest niepełny.
+
+**Lekcja:** **Wartość domyślna, która ukrywa brak, jest gorsza niż brak.** `|| "{}"` wyglądało na
+ostrożność — „jak nie ma treści, weź pusty obiekt, to się nie wywali". Nie wywaliło się i **właśnie
+to było problemem**: pusty obiekt przeszedł walidację, skasował jedyny sygnał diagnostyczny, wyłączył
+strażnik i zamienił jeden nieudany krok w pięć płatnych obrotów z fałszywym wyjaśnieniem na końcu.
+Gdy podstawiasz wartość zastępczą za coś, czego nie ma, sprawdź, **kto niżej odróżnia ją od wartości
+prawdziwej** — bo jeśli nikt, to właśnie zamieniłeś awarię głośną w cichą.
+
+Drugie: **przy sprzeczności między kodem a logiem to log ma rację.** Strażnik był napisany dobrze
+i nie działał; gdybym „poprawił" go, nie znajdując przyczyny, dołożyłbym trzeci licznik do dwóch,
+które i tak nie mogły wejść. Sygnałem, który rozstrzygnął, była **liczba nie pasująca do teorii** —
+wzrost wejścia o 38 zamiast 1200.
+
+Trzecie: **budżet na odpowiedź nie może zależeć od długości pytania.** „Ile miejsca potrzeba"
+wynika z tego, ile danych trzeba przetworzyć, a to wiadomo dopiero PO odczycie — więc decyzja
+podjęta przed pętlą jest z definicji podjęta za wcześnie.
 ## 2026-08-29 — Rzutowanie `as` na granicy modułów ukrywa rozjazd, który wywala CAŁĄ stronę
 **Problem:** Wkład Roślin do kalendarza emitował `module: "rosliny"`, ale `MODULE_META` kalendarza
 nie znało tego klucza. Kompilator milczał, bo `assembleCalendar` rzutował w ciemno

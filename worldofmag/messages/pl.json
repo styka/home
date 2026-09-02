@@ -893,7 +893,8 @@
         "asystentWObszarzeTresci": "Asystent AI — obszar treści",
         "poziomPracyAsystenta": "Poziom pracy asystenta",
         "rozmowy": "Rozmowy",
-        "zamknijRozmowy": "Zamknij rozmowy (wróć do wątku)"
+        "zamknijRozmowy": "Zamknij rozmowy (wróć do wątku)",
+        "planNiepelny": "Plan jest niepełny — odpowiedź asystenta nie zmieściła się w limicie długości. Zatwierdź te akcje, a potem poproś o dokończenie reszty."
       },
       "ActionDrawer": {
         "edytujSzczegolyWParametry": "Edytuj szczegóły w „Parametry”, albo opisz poniżej, co poprawić — AI ułoży plan na nowo:",

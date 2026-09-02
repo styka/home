@@ -18,8 +18,18 @@ import { sprawdzLimit, zajmijSlot, POLITYKI } from "@/platform/rateLimit";
 import { ustalJezykZadania } from "@/platform/i18n/kontekst";
 import { checkAiBudget, recordAiUsage, newUsageMeter, accrueUsage, type UsageMeter } from "@/platform/ai/usage";
 import { classifyIntent, granicePolskie, READ_INTENT_RE, SMALL_TALK_RE } from "@/lib/ai/fastPath";
-import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
-import { compactToolResults, collapseUsedToolData, czyCachowacKatalog, TOOL_DATA_HEADER } from "@/platform/ai/agentContext";
+import { extractJsonLoose, odzyskajAkcjeZUcietego, salvageAnswerText } from "@/platform/ai/agentProtocol";
+import {
+  compactToolResults,
+  collapseUsedToolData,
+  czyCachowacKatalog,
+  czyPrzerwacBezKroku,
+  budzetWyjscia,
+  BAZOWY_BUDZET_WYJSCIA,
+  RAPORT_BUDZET_WYJSCIA,
+  czyUzytecznyKrok,
+  TOOL_DATA_HEADER,
+} from "@/platform/ai/agentContext";
 import { humanizeAssistantText } from "@/platform/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executorShared";
@@ -99,28 +109,16 @@ function sanitizeNavUrl(raw: unknown): string | null {
 // `accrueUsage` — także z routera modułów i fast-path, żeby wskaźnik był realny.
 type AgentMeta = UsageMeter;
 
-// Domyślna rezerwacja tokenów odpowiedzi w pętli agenta. Kroki query/answer/plan/
-// clarify/navigate zwracają krótki JSON — 1200 w zupełności starcza. Duży zapas
-// (REPORT_MAX_TOKENS) rezerwujemy TYLKO gdy użytkownik prosi o raport, bo Groq
-// wlicza max_tokens do limitu TPM: stała rezerwacja 2800/wywołanie przy zapytaniach
-// wieloetapowych (query→answer = 2 wywołania) niepotrzebnie zbliżała nas do limitu.
-const AGENT_MAX_TOKENS = 1200;
-const REPORT_MAX_TOKENS = 2800; // zapas na pełny raport (step "report") — przy 1500 markdown bywał ucinany
-
-/**
- * 080 (Z6): zapas na ZLECENIE WSADOWE — długą listę pozycji w jednej wiadomości.
- *
- * Zgłoszenie właściciela: wklejona lista ~100 produktów do dopisania do listy zakupów. W logu tego
- * zgłoszenia KAŻDE wywołanie kończy się dokładnie na `+1200` tokenów wyjścia — to nie jest
- * odpowiedź, tylko odcięcie limitem. Plan wracał ucięty, pętla powtarzała i po sześciu obrotach
- * kończyła się komunikatem „zabrakło kroków". Dwie tury po ~60 tys. tokenów bez żadnego efektu.
- *
- * Pierwsza połowa naprawy to akcja `add_items` (sto pozycji = jedna akcja zamiast stu). Druga to
- * ten zapas: nawet jedna akcja z setką nazw plus uzasadnienie potrafi przekroczyć 1200 tokenów.
- * Podnosimy WYŁĄCZNIE tam, gdzie wiadomość wygląda na listę — limit dotyczy wyjścia, więc dla
- * zwykłych pytań nic się nie zmienia i presja na limit TPM zostaje bez zmian.
- */
-const BULK_MAX_TOKENS = 4000;
+// 120: PROGI BUDŻETU WYJŚCIA MIESZKAJĄ W `platform/ai/agentContext` (`budzetWyjscia`).
+//
+// Stały tu trzy osobne stałe (1200 / 2800 / 4000) i reguła „która z nich", wybierana RAZ przed pętlą
+// z treści wiadomości użytkownika. To nie mogło zadziałać dla dużego planu: o rozmiarze odpowiedzi
+// decyduje ilość danych, które asystent PRZECZYTAŁ, a wiadomość o tym nie mówi (zgłoszona sesja:
+// prośba na trzy zdania, plan na kilkanaście akcji, pięć odpowiedzi uciętych i wyrzuconych).
+//
+// Dorobek 080 (zapas na zlecenie wsadowe — wklejona lista ~100 pozycji, gdzie KAŻDE wywołanie
+// kończyło się dokładnie na limicie) jest tam zachowany jako próg `wsadowe`; 120 dokłada trzeci
+// próg, którego nie da się odczytać z wiadomości: „dane z odczytu są już w kontekście".
 
 
 
@@ -146,7 +144,7 @@ type AgentOp = "dispatch" | "reasoning";
 async function callAgent(
   messages: ChatMessage[],
   meta?: AgentMeta,
-  maxTokens = AGENT_MAX_TOKENS,
+  maxTokens = BAZOWY_BUDZET_WYJSCIA,
   conversationId?: string | null,
   op: AgentOp = "reasoning",
   level?: AssistantWorkLevel,
@@ -174,7 +172,13 @@ async function callAgent(
     throw err;
   }
   if (meta) accrueUsage(meta, result.usage, result.model, "agent", op);
-  return { content: result.content || "{}", truncated: result.truncated === true };
+  // 120: NIE podstawiamy `"{}"` za pustą treść. Wartość domyślna wyglądała na ostrożność, a była
+  // najkosztowniejszym błędem w tej pętli: `extractJsonLoose("{}")` zwraca PRAWDZIWY obiekt, więc
+  // ucięta odpowiedź bez użytecznej treści udawała poprawnie sparsowaną. Kasowało to flagę ucięcia,
+  // wyłączało strażnik `truncationRetries` (cały żyje w gałęzi „nie sparsowano") i zostawiało pętli
+  // tylko „nieznany krok" — czyli kolejny obrót. Zmierzone: pięć wywołań po 1200 tokenów na limicie,
+  // 1,42 zł i komunikat „zabrakło kroków", który był nieprawdą. Pusta treść ma wyglądać na pustą.
+  return { content: result.content ?? "", truncated: result.truncated === true };
 }
 
 // 049: lista modułów z katalogiem akcji pochodzi z DEKLARACJI, nie z ręcznej mapy w prompcie.
@@ -281,6 +285,25 @@ function normalizeActions(raw: unknown): AIAction[] {
     .filter((a): a is AIAction => a !== null);
 }
 
+/**
+ * 120: plan CZĘŚCIOWY odzyskany z uciętej odpowiedzi — jeden helper, dwa miejsca użycia.
+ *
+ * Wołają go blok degradacji w pętli i wywołanie domykające przebieg. Jeden helper, bo obie ścieżki
+ * muszą oddawać ten sam kształt; dwie kopie rozjechałyby się przy pierwszej zmianie, a objawem byłby
+ * plan bez ostrzeżenia o niekompletności w jednej z nich.
+ *
+ * Zwraca `null`, gdy nie ma czego odzyskiwać — wołający zostaje wtedy przy dotychczasowym zachowaniu.
+ */
+function planZUcietego(content: string): { actions: AIAction[]; niepelny: boolean } | null {
+  const { akcje, kompletna } = odzyskajAkcjeZUcietego(content);
+  if (akcje.length === 0) return null;
+  const actions = normalizeActions(akcje);
+  if (actions.length === 0) return null;
+  // Ucięcie ZA domkniętą tablicą akcji znaczy, że plan jest całością — ostrzegalibyśmy wtedy
+  // o „niepełnym planie" i odsyłali użytkownika po resztę, której nie ma.
+  return { actions, niepelny: !kompletna };
+}
+
 interface LoopResult {
   status?: number;
   body: Record<string, unknown>;
@@ -300,7 +323,9 @@ async function runAgentLoop(
   userId: string,
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
-  maxTokens: number = AGENT_MAX_TOKENS,
+  // 120: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
+  // wywolaniem. Liczba ustalona przed petla nie moze uwzglednic danych, ktore dopiero splyna.
+  kontekstBudzetu: { wsadowe?: boolean; raport?: boolean } = {},
   conversationId?: string | null,
   op: AgentOp = "reasoning",
   isFinalRun = true,
@@ -309,7 +334,7 @@ async function runAgentLoop(
 ): Promise<LoopResult> {
   // Myśli lecą do klienta NA ŻYWO (SSE) — humanizujemy je po drodze, nie tylko na końcu.
   const humanThought = onThought ? (t: string) => onThought(humanizeAssistantText(t)) : undefined;
-  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, maxTokens, conversationId, op, isFinalRun, level, systemBlocks);
+  const result = await runAgentLoopRaw(messages, userId, humanThought, meta, kontekstBudzetu, conversationId, op, isFinalRun, level, systemBlocks);
   const body = result.body as Record<string, unknown>;
   for (const key of ["answer", "question", "content", "thought", "label", "title"]) {
     if (typeof body[key] === "string") body[key] = humanizeAssistantText(body[key] as string);
@@ -337,7 +362,9 @@ async function runAgentLoopRaw(
   userId: string,
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
-  maxTokens: number = AGENT_MAX_TOKENS,
+  // 120: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
+  // wywolaniem. Liczba ustalona przed petla nie moze uwzglednic danych, ktore dopiero splyna.
+  kontekstBudzetu: { wsadowe?: boolean; raport?: boolean } = {},
   conversationId?: string | null,
   op: AgentOp = "reasoning",
   // 032: czy ten przebieg jest OSTATECZNY. Gdy wołający ma jeszcze w zapasie ponowienie na
@@ -369,6 +396,10 @@ async function runAgentLoopRaw(
   // model do trzech razy przy naprawie formatu). Decyduje o drugim punkcie cięcia pamięci podręcznej
   // promptu; patrz `czyCachowacKatalog`.
   let numerWywolania = 0;
+  // 120: ile odpowiedzi bez uzytecznego kroku protokolu przyjelismy w tym przebiegu.
+  let odpowiedziBezKroku = 0;
+  // 120: czy do kontekstu trafily juz wyniki odczytu (patrz `budzetWyjscia`).
+  let maDaneWKontekscie = false;
 
   for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
     // 028: przed każdym wywołaniem modelu zwiń starsze, już zużyte bloki wyników
@@ -384,10 +415,12 @@ async function runAgentLoopRaw(
       let truncated = false;
       try {
         numerWywolania += 1;
+        // 120: budzet liczony PRZED KAZDYM wywolaniem, a nie raz przed petla. Do 120 byl ustalany
+        // z tresci wiadomosci uzytkownika, ktora nie moze przewidziec rozmiaru ODPOWIEDZI.
         const res = await callAgent(
           messages,
           meta,
-          maxTokens,
+          budzetWyjscia({ maDaneWKontekscie, ...kontekstBudzetu }),
           conversationId,
           op,
           level,
@@ -429,7 +462,12 @@ async function runAgentLoopRaw(
       lastTruncated = truncated;
       messages.push({ role: "assistant", content });
       parsed = extractJsonLoose(content);
-      if (parsed) lastTruncated = false;
+      // 120: zerujemy flagę dopiero, gdy odpowiedź niesie UŻYTECZNY krok protokołu. Sam fakt, że coś
+      // się sparsowało, nie znaczy, że ucięcie nie nastąpiło — a właśnie tak było, gdy za pustą treść
+      // podstawiano `"{}"`. Zerowanie „na parsowanie" kasowało jedyną informację, dzięki której
+      // przebieg umiał powiedzieć użytkownikowi prawdę o przyczynie (dorobek 032 zostaje w mocy dla
+      // odpowiedzi, które faktycznie niosą krok).
+      if (parsed && czyUzytecznyKrok(parsed)) lastTruncated = false;
       if (!parsed) {
         // 032: UCIĘCIE to inny problem niż zły format — mówimy modelowi prawdę („zabrakło miejsca,
         // skróć"), zamiast kazać mu poprawiać JSON, który był poprawny do momentu obcięcia. Jedna
@@ -460,6 +498,23 @@ async function runAgentLoopRaw(
     }
 
     if (!parsed) {
+      // 120: zanim zdegradujemy do tekstu — spróbuj ODZYSKAĆ gotowe akcje z uciętego planu. Do 120
+      // kilkanaście poprawnych akcji lądowało w koszu razem z tą jedną urwaną na końcu.
+      const czesciowy = lastTruncated ? planZUcietego(lastContent) : null;
+      if (czesciowy) {
+        log.push({ iter, step: "plan", thought: "", actionsCount: czesciowy.actions.length });
+        const dialogCz = messages.filter((m) => m.role !== "system");
+        return {
+          body: {
+            step: "plan",
+            actions: czesciowy.actions,
+            thought: "",
+            ...(czesciowy.niepelny ? { niepelny: true } : {}),
+            log,
+            messages: dialogCz,
+          },
+        };
+      }
       // 030 (decyzja właściciela): zamiast technicznego błędu „LLM zwrócił nieprawidłowy
       // format" — oddaj użytkownikowi oczyszczoną treść ostatniej odpowiedzi jako zwykły
       // krok "answer" (bez akcji mutujących). `degraded` zostaje w body do diagnostyki.
@@ -533,6 +588,9 @@ async function runAgentLoopRaw(
       // zakończone bez błędu. Sama deduplikacja (030) chroniła przed powtórnym WYKONANIEM, ale nie
       // przed spalaniem iteracji na wołaniu tego samego w kółko — a każda iteracja to wywołanie LLM.
       const gainedSomething = results.some((r) => !r.repeat && !r.error);
+      // 120: od tej chwili jest z czego budowac duza odpowiedz — kolejne wywolania dostaja
+      // wiekszy budzet wyjscia. To ILOSC DANYCH decyduje o rozmiarze planu, nie dlugosc prosby.
+      if (gainedSomething) maDaneWKontekscie = true;
       unproductiveIterations = gainedSomething ? 0 : unproductiveIterations + 1;
 
       log.push({ iter, step, thought, tools: toolCalls.map((t) => ({ tool: t.tool!, args: t.args ?? {} })), results });
@@ -604,6 +662,15 @@ async function runAgentLoopRaw(
       return { body: { step: "plan", actions, thought, log, messages: dialog } };
     }
 
+    // 120: odpowiedź bez znanego kroku to JAŁOWY OBRÓT — kosztuje pełne wywołanie modelu i nie wnosi
+    // nic. Do 120 nie miało to żadnego licznika, więc pętla kręciła się do wyczerpania iteracji
+    // (zmierzone: pięć obrotów po 1200 tokenów wyjścia, wszystkie wyrzucone). Jedna szansa na
+    // poprawę, po drugiej nieudanej wychodzimy z tym, co mamy — tak samo jak przy ucięciu.
+    odpowiedziBezKroku += 1;
+    if (czyPrzerwacBezKroku(odpowiedziBezKroku)) {
+      logEvent("warn", "agent.loop.bezKroku", { odpowiedziBezKroku, iter });
+      break;
+    }
     messages.push({ role: "user", content: "Nieznany step. Użyj jednego z: query, clarify, answer, navigate, plan." });
   }
 
@@ -632,6 +699,7 @@ async function runAgentLoopRaw(
         actions: domkniecie.actions,
         thought: domkniecie.thought,
         limitReached: true,
+        ...(domkniecie.niepelny ? { niepelny: true } : {}),
         log,
         messages: dialog,
       },
@@ -671,7 +739,7 @@ async function finishPartialRun(
   op: AgentOp,
   truncated: boolean,
   systemBlocks?: { stable: string; variable: string }
-): Promise<{ answer: string } | { actions: AIAction[]; thought: string }> {
+): Promise<{ answer: string } | { actions: AIAction[]; thought: string; niepelny?: boolean }> {
   // 112 (AC-8): gdy NIC się nie udało pobrać, nie ma z czego dokańczać — nie wołamy modelu i
   // oddajemy dotychczasowy, uczciwy komunikat „nie dokończyłem + dlaczego". Dorobek 032 zostaje.
   if (countSuccessfulReads(log) === 0) {
@@ -695,7 +763,11 @@ async function finishPartialRun(
         },
       ],
       meta,
-      REPORT_MAX_TOKENS,
+      // 120 (AC-6): domknięcie nie może mieć MNIEJ miejsca niż krok, któremu go zabrakło. Dotąd
+      // dostawało 2800 przy pętli na 4000 — czyli prośba „dokończ zadanie z zebranych danych"
+      // wracała ucięta z tego samego powodu, dla którego nie domknęła się pętla (zmierzone: 2800
+      // tokenów wyjścia co do jednego). Bierzemy budżet pętli po odczycie danych, nie mniej.
+      Math.max(RAPORT_BUDZET_WYJSCIA, budzetWyjscia({ maDaneWKontekscie: true })),
       conversationId,
       op,
       undefined,
@@ -714,6 +786,15 @@ async function finishPartialRun(
     }
     const answer = typeof parsed?.answer === "string" ? parsed.answer.trim() : "";
     if (answer) return { answer };
+    // 120: domknięcie też potrafi wrócić UCIĘTE (zmierzone: 2800 tokenów co do jednego). Zamiast
+    // wyrzucić je w całości — odzyskaj gotowe akcje. Ten sam helper co w pętli, żeby obie ścieżki
+    // oddawały ten sam kształt.
+    if (res.truncated) {
+      const czesciowy = planZUcietego(res.content);
+      if (czesciowy) {
+        return { actions: czesciowy.actions, thought: "", niepelny: czesciowy.niepelny };
+      }
+    }
   } catch {
     /* awaria dokończenia → składamy komunikat niżej */
   }
@@ -949,7 +1030,10 @@ export async function POST(req: NextRequest) {
   // 080 (Z6): zlecenie wsadowe potrzebuje NAJWIĘKSZEGO zapasu — dłuższego niż raport, bo plan
   // z listą pozycji jest dłuższy niż jego opis.
   const wsadowe = zlecenieWsadowe(intentText);
-  const agentMaxTokens = wsadowe ? BULK_MAX_TOKENS : wantsReport ? REPORT_MAX_TOKENS : AGENT_MAX_TOKENS;
+  // 120: zamiast jednej liczby ustalonej z gory — kontekst, z ktorego petla liczy budzet przed
+  // KAZDYM wywolaniem (`budzetWyjscia`). Progi `wsadowe`/`raport` zostaja bez zmian; dochodzi
+  // trzeci, ktorego nie da sie odczytac z wiadomosci: „dane z odczytu sa juz w kontekscie".
+  const kontekstBudzetu = { wsadowe, raport: wantsReport };
 
   // Kopia wyjściowych wiadomości do ewentualnego ponowienia na "reasoning" (pętla mutuje messages).
   const baselineMessages: ChatMessage[] | null = isSimpleRead ? messages.map((m) => ({ ...m })) : null;
@@ -975,11 +1059,11 @@ export async function POST(req: NextRequest) {
     // 032: pierwszy przebieg jest OSTATECZNY tylko wtedy, gdy nie mamy w zapasie ponowienia na
     // „reasoning" — inaczej jego podsumowanie i tak poszłoby do kosza (patrz `isFinalRun`).
     const canFallback = !economy && !wantsBestQuality && !!baselineMessages;
-    const first = await runAgentLoop(messages, userId, onThought, meta, agentMaxTokens, conversationId, primaryOp, !canFallback, assistantLevel, promptParts);
+    const first = await runAgentLoop(messages, userId, onThought, meta, kontekstBudzetu, conversationId, primaryOp, !canFallback, assistantLevel, promptParts);
     const result =
       !canFallback || !loopNeedsFallback(first)
         ? first
-        : await runAgentLoop(baselineMessages!, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, promptParts);
+        : await runAgentLoop(baselineMessages!, userId, onThought, meta, kontekstBudzetu, conversationId, "reasoning", true, assistantLevel, promptParts);
     return withActionCatalogRetry(result, onThought);
   };
 
@@ -989,7 +1073,7 @@ export async function POST(req: NextRequest) {
     const fullParts = buildSystemPromptParts(activeModules, await getAiCatalog(), { followups: followupsEnabled, locale: jezykPrzestrzeniUzytkownika });
     const retryMessages = noCatalogBaseline.map((m) => ({ ...m }));
     retryMessages[0] = { role: "system", content: fullParts.stable + fullParts.variable };
-    return runAgentLoop(retryMessages, userId, onThought, meta, agentMaxTokens, conversationId, "reasoning", true, assistantLevel, fullParts);
+    return runAgentLoop(retryMessages, userId, onThought, meta, kontekstBudzetu, conversationId, "reasoning", true, assistantLevel, fullParts);
   }
 
   // H4: strażnik współbieżności — nie pozwól odpalić zbyt wielu ciężkich operacji naraz.

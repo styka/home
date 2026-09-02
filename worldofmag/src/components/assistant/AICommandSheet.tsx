@@ -83,6 +83,8 @@ interface AgentResponse {
   messages?: ChatMessage[];
   error?: string;
   meta?: AgentMeta;
+  /** 120: plan odzyskany z UCIĘTEJ odpowiedzi — niesie tylko akcje, które zdążyły się zbudować. */
+  niepelny?: boolean;
 }
 
 // H3: transparentność — który model odpowiedział i ile tokenów zużyto.
@@ -1236,7 +1238,13 @@ export function AICommandSheet({
     }
     if (data.step === "plan") {
       const actions = data.actions ?? [];
-      const planTurn: Extract<Turn, { kind: "plan" }> = { id, role: "assistant", kind: "plan", content: `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`, actions, messages: data.messages, log: data.log ?? log, meta };
+      // 120: treść tury planu jest budowana TUTAJ, a `thought` z serwera nie trafia do użytkownika —
+      // dlatego informacja o niepełnym planie musi przyjść osobnym polem (`niepelny`) i zostać tu
+      // doklejona. Gdyby poszła w `thought`, byłaby niewidoczna, a użytkownik uznałby, że przeniesiono
+      // wszystko. Plan pełny wygląda dokładnie jak dotąd.
+      const naglowekPlanu = `Zaproponowano ${actions.length} ${actions.length === 1 ? "akcję" : "akcji"}`;
+      const trescPlanu = data.niepelny ? `${naglowekPlanu}\n\n${t("planNiepelny")}` : naglowekPlanu;
+      const planTurn: Extract<Turn, { kind: "plan" }> = { id, role: "assistant", kind: "plan", content: trescPlanu, actions, messages: data.messages, log: data.log ?? log, meta };
       setTurns((t) => [...t, planTurn]);
       void persist("assistant", `Zaproponowano ${actions.length} akcji`, "plan", { actions });
       // 041: auto-zatwierdzanie. Warunek jest CELOWO ostry: wystarczy JEDNA akcja niszcząca w

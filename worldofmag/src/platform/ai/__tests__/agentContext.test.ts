@@ -4,6 +4,12 @@ import {
   compactToolResults,
   collapseUsedToolData,
   czyCachowacKatalog,
+  czyUzytecznyKrok,
+  czyPrzerwacBezKroku,
+  KROKI_PROTOKOLU,
+  budzetWyjscia,
+  BAZOWY_BUDZET_WYJSCIA,
+  DUZY_BUDZET_WYJSCIA,
   PER_TOOL_MAX_RECORDS,
   TOOL_RESULT_MAX_CHARS,
   TOOL_DATA_HEADER,
@@ -170,4 +176,55 @@ test("wynik KOMPLETNY nie dostaje znacznika, nawet gdy blok przekracza budżet z
   const projekty = parsed.find((r) => r.tool === "list_projects");
   assert.equal(projekty?.data.length, 2, "kompletna lista zostaje w całości");
   assert.equal(projekty?.truncated, undefined, "brak fałszywego 'pobierz kolejne' dla kompletnego wyniku");
+});
+
+// ── 120: co jest UŻYTECZNĄ odpowiedzią, a co jałowym obrotem ─────────────────────────────────────
+//
+// Zgłoszenie: pięć wywołań po 1200 tokenów wyjścia (dokładnie limit), wszystkie wyrzucone, i
+// komunikat „zabrakło kroków", który był nieprawdą. Przyczyna: pusta treść modelu była zastępowana
+// przez `"{}"`, a pusty obiekt parsuje się poprawnie — więc ucięta odpowiedź udawała sparsowaną,
+// kasowała flagę ucięcia i zostawiała pętli tylko „nieznany krok", czyli kolejny obrót bez licznika.
+
+test("czyUzytecznyKrok: pusty obiekt NIE jest użyteczną odpowiedzią", () => {
+  assert.equal(czyUzytecznyKrok({}), false, "to jest dokładnie to, co podstawiało `\"{}\"`");
+  assert.equal(czyUzytecznyKrok(null), false);
+  assert.equal(czyUzytecznyKrok({ thought: "myślę" }), false, "sama myśl to nie krok");
+  assert.equal(czyUzytecznyKrok({ step: "nieistniejacy" }), false);
+  assert.equal(czyUzytecznyKrok({ step: 42 }), false, "step musi być tekstem");
+});
+
+test("czyUzytecznyKrok: każdy krok protokołu jest użyteczny", () => {
+  for (const krok of KROKI_PROTOKOLU) {
+    assert.equal(czyUzytecznyKrok({ step: krok }), true, `krok ${krok} musi być uznany`);
+  }
+});
+
+test("czyPrzerwacBezKroku: jedna szansa na poprawę, po drugiej wychodzimy", () => {
+  assert.equal(czyPrzerwacBezKroku(1), false, "pierwsza jałowa odpowiedź → dajemy szansę");
+  assert.equal(czyPrzerwacBezKroku(2), true, "druga → koniec, zamiast dobijać do limitu iteracji");
+  assert.equal(czyPrzerwacBezKroku(5), true);
+});
+
+// ── 120: budżet wyjścia dobierany do ETAPU tury ──────────────────────────────────────────────────
+//
+// Do 120 budżet był liczony RAZ, przed pętlą, z treści wiadomości użytkownika. Rozmiar planu zależy
+// jednak od ilości danych, które asystent PRZECZYTAŁ — prośba o psa Raj ma trzy zdania, a plan to
+// kilkanaście akcji. Rozpoznanie po wiadomości z zasady tego nie wykryje.
+
+test("budzetWyjscia: zwykła tura bez danych zostaje na dotychczasowym budżecie (AC-5)", () => {
+  assert.equal(budzetWyjscia({ maDaneWKontekscie: false }), BAZOWY_BUDZET_WYJSCIA);
+  assert.equal(BAZOWY_BUDZET_WYJSCIA, 1200, "AC-5 wymaga BRAKU zmiany, nie 'prawie braku'");
+});
+
+test("budzetWyjscia: po odczycie danych jest wyraźnie więcej miejsca (AC-4)", () => {
+  const po = budzetWyjscia({ maDaneWKontekscie: true });
+  assert.ok(po > BAZOWY_BUDZET_WYJSCIA, "tura, która ma co wypisać, dostaje więcej");
+  assert.equal(po, DUZY_BUDZET_WYJSCIA);
+});
+
+test("budzetWyjscia: bierze MAKSIMUM z mających zastosowanie progów", () => {
+  // Raport bez danych = dotychczasowe 2800; raport PO odczycie danych nie może zejść poniżej 4000.
+  assert.equal(budzetWyjscia({ maDaneWKontekscie: false, raport: true }), 2800);
+  assert.equal(budzetWyjscia({ maDaneWKontekscie: true, raport: true }), DUZY_BUDZET_WYJSCIA);
+  assert.equal(budzetWyjscia({ maDaneWKontekscie: false, wsadowe: true }), DUZY_BUDZET_WYJSCIA);
 });

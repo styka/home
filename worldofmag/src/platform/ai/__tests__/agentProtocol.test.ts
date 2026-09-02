@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractJsonLoose, salvageAnswerText } from "@/platform/ai/agentProtocol";
+import { extractJsonLoose, salvageAnswerText, odzyskajAkcjeZUcietego } from "@/platform/ai/agentProtocol";
 
 // 030: tolerancyjne parsowanie protokołu agenta — pojedyncza niesforna odpowiedź
 // modelu nie może kończyć tury błędem „LLM zwrócił nieprawidłowy format".
@@ -55,4 +55,80 @@ test("salvageAnswerText: kompletnie popsuty tekst → oczyszczona treść", () =
 test("salvageAnswerText: nigdy nie zwraca pustki", () => {
   const text = salvageAnswerText("{}");
   assert.ok(text.trim().length > 0, "fallbackowy komunikat po polsku");
+});
+
+// ── 120: odzysk kompletnych akcji z UCIĘTEGO planu ───────────────────────────────────────────────
+//
+// Zgłoszenie: kilkanaście obowiązków psa do przeniesienia, plan nie mieścił się w budżecie wyjścia,
+// pięć odpowiedzi uciętych i wyrzuconych w całości — użytkownik nie dostał ani jednej akcji, choć
+// każda ucięta odpowiedź niosła kilka gotowych. Odzyskujemy to, co kompletne; urwaną pomijamy.
+
+const PELNY_PLAN = JSON.stringify({
+  step: "plan",
+  thought: "Zakładam psa i przenoszę obowiązki",
+  actions: [
+    { id: "a1", module: "pets", type: "add_pet", description: "Dodaj psa Raj", params: { name: "Raj" } },
+    { id: "a2", module: "pets", type: "schedule_treatment", description: "Odrobaczanie", params: { everyDays: 90 } },
+  ],
+});
+
+test("odzyskajAkcjeZUcietego: pełny plan → wszystkie akcje", () => {
+  const { akcje } = odzyskajAkcjeZUcietego(PELNY_PLAN);
+  assert.equal(akcje.length, 2);
+  assert.equal(akcje[0].type, "add_pet");
+  assert.equal(akcje[1].type, "schedule_treatment");
+});
+
+test("odzyskajAkcjeZUcietego: plan urwany W ŚRODKU akcji oddaje te kompletne (AC-7)", () => {
+  const urwany =
+    '{"step":"plan","thought":"Przenoszę obowiązki","actions":[' +
+    '{"id":"a1","module":"pets","type":"add_pet","description":"Dodaj psa Raj","params":{"name":"Raj"}},' +
+    '{"id":"a2","module":"pets","type":"schedule_care_task","description":"Czesanie","params":{"everyDays":7}},' +
+    '{"id":"a3","module":"pets","type":"schedule_treatment","description":"Szczepienie przeciwko kaszlowi ken';
+  const { akcje } = odzyskajAkcjeZUcietego(urwany);
+  assert.equal(akcje.length, 2, "dwie kompletne; trzecia urwana pominięta");
+  assert.equal(akcje[1].type, "schedule_care_task");
+});
+
+test("odzyskajAkcjeZUcietego: nawias klamrowy W OPISIE nie psuje liczenia głębokości", () => {
+  const zNawiasem =
+    '{"step":"plan","actions":[' +
+    '{"id":"a1","type":"schedule_treatment","description":"Zabieg {co 3 miesiące} u weterynarza"},' +
+    '{"id":"a2","type":"log_weight","description":"Waga"}]}';
+  const { akcje } = odzyskajAkcjeZUcietego(zNawiasem);
+  assert.equal(akcje.length, 2, "klamra w tekście to znak, nie zagnieżdżenie");
+  assert.match(String(akcje[0].description), /co 3 miesiące/);
+});
+
+test("odzyskajAkcjeZUcietego: urwanie WEWNĄTRZ stringu nie gubi wcześniejszych akcji", () => {
+  const urwanyWStringu =
+    '{"step":"plan","actions":[' +
+    '{"id":"a1","type":"add_pet","description":"Dodaj psa"},' +
+    '{"id":"a2","type":"log_health_note","description":"Niedoczynność tarczycy, lek \\"Forth';
+  const { akcje } = odzyskajAkcjeZUcietego(urwanyWStringu);
+  assert.equal(akcje.length, 1);
+  assert.equal(akcje[0].type, "add_pet");
+});
+
+test("odzyskajAkcjeZUcietego: brak tablicy actions → pusta lista", () => {
+  assert.deepEqual(odzyskajAkcjeZUcietego('{"step":"answer","answer":"Nie ma tu akcji"}').akcje, []);
+  assert.deepEqual(odzyskajAkcjeZUcietego("").akcje, []);
+  assert.deepEqual(odzyskajAkcjeZUcietego("zupełnie nie JSON").akcje, []);
+});
+
+test("odzyskajAkcjeZUcietego: pusta tablica actions → pusta lista", () => {
+  assert.deepEqual(odzyskajAkcjeZUcietego('{"step":"plan","actions":[]}').akcje, []);
+});
+
+test("odzyskajAkcjeZUcietego: rozróżnia ucięcie W TABLICY od ucięcia ZA nią (recenzja 120)", () => {
+  // Tablica NIEDOMKNIĘTA — plan naprawdę jest niepełny.
+  const wTablicy = '{"step":"plan","actions":[{"id":"a1","type":"add_pet"},{"id":"a2","type":"log_we';
+  assert.equal(odzyskajAkcjeZUcietego(wTablicy).kompletna, false);
+  assert.equal(odzyskajAkcjeZUcietego(wTablicy).akcje.length, 1);
+
+  // Tablica DOMKNIĘTA, ucięcie na kolejnym polu — plan jest całością mimo urwanej odpowiedzi.
+  // Bez tego rozróżnienia odesłalibyśmy użytkownika po „resztę", której nie ma.
+  const zaTablica = '{"step":"plan","actions":[{"id":"a1","type":"add_pet"},{"id":"a2","type":"log_weight"}],"thought":"Przeniosł';
+  assert.equal(odzyskajAkcjeZUcietego(zaTablica).kompletna, true);
+  assert.equal(odzyskajAkcjeZUcietego(zaTablica).akcje.length, 2);
 });
