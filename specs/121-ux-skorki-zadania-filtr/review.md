@@ -38,3 +38,18 @@ akcji, `revalidatePath`, namespace'ach i18n, regule 080 (zakres nie degraduje do
 
 Wymagane T-10 (regresja sidebara); T-11/T-12 domykane przy tej samej okazji (ten sam plik).
 Po poprawkach: bramki → ponowna weryfikacja → runda 2 recenzji.
+
+## Runda 2 (po poprawkach T-10..T-12)
+
+Diff rundy 2 (jeden commit): emisja `tasks:groups-changed` po wszystkich czterech mutacjach
+zestawów + nasłuch w `TasksSideNav` (stabilny `reload` z `useCallback`, cleanup w efekcie),
+synchronizacja `roboczy` z rekordem zwróconym przez `updateProjectGroup`, lokalny stan błędu
+z `role="alert"` i czyszczeniem przy edycji, `aria-label` kotwicy w trybie zestawu.
+Ustalenia 1-3 naprawione zgodnie z sugestiami; ustalenie 4 (rozmiary kropek koloru — dług
+zastany) świadomie bez zmian (C-53). Bramki rundy 2 zielone (build EXIT=0, lint 0, i18n 0,
+e2e zestawów 6/6). Nowych ustaleń brak.
+
+## Werdykt końcowy: **APPROVE Z UWAGAMI**
+
+Uwagi (nieblokujące): zastany dług e2e po 111-120 (osobna robota, odnotowana przy 116);
+zastane rozmiary kontrolek koloru w panelu zestawu.
