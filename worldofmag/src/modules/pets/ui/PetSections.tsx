@@ -4,14 +4,14 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Plus, Trash2, Check, Loader2, ExternalLink, Mail, Users, X, HardDrive, Clock,
+  Plus, Trash2, Check, Loader2, ExternalLink, Mail, Users, X, HardDrive, Clock, Wallet, UserPlus,
 } from "lucide-react";
 import { Modal, Field, inputStyle, PrimaryButton, GhostButton } from "./Modal";
 import { useToast } from "@/components/ui/Toast";
 import {
   addMeasurement, deleteMeasurement,
   createTreatment, completeTreatment, deleteTreatment,
-  createVetVisit, deleteVetVisit,
+  createVetVisit, deleteVetVisit, bookVetVisitCost, saveVetToContacts,
   createHealthRecord, updateHealthRecord, deleteHealthRecord,
   createCareTask, completeCareTask, deleteCareTask, logFeeding,
 } from "../actions/petCare";
@@ -51,11 +51,12 @@ function SectionShell({ title, onAdd, addLabel, children }: { title: string; onA
   );
 }
 
-function Row({ children, onDelete, onComplete, completing }: { children: ReactNode; onDelete?: () => void; onComplete?: () => void; completing?: boolean }) {
+function Row({ children, onDelete, onComplete, completing, actions }: { children: ReactNode; onDelete?: () => void; onComplete?: () => void; completing?: boolean; actions?: ReactNode }) {
   const t = useTranslations("modules.pets.PetSections");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
       <div style={{ minWidth: 0, flex: 1 }}>{children}</div>
+      {actions}
       {onComplete && (
         <button onClick={onComplete} disabled={completing} title="Odhacz" style={smallBtn("var(--accent-green)")}>
           {completing ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
@@ -325,12 +326,41 @@ export function VetSection({ pet }: { pet: PetWithRelations }) {
 
   function del(id: string) { startTransition(async () => { await deleteVetVisit(id); refresh(); }); }
 
+  // 115 (Z-INT-03/07): mosty — koszt do Portfela, weterynarz do Kontaktów.
+  function ksieguj(id: string) {
+    startTransition(async () => {
+      try {
+        const w = await bookVetVisitCost(id);
+        showToast(w.zaksiegowano ? t("zaksiegowanoWPortfelu") : t("brakKontaAuto"), w.zaksiegowano ? "success" : "error");
+      } catch (e) { showToast(e instanceof Error ? e.message : t("bladOperacji"), "error"); }
+    });
+  }
+  function doKontaktow(id: string) {
+    startTransition(async () => {
+      try {
+        const w = await saveVetToContacts(id);
+        showToast(w.istnial ? t("kontaktJuzIstnial") : t("kontaktZapisany"), "success");
+      } catch (e) { showToast(e instanceof Error ? e.message : t("bladOperacji"), "error"); }
+    });
+  }
+
   return (
     <SectionShell title="Wizyty weterynaryjne" onAdd={() => setOpen(true)} addLabel="Dodaj wizytę">
       {pet.vetVisits.length === 0 ? <Empty text="Brak wizyt weterynaryjnych." /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {pet.vetVisits.map((v) => (
-            <Row key={v.id} onDelete={() => del(v.id)}>
+            <Row
+              key={v.id}
+              onDelete={() => del(v.id)}
+              actions={<>
+                {v.cost != null && (
+                  <button onClick={() => ksieguj(v.id)} title={t("zaksiegujWPortfelu")} aria-label={t("zaksiegujWPortfelu")} style={smallBtn("var(--text-muted)")}><Wallet size={13} /></button>
+                )}
+                {v.vetName && (
+                  <button onClick={() => doKontaktow(v.id)} title={t("zapiszWeterynarza")} aria-label={t("zapiszWeterynarza")} style={smallBtn("var(--text-muted)")}><UserPlus size={13} /></button>
+                )}
+              </>}
+            >
               <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{v.reason || "Wizyta"}{v.cost != null ? ` · ${v.cost.toFixed(2)} zł` : ""}</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 {formatDate(v.date)}{v.vetName ? ` · ${v.vetName}` : ""}{v.nextVisitAt ? ` · następna: ${formatDate(v.nextVisitAt)}` : ""}

@@ -14,6 +14,7 @@ import type { ModuleServerContributions } from "@/platform/registry.server";
  */
 const server: ModuleServerContributions = {
   ai: () => import("./ai"),
+  calendar: () => import("./calendar"),
 };
 
 export default server;

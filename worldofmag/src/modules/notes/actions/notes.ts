@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createTask, tasksModule } from "@/modules/tasks/contract";
 import { updateWithVersion } from "@/platform/concurrency/version";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
@@ -327,4 +330,22 @@ export async function restoreNoteRevision(revisionId: string): Promise<void> {
   await assertNoteAccess(rev.noteId, user.id);
   await updateNote(rev.noteId, { title: rev.title, content: rev.content });
   revalidatePath("/notes");
+}
+
+/**
+ * 115 (Z-INT-09): notatka to często ustalenie, z którego ma wyniknąć czynność —
+ * „Do zadań" tworzy zadanie z tytułem notatki i odnośnikiem zwrotnym.
+ */
+export async function createTaskFromNote(noteId: string): Promise<{ id: string }> {
+  const user = await requireAuth();
+  await assertNoteAccess(noteId, user.id);
+  const session = await auth();
+  if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
+  const note = await prisma.note.findUnique({ where: { id: noteId }, select: { title: true, content: true } });
+  if (!note) throw new Error("Notatka nie istnieje");
+  const fragment = (note.content ?? "").trim().split("\n").find((l) => l.trim()) ?? "";
+  const opis = [fragment ? fragment.slice(0, 200) : null, "Notatka: /notes"].filter(Boolean).join("\n");
+  const task = await createTask({ title: note.title, description: opis });
+  revalidatePath("/tasks");
+  return { id: task.id };
 }

@@ -17,6 +17,12 @@
         "src/modules/contacts/ui/ContactsPage.tsx"
       ]
     },
+    "czat": {
+      "status": "done",
+      "entries": [
+        "src/modules/czat/ui/CzatPage.tsx"
+      ]
+    },
     "flota": {
       "status": "done",
       "entries": [
@@ -117,6 +123,17 @@
         "src/modules/reports/ui/ReportsHomePage.tsx"
       ]
     },
+    "rosliny": {
+      "status": "done",
+      "entries": [
+        "src/modules/rosliny/ui/RoslinyPage.tsx",
+        "src/modules/rosliny/ui/PrzestrzenPage.tsx",
+        "src/modules/rosliny/ui/RoslinaSzczegol.tsx",
+        "src/modules/rosliny/ui/AgendaOpieki.tsx",
+        "src/modules/rosliny/ui/KatalogGatunkow.tsx",
+        "src/modules/rosliny/ui/Ewidencja.tsx"
+      ]
+    },
     "services": {
       "status": "done",
       "entries": [
@@ -162,6 +179,12 @@
         "src/modules/truck/ui/TruckPlannerPage.tsx"
       ]
     },
+    "udostepnione": {
+      "status": "done",
+      "entries": [
+        "src/components/sharing/SharingPage.tsx"
+      ]
+    },
     "warsztaty": {
       "status": "done",
       "entries": [
@@ -175,24 +198,12 @@
         "src/modules/news/ui/NewsPage.tsx"
       ]
     },
-    "udostepnione": {
-      "status": "done",
-      "entries": [
-        "src/components/sharing/SharingPage.tsx"
-      ]
-    },
     "youtube": {
       "status": "done",
       "entries": [
         "src/modules/youtube/ui/YoutubePage.tsx",
         "src/modules/youtube/ui/FilmSzczegol.tsx",
         "src/modules/youtube/ui/KanalyPage.tsx"
-      ]
-    },
-    "czat": {
-      "status": "done",
-      "entries": [
-        "src/modules/czat/ui/CzatPage.tsx"
       ]
     }
   },

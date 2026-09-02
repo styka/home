@@ -81,8 +81,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // bez migotania bo renderowane po stronie serwera). data-skin-scheme steruje m.in.
   // widocznością natywnych ikon pól date/time.
   const skin = session?.user?.id
-    ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const }))
-    : { skinId: null, tokens: {}, colorScheme: "dark" as const };
+    ? await readActiveSkin(session.user.id).catch(() => ({ skinId: null, tokens: {}, colorScheme: "dark" as const, atrybuty: {} as Record<string, string> }))
+    : { skinId: null, tokens: {}, colorScheme: "dark" as const, atrybuty: {} as Record<string, string> };
 
   // 029: przelicznik USD→PLN — do wskaźnika kosztu asystenta (kwoty USD z równowartością PLN).
   const usdPlnRate = await getUsdPlnRate();
@@ -118,6 +118,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       // jest JS (rozkład pozycji paska, strona pływających przycisków), rękę niesie `menuPrefs`,
       // które powłoka i tak dostaje.
       data-reka={menuPrefs.handedness}
+      // 116: atrybuty skórki zaawansowanej (bramki reguł w globals.css + wariant układu).
+      // Ten sam wzorzec co data-chrome-frame: serwerowo, więc bez migotania. Dla skórek
+      // prostych mapa jest pusta i nic się nie zmienia.
+      {...skin.atrybuty}
       style={tokensToStyle(skin.tokens)}
     >
       <head>
@@ -135,7 +139,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             kilobajtów tekstu, więc dzielenie go per trasa kosztowałoby więcej uwagi, niż oszczędza
             transferu. Gdy słownik urośnie, dzieli się go przez `messages={pick(...)}` w układzie. */}
         <NextIntlClientProvider>
-          <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews} trybAdminaDostepny={trybAdminaDostepny}>{children}</AppShell>
+          <AppShell invitationCount={invitationCount} isAdmin={isAdmin} userRoles={userRoles} userPermissions={userPermissions} menuPrefs={menuPrefs} usdPlnRate={usdPlnRate} favoriteViews={favoriteViews} trybAdminaDostepny={trybAdminaDostepny} ukladNawigacji={skin.atrybuty["data-nav"] === "pasek-gorny" ? "pasek-gorny" : skin.atrybuty["data-nav"] === "sidebar-prawy" ? "sidebar-prawy" : "sidebar-lewy"}>{children}</AppShell>
         </NextIntlClientProvider>
         <ServiceWorkerRegistration />
       </body>

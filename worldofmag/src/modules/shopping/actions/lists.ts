@@ -6,6 +6,10 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getAccessibleTeamIds, ownedWhereAsync } from "@/platform/auth/serverUtils";
 import type { ShoppingList, ShoppingListWithItems } from "@/types";
 import { emitDomainEvent, workspaceIdDlaZdarzenia } from "@/platform/events/emit";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { logEvent } from "@/platform/observability/log";
+import { addPantryItem, kitchenModule } from "@/modules/kitchen/contract";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 
@@ -172,14 +176,14 @@ export async function archiveList(id: string): Promise<void> {
  */
 export async function completeShopping(
   id: string,
-  opts?: { bookToPortfel?: boolean }
-): Promise<{ total: number; zlecono: boolean }> {
+  opts?: { bookToPortfel?: boolean; doSpizarni?: boolean }
+): Promise<{ total: number; zlecono: boolean; dodanoDoSpizarni: number }> {
   const user = await requireAuth();
   await assertListAccess(id, user.id);
 
   const list = await prisma.shoppingList.findUnique({
     where: { id },
-    include: { items: { select: { status: true, price: true, quantity: true } } },
+    include: { items: { select: { status: true, price: true, quantity: true, name: true, unit: true } } },
   });
   if (!list) throw new Error("Lista nie istnieje");
 
@@ -218,6 +222,29 @@ export async function completeShopping(
     }
   });
 
+  // 115 (Z-INT-16): kupione pozycje trafiają do spiżarni Kuchni — TYLKO na życzenie i już PO
+  // archiwizacji: błąd spiżarni nie może cofnąć zakończenia zakupów, więc pętla stoi poza
+  // transakcją listy, a niepowodzenie ląduje w logu i w liczniku, nie w wyjątku.
+  let dodanoDoSpizarni = 0;
+  if (opts?.doSpizarni) {
+    const session = await auth();
+    if (hasPermission(session, kitchenModule.permission)) {
+      const kupione = list.items.filter((it) => it.status === "DONE");
+      for (const it of kupione) {
+        try {
+          await addPantryItem({ name: it.name, quantity: it.quantity ?? null, unit: it.unit ?? null });
+          dodanoDoSpizarni += 1;
+        } catch (e) {
+          logEvent("warn", "shopping.doSpizarni", {
+            listId: id,
+            pozycja: it.name,
+            blad: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+    }
+  }
+
   revalidatePath("/shopping");
   revalidatePath(`/shopping/${id}`);
   revalidatePath("/portfel");
@@ -225,7 +252,7 @@ export async function completeShopping(
   // „pieniądze zaksięgowane": ustawiało się na `true` zaraz po wywołaniu `bookAutoExpense`, które
   // po cichu nic nie robi, gdy użytkownik nie ma skonfigurowanego konta auto-wydatków. Nowa nazwa
   // mówi to, co pole zawsze znaczyło — że zlecenie poszło.
-  return { total, zlecono };
+  return { total, zlecono, dodanoDoSpizarni };
 }
 
 export async function unarchiveList(id: string): Promise<void> {

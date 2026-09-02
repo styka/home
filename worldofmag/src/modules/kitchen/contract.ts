@@ -20,6 +20,10 @@
  * słownika tagów, który świadomie został poza modułami (Notatki używają tego samego).
  */
 
+// 115 (Z-INT-16): deklaracja modułu dla konsumentów sprawdzających uprawnienie
+// `module.kitchen` przed dopisaniem do spiżarni (wzorzec `tasksModule`/`notesModule`).
+export { default as kitchenModule } from "./module";
+
 export {
   // przepisy
   getRecipes,

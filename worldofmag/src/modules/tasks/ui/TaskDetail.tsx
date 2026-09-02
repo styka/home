@@ -17,11 +17,15 @@ import { TASK_PRIORITY_COLORS, statusMetaFor, DEFAULT_STATUS_CONFIG, parseStatus
 import { toDateTimeLocalValue, toDateValue, parseDateInput } from "@/lib/dateInput";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { Modal } from "@/components/ui/Modal";
+import { WyborObszaru } from "./WyborObszaru";
+import type { ObszarDTO } from "../actions/obszary";
 
 interface TaskDetailProps {
   task: Task;
   allTags: TaskTagDef[];
   allProjects?: TaskProject[];
+  /** 117: obszary bieżącego projektu — puste poza widokiem projektu (wtedy pole znika). */
+  obszary?: ObszarDTO[];
   statusConfig?: ProjectStatusConfig;
   onClose: () => void;
   onDelete: () => void;
@@ -50,7 +54,7 @@ const RECURRING_TYPES = [
 ];
 const DAY_LABELS = ["Nd", "Pn", "Wt", "Śr", "Cz", "Pt", "So"];
 
-export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete, szeroki = false, onPrzelaczSzeroki }: TaskDetailProps) {
+export function TaskDetail({ task, allTags, allProjects = [], obszary = [], statusConfig = DEFAULT_STATUS_CONFIG, onClose, onDelete, szeroki = false, onPrzelaczSzeroki }: TaskDetailProps) {
   const t = useTranslations("modules.tasks.TaskDetail");
   const confirmDialog = useConfirm();
   const [title, setTitle] = useState(task.title);
@@ -133,6 +137,9 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
         setRecurringDayOfMonth(r.dayOfMonth ? String(r.dayOfMonth) : "");
       } catch { /* ignore */ }
     }
+    // Reset formularza WYŁĄCZNIE przy zmianie zadania. Pełna lista zależności (task.*) nadpisywałaby
+    // niezapisane edycje użytkownika przy każdej rewalidacji listy — to świadome odstępstwo od reguły.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id]);
 
   function autosave(patch: Parameters<typeof updateTask>[1]) {
@@ -527,6 +534,21 @@ export function TaskDetail({ task, allTags, allProjects = [], statusConfig = DEF
               <option key={p.id} value={p.id}>{p.isInbox ? "📥" : p.emoji} {p.name}</option>
             ))}
           </select>
+        </div>
+      )}
+      {/* 117 (AC-2): obszar — dokładnie jeden albo żaden; pole tylko, gdy zadanie leży w projekcie,
+          którego drzewo tu mamy (widok projektu). */}
+      {obszary.length > 0 && task.projectId === obszary[0].projectId && (
+        <div className="flex items-center gap-2">
+          <FolderInput size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+          <label className="text-xs w-20 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Obszar</label>
+          <WyborObszaru
+            obszary={obszary}
+            value={task.areaId ?? null}
+            onChange={(areaId) => { if (areaId !== (task.areaId ?? null)) run(() => updateTask(task.id, { areaId })); }}
+            className="flex-1 bg-transparent text-xs focus:outline-none border rounded px-2 py-1"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+          />
         </div>
       )}
       <div className="flex items-center gap-2">

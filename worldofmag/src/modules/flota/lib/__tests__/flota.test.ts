@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deadlineStatus, computeConsumption } from "../flota";
+import { deadlineStatus, computeConsumption, avgFuelPrice } from "../flota";
 
 // Flota — czyste funkcje dotąd nieprzetestowane (computeVehicleTCO osobno w flotaTco.test).
 const DAY = 86_400_000;
@@ -110,4 +110,16 @@ test("computeConsumption: implausibilne zużycie (≥100 l/100km) odfiltrowane",
   ]);
   assert.equal(r.points.length, 0);
   assert.equal(r.avg, null);
+});
+
+test("avgFuelPrice: Σkoszt/Σlitry po logach z kosztem; brak danych → null", () => {
+  const logs = [
+    { date: "2026-01-01", odometer: 1000, liters: 40, totalCost: 260, full: true },
+    { date: "2026-01-10", odometer: 1600, liters: 50, totalCost: 340, full: true },
+    { date: "2026-01-20", odometer: 2200, liters: 30, totalCost: null, full: false }, // bez kosztu — pomijany
+  ];
+  const cena = avgFuelPrice(logs);
+  assert.ok(cena && Math.abs(cena - 600 / 90) < 1e-9);
+  assert.equal(avgFuelPrice([]), null);
+  assert.equal(avgFuelPrice([{ date: "2026-01-01", odometer: 1, liters: 10, totalCost: null, full: true }]), null);
 });

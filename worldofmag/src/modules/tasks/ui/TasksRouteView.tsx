@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForProjects } from "../actions/tasks";
 import { getTaskProjects } from "../actions/taskProjects";
+import { getProjectAreas, type ObszarDTO } from "../actions/obszary";
 import { getTaskTags } from "../actions/taskTags";
 import { getProjectGroup } from "../actions/projectGroups";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
@@ -70,6 +71,7 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   // Widok wielu projektów: lista projektów w zakresie + id zapisanej grupy (do edycji).
   let scopeProjects: ScopeProject[] = [];
   let multiGroupId: string | undefined;
+  let areas: ObszarDTO[] = [];
 
   if (projectId === "today") {
     tasks = await getTodayTasks();
@@ -122,6 +124,8 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
     const project = allProjects.find((p) => p.id === projectId)!;
     viewMode = "project";
     projectName = project.isInbox ? "📥 Skrzynka" : `${project.emoji} ${project.name}`;
+    // 117: drzewo obszarów należy do projektu — widoki wirtualne/zestawy go nie mają.
+    areas = await getProjectAreas(projectId);
   }
 
   const inbox = allProjects.find((p) => p.isInbox);
@@ -166,6 +170,7 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
       scopeProjects={scopeProjects}
       multiGroupId={multiGroupId}
+      areas={areas}
       viewParams={searchParams ?? {}}
     />
   );

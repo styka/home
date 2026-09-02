@@ -22,7 +22,7 @@ export default async function InvitationsPage() {
           <div style={{ fontSize: 13, color: "var(--accent-green)", lineHeight: 1.5 }}>
             Odebrano dostęp do {odebraneZasoby}{" "}
             {odebraneZasoby === 1 ? "udostępnionego zasobu" : "udostępnionych zasobów"} — znajdziesz je
-            na stronie „Udostępnione mi".
+            na stronie „Udostępnione mi”.
           </div>
         )}
         <InvitationsList invitations={invitations} />

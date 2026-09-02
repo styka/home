@@ -6,10 +6,10 @@ import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { useViewState } from "@/hooks/useViewState";
 import { text, type RawParams } from "@/platform/viewState/viewState";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2 } from "lucide-react";
+import { Users, Search, Plus, Pencil, Trash2, Check, X, Phone, Mail, Building2, Cake, ListTodo } from "lucide-react";
 import { cardStyle } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { getContacts, createContact, updateContact, deleteContact, type ContactDTO } from "../actions/contacts";
+import { getContacts, createContact, updateContact, deleteContact, createTaskFromContact, type ContactDTO } from "../actions/contacts";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -42,14 +42,17 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   useEffect(() => {
     if (akcjaNowyKontakt.aktywna) { setAdding(true); setEditId(null); }
   }, [akcjaNowyKontakt.aktywna]);
-  const zamknijDodawanie = () => {
+  const zamknijZAdresu = akcjaNowyKontakt.zamknij;
+  const zamknijDodawanie = useCallback(() => {
     setAdding(false);
-    akcjaNowyKontakt.zamknij();
-  };
+    zamknijZAdresu();
+  }, [zamknijZAdresu]);
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const searchRef = useRef<HTMLInputElement>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  function pokazInfo(msg: string) { setInfo(msg); setTimeout(() => setInfo(null), 5000); }
 
   // ── Wirtualizacja długiej listy (Z-071/T-11) ────────────────────────────────
   // Kontakty ładują się w całości i są filtrowane po stronie klienta — idealny cel
@@ -128,7 +131,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
         setSelectedId(null);
       },
     };
-  }, [contacts, selectedId, editId, adding, query, virtualizer]);
+  }, [contacts, selectedId, editId, adding, query, virtualizer, confirmDialog, zamknijDodawanie]);
 
   useKeyboardShortcuts(handlers);
 
@@ -170,6 +173,7 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
           />
         )}
 
+        {info && <div role="status" style={{ fontSize: 12, color: "var(--accent-green)", marginBottom: 8 }}>{info}</div>}
         {contacts.length > 0 && (
           // Wrapper o wysokości całej listy (getTotalSize) z absolutnie pozycjonowanymi,
           // dynamicznie mierzonymi wierszami — renderujemy tylko okno widoczne (+overscan).
@@ -197,6 +201,8 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
                       onSelect={() => setSelectedId(c.id)}
                       onEdit={() => { setEditId(c.id); setAdding(false); }}
                       onDeleted={() => reload()}
+                      onTaskCreated={() => pokazInfo(t("zadanieUtworzone"))}
+                      onTaskError={(m) => pokazInfo(m ?? t("zadanieBlad"))}
                     />
                   )}
                 </div>
@@ -209,12 +215,14 @@ export function ContactsPage({ initialContacts, viewParams = {} }: { initialCont
   );
 }
 
-function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
+function ContactRow({ contact, onEdit, onDeleted, selected, onSelect, onTaskCreated, onTaskError }: {
   contact: ContactDTO;
   onEdit: () => void;
   onDeleted: () => void;
   selected?: boolean;
   onSelect?: () => void;
+  onTaskCreated: () => void;
+  onTaskError: (msg: string | null) => void;
 }) {
   const t = useTranslations("modules.contacts.ContactsPage");
   const confirmDialog = useConfirm();
@@ -242,6 +250,11 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
           {contact.phone && <a href={`tel:${contact.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none" }}><Phone size={12} /> {contact.phone}</a>}
           {contact.email && <a href={`mailto:${contact.email}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--accent-blue)", textDecoration: "none" }}><Mail size={12} /> {contact.email}</a>}
+          {contact.birthday && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
+              <Cake size={12} /> {contact.birthday.slice(5).split("-").reverse().join(".")}
+            </span>
+          )}
         </div>
         {contact.tags.length > 0 && (
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
@@ -253,6 +266,16 @@ function ContactRow({ contact, onEdit, onDeleted, selected, onSelect }: {
         {contact.notes && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 6, whiteSpace: "pre-wrap" }}>{contact.notes}</div>}
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+        {/* 115 (Z-INT-08): follow-up — zadanie „Skontaktuj się: …" z danymi kontaktu. */}
+        <button
+          onClick={async () => {
+            try { await createTaskFromContact(contact.id); onTaskCreated(); }
+            catch (e) { onTaskError(e instanceof Error ? e.message : null); }
+          }}
+          style={secondaryBtn}
+          title={t("utworzZadanie")}
+          aria-label={t("utworzZadanie")}
+        ><ListTodo size={14} /></button>
         <button onClick={onEdit} style={secondaryBtn} aria-label="Edytuj"><Pencil size={14} /></button>
         <button onClick={async () => { if (await confirmDialog({ title: `Usunąć kontakt „${contact.name}"?`, destructive: true })) { await deleteContact(contact.id); onDeleted(); } }} style={{ ...secondaryBtn, color: "var(--accent-red)" }} aria-label={t("usun")}><Trash2 size={14} /></button>
       </div>
@@ -266,6 +289,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
   const [phone, setPhone] = useState(contact?.phone ?? "");
   const [email, setEmail] = useState(contact?.email ?? "");
   const [company, setCompany] = useState(contact?.company ?? "");
+  const [birthday, setBirthday] = useState(contact?.birthday ?? "");
   const [tags, setTags] = useState(contact?.tags.join(", ") ?? "");
   const [notes, setNotes] = useState(contact?.notes ?? "");
   const [busy, setBusy] = useState(false);
@@ -277,8 +301,8 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
     setBusy(true); setError(null);
     const tagList = tags.split(",").map((t) => t.trim()).filter(Boolean);
     try {
-      if (contact) await updateContact(contact.id, { name, phone, email, company, tags: tagList, notes });
-      else await createContact({ name, phone, email, company, tags: tagList, notes });
+      if (contact) await updateContact(contact.id, { name, phone, email, company, birthday: birthday || null, tags: tagList, notes });
+      else await createContact({ name, phone, email, company, birthday: birthday || null, tags: tagList, notes });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać kontaktu");
@@ -294,6 +318,7 @@ function ContactForm({ contact, onDone, onCancel }: { contact?: ContactDTO; onDo
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Firma</label><input value={company} onChange={(e) => setCompany(e.target.value)} style={inputStyle} /></div>
+        <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Urodziny</label><input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} style={inputStyle} /></div>
         <div style={{ flex: 1, minWidth: 140 }}><label style={labelStyle}>Tagi (po przecinku)</label><input value={tags} onChange={(e) => setTags(e.target.value)} style={inputStyle} placeholder="klient, hydraulik" /></div>
       </div>
       <div><label style={labelStyle}>Notatki</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} /></div>

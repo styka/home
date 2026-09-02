@@ -13,6 +13,10 @@
  * granicą **widoczności**, nie warstwą uprawnień. Import przez kontrakt nie omija żadnej kontroli.
  */
 
+// 115 (recenzja, R-3): deklaracja modułu dla konsumentów sprawdzających uprawnienie
+// `module.contacts` przed zapisem osoby do Kontaktów (wzorzec `tasksModule`/`notesModule`).
+export { default as contactsModule } from "./module";
+
 export {
   getContacts,
   createContact,

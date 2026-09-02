@@ -33,7 +33,7 @@ import {
 import { humanizeAssistantText } from "@/platform/ai/humanize";
 import type { AssistantWorkLevel } from "@/platform/llm/operationTypes";
 import { isAccessError, toUserFacingError } from "@/lib/ai/executorShared";
-import type { AIAction } from "@/platform/ai/aiAction";
+import { AI_ACTION_MODULES, type AIAction } from "@/platform/ai/aiAction";
 import { readCostBadgeEnabled } from "@/platform/ai/costVisibility";
 
 const MAX_ITERATIONS = 6;
@@ -46,24 +46,11 @@ const MAX_HISTORY_MESSAGES = 8;
 // 025: twardy budżet znaków na wstrzykiwaną historię (obok limitu liczby wiadomości).
 const MAX_HISTORY_CHARS = 2500;
 
-const MODULES = [
-  "shopping",
-  "tasks",
-  "notes",
-  "pets",
-  "habits",
-  "portfel",
-  "kitchen",
-  "flota",
-  "magazynowanie",
-  "warsztaty",
-  "health",
-  "languages",
-  "news",
-  "weather",
-  "contacts",
-  "reports",
-] as const;
+// 114: KONIEC równoległej listy modułów. Ręczne `MODULES` (16 slugów) zostało w tyle za
+// `AIActionModule` (18) — akcje Roślin i YouTube były po cichu przepisywane na "shopping"
+// i wykonanie kończyło się „Nieznany typ akcji" albo, przy kolizji nazw typów, akcją w złym
+// module. Jedno źródło: `AI_ACTION_MODULES` z platformy.
+const MODULES = AI_ACTION_MODULES;
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -219,6 +206,8 @@ const KEYWORD_ROUTES: Record<string, RegExp> = {
   pets: granicePolskie("zwierz\\w*|pies|psa|kot\\w*|wąż|węż\\w*|terrari\\w*|karmieni\\w*|waż\\w* (psa|kota|zwierz\\w*)"),
   contacts: granicePolskie("kontakt\\w*|numer telefonu|do kogo|znajom\\w*|osob[ęy] o (imieniu|nazwisku)"),
   reports: granicePolskie("raport\\w*"),
+  rosliny: granicePolskie("roślin\\w*|roslin\\w*|podle(j|w\\w*|wani\\w*)|kwiat\\w*|doniczk\\w*|grządk\\w*|grzadk\\w*|oprysk\\w*|nawożeni\\w*|nawozeni\\w*|sadzonk\\w*|siej\\w*|wysia\\w*"),
+  youtube: granicePolskie("youtube\\w*|jutub\\w*|film\\w* z (yt|youtube)"),
 };
 
 // Pre-routing: jeśli słowa-klucze jednoznacznie wskazują 1–2 moduły, zwróć je BEZ
@@ -279,7 +268,10 @@ function normalizeActions(raw: unknown): AIAction[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((a: Partial<AIAction>, i: number): AIAction | null => {
-      const moduleSlug = a.module && (MODULES as readonly string[]).includes(a.module) ? a.module : "shopping";
+      // Nieznany moduł ODRZUCA akcję (jak brak typu) — dawny cichy fallback na "shopping"
+      // przenosił akcję do cudzego egzekutora, gdzie i tak kończyła się błędem wykonania.
+      if (!a.module || !(MODULES as readonly string[]).includes(a.module)) return null;
+      const moduleSlug = a.module;
       if (!a.type) return null;
       return {
         id: a.id ?? `a${i + 1}`,

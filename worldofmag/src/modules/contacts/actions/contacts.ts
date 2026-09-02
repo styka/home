@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache";
 import { getUserScope, ownedByWhere, assertOwnership } from "@/platform/auth/ownership";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { recordTrash } from "@/platform/trash/trash";
+import { parseBirthday } from "../domain/urodziny";
+import { auth } from "@/platform/auth/session";
+import { hasPermission } from "@/platform/auth/permissions";
+import { createTask, tasksModule } from "@/modules/tasks/contract";
 
 export type ContactDTO = {
   id: string;
@@ -13,6 +18,8 @@ export type ContactDTO = {
   phone: string | null;
   email: string | null;
   company: string | null;
+  /** "YYYY-MM-DD" (dzień kalendarzowy) albo null. */
+  birthday: string | null;
   tags: string[];
   notes: string | null;
   createdAt: string;
@@ -30,15 +37,19 @@ function parseTags(raw: string | null): string[] {
 
 function toDTO(c: {
   id: string; name: string; phone: string | null; email: string | null;
-  company: string | null; tags: string | null; notes: string | null;
+  company: string | null; birthday: Date | null; tags: string | null; notes: string | null;
   createdAt: Date;
 }): ContactDTO {
   return {
     id: c.id, name: c.name, phone: c.phone, email: c.email, company: c.company,
+    // Dzień kalendarzowy bez strefy: urodziny zapisujemy jako północ UTC danego dnia,
+    // więc `toISOString().slice(0,10)` oddaje dokładnie wpisany dzień.
+    birthday: c.birthday ? c.birthday.toISOString().slice(0, 10) : null,
     tags: parseTags(c.tags), notes: c.notes,
     createdAt: c.createdAt.toISOString(),
   };
 }
+
 
 /** Lista kontaktów użytkownika (prywatne + zespołowe), z opcjonalnym wyszukiwaniem. */
 export async function getContacts(search?: string): Promise<ContactDTO[]> {
@@ -71,6 +82,7 @@ export async function createContact(data: {
   phone?: string | null;
   email?: string | null;
   company?: string | null;
+  birthday?: string | null;
   tags?: string[];
   notes?: string | null;
   ownerTeamId?: string | null;
@@ -86,6 +98,7 @@ export async function createContact(data: {
       phone: data.phone?.trim() || null,
       email: data.email?.trim() || null,
       company: data.company?.trim() || null,
+      birthday: parseBirthday(data.birthday),
       tags: tags.length ? JSON.stringify(tags) : null,
       notes: data.notes?.trim() || null,
       ...(await wlasnoscDoZapisu(userId, data.ownerTeamId)),
@@ -101,6 +114,7 @@ export async function updateContact(
     phone?: string | null;
     email?: string | null;
     company?: string | null;
+    birthday?: string | null;
     tags?: string[];
     notes?: string | null;
   },
@@ -119,6 +133,7 @@ export async function updateContact(
   if (patch.phone !== undefined) data.phone = patch.phone?.trim() || null;
   if (patch.email !== undefined) data.email = patch.email?.trim() || null;
   if (patch.company !== undefined) data.company = patch.company?.trim() || null;
+  if (patch.birthday !== undefined) data.birthday = parseBirthday(patch.birthday);
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
   if (patch.tags !== undefined) {
     const tags = patch.tags.map((t) => t.trim()).filter(Boolean);
@@ -133,8 +148,40 @@ export async function updateContact(
 
 export async function deleteContact(id: string): Promise<void> {
   const { userId } = await getUserScope();
-  const existing = await prisma.contact.findUnique({ where: { id }, select: { workspaceId: true } });
+  const existing = await prisma.contact.findUnique({ where: { id } });
   await assertOwnership(existing, userId);
+  // Do kosza przed twardym usunięciem — kontakt to płaski rekord, więc migawka JSON wystarcza.
+  // Dotąd „usuń" było bezpowrotne, choć platforma ma kosz i /trash obiecuje przywracanie.
+  await recordTrash(userId, {
+    module: "contacts",
+    entityId: id,
+    title: `Kontakt: ${existing!.name}`,
+    payload: existing,
+  });
   await prisma.contact.delete({ where: { id } });
   revalidatePath("/contacts");
+  revalidatePath("/trash");
+}
+
+/**
+ * 115 (Z-INT-08): follow-up z kontaktu — „Skontaktuj się: <nazwa>" w Zadaniach,
+ * z telefonem/e-mailem w opisie i odnośnikiem do Kontaktów. Najtańsza namiastka
+ * historii interakcji lekkiego CRM.
+ */
+export async function createTaskFromContact(id: string): Promise<{ id: string }> {
+  const { userId } = await getUserScope();
+  const session = await auth();
+  if (!hasPermission(session, tasksModule.permission)) throw new Error("Brak dostępu do modułu Zadania");
+  const contact = await prisma.contact.findUnique({ where: { id } });
+  await assertOwnership(contact, userId);
+  const c = contact!;
+  const opis = [
+    c.phone ? `Telefon: ${c.phone}` : null,
+    c.email ? `E-mail: ${c.email}` : null,
+    c.company ? `Firma: ${c.company}` : null,
+    "Kontakt: /contacts",
+  ].filter(Boolean).join("\n");
+  const task = await createTask({ title: `Skontaktuj się: ${c.name}`, description: opis });
+  revalidatePath("/tasks");
+  return { id: task.id };
 }

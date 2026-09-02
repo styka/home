@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Boxes, CalendarClock } from "lucide-react";
+import { ShoppingCart, CheckSquare, AlertCircle, ChefHat, BookOpen, Pin, PawPrint, Car, Wallet, GraduationCap, HeartPulse, Boxes, CalendarClock, Flame, Hammer } from "lucide-react";
 import { StatTile } from "@/components/ui/home";
+import type { WeatherTodayInfo } from "../contract";
 
 interface ModuleSnapshotGridProps {
   permissions: string[];
@@ -21,6 +22,11 @@ interface ModuleSnapshotGridProps {
   healthUpcoming: number;
   storageLowStock: number;
   storageExpiring: number;
+  /** 115 (Z-INT-17): nawyki „N/M dziś", braki warsztatowe i bieżąca pogoda domyślnej lokalizacji. */
+  habitsTodayDone: number;
+  habitsTodayTotal: number;
+  workshopLowStock: number;
+  weatherToday: WeatherTodayInfo | null;
 }
 
 function formatCompactMoney(value: number): string {
@@ -49,6 +55,10 @@ export function ModuleSnapshotGrid({
   healthUpcoming,
   storageLowStock,
   storageExpiring,
+  habitsTodayDone,
+  habitsTodayTotal,
+  workshopLowStock,
+  weatherToday,
 }: ModuleSnapshotGridProps) {
   const t = useTranslations("modules.home.ModuleSnapshotGrid");
   const has = (slug: string) => permissions.includes(slug);
@@ -240,6 +250,49 @@ export function ModuleSnapshotGrid({
         />
       );
     }
+  }
+
+  // 115 (Z-INT-17): kafelek nawyków tylko, gdy dziś COKOLWIEK jest zaplanowane — pusty licznik
+  // „0/0" mówiłby jedynie, że moduł istnieje.
+  if (has("module.habits") && habitsTodayTotal > 0) {
+    const komplet = habitsTodayDone >= habitsTodayTotal;
+    tiles.push(
+      <StatTile
+        key="habits"
+        value={`${habitsTodayDone}/${habitsTodayTotal}`}
+        label={t("nawykiDzis")}
+        color={komplet ? "var(--accent-green)" : "var(--accent-purple)"}
+        icon={<Flame size={14} />}
+        href="/habits"
+        emphasized={!komplet}
+      />
+    );
+  }
+
+  if (has("module.warsztaty") && workshopLowStock > 0) {
+    tiles.push(
+      <StatTile
+        key="warsztaty-low"
+        value={workshopLowStock}
+        label={t("warsztatBraki")}
+        color="var(--accent-amber)"
+        icon={<Hammer size={14} />}
+        href="/warsztaty/przeglady"
+        emphasized
+      />
+    );
+  }
+
+  if (has("module.weather") && weatherToday) {
+    tiles.push(
+      <StatTile
+        key="weather"
+        value={`${weatherToday.emoji} ${weatherToday.temp}°`}
+        label={`${weatherToday.opis} · ${weatherToday.label}`}
+        color="var(--accent-blue)"
+        href="/pogoda"
+      />
+    );
   }
 
   if (has("module.portfel") && wallet) {

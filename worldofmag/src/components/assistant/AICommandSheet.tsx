@@ -29,7 +29,8 @@ import type { ConversationLists } from "@/actions/aiConversations";
 import { parseServerVoiceValue, toServerVoiceValue, type ServerVoice } from "@/lib/tts/serverVoices";
 import { ASSISTANT_LEVEL_DESCRIPTIONS, ASSISTANT_LEVEL_LABELS, ASSISTANT_LEVELS, type AssistantLevel, type AssistantPresentation } from "@/types";
 import type { AIAction } from "@/platform/ai/aiAction";
-import { isDestructiveAction } from "@/platform/ai/aiAction";
+import { AI_ACTION_MODULES, isDestructiveAction } from "@/platform/ai/aiAction";
+import { granicePolskie } from "@/lib/ai/granice";
 import type { ActionResult } from "@/lib/ai/executorShared";
 import { ASSISTANT_OPEN_EVENT, type AssistantOpenDetail } from "@/platform/ai/assistantBus";
 import { DEFAULT_ASSISTANT_STARTERS } from "@/lib/ai/assistantStarters";
@@ -111,16 +112,25 @@ type HeaderPanel = "none" | "prefs" | "report" | "history" | "level";
 
 // Wąskie, jednoznaczne frazy głosowe do sterowania kartą akcji (gdy jest aktywna, niepotwierdzona).
 // Wszystko inne = zwykła rozmowa/korekta (idzie do agenta).
-const VOICE_CONFIRM_RE = /^(zatwierdź|zatwierdz|wykonaj|potwierdzam|potwierdź|potwierdz|zrób to|zrob to|tak zrób|tak zrob|dobra rób|dobra rob|wykonaj to|zatwierdzam)\b/i;
-const VOICE_CANCEL_RE = /^(odrzuć|odrzuc|anuluj|nie rób|nie rob|zostaw to|odrzuć to|odrzuc to|skasuj to|nie wykonuj)\b/i;
+// `granicePolskie` zamiast gołego `\b`, które jest ASCII-owe: człony kończące się „ź"/„ć"
+// (zatwierdź, potwierdź, odrzuć, zrób, rób) NIGDY nie pasowały, a rozpoznawanie mowy pl-PL
+// zwraca właśnie formy z diakrytykami — głosowe potwierdzenie szło do płatnego agenta jako
+// zwykła rozmowa zamiast lokalnie zatwierdzić kartę akcji.
+const VOICE_CONFIRM_RE = granicePolskie(
+  "zatwierdź|zatwierdz|wykonaj|potwierdzam|potwierdź|potwierdz|zrób to|zrob to|tak zrób|tak zrob|dobra rób|dobra rob|wykonaj to|zatwierdzam",
+  true
+);
+const VOICE_CANCEL_RE = granicePolskie(
+  "odrzuć|odrzuc|anuluj|nie rób|nie rob|zostaw to|odrzuć to|odrzuc to|skasuj to|nie wykonuj",
+  true
+);
 
 const LIST_SUB_PAGES = ["products", "units", "categories", "icons", "stores"];
 
-// Wszystkie moduły, na których asystent potrafi WYKONYWAĆ akcje (zgodne z agentem + execute).
-const ACTIONABLE_MODULES = [
-  "shopping", "tasks", "notes", "pets", "habits", "portfel", "kitchen", "flota",
-  "magazynowanie", "health", "languages", "news", "weather",
-] as const;
+// Wszystkie moduły, na których asystent potrafi WYKONYWAĆ akcje — JEDNO źródło z platformą
+// i trasą agenta. Ręczna kopia miała 13 pozycji przy 18 egzekutorach: akcje contacts/reports/
+// rosliny/warsztaty/youtube nigdy nie trafiały do promptu, gdy polecenie szło z tej powłoki.
+const ACTIONABLE_MODULES = AI_ACTION_MODULES;
 
 function ctx(primary: string): string[] {
   return [primary, ...ACTIONABLE_MODULES.filter((m) => m !== primary)];
@@ -156,6 +166,11 @@ function deriveContextFromPath(pathname: string): RouteContext {
   if (pathname.startsWith("/languages")) return { context: ctx("languages"), placeholder: 'Np. "Dodaj fiszkę dog = pies"', routeHint: "Moduł Języki" };
   if (pathname.startsWith("/wiadomosci")) return { context: ctx("news"), placeholder: 'Np. "Dodaj temat: sztuczna inteligencja"', routeHint: "Moduł Wiadomości" };
   if (pathname.startsWith("/pogoda")) return { context: ctx("weather"), placeholder: 'Np. "Dodaj lokalizację Kraków"', routeHint: "Moduł Pogoda" };
+  if (pathname.startsWith("/warsztaty")) return { context: ctx("warsztaty"), placeholder: 'Np. "Dodaj wkrętarkę do warsztatu"', routeHint: "Moduł Warsztaty" };
+  if (pathname.startsWith("/contacts")) return { context: ctx("contacts"), placeholder: 'Np. "Dodaj kontakt Jan Kowalski 600 100 200"', routeHint: "Moduł Kontakty" };
+  if (pathname.startsWith("/rosliny")) return { context: ctx("rosliny"), placeholder: 'Np. "Podlałem monsterę" lub "Co dziś podlać?"', routeHint: "Moduł Rośliny" };
+  if (pathname.startsWith("/reports")) return { context: ctx("reports"), placeholder: 'Np. "Znajdź raport o..."', routeHint: "Moduł Raporty" };
+  if (pathname.startsWith("/youtube")) return { context: ctx("youtube"), placeholder: "Zapytaj o zapisane filmy…", routeHint: "Moduł YouTube" };
   return { context: ctx("shopping"), placeholder: "Zapytaj o cokolwiek lub wydaj polecenie…", routeHint: "Strona główna aplikacji" };
 }
 

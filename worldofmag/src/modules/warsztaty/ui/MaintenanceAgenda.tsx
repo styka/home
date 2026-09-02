@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CalendarClock, AlertTriangle, PackageOpen } from "lucide-react";
 import type { MaintenanceOverview } from "../actions/warsztat";
+import { LowStockDoZakupow } from "./LowStockDoZakupow";
 
 export function MaintenanceAgenda({ overview }: { overview: MaintenanceOverview }) {
   const t = useTranslations("modules.warsztaty.MaintenanceAgenda");
@@ -68,6 +69,8 @@ export function MaintenanceAgenda({ overview }: { overview: MaintenanceOverview 
             ))}
           </div>
         )}
+        {/* 115 (Z-INT-04): braki → lista zakupów; pasek pokazuje się tylko przy brakach i listach. */}
+        {lowStock.length > 0 && <LowStockDoZakupow />}
       </section>
     </div>
   );

@@ -11,6 +11,7 @@ import { ENV_PARAMS, classifyValue, rangeLabel, type Range } from "../lib/petEnv
 import type { PetEnclosure, PetEnvironmentReading } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 
 async function assertEnclosureAccess(enclosureId: string, userId: string): Promise<void> {
   const enc = await prisma.petEnclosure.findUnique({
@@ -189,7 +190,7 @@ async function alertOutOfRange(
   const body = offenders.map((o) => o.text).join(" · ");
 
   // dedupeKey per zbiornik + dzień — jedno przypomnienie dziennie, body z aktualnymi przekroczeniami.
-  const day = new Date().toISOString().slice(0, 10);
+  const day = dataWStrefie(userTimeZone()); // doba użytkownika — okno „raz dziennie" nie może żyć w UTC
   await notifyUser({
     userId,
     module: "pets",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Send, MessageSquare, Tag, Check, X, Wallet, AlertTriangle } from "lucide-react";
 import {
   getRequestThread,
@@ -29,9 +29,12 @@ export function RequestThread({ requestId }: { requestId: string }) {
   const [pending, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const reload = () => getRequestThread(requestId).then(setThread).catch((e) => setError(e instanceof Error ? e.message : "Błąd"));
+  const reload = useCallback(
+    () => getRequestThread(requestId).then(setThread).catch((e) => setError(e instanceof Error ? e.message : "Błąd")),
+    [requestId]
+  );
 
-  useEffect(() => { void reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [requestId]);
+  useEffect(() => { void reload(); }, [reload]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ block: "nearest" }); }, [thread?.messages.length]);
 
   if (error) return <div style={{ fontSize: 12, color: "var(--accent-red)", paddingTop: 8 }}>{error}</div>;
@@ -336,8 +339,8 @@ function DisputeSection({ requestId }: { requestId: string }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function reload() { setDisputes(await getRequestDisputes(requestId).catch(() => [])); }
-  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [requestId]);
+  const reload = useCallback(async () => { setDisputes(await getRequestDisputes(requestId).catch(() => [])); }, [requestId]);
+  useEffect(() => { void reload(); }, [reload]);
 
   const hasOpen = (disputes ?? []).some((d) => d.status === "OPEN");
 

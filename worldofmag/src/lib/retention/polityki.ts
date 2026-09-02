@@ -3,6 +3,7 @@ import type { PolitykaRetencji } from "@/platform/retention";
 import { RETENCJA_WIADOMOSCI } from "@/modules/news/retention";
 import { RETENCJA_YOUTUBE } from "@/modules/youtube/retention";
 import { RETENCJA_ZAKUPOW } from "@/modules/shopping/retention";
+import { RETENCJA_ROSLIN } from "@/modules/rosliny/retention";
 
 /**
  * 083 (zadanie 30, Faza 5) — KORZEŃ KOMPOZYCJI POLITYK RETENCJI.
@@ -99,4 +100,5 @@ export const POLITYKI_RETENCJI: PolitykaRetencji[] = [
   ...RETENCJA_WIADOMOSCI,
   ...RETENCJA_YOUTUBE,
   ...RETENCJA_ZAKUPOW,
+  ...RETENCJA_ROSLIN,
 ];

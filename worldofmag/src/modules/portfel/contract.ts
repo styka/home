@@ -55,3 +55,4 @@ export { getMonthlyReport } from "./actions/portfelReports";
 
 /** Księgowanie kosztu z innego modułu — patrz uwaga w nagłówku. */
 export { bookAutoExpense, removeAutoExpense } from "./lib/autoExpense";
+export type { WynikKsiegowania } from "./lib/autoExpense";

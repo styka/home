@@ -261,6 +261,7 @@ export async function updateTask(
     startDate: Date | null;
     estimatedMins: number | null;
     projectId: string | null;
+    areaId: string | null; // 117: obszar w drzewie projektu (null = bez obszaru)
     assigneeId: string | null;
     recurring: RecurringRule | null;
     order: number;
@@ -276,6 +277,26 @@ export async function updateTask(
   await assertTaskAccess(existing, user.id);
   // Przeniesienie zadania do innego projektu — wymaga dostępu także do celu.
   if (patch.projectId) await assertProjectAccess(patch.projectId, user.id);
+
+  // 117: obszar należy do projektu — przypisywany musi istnieć w projekcie DOCELOWYM zadania,
+  // a przeniesienie do innego projektu bez jawnego obszaru odpina stary (obszar nie podróżuje
+  // między projektami).
+  const targetProjectId = patch.projectId !== undefined ? patch.projectId : existing.projectId;
+  if (patch.areaId) {
+    const area = await prisma.taskArea.findUnique({ where: { id: patch.areaId }, select: { projectId: true } });
+    if (!area || !targetProjectId || area.projectId !== targetProjectId) {
+      throw new Error("Obszar nie należy do projektu tego zadania");
+    }
+  } else if (
+    patch.areaId === undefined &&
+    patch.projectId !== undefined &&
+    patch.projectId !== existing.projectId &&
+    existing.areaId
+  ) {
+    // Recenzja 117 (ust. 1): także przenosiny DO BRAKU projektu (`projectId: null`) odpinają
+    // obszar — inaczej zadanie bez projektu nosiłoby wskazanie na obszar cudzego drzewa.
+    patch = { ...patch, areaId: null };
+  }
 
   // Przeniesienie do innego projektu: własne statusy są per-lista, więc status z klucza
   // custom, którego docelowy projekt nie zna, „osierociałby" (brak etykiety/zakładki).
@@ -401,6 +422,7 @@ export async function deleteTask(id: string): Promise<void> {
       priority: task.priority, dueDate: task.dueDate, startDate: task.startDate,
       completedAt: task.completedAt, estimatedMins: task.estimatedMins, recurring: task.recurring,
       category: task.category, order: task.order, projectId: task.projectId,
+      areaId: task.areaId,
       parentTaskId: task.parentTaskId, createdById: task.createdById, assigneeId: task.assigneeId,
       createdAt: task.createdAt, tagIds: task.tags.map((t) => t.tagId),
     },
@@ -547,6 +569,7 @@ export async function bulkDeleteTasks(taskIds: string[]): Promise<{ deleted: num
         priority: task.priority, dueDate: task.dueDate, startDate: task.startDate,
         completedAt: task.completedAt, estimatedMins: task.estimatedMins, recurring: task.recurring,
         category: task.category, order: task.order, projectId: task.projectId,
+        areaId: task.areaId,
         parentTaskId: task.parentTaskId, createdById: task.createdById, assigneeId: task.assigneeId,
         createdAt: task.createdAt, tagIds: task.tags.map((t) => t.tagId),
       },

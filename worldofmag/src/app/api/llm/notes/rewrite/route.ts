@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 import { usageField } from "@/platform/ai/costVisibility";
 
 const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
@@ -11,6 +12,12 @@ const PROMPTS: Record<string, string | ((instruction: string) => string)> = {
 };
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego chatComplete nie
+  // wiązał kosztu z użytkownikiem, więc licznik zużycia i miesięczny limit planu pomijały
+  // te wywołania (dawały się obejść „tańszą" trasą pomocniczą).
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session.user.id;
   const { content, mode, instruction } = await req.json() as {
     content: string;
     mode: "correct" | "rewrite" | "to_markdown" | "voice_edit";
@@ -26,6 +33,7 @@ export async function POST(req: NextRequest) {
 
   const result = await chatComplete({
     op: "generation",
+    userId,
     messages: [
       { role: "system", content: prompt },
       { role: "user", content: content.slice(0, 4000) },

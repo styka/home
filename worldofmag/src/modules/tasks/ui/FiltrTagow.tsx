@@ -52,8 +52,10 @@ export function FiltrTagow({
   const etykieta = bezFiltru ? t("wszystkie") : t("zIlu", { wybrane: wybrane.length, wszystkie: wszystkie.length });
   const wybraneTagi = wszystkie.filter((x) => wybrane.includes(x.id));
 
+  // 118 (zgł. 1): bez własnego wypełnienia wiersza — komponent stoi teraz WEWNĄTRZ wspólnego
+  // rzędu zakładek statusu (`TaskFilters`), nie w osobnym wierszu; odstępy nadaje rodzic.
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5">
+    <div className="flex min-w-0 items-center gap-1.5 py-1">
       <div ref={kotwicaRef} className="shrink-0">
         <button
           type="button"

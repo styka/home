@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatComplete } from "@/platform/llm/chat";
+import { auth } from "@/platform/auth/session";
 import { usageField } from "@/platform/ai/costVisibility";
 
 export async function POST(req: NextRequest) {
+  // Sesję wymusza już middleware; auth() jest tu po `userId` — bez niego chatComplete nie
+  // wiązał kosztu z użytkownikiem, więc licznik zużycia i miesięczny limit planu pomijały
+  // te wywołania (dawały się obejść „tańszą" trasą pomocniczą).
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session.user.id;
   const { query, tasks } = await req.json() as {
     query: string;
     tasks: Array<{ id: string; title: string; description?: string | null; tags?: string[]; status?: string; priority?: string }>;
@@ -23,6 +30,7 @@ Zwróć TYLKO JSON.`;
 
   const result = await chatComplete({
     op: "reasoning",
+    userId,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },

@@ -6,41 +6,37 @@
     "zakres": "Brak decyzji per-rekord: widoczność wynika wyłącznie z zakresu list, ujednoliconego w 057/058."
   },
   "moduly": {
-    "tasks": {
-      "rodzaj": "deklaracja",
-      "powod": "052, pilot: projekt i zadanie, dziedziczenie, członkostwa"
-    },
-    "pets": {
-      "rodzaj": "deklaracja",
-      "powod": "060: własność zespołowa + PetShare (VIEWER/EDITOR)"
-    },
-    "shopping": {
-      "rodzaj": "deklaracja",
-      "powod": "064: lista zakupów — właściciel albo członek zespołu"
-    },
-    "kitchen": {
-      "rodzaj": "deklaracja",
-      "powod": "064: przepis (z publicznością do odczytu) i książka kucharska"
-    },
-    "notes": {
-      "rodzaj": "deklaracja",
-      "powod": "095: notatka — właściciel albo członek zespołu, plus nadania. Deklaracja doszła razem z udostępnianiem, dokładnie tak, jak zapowiadał poprzedni wpis („zakres”)."
-    },
-    "health": {
+    "calendar": {
       "rodzaj": "zakres",
-      "powod": "Dane medyczne: własność osobista lub zespołowa, bez udostępnień per-rekord"
+      "powod": "Agregat CZYTAJĄCY cudze moduły — nie ma własnych zasobów, więc nie ma czego deklarować"
     },
-    "habits": {
+    "contacts": {
       "rodzaj": "zakres",
-      "powod": "Nawyk widoczny przez zakres; brak udostępniania pojedynczego nawyku"
+      "powod": "Kontakty przez `ownedByWhere`"
+    },
+    "czat": {
+      "rodzaj": "zakres",
+      "powod": "107: dostęp do rozmowy wynika z UCZESTNICTWA — lista pokazuje wyłącznie rozmowy, w których jestem uczestnikiem, a poza tym nie ma decyzji per-rekord. Nie ma tu ról udostępniania (viewer/editor/manager): w rozmowie albo się jest, albo nie. Deklaracja `sharing.ts` odwzorowywałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
     },
     "flota": {
       "rodzaj": "zakres",
       "powod": "Pojazd przez zakres własności; brak udostępnień per-pojazd"
     },
-    "portfel": {
+    "habits": {
       "rodzaj": "zakres",
-      "powod": "Element portfela i budżet przez zakres; finanse nie są dziś udostępniane"
+      "powod": "Nawyk widoczny przez zakres; brak udostępniania pojedynczego nawyku"
+    },
+    "health": {
+      "rodzaj": "zakres",
+      "powod": "Dane medyczne: własność osobista lub zespołowa, bez udostępnień per-rekord"
+    },
+    "home": {
+      "rodzaj": "zakres",
+      "powod": "Pulpit składa migawkę z wkładów innych modułów; własnych zasobów brak"
+    },
+    "kitchen": {
+      "rodzaj": "deklaracja",
+      "powod": "064: przepis (z publicznością do odczytu) i książka kucharska"
     },
     "languages": {
       "rodzaj": "zakres",
@@ -50,33 +46,21 @@
       "rodzaj": "zakres",
       "powod": "`ownershipOr` — zakres własności, bez decyzji per-rekord"
     },
-    "warsztaty": {
-      "rodzaj": "zakres",
-      "powod": "Jak magazynowanie — wspólny `ownershipOr`"
-    },
-    "contacts": {
-      "rodzaj": "zakres",
-      "powod": "Kontakty przez `ownedByWhere`"
-    },
-    "calendar": {
-      "rodzaj": "zakres",
-      "powod": "Agregat CZYTAJĄCY cudze moduły — nie ma własnych zasobów, więc nie ma czego deklarować"
-    },
-    "home": {
-      "rodzaj": "zakres",
-      "powod": "Pulpit składa migawkę z wkładów innych modułów; własnych zasobów brak"
-    },
-    "weather": {
-      "rodzaj": "wlasciciel",
-      "powod": "`l.ownerId !== user.id` — lokalizacje i obserwatory są ściśle osobiste"
-    },
     "news": {
       "rodzaj": "wlasciciel",
       "powod": "`t.ownerId !== userId` — tematy i źródła ściśle osobiste"
     },
-    "truck": {
-      "rodzaj": "wlasciciel",
-      "powod": "Profil pojazdu ciężarowego — jeden użytkownik"
+    "notes": {
+      "rodzaj": "deklaracja",
+      "powod": "095: notatka — właściciel albo członek zespołu, plus nadania. Deklaracja doszła razem z udostępnianiem, dokładnie tak, jak zapowiadał poprzedni wpis („zakres”)."
+    },
+    "pets": {
+      "rodzaj": "deklaracja",
+      "powod": "060: własność zespołowa + PetShare (VIEWER/EDITOR)"
+    },
+    "portfel": {
+      "rodzaj": "zakres",
+      "powod": "Element portfela i budżet przez zakres; finanse nie są dziś udostępniane"
     },
     "qa": {
       "rodzaj": "wlasciciel",
@@ -86,17 +70,37 @@
       "rodzaj": "wlasciciel",
       "powod": "Raport systemowy albo osobisty; brak udostępniania per-raport"
     },
+    "rosliny": {
+      "rodzaj": "deklaracja",
+      "powod": "113: dwa typy zasobów. Przestrzeń roślinna jest tym, co użytkownik realnie udostępnia („mój ogród widzi żona\", „opiekun podlewa kwiaty przez tydzień\") — i to jest jedyna treść z poziomu „społeczność\", jaką w Omnii da się zrealizować, bo nie ma tu trybu publicznego. Roślina jest osobnym typem WYŁĄCZNIE po to, żeby mieć rodzica: dzięki `parent` dziedziczenie wyprowadza platforma. Bez tego guard rośliny sięgałby sam do przestrzeni, czyli moduł pisałby własną regułę dziedziczenia — czego C-17 zakazuje wprost."
+    },
     "services": {
       "rodzaj": "wlasciciel",
       "powod": "Marketplace ma WŁASNY model widoczności (ogłoszenie publiczne, zapytanie między stronami). Rozdz. 8.10 mówi wprost, że `ServiceStaff` ZOSTAJE, bo to rola w firmie, a nie dostęp do zasobu — wciągnięcie tego w `ResourceGrant` pomyliłoby dwa różne pojęcia."
     },
+    "shopping": {
+      "rodzaj": "deklaracja",
+      "powod": "064: lista zakupów — właściciel albo członek zespołu"
+    },
+    "tasks": {
+      "rodzaj": "deklaracja",
+      "powod": "052, pilot: projekt i zadanie, dziedziczenie, członkostwa"
+    },
+    "truck": {
+      "rodzaj": "wlasciciel",
+      "powod": "Profil pojazdu ciężarowego — jeden użytkownik"
+    },
+    "warsztaty": {
+      "rodzaj": "zakres",
+      "powod": "Jak magazynowanie — wspólny `ownershipOr`"
+    },
+    "weather": {
+      "rodzaj": "wlasciciel",
+      "powod": "`l.ownerId !== user.id` — lokalizacje i obserwatory są ściśle osobiste"
+    },
     "youtube": {
       "rodzaj": "wlasciciel",
       "powod": "102: kanały, filmy i transkrypcje są ściśle osobiste (moduł nie ma wariantu zespołowego). Dostęp to wyłącznie „czy to moja przestrzeń\" — deklaracja wyrażałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
-    },
-    "czat": {
-      "rodzaj": "zakres",
-      "powod": "107: dostęp do rozmowy wynika z UCZESTNICTWA — lista pokazuje wyłącznie rozmowy, w których jestem uczestnikiem, a poza tym nie ma decyzji per-rekord. Nie ma tu ról udostępniania (viewer/editor/manager): w rozmowie albo się jest, albo nie. Deklaracja `sharing.ts` odwzorowywałaby domyślne zachowanie platformy, czyli byłaby plikiem bez konsumenta (C-35)."
     }
   }
 }

@@ -2,14 +2,14 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
 import { TimelineView } from "./TimelineView";
 import { TaskDetail } from "./TaskDetail";
 import { TaskStatusConfigEditor } from "./TaskStatusConfigEditor";
-import { QuickAddTask, type QuickAddTaskHandle } from "./QuickAddTask";
+import { ModalDodaniaZadania } from "./ModalDodaniaZadania";
 import { ProjectActionsMenu } from "./ProjectActionsMenu";
 import { TaskListClipboardButton } from "./TaskListClipboardButton";
 import { useTrybAdmina } from "@/platform/admin/trybAdmina";
@@ -20,6 +20,9 @@ import { ProjectScopeFilter } from "./ProjectScopeFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useIsNarrowScreen } from "@/hooks/useVisualViewport";
 import { odczytajUklad, zapiszUklad, ograniczSzerokosc, UKLAD_DOMYSLNY } from "../lib/ukladSzczegolow";
+import { odczytajWariantObszarow, zapiszWariantObszarow, WARIANT_DOMYSLNY, type WariantObszarow } from "../lib/wariantObszarow";
+import { ObszaryWidok } from "./ObszaryWidok";
+import type { ObszarDTO } from "../actions/obszary";
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "../actions/tasks";
@@ -45,6 +48,8 @@ interface TasksPageProps {
   scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
   /** Id zapisanej grupy projektów (gdy widok otwarty z grupy) — do edycji. */
   multiGroupId?: string;
+  /** 117: obszary bieżącego projektu (tylko widok projektu; widoki wirtualne dostają pustą). */
+  areas?: ObszarDTO[];
   /**
    * 043: parametry adresu przekazane z serwera (`page.tsx` → `searchParams`). Stan widoku czytamy
    * stąd, a NIE z `window` w pierwszym renderze — inaczej serwer wyrenderowałby widok domyślny,
@@ -53,7 +58,7 @@ interface TasksPageProps {
   viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, viewParams = {} }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, areas = [], viewParams = {} }: TasksPageProps) {
   // 085 (AC-8): administracyjny eksport listy do schowka jest DODATKIEM dla administratora, więc
   // znika razem z resztą, gdy tryb administratora jest wyłączony.
   const { wlaczony: trybAdmina } = useTrybAdmina();
@@ -85,7 +90,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     // i to była cała przyczyna pustego ekranu po zmianie statusu zadania.
     projekty: idList(),
     groupBy: oneOf(["default", "priority"] as const, "default"),
-    layout: oneOf(["list", "kanban", "timeline"] as const, "list"),
+    layout: oneOf(["list", "kanban", "timeline", "obszary"] as const, "list"),
+    // 117 (AC-4): wariant przeglądania „wg obszarów" w ADRESIE (widok ulubiony wraca taki, jaki
+    // był); ostatnio użyty wariant z localStorage wchodzi tylko, gdy adres go nie niesie.
+    obszary: oneOf(["sekcje", "drill", "panel"] as const, WARIANT_DOMYSLNY),
   }), [statusConfig]);
   const [view, setView] = useViewState(viewSpec, viewParams);
 
@@ -147,8 +155,23 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Dotyczy widoków „Nadchodzące/Zaległe/Wszystkie" (Dziś i projekty są zawsze po priorytetach).
   const groupBy = view.groupBy;
   const setGroupBy = useCallback((value: "default" | "priority") => setView({ groupBy: value }), [setView]);
-  const layout = view.layout;
-  const setLayout = useCallback((value: "list" | "kanban" | "timeline") => setView({ layout: value }), [setView]);
+  const setLayout = useCallback((value: "list" | "kanban" | "timeline" | "obszary") => setView({ layout: value }), [setView]);
+  // 117: widok „wg obszarów" istnieje tylko w realnym projekcie (obszary należą do projektu);
+  // adres z `layout=obszary` w widoku wirtualnym degraduje NIESZKODLIWIE do listy (zasada z 080).
+  const obszaryDostepne = viewMode === "project";
+  const layout = view.layout === "obszary" && !obszaryDostepne ? "list" : view.layout;
+  const wariantObszarow = view.obszary;
+  const setWariantObszarow = useCallback(
+    (w: WariantObszarow) => { zapiszWariantObszarow(w); setView({ obszary: w }); },
+    [setView],
+  );
+  // Ostatnio użyty wariant jako domyślny przy wejściu bez parametru; adres zawsze wygrywa (AC-4).
+  useEffect(() => {
+    if (viewParams.obszary !== undefined) return;
+    const zapamietany = odczytajWariantObszarow();
+    if (zapamietany !== WARIANT_DOMYSLNY) setView({ obszary: zapamietany });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazowo na wejściu do widoku
+  }, []);
   const canToggleGrouping = viewMode === "upcoming" || viewMode === "overdue" || viewMode === "all" || viewMode === "multi";
   const [, startTransition] = useTransition();
   // Bulkowa (zbiorcza) edycja — tryb zaznaczania + zaznaczone id + kotwica zakresu (Shift).
@@ -157,7 +180,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [bulkPending, startBulkTransition] = useTransition();
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
-  const quickAddRef = useRef<QuickAddTaskHandle>(null);
+  // 118 (zgł. 2): dodawanie zadania w modalu — stały formularz nad listą zabierał jej przestrzeń.
+  const [dodawanie, setDodawanie] = useState(false);
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
   // Pasek akcji na wąskich ekranach przewija się poziomo. Bez wizualnej wskazówki użytkownik nie wie,
@@ -194,13 +218,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // tylko `tasks` z pierwszego renderu.
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
-
-  useEffect(() => {
-    if (typeof Notification !== "undefined") {
-      setNotificationsEnabled(Notification.permission === "granted");
-    }
-    checkDueNotifications(tasks);
-  }, [tasks]);
 
   // Przelicz wskazówkę przewijania paska akcji na mount, przy resize i gdy zmienia się zestaw
   // widocznych ikon (widok/układ/uprawnienia zmieniają szerokość rzędu).
@@ -270,7 +287,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // wersja czekała na nią bez limitu, więc przy niezdrowym SW powiadomienia na komputerze
   // przestawały działać (brak fallbacku). Dlatego ścigamy `ready` z krótkim timeoutem i przy
   // braku aktywnego SW spadamy na konstruktor (desktop), a gdy i to się nie uda — milczymy.
-  async function showTaskNotification(title: string, options: NotificationOptions) {
+  const showTaskNotification = useCallback(async (title: string, options: NotificationOptions) => {
     if ("serviceWorker" in navigator) {
       try {
         const reg = await Promise.race([
@@ -290,9 +307,9 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
     } catch {
       /* środowisko bez wsparcia powiadomień */
     }
-  }
+  }, []);
 
-  function checkDueNotifications(taskList: Task[]) {
+  const checkDueNotifications = useCallback((taskList: Task[]) => {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
     const now = new Date();
     const soon = new Date(now.getTime() + 30 * 60 * 1000);
@@ -316,7 +333,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         tag: key, // ten sam tag = system nie zdubluje powiadomienia
       });
     });
-  }
+  }, [showTaskNotification]);
+
+  // Poniżej definicji `checkDueNotifications` (const nie hoistuje się jak dawna deklaracja funkcji).
+  useEffect(() => {
+    if (typeof Notification !== "undefined") {
+      setNotificationsEnabled(Notification.permission === "granted");
+    }
+    checkDueNotifications(tasks);
+  }, [tasks, checkDueNotifications]);
 
   async function requestNotifications() {
     if (typeof Notification === "undefined") return;
@@ -403,17 +428,17 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
    * każde nowe wywołanie znowu wybierze przypadkiem oba zachowania.
    */
   /** Po akcji masowej: zaznaczenie znika (te zadania są już zmienione), TRYB ZOSTAJE. */
-  function wyczyscZaznaczenie(msg: string | null) {
+  const wyczyscZaznaczenie = useCallback((msg: string | null) => {
     setSelectedIds(new Set());
     setLastSelectedId(null);
     setBulkMessage(msg);
     if (msg) setTimeout(() => setBulkMessage(null), 4000);
-  }
+  }, []);
   /** Jawne wyjście z trybu: przycisk w pasku akcji, `Esc`, opuszczenie widoku listy. */
-  function zakonczZaznaczanie() {
+  const zakonczZaznaczanie = useCallback(() => {
     setSelectionMode(false);
     wyczyscZaznaczenie(null);
-  }
+  }, [wyczyscZaznaczenie]);
   function toggleSelectOne(id: string) {
     setSelectionMode(true);
     setSelectedIds((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -451,7 +476,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // Zaznaczanie działa tylko w widoku listy — przy zmianie układu wyczyść stan.
   useEffect(() => {
     if (layout !== "list") { zakonczZaznaczanie(); }
-  }, [layout]);
+  }, [layout, zakonczZaznaczanie]);
 
   // Kanban: kolumny = wszystkie włączone statusy (także terminalne, by kolumna „Zrobione” się
   // wypełniała) — nie zawężamy po zakładce statusu (w Kanbanie ukryta), filtrujemy tylko po tagach
@@ -473,26 +498,26 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
   const filteredForNav = displayedTasks;
 
-  function navigateDown() {
+  const navigateDown = useCallback(() => {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const next = filteredForNav[idx + 1] ?? filteredForNav[0];
     setFocusedTaskId(next.id);
     rowRefs.current.get(next.id)?.scrollIntoView({ block: "nearest" });
-  }
+  }, [filteredForNav, focusedTaskId]);
 
-  async function navigateUp() {
+  const navigateUp = useCallback(() => {
     if (filteredForNav.length === 0) return;
     const idx = filteredForNav.findIndex((t) => t.id === focusedTaskId);
     const prev = idx <= 0 ? filteredForNav[filteredForNav.length - 1] : filteredForNav[idx - 1];
     setFocusedTaskId(prev.id);
     rowRefs.current.get(prev.id)?.scrollIntoView({ block: "nearest" });
-  }
+  }, [filteredForNav, focusedTaskId]);
 
   const handlers = useMemo(
     () => ({
       onQuickAdd: () => {
-        setTimeout(() => quickAddRef.current?.focus(), 10);
+        setDodawanie(true);
       },
       onNavigateDown: navigateDown,
       onNavigateUp: navigateUp,
@@ -536,7 +561,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         setFocusedTaskId(null);
       },
     }),
-    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds, uklad.pelny, zapiszIUstawUklad]
+    [focusedTaskId, filteredForNav, openTaskId, isSearchOpen, aiSearchResults, statusFilters, selectionMode, selectedIds, uklad.pelny, zapiszIUstawUklad, confirmDialog, navigateDown, navigateUp, setActiveFilter, t, zakonczZaznaczanie]
   );
 
   useKeyboardShortcuts(handlers);
@@ -617,6 +642,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             role="toolbar"
             aria-label={t("pasekAkcjiListyPrzewin")}
           >
+          {/* 118 (zgł. 2): dodawanie zadania — pierwsza pozycja paska (najczęstsza akcja).
+              Etykieta obok ikony i `whitespace-nowrap`: przycisk nigdy nie łamie się pod ikonę. */}
+          <button
+            onClick={() => setDodawanie(true)}
+            className="flex items-center gap-1 rounded px-2 py-1.5 text-xs font-medium whitespace-nowrap focus:outline-none"
+            style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+            title={t("dodajZadanieSkrot")}
+            aria-label={t("dodajZadanieSkrot")}
+          >
+            <Plus size={15} />
+            <span className="hidden sm:inline">{t("dodajZadanie")}</span>
+          </button>
+
           {/* 080 (Z3): filtr projektów tylko w widokach ZBIORCZYCH. W widoku jednego projektu
               zawężanie do projektów nie ma sensu — pokazywałby jedną pozycję, zawsze zaznaczoną. */}
           {isVirtualView && allProjects.length > 1 && (
@@ -657,6 +695,8 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               { key: "list", label: "Lista", Icon: ListIcon },
               { key: "kanban", label: "Kanban", Icon: Columns3 },
               { key: "timeline", label: "Timeline", Icon: CalendarRange },
+              // 117: przeglądanie projektu po obszarach — tylko realny projekt ma drzewo.
+              ...(obszaryDostepne ? ([{ key: "obszary", label: "Obszary", Icon: FolderTree }] as const) : []),
             ] as const).map(({ key, label, Icon }) => (
               <button
                 key={key}
@@ -894,11 +934,15 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </div>
       )}
 
-      <QuickAddTask
-        ref={quickAddRef}
-        projectId={addProjectId}
-        onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
-      />
+      {/* 118 (zgł. 2): formularz dodawania tylko na żądanie — przycisk w pasku akcji albo `a`/`n`.
+          Po utworzeniu ta sama ścieżka co przy starym formularzu: panel szczegółów nowego zadania. */}
+      {dodawanie && (
+        <ModalDodaniaZadania
+          projectId={addProjectId}
+          onClose={() => setDodawanie(false)}
+          onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
+        />
+      )}
 
       <TaskFilters
         active={activeFilter}
@@ -934,6 +978,20 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           <KanbanBoard tasks={kanbanTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
         ) : layout === "timeline" ? (
           <TimelineView tasks={timelineTasks} statusConfig={statusConfig} onOpen={(id) => setOpenTaskId(id)} />
+        ) : layout === "obszary" ? (
+          /* 117: te same zadania co lista (zakładka statusu + tagi + szukaj) — jeden zbiór,
+             trzy prezentacje; różni się wyłącznie render (AC-3). */
+          <ObszaryWidok
+            obszary={areas}
+            zadania={visibleTasks}
+            projectId={projectId}
+            statusConfig={statusConfig}
+            wariant={wariantObszarow}
+            onWariant={setWariantObszarow}
+            focusedTaskId={focusedTaskId}
+            onFocus={setFocusedTaskId}
+            onOpen={(id) => setOpenTaskId(id)}
+          />
         ) : (
           <TaskList
             tasks={displayedTasks}
@@ -1009,6 +1067,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
                 task={openTask}
                 allTags={allTags}
                 allProjects={allProjects}
+                obszary={areas}
                 statusConfig={statusConfig}
                 szeroki={uklad.pelny}
                 onPrzelaczSzeroki={() => zapiszIUstawUklad({ pelny: !uklad.pelny })}
@@ -1036,6 +1095,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               task={openTask}
               allTags={allTags}
               allProjects={allProjects}
+              obszary={areas}
               statusConfig={statusConfig}
               onClose={() => setOpenTaskId(null)}
               onDelete={() => { setOpenTaskId(null); setFocusedTaskId(null); }}

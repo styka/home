@@ -19,6 +19,8 @@ export function IconDisplay({ content, size = 24 }: IconDisplayProps) {
     // dlatego nie trafia do `<img>`, gdzie nie przechodzi przez odkażanie.
     if (!bezpiecznyObrazekData(content)) return null;
     return (
+      // Treść to data-URI wybrany przez użytkownika — `next/image` nie ma tu czego optymalizować.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={content}
         alt=""

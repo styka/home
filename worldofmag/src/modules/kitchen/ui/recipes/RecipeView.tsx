@@ -52,15 +52,16 @@ export function RecipeView({ recipe, lists, canEdit }: RecipeViewProps) {
 
   const totalMins = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
 
+  const ingredients = recipe.ingredients;
   const grouped = useMemo(() => {
-    const groups = new Map<string, typeof recipe.ingredients>();
-    for (const ing of recipe.ingredients) {
+    const groups = new Map<string, typeof ingredients>();
+    for (const ing of ingredients) {
       const key = ing.groupName ?? "";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(ing);
     }
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [recipe.ingredients]);
+  }, [ingredients]);
 
   async function handleDelete() {
     if (!(await confirmDialog({ title: "Usunąć przepis? Tej operacji nie da się cofnąć.", destructive: true }))) return;

@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, Pencil, Check, X, Wrench, Lightbulb, ClipboardList,
-  AlertTriangle, CalendarClock, User, Users,
+  AlertTriangle, CalendarClock, User, Users, Wallet,
 } from "lucide-react";
 import {
   addWorkshopItem, updateWorkshopItem, deleteWorkshopItem, addSuggestedItems,
-  deleteWorkshop, addWorkshopProject, updateWorkshopProject, deleteWorkshopProject,
+  deleteWorkshop, addWorkshopProject, updateWorkshopProject, deleteWorkshopProject, bookProjectCost,
   type WorkshopDetail as WorkshopDetailType, type WarsztatMode,
 } from "../actions/warsztat";
 import {
@@ -126,15 +126,16 @@ function EquipmentTab({ workshop, pro }: { workshop: WorkshopDetailType; pro: bo
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
+  const items = workshop.items;
   const grouped = useMemo(() => {
-    const map = new Map<EquipmentKind, typeof workshop.items>();
-    for (const it of workshop.items) {
+    const map = new Map<EquipmentKind, typeof items>();
+    for (const it of items) {
       const k = (KIND_ORDER.includes(it.kind as EquipmentKind) ? it.kind : "tool") as EquipmentKind;
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(it);
     }
     return map;
-  }, [workshop.items]);
+  }, [items]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -447,13 +448,31 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
+  const [cost, setCost] = useState("");
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [komunikat, setKomunikat] = useState<{ tekst: string; blad: boolean } | null>(null);
 
   function add() {
     if (!name.trim()) return;
     startTransition(async () => {
-      await addWorkshopProject(workshop.id, { name, assignedTo: assignedTo || null });
+      const kwota = parseFloat(cost.replace(",", "."));
+      await addWorkshopProject(workshop.id, { name, assignedTo: assignedTo || null, cost: Number.isFinite(kwota) ? kwota : null });
       setName("");
       setAssignedTo("");
+      setCost("");
+    });
+  }
+
+  // 115 (Z-INT-05): jawne księgowanie kosztu projektu w Portfelu.
+  function ksieguj(id: string) {
+    startTransition(async () => {
+      try {
+        const w = await bookProjectCost(id);
+        setKomunikat(w.zaksiegowano ? { tekst: t("zaksiegowanoWPortfelu"), blad: false } : { tekst: t("brakKontaAuto"), blad: true });
+      } catch (e) {
+        setKomunikat({ tekst: e instanceof Error ? e.message : t("bladOperacji"), blad: true });
+      }
+      setTimeout(() => setKomunikat(null), 5000);
     });
   }
 
@@ -464,11 +483,15 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
       <div className="flex flex-col sm:flex-row gap-2">
         <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Nowy projekt / zlecenie" className="flex-1 px-3 py-2 rounded text-sm border outline-none" style={inputStyle} />
         <input value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} placeholder="Odpowiedzialny" className="sm:w-44 px-3 py-2 rounded text-sm border outline-none" style={inputStyle} />
+        <input value={cost} onChange={(e) => setCost(e.target.value)} inputMode="decimal" placeholder={t("kosztPlaceholder")} className="sm:w-28 px-3 py-2 rounded text-sm border outline-none" style={inputStyle} />
         <button type="button" onClick={add} disabled={pending || !name.trim()} className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded text-sm disabled:opacity-50" style={{ backgroundColor: "var(--accent-amber)", color: "var(--on-accent)" }}>
           <Plus size={15} /> Dodaj
         </button>
       </div>
 
+      {komunikat && (
+        <p role="status" className="text-xs px-3 py-2 rounded border" style={{ color: komunikat.blad ? "var(--accent-red)" : "var(--accent-green)", borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}>{komunikat.tekst}</p>
+      )}
       {workshop.projects.length === 0 ? (
         <p className="text-sm py-4 text-center" style={{ color: "var(--text-muted)" }}>{t("brakProjektowDodajZlecenie")}</p>
       ) : (
@@ -478,7 +501,7 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
               <div className="flex-1 min-w-0">
                 <span className="text-sm block truncate" style={{ color: "var(--text-primary)" }}>{p.name}</span>
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {p.assignedTo ? `${p.assignedTo} · ` : ""}{p.dueAt ? `termin ${new Date(p.dueAt).toLocaleDateString("pl-PL")}` : "bez terminu"}
+                  {p.assignedTo ? `${p.assignedTo} · ` : ""}{p.dueAt ? `termin ${new Date(p.dueAt).toLocaleDateString("pl-PL")}` : "bez terminu"}{p.cost != null ? ` · ${p.cost.toFixed(2)} zł` : ""}
                 </span>
               </div>
               <select
@@ -489,6 +512,11 @@ function ProjectsTab({ workshop }: { workshop: WorkshopDetailType }) {
               >
                 {Object.entries(PROJECT_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
+              {p.cost != null && (
+                <button type="button" onClick={() => ksieguj(p.id)} className="p-1.5 rounded" style={{ color: "var(--text-muted)" }} title={t("zaksiegujWPortfelu")} aria-label={t("zaksiegujWPortfelu")}>
+                  <Wallet size={14} />
+                </button>
+              )}
               <button type="button" onClick={() => startTransition(async () => { await deleteWorkshopProject(p.id); })} className="p-1.5 rounded" style={{ color: "var(--text-muted)" }} title={t("usun")}>
                 <Trash2 size={14} />
               </button>

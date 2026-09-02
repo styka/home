@@ -773,11 +773,56 @@
             "nazwa": "Zgłoś błąd lub sugestię",
             "opis": "Wskaż element na ekranie i opisz, co jest z nim nie tak.",
             "hasla": "zglos blad sugestia feedback wskaz element"
+          },
+          "kosz": {
+            "nazwa": "Kosz — przywracanie zasobów",
+            "opis": "Wszystkie usunięte zasoby użytkowników (także po opróżnieniu kosza i retencji) z możliwością przywrócenia właścicielowi.",
+            "hasla": "kosz przywracanie usuniete zasoby odzyskiwanie trash restore"
           }
         }
       },
       "PowrotDoPanelu": {
         "panelAdministratora": "Panel administratora"
+      },
+      "SkinAssetsPanel": {
+        "naglowek": "Grafiki skórek zaawansowanych",
+        "skorkiProste": "Skórki proste",
+        "skorkiZaawansowane": "Skórki zaawansowane",
+        "liczbaGrafik": "Grafiki",
+        "rozmiarLacznie": "Łączny rozmiar",
+        "osierocone": "Osierocone",
+        "wgrajSystemowa": "Wgraj grafikę systemową",
+        "limitWgrywania": "PNG/JPEG/WebP, do 500 kB. Grafika systemowa jest dostępna każdej skórce.",
+        "brakGrafik": "Brak grafik w magazynie.",
+        "kolPodglad": "Podgląd",
+        "kolNazwa": "Nazwa",
+        "kolTyp": "Typ",
+        "kolRozmiar": "Rozmiar",
+        "kolWlasciciel": "Właściciel",
+        "kolUzycie": "Używana przez",
+        "systemowy": "systemowa",
+        "uzytkownika": "użytkownika",
+        "osierocony": "osierocona",
+        "usun": "Usuń",
+        "usunZablokowane": "Nie można usunąć — używana przez skórkę",
+        "usunacGrafike": "Usunąć grafikę „{name}”?"
+      },
+      "KoszAdmina": {
+        "tytul": "Kosz — przywracanie zasobów",
+        "opis": "Wpisy kosza wszystkich użytkowników. Opróżnienie kosza i retencja tylko oznaczają wpis — dane pozostają w bazie i można je stąd przywrócić właścicielowi.",
+        "status_all": "Wszystkie",
+        "status_active": "W koszu",
+        "status_emptied": "Opróżnione",
+        "status_expired": "Wygasłe",
+        "status_restored": "Przywrócone",
+        "szukaj": "Szukaj",
+        "szukajPodpowiedz": "Tytuł albo e-mail właściciela…",
+        "brakWpisow": "Brak wpisów kosza dla wybranych filtrów.",
+        "przywroc": "Przywróć",
+        "przywrocPytanie": "Przywrócić „{tytul}” właścicielowi ({email})?",
+        "ladowanie": "Ładowanie…",
+        "zaladujWiecej": "Załaduj więcej",
+        "bladPrzywracania": "Nie udało się przywrócić tej pozycji."
       }
     },
     "assistant": {
@@ -971,7 +1016,13 @@
       "SkinPicker": {
         "udostepniona": "udostępniona",
         "usun": "Usuń",
-        "utworzWlasnaSkorke": "Utwórz własną skórkę"
+        "utworzWlasnaSkorke": "Utwórz własną skórkę",
+        "zaawansowana": "zaawansowana",
+        "zmienNazwe": "Zmień nazwę lub opis",
+        "zapisz": "Zapisz",
+        "anuluj": "Anuluj",
+        "nazwa": "Nazwa",
+        "opis": "Opis"
       },
       "UserFactsSection": {
         "teInformacjeTrafiajaDo": "Te informacje trafiają do podpowiedzi w innych modułach (np. propozycji w Pogodzie). Możesz je poprawić, potwierdzić albo odrzucić — odrzucone nie wracają.",
@@ -1080,7 +1131,9 @@
         "ksiazki": "Książki",
         "niedostepneDlaTwojejRoli": "Niedostępne dla Twojej roli",
         "stronaGlowna": "Strona główna",
-        "wiecej": "Więcej…"
+        "wiecej": "Więcej…",
+        "zwinMenu": "Zwiń menu do ikon",
+        "rozwinMenu": "Rozwiń menu"
       },
       "NotificationBell": {
         "ladowanie": "Ładowanie…",
@@ -1171,7 +1224,14 @@
         "nicNieZostaloJeszcze": "Nic nie zostało jeszcze zapisane — po wstawieniu możesz dostroić każdy token ręcznie.",
         "zwin": "Zwiń",
         "uzyjTejPropozycji": "Użyj tej propozycji",
-        "ustawionoTokenow": "Ustawiono {ile} z {wszystkich} tokenów motywu"
+        "ustawionoTokenow": "Ustawiono {ile} z {wszystkich} tokenów motywu",
+        "trybProsty": "Prosta",
+        "trybZaawansowany": "Zaawansowana (beta)",
+        "opisTrybuZaawansowanego": "Skórka zaawansowana zmienia więcej niż kolory: komponenty i ich stany, układ nawigacji, animacje i grafiki. Powstaje w całości z opisu — bez ręcznego strojenia.",
+        "warstwyDefinicji": "Definicja: {tokeny} tokenów · {komponenty} komponentów · {animacje} animacji",
+        "brakGeneratoraGrafik": "{ile, plural, one {# grafika zostanie dodana} few {# grafiki zostaną dodane} other {# grafik zostanie dodanych}}, gdy generator obrazów będzie podłączony — do tego czasu skórka używa gradientów.",
+        "pominietoPol": "Pominięto {ile, plural, one {# niedozwolone pole} few {# niedozwolone pola} other {# niedozwolonych pól}}:",
+        "zapiszIAktywuj": "Zapisz i aktywuj skórkę"
       },
       "SkinEditor": {
         "wlasnaCubicBezier": "własna (cubic-bezier)",
@@ -1206,7 +1266,7 @@
       "TrashPage": {
         "oproznijKosz": "Opróżnij kosz",
         "przywroc": "Przywróć",
-        "usunTrwale": "Usuń trwale"
+        "usunTrwale": "Usuń z kosza"
       }
     },
     "ui": {
@@ -1231,7 +1291,9 @@
       "CalendarPage": {
         "poprzedniMiesiac": "Poprzedni miesiąc",
         "nastepnyMiesiac": "Następny miesiąc",
-        "pokazWszystkie": "Pokaż wszystkie"
+        "pokazWszystkie": "Pokaż wszystkie",
+        "doZadan": "Dodaj do zadań",
+        "doZadanBlad": "Nie udało się utworzyć zadania."
       },
       "IcalFeedCard": {
         "subskrybujAgendeOmniaW": "Subskrybuj agendę Omnia w Google/Apple Calendar (tylko do odczytu).",
@@ -1243,7 +1305,49 @@
     "contacts": {
       "ContactsPage": {
         "usun": "Usuń",
-        "imieNazwa": "Imię / nazwa *"
+        "imieNazwa": "Imię / nazwa *",
+        "utworzZadanie": "Utwórz zadanie (follow-up)",
+        "zadanieUtworzone": "Zadanie utworzone — znajdziesz je w Zadaniach.",
+        "zadanieBlad": "Nie udało się utworzyć zadania."
+      }
+    },
+    "czat": {
+      "CzatPage": {
+        "tytul": "Czat",
+        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
+      },
+      "ListaRozmow": {
+        "rozmowy": "Rozmowy",
+        "nowaRozmowa": "Nowa rozmowa",
+        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
+        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
+      },
+      "WatekRozmowy": {
+        "wrocDoListy": "Wróć do listy rozmów",
+        "pisze": "{kto} pisze…",
+        "starsze": "Pokaż starsze wiadomości",
+        "ladowanie": "Wczytywanie…",
+        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
+        "edytowano": "(edytowano)",
+        "wiadomoscUsunieta": "Wiadomość usunięta",
+        "odpowiedz": "Odpowiedz",
+        "zareaguj": "Dodaj reakcję",
+        "edytuj": "Edytuj",
+        "usun": "Usuń",
+        "usunacWiadomosc": "Usunąć wiadomość?",
+        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
+        "przeczytanePrzez": "Przeczytane: {kto}",
+        "doZadan": "Dodaj do zadań",
+        "zadanieDodane": "Dodano zadanie",
+        "zadanieBlad": "Nie udało się utworzyć zadania"
+      },
+      "PoleWiadomosci": {
+        "napisz": "Napisz wiadomość…",
+        "wyslij": "Wyślij",
+        "zapisz": "Zapisz zmiany",
+        "anuluj": "Anuluj",
+        "edytujesz": "Edytujesz wiadomość",
+        "odpowiadaszNa": "Odpowiadasz: {autor}"
       }
     },
     "flota": {
@@ -1293,7 +1397,16 @@
         "zmienStatus": "Zmień status",
         "trendyBadan": "Trendy badań",
         "nadchodzace": "Nadchodzące",
-        "usun": "Usuń"
+        "usun": "Usuń",
+        "kosztEtykieta": "Koszt (zł)",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zapiszLekarzaWKontaktach": "Zapisz lekarza w kontaktach",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "kwotaZero": "Brak kwoty do zaksięgowania.",
+        "kontaktZapisany": "Zapisano w kontaktach.",
+        "kontaktJuzIstnial": "Taki kontakt już istnieje — nie zduplikowano.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "MedicationsPage": {
         "npPoPosilku": "np. po posiłku",
@@ -1343,7 +1456,9 @@
         "posilkiDzis": "Posiłki dziś",
         "wygasajace": "Wygasające",
         "przegladOcWkrotce": "Przegląd / OC wkrótce",
-        "magazynDoUzupelnienia": "Magazyn: do uzupełnienia"
+        "magazynDoUzupelnienia": "Magazyn: do uzupełnienia",
+        "nawykiDzis": "Nawyki dziś",
+        "warsztatBraki": "Warsztat: materiały na wyczerpaniu"
       },
       "QuickStats": {
         "zadanDzis": "zadań dziś",
@@ -1351,7 +1466,8 @@
       },
       "TodaySnapshot": {
         "powtorki": "Powtórki",
-        "posilki": "Posiłki"
+        "posilki": "Posiłki",
+        "przegladyLink": "Przeglądy"
       }
     },
     "kitchen": {
@@ -1680,7 +1796,10 @@
         "przeczytaneOpis": "Zdejmuje wiadomość z Twojej listy nowych. Nic nie kasuje — zostaje w linii czasu tematu.",
         "sprobujPonownie": "Spróbuj ponownie",
         "wygenerujPonownie": "Wygeneruj streszczenie ponownie",
-        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)"
+        "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)",
+        "zapiszNotatke": "Zapisz jako notatkę",
+        "notatkaZapisana": "Zapisano notatkę",
+        "notatkaBlad": "Nie udało się zapisać notatki"
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",
@@ -1801,7 +1920,10 @@
         "brakWczesniejszychWersji": "Brak wcześniejszych wersji.",
         "przywrocTeWersje": "Przywróć tę wersję",
         "przywroc": "Przywróć",
-        "linkujaTu": "Linkują tu:"
+        "linkujaTu": "Linkują tu:",
+        "doZadan": "Dodaj do zadań",
+        "zadanieDodane": "Dodano zadanie",
+        "zadanieBlad": "Nie udało się utworzyć zadania"
       },
       "NotesHomePage": {
         "przypiete": "Przypięte",
@@ -1852,7 +1974,10 @@
         "imie": "Imię *",
         "plec": "Płeć",
         "zapiszSprzedaz": "Zapisz sprzedaż",
-        "oznaczZwierzeJakoSprzedane": "Oznacz zwierzę jako sprzedane"
+        "oznaczZwierzeJakoSprzedane": "Oznacz zwierzę jako sprzedane",
+        "zaksiegujPrzychod": "Zaksięguj przychód w Portfelu",
+        "przychodZaksiegowany": "Przychód zaksięgowany w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela."
       },
       "PetDetailPage": {
         "zwierzeta": "Zwierzęta"
@@ -1899,7 +2024,14 @@
         "udostepnianie": "Udostępnianie",
         "abyUdostepnicCalemuZespolowi": "Aby udostępnić całemu zespołowi, utwórz zwierzę jako własność zespołu lub poproś administratora zespołu.",
         "widocznoscFunkcji": "Widoczność funkcji",
-        "zapiszWidocznosc": "Zapisz widoczność"
+        "zapiszWidocznosc": "Zapisz widoczność",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zapiszWeterynarza": "Zapisz weterynarza w kontaktach",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "kontaktZapisany": "Zapisano w kontaktach.",
+        "kontaktJuzIstnial": "Taki kontakt już istnieje — nie zduplikowano.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "PetsHomePage": {
         "zwierzeta": "Zwierzęta",
@@ -1992,6 +2124,356 @@
         "trescNaDyskuGoogle": "Treść na Dysku Google"
       }
     },
+    "rosliny": {
+      "SideNav": {
+        "opieka": "Opieka",
+        "katalog": "Katalog gatunków",
+        "ewidencja": "Ewidencja zabiegów",
+        "brakPrzestrzeni": "Brak przestrzeni"
+      },
+      "RoslinyPage": {
+        "tytul": "Rośliny",
+        "nowaPrzestrzen": "Nowa przestrzeń",
+        "trybOpis": "Tryb decyduje o tym, co widać domyślnie. Niczego nie blokuje — zawsze możesz pokazać pola zaawansowane.",
+        "nazwaPlaceholder": "np. Mieszkanie, Ogród przy domu, Kwiaciarnia",
+        "nazwaEtykieta": "Nazwa przestrzeni",
+        "trybEtykieta": "Tryb przestrzeni",
+        "zaloz": "Załóż",
+        "zalozPierwsza": "Załóż pierwszą przestrzeń",
+        "pustoTytul": "Nie masz jeszcze żadnej przestrzeni roślinnej",
+        "pustoOpis": "Przestrzeń to miejsce, w którym trzymasz rośliny — mieszkanie, ogród, kwiaciarnia albo pole. Możesz mieć ich kilka naraz.",
+        "naDzisTytul": "Zaległe i na dziś ({ile})",
+        "caleZestawienie": "Całe zestawienie opieki",
+        "licznik": "{rosliny} roślin · {miejsca} miejsc",
+        "zespol": "Zespół: {nazwa}",
+        "bladOgolny": "Nie udało się zapisać",
+        "tryb": {
+          "home": "Mieszkanie",
+          "garden": "Ogród",
+          "production": "Produkcja / kwiaciarnia",
+          "field": "Pole"
+        },
+        "lokalizacjaEtykieta": "Lokalizacja pogodowa (opcjonalnie)",
+        "bezLokalizacji": "Bez lokalizacji pogodowej"
+      },
+      "PrzestrzenPage": {
+        "wroc": "← Wróć do przestrzeni",
+        "udostepnij": "Udostępnij",
+        "noweMiejsce": "Nowe miejsce",
+        "nowaRoslina": "Nowa roślina",
+        "zaawansowane": "Pokaż zaawansowane",
+        "nazwaRoslinyPlaceholder": "np. Monstera z salonu",
+        "nazwaRoslinyEtykieta": "Nazwa rośliny",
+        "nazwaMiejscaPlaceholder": "np. Parapet południowy, Grządka B, Pole 3",
+        "nazwaMiejscaEtykieta": "Nazwa miejsca",
+        "miejsceEtykieta": "Miejsce",
+        "bezMiejsca": "Bez miejsca",
+        "iloscEtykieta": "Ilość",
+        "jednostkaEtykieta": "Jednostka",
+        "dodaj": "Dodaj",
+        "roslinyTytul": "Rośliny ({ile})",
+        "brakRoslin": "W tej przestrzeni nie ma jeszcze roślin.",
+        "miejscaTytul": "Miejsca",
+        "miejsceLicznik": "{ile} roślin",
+        "planTytul": "Plan sezonu",
+        "planPusty": "Plan jest pusty — dodaj rośliny, żeby miał z czego wyjść.",
+        "wnioskiTytul": "Wnioski",
+        "statystyki": "Rośnie: {aktywne} · zakończonych: {zakonczone}",
+        "przezywalnosc": "przeżywalność {procent}%",
+        "generuj": "Generuj",
+        "tryb": {
+          "home": "Mieszkanie — rośliny doniczkowe, bez parametrów technicznych.",
+          "garden": "Ogród — grządki, strefy, sezon i pogoda.",
+          "production": "Produkcja — partie, fazy rozwoju i koszt jednostkowy.",
+          "field": "Pole — powierzchnie, fazy BBCH i ewidencja zabiegów."
+        },
+        "jednostka": {
+          "szt": "szt.",
+          "m2": "m²",
+          "ha": "ha"
+        },
+        "ustawienia": "Ustawienia przestrzeni",
+        "lokalizacjaTytul": "Lokalizacja pogodowa",
+        "lokalizacjaOpis": "Bez niej terminy opieki nie uwzględnią deszczu ani przymrozków.",
+        "lokalizacjaEtykieta": "Lokalizacja pogodowa",
+        "bezLokalizacji": "Bez lokalizacji",
+        "brakLokalizacji": "Nie masz jeszcze żadnej lokalizacji w module Pogoda — dodaj ją tam, a wróci tutaj.",
+        "lokalizacjaZapisana": "Lokalizacja zapisana — terminy opieki uwzględnią prognozę.",
+        "lokalizacjaUsunieta": "Lokalizacja usunięta — terminy będą liczone bez pogody.",
+        "doZadan": "Do zadań",
+        "wZadaniach": "w zadaniach",
+        "gatunekEtykieta": "Gatunek",
+        "bezGatunku": "Bez gatunku",
+        "edytuj": "Edytuj",
+        "zapisz": "Zapisz",
+        "anuluj": "Anuluj",
+        "usun": "Usuń",
+        "usunTytul": "Usunięcie przestrzeni",
+        "usunOpis": "Przestrzeń razem z miejscami, roślinami i historią opieki trafia do kosza — można ją stamtąd przywrócić.",
+        "usunPrzestrzen": "Usuń przestrzeń",
+        "usunPytanie": "Usunąć przestrzeń „{nazwa}” razem z jej roślinami i historią? Trafi do kosza.",
+        "usunMiejscePytanie": "Usunąć miejsce „{nazwa}”? Rośliny zostaną — stracą tylko przypisanie do niego.",
+        "naslonecznienieEtykieta": "Nasłonecznienie",
+        "naslonecznienie": {
+          "full": "pełne słońce",
+          "partial": "półcień",
+          "shade": "cień",
+          "unknown": "nieokreślone"
+        },
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. liczność i jednostkę partii, fazę rozwoju oraz powierzchnię miejsc"
+      },
+      "AgendaOpieki": {
+        "tytul": "Opieka",
+        "wroc": "← Wróć do przestrzeni",
+        "pustoTytul": "Nic nie czeka",
+        "pustoOpis": "Żaden zabieg nie wypada w najbliższych dniach.",
+        "zrobione": "Zrobione",
+        "odloz": "Odłóż",
+        "pomin": "Pomiń",
+        "grupa": {
+          "OVERDUE": "Zaległe",
+          "TODAY": "Na dziś",
+          "SOON": "Wkrótce"
+        },
+        "wylacz": "Nie przypominaj",
+        "wylaczPytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie."
+      },
+      "RoslinaSzczegol": {
+        "wroc": "← Wróć do przestrzeni",
+        "sadzonka": "Załóż sadzonkę",
+        "usun": "Usuń",
+        "zebrana": "Zebrana",
+        "sprzedana": "Sprzedana",
+        "padla": "Padła",
+        "potwierdzPadla": "Oznaczyć roślinę jako martwą?",
+        "potwierdzPadlaOpis": "Roślina zniknie z listy aktywnych, ale zostanie w historii miejsca i w statystykach.",
+        "podajPrzyczyne": "Co się stało? (np. przelana, przesuszona, przemarzła)",
+        "przyczynaWymagana": "Bez przyczyny ten wpis nic nie powie, gdy wrócisz do niego za rok.",
+        "potwierdzUsuniecie": "Usunąć roślinę „{nazwa}”?",
+        "potwierdzUsunieciaOpis": "Trafi do kosza — możesz ją stamtąd przywrócić.",
+        "rodowodTytul": "Rodowód",
+        "pochodziZ": "Pochodzi z:",
+        "diagnozaTytul": "Ocena stanu",
+        "diagnozaOpis": "Ocena bierze pod uwagę gatunek, miejsce, ostatnie zabiegi i pogodę — nie tylko to, co widać.",
+        "objawPlaceholder": "Co Cię niepokoi? np. żółkną dolne liście",
+        "objawEtykieta": "Opis objawu",
+        "oceń": "Oceń",
+        "pomoglo": "Pomogło",
+        "bezZmian": "Bez zmian",
+        "pogorszylo": "Pogorszyło się",
+        "akcjaDiagnoza": "Diagnoza rośliny",
+        "dziennikTytul": "Dziennik",
+        "wpisPlaceholder": "Co się dziś wydarzyło?",
+        "wpisEtykieta": "Wpis do dziennika",
+        "brakWpisow": "Dziennik jest pusty.",
+        "dodaj": "Dodaj",
+        "pomiaryTytul": "Pomiary",
+        "rodzajPomiaruEtykieta": "Rodzaj pomiaru",
+        "wartoscPlaceholder": "Wartość",
+        "wartoscEtykieta": "Wartość pomiaru",
+        "brakPomiarow": "Brak pomiarów.",
+        "historiaTytul": "Historia zabiegów",
+        "bladOgolny": "Nie udało się wykonać operacji",
+        "jednostka": {
+          "szt": "szt.",
+          "m2": "m²",
+          "ha": "ha"
+        },
+        "status": {
+          "ACTIVE": "Rośnie",
+          "SOLD": "Sprzedana",
+          "HARVESTED": "Zebrana",
+          "DEAD": "Padła",
+          "ARCHIVED": "Zarchiwizowana"
+        },
+        "pomiar": {
+          "HEIGHT_CM": "Wysokość",
+          "LEAF_COUNT": "Liczba liści",
+          "TRUNK_CM": "Obwód pnia",
+          "SOIL_MOISTURE": "Wilgotność podłoża",
+          "TEMP_C": "Temperatura",
+          "PH": "Odczyn pH",
+          "LIGHT": "Światło",
+          "OTHER": "Inny pomiar"
+        },
+        "zabieg": {
+          "WATERING": "Podlewanie",
+          "FERTILIZING": "Nawożenie",
+          "PRUNING": "Przycinanie",
+          "REPOTTING": "Przesadzanie",
+          "SPRAYING": "Oprysk",
+          "MULCHING": "Ściółkowanie",
+          "SOWING": "Siew",
+          "HARVEST": "Zbiór",
+          "CUSTOM": "Inny zabieg"
+        },
+        "wynik": {
+          "DONE": "wykonane",
+          "SKIPPED": "pominięte",
+          "POSTPONED": "odłożone"
+        },
+        "pewnosc": {
+          "low": "Pewność: niska",
+          "medium": "Pewność: średnia",
+          "high": "Pewność: wysoka",
+          "unknown": "Nie da się tego rozstrzygnąć na podstawie tego, co jest"
+        },
+        "zalecenie": {
+          "naturalne": "naturalne",
+          "biologiczne": "biologiczne",
+          "chemiczne": "chemiczne"
+        },
+        "rozpoznajTytul": "Rozpoznaj ze zdjęcia",
+        "rozpoznajOpis": "Wgraj zdjęcie rośliny — dopasujemy je do katalogu, żeby od razu miała wymagania pielęgnacyjne.",
+        "zdjeciePlaceholder": "https://… (wklej link lub wgraj z Dysku)",
+        "rozpoznaj": "Rozpoznaj",
+        "brakPropozycji": "Nie udało się nic zaproponować na podstawie tego zdjęcia.",
+        "przyjmij": "To ta roślina",
+        "zdjecieObjawuPlaceholder": "Zdjęcie objawu (opcjonalne)",
+        "zdjecieWpisuPlaceholder": "Zdjęcie do wpisu (opcjonalne)",
+        "zaplanujZabieg": "Zaplanuj",
+        "zaplanowano": "zaplanowano",
+        "zbiorTytul": "Zbiór",
+        "zbiorOpis": "Zapisany zbiór możesz wysłać do spiżarni, zapisać jako koszt albo dopisać do zakupów.",
+        "plonPlaceholder": "Ile",
+        "plonEtykieta": "Zebrana ilość",
+        "jednostkaPlonuEtykieta": "Jednostka zbioru",
+        "zapiszZbior": "Zapisz zbiór",
+        "zbiorZapisany": "Zbiór zapisany.",
+        "doSpizarni": "Dodaj do spiżarni",
+        "juzWSpizarni": "Jest w spiżarni",
+        "wSpizarni": "Pozycja trafiła do spiżarni.",
+        "kosztPlaceholder": "Kwota",
+        "kosztEtykieta": "Koszt",
+        "zapiszKoszt": "Zapisz koszt",
+        "kosztZapisany": "Koszt zapisany w Portfelu.",
+        "naZakupy": "Dopisz do listy zakupów",
+        "naLiscieZakupow": "Dodano do listy zakupów.",
+        "fazaEtykieta": "Faza rozwojowa",
+        "bezFazy": "— nie określono —",
+        "fazaZapisana": "Zapisano fazę: {nazwa}.",
+        "fazaUsunieta": "Faza rozwojowa wyczyszczona.",
+        "przyczynaPlaceholder": "np. przelana, przemarzła, przesuszona",
+        "zapiszPrzyczyne": "Zapisz i zakończ",
+        "anuluj": "Anuluj",
+        "zadaniaTytul": "Zadania opieki",
+        "zadaniaOpis": "Podlewanie zakłada się samo, jeśli gatunek ma cykl. Nawożenie, oprysk czy przycinanie dodajesz wtedy, gdy ich potrzebujesz.",
+        "dodajZadanie": "Dodaj zadanie opieki",
+        "rodzajZabieguEtykieta": "Rodzaj zabiegu",
+        "coIleDniEtykieta": "Co ile dni",
+        "coIleDniPlaceholder": "Co ile dni (puste = co 14)",
+        "podlewanieBezOdstepu": "Termin podlewania wyznacza reguła: gatunek × światło × pora roku × prognoza — nie ma tu odstępu do wpisania.",
+        "zadanieDodane": "Zadanie opieki dodane — pojawi się w agendzie.",
+        "zaawansowane": "Pokaż zaawansowane",
+        "brakZadan": "Nie ma jeszcze żadnego zadania opieki.",
+        "bezTerminu": "bez terminu — ten gatunek nie ma cyklu podlewania",
+        "wylaczZadanie": "Nie przypominaj",
+        "wylaczZadaniePytanie": "Przestać przypominać o „{tytul}”? Historia zabiegów zostanie.",
+        "zadanieWylaczone": "Zadanie wyłączone — nie wróci na agendę.",
+        "zadanieDodaneBezTerminu": "Zadanie dodane bez terminu — ten gatunek nie ma cyklu, więc nie trafi do agendy.",
+        "zaawansowaneOpis": "Pokazuje pola zaawansowane dla tego trybu przestrzeni: m.in. fazę rozwoju (BBCH) i szczegóły partii"
+      },
+      "KatalogGatunkow": {
+        "tytul": "Katalog gatunków",
+        "wroc": "← Wróć do przestrzeni",
+        "szukajPlaceholder": "Nazwa polska lub łacińska",
+        "szukajEtykieta": "Szukaj gatunku",
+        "szukaj": "Szukaj",
+        "kategoriaEtykieta": "Kategoria",
+        "wszystkieKategorie": "Wszystkie kategorie",
+        "mojeTytul": "Moje gatunki ({ile})",
+        "katalogTytul": "Katalog",
+        "katalogOpis": "Dodanie do swoich tworzy Twoją kopię wpisu — możesz ją zmienić, nie ruszając katalogu.",
+        "brakWynikow": "Nic nie pasuje do tego wyszukiwania.",
+        "juzMam": "Masz już u siebie",
+        "dodajDoSwoich": "Dodaj do swoich",
+        "kategoria": {
+          "houseplant": "Doniczkowe",
+          "vegetable": "Warzywa",
+          "herb": "Zioła",
+          "fruit": "Owoce",
+          "cereal": "Polowe i zboża",
+          "ornamental": "Ozdobne",
+          "other": "Inne"
+        },
+        "pochodzenie": {
+          "system": "z katalogu",
+          "user": "wpis własny",
+          "ai": "propozycja AI"
+        },
+        "wlasnyGatunek": "Własny gatunek",
+        "wlasnyOpis": "Dla roślin, których nie ma w katalogu.",
+        "nazwaPlPlaceholder": "Nazwa polska",
+        "nazwaPlEtykieta": "Nazwa polska",
+        "nazwaLatPlaceholder": "Nazwa łacińska",
+        "nazwaLatEtykieta": "Nazwa łacińska",
+        "rodzinaPlaceholder": "Rodzina botaniczna",
+        "rodzinaEtykieta": "Rodzina botaniczna",
+        "rodzinaPodpowiedz": "Rodzina jest opcjonalna, ale to na niej stoi ostrzeżenie o płodozmianie.",
+        "nazwyWymagane": "Podaj nazwę polską i łacińską.",
+        "zapisz": "Zapisz",
+        "bladOgolny": "Nie udało się zapisać"
+      },
+      "Ewidencja": {
+        "tytul": "Ewidencja zabiegów",
+        "wroc": "← Wróć do przestrzeni",
+        "eksportuj": "Eksportuj",
+        "pustoTytul": "Rejestr jest pusty",
+        "pustoOpis": "Zabiegi środkami ochrony roślin zapisane w przestrzeniach produkcyjnych i polowych pojawią się tutaj.",
+        "obowiazekTytul": "Co musi się tu znaleźć",
+        "obowiazekOpis": "Od 1 stycznia 2026 ewidencja zabiegów obejmuje dodatkowo rodzaj zastosowania środka, numer zezwolenia i dokładną lokalizację zabiegu. Zapisy trzeba doprowadzić do formy elektronicznej do 31 stycznia roku następującego po roku zastosowania.",
+        "niekompletne": "Niekompletnych wpisów: {ile}. Kontrola sprawdza kompletność danych — uzupełnij je przed oddaniem dokumentu.",
+        "rejestrTytul": "Zabiegi ({ile})",
+        "brakSrodka": "(brak nazwy środka)",
+        "zezwolenie": "zezwolenie {numer}",
+        "brakuje": "Brakuje: {pola}",
+        "wyeksportowano": "Wyeksportowano {ile} zabiegów, w tym niekompletnych: {braki}.",
+        "nowyZabieg": "Nowy zabieg",
+        "formularzOpis": "Pola można uzupełnić później — zapis nie jest blokowany, ale braki są wypisane przy wpisie.",
+        "przestrzenEtykieta": "Przestrzeń",
+        "srodekPlaceholder": "Nazwa środka",
+        "srodekEtykieta": "Nazwa środka",
+        "zezwoleniePlaceholder": "Numer zezwolenia",
+        "zezwolenieEtykieta": "Numer zezwolenia",
+        "zastosowaniePlaceholder": "Rodzaj zastosowania",
+        "zastosowanieEtykieta": "Rodzaj zastosowania",
+        "dawkaPlaceholder": "Dawka",
+        "dawkaEtykieta": "Dawka",
+        "jednostkaDawkiEtykieta": "Jednostka dawki",
+        "powierzchniaPlaceholder": "Powierzchnia",
+        "powierzchniaEtykieta": "Powierzchnia",
+        "jednostkaPowierzchniEtykieta": "Jednostka powierzchni",
+        "lokalizacjaPlaceholder": "Dokładna lokalizacja (np. dz. ew. 123/4)",
+        "lokalizacjaEtykieta": "Dokładna lokalizacja",
+        "wykonujacyPlaceholder": "Wykonujący",
+        "wykonujacyEtykieta": "Wykonujący",
+        "warunkiPlaceholder": "Warunki (temperatura, wiatr)",
+        "warunkiEtykieta": "Warunki",
+        "karencjaPlaceholder": "Karencja (dni)",
+        "karencjaEtykieta": "Karencja w dniach",
+        "zapiszZabieg": "Zapisz zabieg",
+        "zapisanoKompletnie": "Zabieg zapisany — wpis jest kompletny.",
+        "zapisanoZBrakami": "Zabieg zapisany. Do uzupełnienia: {pola}.",
+        "okresTytul": "Okres",
+        "okresOpis": "Eksport obejmuje dokładnie ten zakres, a nazwa pliku go powtarza — dokument nie może mówić czego innego niż jego zawartość.",
+        "okresOd": "Od dnia",
+        "okresDo": "Do dnia",
+        "okresRok": "Cały rok {rok}",
+        "okresWyczysc": "Cały rejestr",
+        "dataEtykieta": "Data zabiegu",
+        "uprawaEtykieta": "Uprawa / roślina",
+        "uprawaBrak": "— bez wskazania rośliny —",
+        "miejsceEtykieta": "Miejsce",
+        "miejsceBrak": "— bez wskazania miejsca —",
+        "uprawaMiejsceOpis": "Wskaż uprawę albo miejsce — bez tego dokument ma zabieg bez przedmiotu i kontrola uzna wpis za niekompletny.",
+        "magazynEtykieta": "Środek z magazynu",
+        "magazynBrak": "— bez zdjęcia z magazynu —",
+        "magazynIloscPlaceholder": "Zużyta ilość",
+        "magazynIloscEtykieta": "Zużyta ilość (zdjęcie ze stanu magazynu)",
+        "magazynZdjeto": "Zdjęto ze stanu magazynu: {ilosc}.",
+        "magazynBlad": "Wpis zapisany, ale nie udało się skorygować stanu magazynu: {blad}"
+      }
+    },
     "services": {
       "AvailabilityEditor": {
         "dostepnoscDoRezerwacji": "Dostępność do rezerwacji",
@@ -2052,7 +2534,11 @@
         "usun": "Usuń"
       },
       "ProviderPublicPage": {
-        "wszystkieUslugi": "Wszystkie usługi"
+        "wszystkieUslugi": "Wszystkie usługi",
+        "zapiszWKontaktach": "Zapisz w kontaktach",
+        "kontaktZapisany": "Zapisano w kontaktach.",
+        "kontaktJuzIstnial": "Taki kontakt już istnieje — nie zduplikowano.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "RequestThread": {
         "ladowanieWatku": "Ładowanie wątku…",
@@ -2155,7 +2641,8 @@
         "tejOperacjiNieDa": "Tej operacji nie da się cofnąć — usunięte pozycje nie trafiają do kosza.",
         "zarchiwizujListe": "Zarchiwizuj listę",
         "wydanoKupioneZCena": "Wydano (kupione z ceną)",
-        "abyKsiegowacZakupyW": "Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia."
+        "abyKsiegowacZakupyW": "Aby księgować zakupy w Portfelu, ustaw konto w Portfel → Ustawienia.",
+        "dodajKupioneDoSpizarni": "Dodaj kupione pozycje ({n}) do spiżarni"
       },
       "ShoppingSideNav": {
         "trafiajaTuBrakiZ": "Trafiają tu braki z Magazynu",
@@ -2484,7 +2971,9 @@
         "szukajZadanEnterSzukaj": "Szukaj zadań… (Enter = szukaj AI)",
         "usunacZadanie": "Usunąć zadanie?",
         "zadanieTrafiDoKosza": "„{tytul}” trafi do Kosza — możesz je stamtąd przywrócić.",
-        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania"
+        "zmienSzerokoscPanelu": "Zmień szerokość panelu zadania",
+        "dodajZadanie": "Dodaj zadanie",
+        "dodajZadanieSkrot": "Dodaj zadanie (a lub n)"
       },
       "TasksSideNav": {
         "nowaGrupaProjektow": "Nowa grupa projektów",
@@ -2497,10 +2986,6 @@
       },
       "TimelineView": {
         "brakZadanDoPokazania": "Brak zadań do pokazania."
-      },
-      "QuickAddTask": {
-        "priorytetKliknijByZmienic": "Priorytet (kliknij by zmienić)",
-        "dodajLubOpiszZadanie": "Dodaj lub opisz zadanie — tytuł powstanie sam (a / n)"
       },
       "ProjectScopeFilter": {
         "filtrProjektow": "Filtr projektów",
@@ -2535,6 +3020,53 @@
       },
       "SzybkieDodanieZadania": {
         "noweZadanie": "Nowe zadanie"
+      },
+      "WyborObszaru": {
+        "przypiszObszar": "Przypisz obszar",
+        "brakObszaru": "— bez obszaru —"
+      },
+      "ObszaryWidok": {
+        "wariantSekcje": "Sekcje",
+        "wariantDrill": "Wgłąb",
+        "wariantPanel": "Panel",
+        "wyborWariantu": "Wariant przeglądania po obszarach",
+        "nowyObszar": "Nowy obszar",
+        "nowyObszarTytul": "Nowy obszar",
+        "zmianaNazwyTytul": "Zmień nazwę obszaru",
+        "nazwaObszaru": "Nazwa obszaru",
+        "anuluj": "Anuluj",
+        "zapisz": "Zapisz",
+        "przenies": "Przenieś",
+        "przeniesTytul": "Przenieś obszar „{nazwa}”",
+        "szczytDrzewa": "— na szczyt drzewa —",
+        "usunTytul": "Usunąć obszar „{nazwa}”?",
+        "usunOpis": "Wybierz, co zrobić z zawartością: scalenie przenosi podobszary i zadania do obszaru nadrzędnego; usunięcie poddrzewa zabiera też wszystkie podobszary, a zadania zostają w projekcie bez obszaru. Obszar trafi do kosza i można go przywrócić.",
+        "usunScal": "Scal do rodzica",
+        "usunPoddrzewo": "Usuń poddrzewo",
+        "usunPoddrzewoN": "Usuń poddrzewo ({n} obszarów)",
+        "akcjeObszaru": "Akcje obszaru",
+        "zmienNazwe": "Zmień nazwę",
+        "nowyPodobszar": "Nowy podobszar",
+        "usun": "Usuń"
+      },
+      "ObszarySekcje": {
+        "brakObszarow": "Ten projekt nie ma jeszcze obszarów. Utwórz pierwszy przyciskiem „Nowy obszar”.",
+        "bezObszaru": "Bez obszaru"
+      },
+      "ObszaryDrill": {
+        "wstecz": "Wstecz",
+        "szczyt": "Wszystkie obszary",
+        "bezObszaru": "Bez obszaru",
+        "pustyObszar": "Ten obszar jest pusty."
+      },
+      "ObszaryPanel": {
+        "drzewoObszarow": "Drzewo obszarów",
+        "wszystkieZadania": "Wszystkie zadania",
+        "bezObszaru": "Bez obszaru",
+        "brakZadan": "Brak zadań w tym obszarze."
+      },
+      "ModalDodaniaZadania": {
+        "tytul": "Nowe zadanie"
       }
     },
     "truck": {
@@ -2546,7 +3078,16 @@
         "npKrakowRynekGlowny": "np. Kraków, Rynek Główny 1",
         "najpierwZapiszProfilPojazdu": "Najpierw zapisz profil pojazdu powyżej.",
         "robotUwzglednionych": "robót uwzględnionych",
-        "otworzWGoogleMaps": "Otwórz w Google Maps"
+        "otworzWGoogleMaps": "Otwórz w Google Maps",
+        "pojazdZFloty": "Pojazd z Floty:",
+        "wybierzPojazd": "— wybierz —",
+        "szacowanyKosztPaliwa": "szac. koszt paliwa",
+        "zaksiegujKoszt": "Zaksięguj koszt trasy",
+        "zaMaloDanychPaliwo": "Za mało danych: potrzeba co najmniej dwóch pełnych tankowań i tankowań z wpisanym kosztem.",
+        "zalozeniaKosztu": "Założenia: {spalanie} l/100 km (średnia z pełnych tankowań) × {cena} zł/l (średnia cena).",
+        "kosztZaksiegowany": "Koszt trasy zaksięgowany w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       }
     },
     "warsztaty": {
@@ -2571,7 +3112,12 @@
         "nastepnyPrzeglad": "Następny przegląd",
         "sprzetKtoryWartoMiec": "Sprzęt, który warto mieć w warsztacie typu",
         "zaznaczBrakiIDodaj": ". Zaznacz braki i dodaj je do wyposażenia jednym kliknięciem.",
-        "brakProjektowDodajZlecenie": "Brak projektów. Dodaj zlecenie realizowane w tym warsztacie."
+        "brakProjektowDodajZlecenie": "Brak projektów. Dodaj zlecenie realizowane w tym warsztacie.",
+        "kosztPlaceholder": "Koszt (zł)",
+        "zaksiegujWPortfelu": "Zaksięguj koszt w Portfelu",
+        "zaksiegowanoWPortfelu": "Zaksięgowano w Portfelu.",
+        "brakKontaAuto": "Najpierw wskaż konto auto-księgowania w ustawieniach Portfela.",
+        "bladOperacji": "Nie udało się wykonać operacji."
       },
       "WorkshopsList": {
         "nieMaszJeszczeZadnego": "Nie masz jeszcze żadnego warsztatu.",
@@ -2581,6 +3127,12 @@
         "npGarazPiwnicaPokoj": "np. garaż, piwnica, pokój 2",
         "wlasciciel": "Właściciel",
         "utworzWarsztat": "Utwórz warsztat"
+      },
+      "LowStockDoZakupow": {
+        "lista": "Lista zakupów",
+        "dodajBraki": "Dodaj braki do listy zakupów",
+        "dodano": "Dodano pozycje: {n}",
+        "blad": "Nie udało się dodać do listy"
       }
     },
     "weather": {
@@ -2638,7 +3190,8 @@
         "ukladSekcje": "Sekcje wg stanu",
         "ukladKolejnosc": "Kolejność dodania",
         "bezOceny": "Bez oceny",
-        "przeanalizujNaNowo": "Przeanalizuj pogodę na nowo"
+        "przeanalizujNaNowo": "Przeanalizuj pogodę na nowo",
+        "prognozaWKalendarzu": "Prognoza we wspólnym kalendarzu"
       },
       "WeatherPage": {
         "uzyjMojejLokalizacjiGps": "Użyj mojej lokalizacji (GPS)",
@@ -2689,7 +3242,18 @@
           "krotkie": "Krótkie",
           "srednie": "Średnie",
           "dlugie": "Długie"
-        }
+        },
+        "zapiszNotatke": "Zapisz jako notatkę",
+        "notatkaZapisana": "Zapisano notatkę",
+        "notatkaBlad": "Nie udało się zapisać notatki",
+        "fiszkiTytul": "Fiszki z filmu",
+        "fiszkiTalia": "Talia",
+        "fiszkiZaproponuj": "Zaproponuj fiszki",
+        "fiszkiPracuje": "Wybieram słownictwo…",
+        "fiszkiBrak": "Nie znaleziono słownictwa wartego fiszek w tym materiale.",
+        "fiszkiDodaj": "Dodaj ({n})",
+        "fiszkiDodano": "Dodano fiszki: {n}",
+        "fiszkiBlad": "Nie udało się przygotować fiszek"
       },
       "KanalyPage": {
         "tytul": "Kanały i ustawienia",
@@ -2721,42 +3285,6 @@
           "reczne": "dodany ręcznie",
           "subskrypcje": "z subskrypcji"
         }
-      }
-    },
-    "czat": {
-      "CzatPage": {
-        "tytul": "Czat",
-        "wybierzRozmowe": "Wybierz rozmowę z listy albo zacznij nową."
-      },
-      "ListaRozmow": {
-        "rozmowy": "Rozmowy",
-        "nowaRozmowa": "Nowa rozmowa",
-        "brakRozmowcow": "Nie masz jeszcze z kim porozmawiać. Rozmowy prowadzi się z osobami z Twoich zespołów oraz z tymi, z którymi dzielisz udostępniony zasób.",
-        "brakRozmow": "Brak rozmów. Kanał zespołu pojawi się tu sam, a rozmowę prywatną zaczniesz przyciskiem powyżej."
-      },
-      "WatekRozmowy": {
-        "wrocDoListy": "Wróć do listy rozmów",
-        "pisze": "{kto} pisze…",
-        "starsze": "Pokaż starsze wiadomości",
-        "ladowanie": "Wczytywanie…",
-        "pusto": "Jeszcze nikt tu nic nie napisał. Zacznij pierwszy.",
-        "edytowano": "(edytowano)",
-        "wiadomoscUsunieta": "Wiadomość usunięta",
-        "odpowiedz": "Odpowiedz",
-        "zareaguj": "Dodaj reakcję",
-        "edytuj": "Edytuj",
-        "usun": "Usuń",
-        "usunacWiadomosc": "Usunąć wiadomość?",
-        "usunacOpis": "Zniknie u wszystkich uczestników rozmowy. Znajdziesz ją w koszu.",
-        "przeczytanePrzez": "Przeczytane: {kto}"
-      },
-      "PoleWiadomosci": {
-        "napisz": "Napisz wiadomość…",
-        "wyslij": "Wyślij",
-        "zapisz": "Zapisz zmiany",
-        "anuluj": "Anuluj",
-        "edytujesz": "Edytujesz wiadomość",
-        "odpowiadaszNa": "Odpowiadasz: {autor}"
       }
     }
   }

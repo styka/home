@@ -53,11 +53,15 @@ function addDays(d: Date, n: number): Date {
  */
 export function computeStreaks(
   entryDates: string[],
-  daysOfWeek: string | null | undefined
+  daysOfWeek: string | null | undefined,
+  // „Dziś" jako parametr: na kliencie domyślne `todayISO()` liczy w strefie przeglądarki (dobrze),
+  // ale na serwerze (Render = UTC) to WCZORAJSZY dzień między północą a 2:00 czasu PL — loader
+  // przekazuje tu dzień w strefie użytkownika (`dataWStrefie`), inaczej streak rwał się w nocy.
+  todayIso: string = todayISO()
 ): { currentStreak: number; longestStreak: number } {
   const done = new Set(entryDates);
-  const today = new Date();
-  const todayStr = isoDate(today);
+  const today = fromISO(todayIso);
+  const todayStr = todayIso;
 
   // ── currentStreak ──
   let current = 0;
@@ -111,11 +115,12 @@ export function computeStreaks(
 export function completionRate(
   entryDates: string[],
   daysOfWeek: string | null | undefined,
-  lookbackDays: number
+  lookbackDays: number,
+  todayIso: string = todayISO()
 ): number | null {
   const done = new Set(entryDates);
-  const today = new Date();
-  const todayStr = isoDate(today);
+  const today = fromISO(todayIso);
+  const todayStr = todayIso;
   let scheduled = 0;
   let completed = 0;
   for (let i = 0; i < lookbackDays; i++) {
@@ -139,10 +144,10 @@ export function startOfWeek(date: Date): Date {
 }
 
 /** HA2: liczba wykonań w bieżącym tygodniu (pon→dziś), niezależnie od dni — dla celu N×/tydzień. */
-export function weekDoneCount(entryDates: string[]): number {
+export function weekDoneCount(entryDates: string[], todayIso: string = todayISO()): number {
   const set = new Set(entryDates);
-  const monday = startOfWeek(new Date());
-  const todayStr = todayISO();
+  const monday = startOfWeek(fromISO(todayIso));
+  const todayStr = todayIso;
   let done = 0;
   for (let i = 0; i < 7; i++) {
     const ds = isoDate(addDays(monday, i));
@@ -155,11 +160,12 @@ export function weekDoneCount(entryDates: string[]): number {
 /** Postęp w bieżącym tygodniu: ile zaplanowanych dni wykonano vs cel. */
 export function weekProgress(
   entryDates: string[],
-  daysOfWeek: string | null | undefined
+  daysOfWeek: string | null | undefined,
+  todayIso: string = todayISO()
 ): { done: number; target: number } {
   const set = new Set(entryDates);
-  const monday = startOfWeek(new Date());
-  const todayStr = todayISO();
+  const monday = startOfWeek(fromISO(todayIso));
+  const todayStr = todayIso;
   let done = 0;
   let target = 0;
   for (let i = 0; i < 7; i++) {

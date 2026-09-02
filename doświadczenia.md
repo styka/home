@@ -64,6 +64,194 @@ wzrost wejścia o 38 zamiast 1200.
 Trzecie: **budżet na odpowiedź nie może zależeć od długości pytania.** „Ile miejsca potrzeba"
 wynika z tego, ile danych trzeba przetworzyć, a to wiadomo dopiero PO odczycie — więc decyzja
 podjęta przed pętlą jest z definicji podjęta za wcześnie.
+## 2026-08-29 — Rzutowanie `as` na granicy modułów ukrywa rozjazd, który wywala CAŁĄ stronę
+**Problem:** Wkład Roślin do kalendarza emitował `module: "rosliny"`, ale `MODULE_META` kalendarza
+nie znało tego klucza. Kompilator milczał, bo `assembleCalendar` rzutował w ciemno
+(`e.module as CalendarModule`) — a `CalendarPage` czytała `MODULE_META[ev.module].label`, więc
+jeden zabieg roślinny w widocznym miesiącu = TypeError i pusta strona kalendarza.
+**Rozwiązanie:** Wpis Roślin (potem Nawyków, Warsztatów, Kontaktów) w `MODULE_META`;
+`assembleCalendar` odrzuca nieznane moduły zamiast je przepuszczać; test `moduleMeta.test.ts`
+skanuje `src/modules/*/calendar.ts` i wymaga wpisu dla każdego emitowanego modułu.
+**Lekcja:** Rzutowanie `as` na wartości przychodzącej z INNEGO modułu to obietnica bez pokrycia —
+platformowy typ jest stringiem świadomie, więc zgodność trzeba wymusić testem albo filtrem w
+runtime, nigdy rzutowaniem. I gdy słownik metadanych jest indeksowany wartością z zewnątrz,
+`dict[klucz].pole` bez `?.` czyni z jednego rozjazdu awarię całego widoku.
+
+---
+
+## 2026-08-29 — Równoległe listy modułów rozjeżdżają się PO CICHU (agent miał 16, powłoka 13, typ 18)
+**Problem:** Lista modułów akcji asystenta istniała w trzech miejscach: unia `AIActionModule` (18),
+ręczne `MODULES` w trasie agenta (16 — bez roślin i YouTube) i `ACTIONABLE_MODULES` w powłoce (13).
+Skutki niewidoczne w buildzie: akcje Roślin przepisywane po cichu na `shopping` (potem „Nieznany
+typ akcji"), a z powłoki akcje 5 modułów nigdy nie trafiały do promptu.
+**Rozwiązanie:** `AI_ACTION_MODULES` jako tablica `as const` + typ pochodny w platformie — unii nie
+da się wyliczyć w runtime i to właśnie WYMUSZAŁO drugą listę. Trasa i powłoka importują tę tablicę;
+`normalizeActions` odrzuca nieznany moduł zamiast fallbacku.
+**Lekcja:** Gdy typ ma być też danymi w runtime, od razu definiuj tablicę `as const` i typ z niej —
+goła unia gwarantuje, że ktoś założy równoległą listę. Cichy fallback („nieznane → shopping")
+jest gorszy niż odrzucenie: przenosi błąd w miejsce, gdzie nikt go nie szuka.
+
+---
+
+## 2026-08-29 — „Dzisiaj" liczone w strefie procesu: jeden wzorzec błędu w sześciu miejscach naraz
+**Problem:** `todayISO()` / `new Date().toISOString().slice(0,10)` / `setHours(0,0,0,0)` na
+serwerze (Render = UTC) liczą dobę PROCESU. Między północą a 2:00 czasu polskiego: odhaczenie
+nawyku lądowało we wczorajszym dniu (strażnik przyszłości odrzucał przy tym „dzisiejszą" datę
+klienta), briefing pokazywał wczorajszy jadłospis, asystent odhaczał dawkę leku na wczoraj,
+granica „nadchodzące/minione" wizyt przesuwała się o 2 h.
+**Rozwiązanie:** `lib/userTime.ts` (`dataWStrefie`, `userDayBounds`) we wszystkich sześciu
+miejscach; funkcje statystyk nawyków dostały opcjonalny parametr `todayIso` (klient dalej liczy
+w strefie przeglądarki); klient wysyła dzień jawnie zamiast ufać „domyślnemu dziś" serwera.
+**Lekcja:** Po dodaniu poprawnego helpera zrób grep po CAŁYM repo za wzorcami, które on
+zastępuje (`toISOString().slice(0,10)`, `setHours(0`, `todayISO()` w plikach akcji) — naprawa
+jednego wystąpienia nie kończy błędu, który jest wzorcem. I nie pozwól serwerowi zgadywać dnia,
+który klient zna lepiej: przekazuj dzień z przeglądarki jawnie.
+
+---
+
+## 2026-08-29 — Lekarstwo istniało, ale w pliku, którego pacjent nie mógł zaimportować
+**Problem:** Głosowe „zatwierdź"/„potwierdź"/„odrzuć" w powłoce asystenta nigdy nie działały —
+regexy używały ASCII-owego `\b` po polskich literach (dokładnie błąd opisany w lekcji 112).
+Poprawka (`granicePolskie`) istniała od dawna… w `fastPath.ts`, który importuje `chatComplete`
+(kod serwerowy) — komponent kliencki nie mógł jej użyć bez wciągnięcia klienta LLM do bundla.
+**Rozwiązanie:** `granicePolskie` wydzielone do czystego `lib/ai/granice.ts` (re-eksport w
+`fastPath` dla starych konsumentów); powłoka używa tej samej funkcji.
+**Lekcja:** Wspólny helper naprawiający klasę błędów musi mieszkać w pliku BEZ importów
+serwerowych — inaczej połowa kodu (klient) zostaje z gorszą, ręczną wersją i błąd wraca tam,
+gdzie strażnika nie ma. Przy okazji: nasłuchiwacz klawiatury trzymający w domknięciu zwykłe
+funkcje komponentu (plan posiłków, strzałki tygodni) widzi je z PIERWSZEGO renderu — funkcje,
+po których stanie nawiguje efekt, muszą być w `useCallback` i w zależnościach efektu.
+
+---
+
+## 2026-08-28 — Poprawka pod listę braków ma własne skutki uboczne: trzy z ośmiu ustaleń następnej recenzji
+**Problem:** Moduł Rośliny przeszedł trzy rundy recenzji świeżym okiem. Za każdym razem część
+nowych ustaleń dotyczyła **poprawek z rundy poprzedniej**, a nie oryginalnego kodu. Trzy przykłady
+z ostatniej rundy: (1) naprawa „lista faz BBCH pokazuje się w mieszkaniu" ustawiła warunek na sam
+tryb, przez co w mieszkaniu i ogrodzie pola **nie dało się już odsłonić** — jedno naruszenie
+kryterium zamienione na drugie; (2) naprawa „nazwa pliku ewidencji liczona w złej strefie"
+przeliczyła nazwę, ale nie kolumnę „Data zabiegu" w tym samym pliku, więc w jednej funkcji zostały
+dwie różne reguły strefy; (3) zmiana znaczenia flagi `pomijac` dotarła do jednego czytelnika
+(zakładanie harmonogramu), ale nie do drugiego (`createCareTask`), któremu ta sama runda właśnie
+dorobiła wejście z interfejsu.
+
+**Rozwiązanie:** Każde ustalenie naprawione osobno, a po każdej rundzie **nowa recenzja świeżym
+okiem tylko na diff tej rundy** — aż runda przyszła bez ustaleń blokujących.
+
+**Lekcja:** Kiedy poprawiasz listę braków ze zgłoszenia, sprawdź trzy rzeczy, o które lista nie
+prosi: **(a)** czy zmiana znaczenia pola dotarła do WSZYSTKICH jego czytelników (`grep` po nazwie
+pola, nie po miejscu, które zgłoszono), **(b)** czy tekst interfejsu i komentarze nadal mówią prawdę
+o kodzie po zmianie, **(c)** czy nie usunąłeś jednego naruszenia kryterium kosztem drugiego —
+zwłaszcza gdy kryteria są parą („domyślnie schowane" + „ale dostępne na żądanie"). I nie zakładaj,
+że jedna runda recenzji wystarczy: recenzja czyta kod, który przed chwilą powstał pod presją listy,
+więc jej własny wynik też wymaga recenzji.
+
+---
+
+## 2026-08-28 — Stan `empty` w `ModuleView` zjada `children`, czyli formularz, którym miało się wyjść z pustego stanu
+**Problem:** Widok ewidencji zabiegów miał `state={pustyRejestr ? "empty" : "ready"}`, przycisk
+„Nowy zabieg" w `actions` (pasek rysuje się zawsze) i formularz w `children`. Konto bez ani jednego
+zabiegu klikało przycisk, `formularz` przechodziło na `true` — **i na ekranie nie zmieniało się
+nic**. `ModuleView` w stanie `empty` renderuje `ViewEmpty` ZAMIAST `children`. Funkcja była więc
+nieosiągalna dokładnie dla tego, kto miał jej użyć jako pierwszy, a bramki i testy tego nie widzą,
+bo kod jest poprawnie wpięty.
+
+**Rozwiązanie:** Warunek stanu pustego uwzględnia otwarty formularz (`&& !formularz`), a `empty`
+dostało `action` prowadzące do tego formularza — stan pusty musi mieć wyjście do jedynej czynności,
+która go usuwa.
+
+**Lekcja:** Zanim ustawisz `state="empty"`, sprawdź, **co jeszcze siedzi w `children`**. Jeżeli
+mieszka tam jakakolwiek droga wyjścia ze stanu pustego (formularz, wybór okresu, filtr), stan pusty
+ją ukryje. Reguła praktyczna: przełącznik widoczności czegoś z `children` musi wchodzić do warunku
+`empty`, a `empty.action` ma uruchamiać dokładnie to, czym użytkownik wychodzi z pustki.
+
+---
+
+## 2026-08-28 — `include: { plants: true }` nie zabiera tego, co wisi pod rośliną — a kaskada zabiera
+**Problem:** Migawka kasowanej przestrzeni roślinnej brała `plants: true`, czyli same wiersze
+`Plant`. Kaskada FK usuwała przy tym również `PlantJournalEntry`, `PlantMeasurement`
+i `PlantHealthEvent` (przez `Plant.space → Cascade`). Pętla przywracająca dzieci czytała wtedy
+`roslina.journal === undefined`, mapowała trzy puste tablice i **nie robiła nic** — no-op, który
+w kodzie wygląda jak pokrycie. Ścieżka „usuń roślinę → przywróć" była naprawiona, ścieżka „usuń
+przestrzeń → przywróć" gubiła rok zdjęć i pomiarów, a wpis kosza — jedyna kopia — jest po
+przywróceniu kasowany.
+
+**Rozwiązanie:** `plants: { include: { journal: true, measurements: true, healthEvents: true } }`.
+
+**Lekcja:** Zasięg migawki dobiera się **od kaskady, nie od nazw relacji, które przyszły do głowy**.
+Przy każdym `recordTrash` przejdź w `schema.prisma` wszystkie `onDelete: Cascade` schodzące od
+kasowanego wiersza — także te dwa poziomy niżej — i sprawdź, czy każdy z nich jest w `include`.
+I druga połowa tej samej lekcji: naprawiając zgłoszony błąd, sprawdź, **czy tej samej dziury nie ma
+piętro wyżej**; poprawka pisana pod listę braków domyka dokładnie to, co na liście stoi.
+
+---
+
+## 2026-08-28 — Weryfikacja, która sprawdza listę z poprzedniego przebiegu, potwierdza własną poprawkę
+**Problem:** W module Rośliny przebieg weryfikacji nr 1 znalazł osiem guardowanych funkcji bez
+konsumenta w interfejsie (naruszenie C-35). Przebieg nr 2 zaliczył tę regułę jako naprawioną —
+`grep` po tych ośmiu (plus trzech dołożonych) pokazał komplet konsumentów. Recenzja świeżym okiem
+znalazła **cztery kolejne** funkcje bez żadnego wejścia z interfejsu (`deleteSpace`, `updatePlace`,
+`deletePlace`, `updateCareTask`) i jeden pomocnik bez konsumenta (`listaFaz`). Jedna z nich stała
+za kryterium akceptacji zaliczonym na ✅: „użytkownik może usunąć przestrzeń".
+
+**Rozwiązanie:** Dowód liczony **od eksportów modułu**, a nie od listy braków z poprzedniego
+przebiegu: dla każdej eksportowanej akcji szukamy konsumenta w `ui/` i `app/`. Cztery brakujące
+wejścia dorobione (T-64), a `verify.md` poprawiony tak, żeby mówił, w którym przebiegu kryterium
+zostało naprawdę spełnione.
+
+**Lekcja:** Sprawdzanie „czy poprzednie braki zniknęły" nie jest weryfikacją — to potwierdzenie
+własnej poprawki. Zbiór do sprawdzenia musi za każdym razem powstawać **z kodu** (wszystkie
+eksporty), nie z notatki z poprzedniej rundy. Ten sam błąd metody dotknął dowodu na udostępnianie:
+tabela prawdy dowodziła, że guard mówi „wolno", a listy szły przez „moje rekordy", więc obdarowana
+osoba wchodziła do pustego widoku — dowód na dostęp musi obejmować także **zakres list**, nie tylko
+decyzję guardu.
+
+---
+
+## 2026-08-28 — Zero w danych to wartość, a nie brak danych
+**Problem:** Wymagania wodne gatunku (`waterJson`) trzymają cztery liczby — odstęp podlewania na
+każdą porę roku. Katalog zapisuje **zero** tam, gdzie gatunek nie jest w danej porze podlewany na
+cykl: warzywa jednoroczne mają zero zimą, zboża i uprawy polowe we wszystkich porach (125 ze 182
+wpisów ma zero w co najmniej jednej porze). Funkcja czytająca odsiewała wartości przez
+`Number.isFinite(n) && n > 0`, więc zero szło do gałęzi „brak danych" i było zastępowane wartością
+domyślną. Skutek: pomidor dodany w styczniu dostawał zadanie „podlej za 14 dni" z uzasadnieniem,
+które brzmiało wiarygodnie i było zmyślone. Test utrwalał ten błąd — sprawdzał wprost, że
+`{ winter: 0 }` „bierze zapas".
+
+**Rozwiązanie:** Trzy stany zamiast dwóch: liczba dodatnia (odstęp), zero (nie podlewamy w tej
+porze), brak/śmieć (wartość domyślna). Reguła terminu zwraca `pomijac: true` i datę **początku
+najbliższej pory z dodatnim odstępem**, a zakładanie harmonogramu liczy termin przed utworzeniem
+zadania i przy `pomijac` nie tworzy go wcale. Nowy test czyta wymagania wodne **wprost z migracji
+0273**, więc sprawdza regułę wobec danych, a nie samego siebie.
+
+**Lekcja:** `> 0` w walidacji liczby to decyzja produktowa, nie techniczna — sprawdź, czy zero coś
+w tej dziedzinie **znaczy**, zanim wrzucisz je do worka z `null` i `"abc"`. Gdy znaczy: potrzebne są
+trzy gałęzie, a wywołujący musi dostać sygnał („pomiń"), a nie podstawioną liczbę. I jeszcze jedno:
+test, który powtarza implementację, zamiast czytać dane wejściowe z ich prawdziwego źródła
+(migracji, seeda), utrwala błąd zamiast go łapać.
+
+---
+
+## 2026-08-28 — Akcja użytkownika o nazwie `resolve…` cicho wypada z bramki pokrycia AI
+**Problem:** W nowym module Rośliny akcja `resolveHealthEvent` („czy zalecenie pomogło") nie
+pojawiła się na liście kandydatów `check:ai-coverage`, a wpis dodany dla niej w manifeście został
+zgłoszony jako **przestarzały** („akcja już nie istnieje"). Akcja istniała, była wyeksportowana
+z pliku `"use server"` i miała guard.
+
+**Rozwiązanie:** Bramka odsiewa pomocniki wewnętrzne regexpem
+`^(assert|ensure|find|preview|describe|has|is|count|resolve|read)` — a `resolveHealthEvent` zaczyna
+się od `resolve`. Nazwa została zmieniona na `markHealthOutcome`, przez co akcja wróciła do
+klasyfikacji. Powód zapisany w komentarzu przy funkcji, żeby nikt nie „poprawił" nazwy z powrotem.
+
+**Lekcja:** Heurystyka po przedrostku nazwy jest tania i skuteczna, ale ma cichy tryb porażki:
+akcja NIE zgłasza się jako niesklasyfikowana, tylko **znika z listy kandydatów**. Objaw jest więc
+odwrotny do intuicji — zamiast błędu „brakuje wpisu" dostajemy ostrzeżenie „wpis jest zbędny".
+Przy nazywaniu nowych Server Actions unikaj przedrostków z tej listy dla operacji, które są
+**działaniem użytkownika**; `resolve`, `read` i `find` zarezerwuj dla prawdziwych pomocników.
+Gdy manifest mówi „akcja już nie istnieje", a ty ją widzisz w kodzie — to jest sygnał, że wpadła
+w ten filtr, a nie że masz literówkę.
+
+---
 
 ## 2026-08-28 — Dwa zgłoszenia o różnych objawach, jedna przyczyna: prompt płacony od nowa w każdej iteracji
 **Problem:** Właściciel zgłosił dwie rzeczy, które wyglądały na niezwiązane. Raz: asystent nie
@@ -5834,3 +6022,136 @@ telefonie, a od `md` `display: contents` przywraca dokładnie dotychczasowy ukł
 **Lekcja:** `minHeight` na kontenerze, którego zawartość bywa warunkowa, to rezerwacja miejsca na
 nic. Przy przenoszeniu treści za `hidden md:*` sprawdź, czy opakowanie ma jeszcze po co istnieć
 w tym punkcie granicznym.
+
+## 2026-08-29 — `export A=… B="$A"` ustawia B na STARĄ (pustą) wartość A
+**Problem:** Lokalne `prisma migrate deploy` „przechodziło" w tle (exit 0 przez `| tail`), ale nie
+robiło nic: `export DATABASE_URL="…" DIRECT_URL="$DATABASE_URL"` w jednej linii rozwija
+`$DATABASE_URL` do wartości sprzed przypisania — pustej. Prisma kończyła się błędem P1012
+(„DIRECT_URL resolved to an empty string"), maskowanym przez pipe.
+**Rozwiązanie:** Dwa osobne `export` (najpierw `DATABASE_URL`, potem `DIRECT_URL="$DATABASE_URL"`)
+i sprawdzenie skutku w bazie (`SELECT` po tabeli), a nie samego kodu wyjścia.
+**Lekcja:** W bashu ekspansje w jednym poleceniu widzą stan sprzed tego polecenia — zmienną
+zależną eksportuj w osobnej linii. Po „udanej" migracji weryfikuj stan bazy, nie exit code,
+zwłaszcza gdy wynik przechodzi przez `| tail`/`| head`.
+
+## 2026-08-29 — Kolizja numeru migracji między równoległymi sesjami wykryta dopiero na develop
+**Problem:** Dwie równoległe gałęzie `claude/*` dodały tego samego dnia migracje `0275_*`
+(raporty-biznesplany). Każda sesja wzięła numer z `npm run next:migration` na SWOIM stanie repo,
+obie zbudowały się zielono u siebie, a kolizja ujawniła się dopiero po zmergowaniu obu do
+`develop` — gdzie `check:migrations` wywala build deployu. Przemianować się nie dało: obie
+migracje były już zaaplikowane na testowej bazie (CLAUDE.md: „never renumber an already-applied
+migration").
+**Rozwiązanie:** Numer `0275` dopisany do `LEGACY_DUPLICATES` w `scripts/check-migrations.js`
+z komentarzem-uzasadnieniem (obie migracje to idempotentne `INSERT … ON CONFLICT DO NOTHING`
+o różnych slugach — duplikat prefiksu jest nieszkodliwy); licznik w CLAUDE.md zaktualizowany.
+**Lekcja:** `next:migration` gwarantuje unikalność tylko wobec zmergowanej historii — przy
+równoległych sesjach PRZED pushem na develop zrób `git fetch origin develop` i sprawdź, czy numer
+nie zajęty na `origin/develop`. Gdy kolizja już zaaplikowana na bazie: grandfather (z powodem
+w komentarzu), nigdy rename. Reguła skryptu „nie dopisuj nowych numerów" ustępuje twardszej
+regule „nie przemianowuj zaaplikowanych migracji" — konflikt reguł rozstrzyga się na rzecz tej,
+której złamanie psuje bazę, nie estetykę.
+
+## 2026-08-29 — Ta sama kolizja numeracji, drugi wariant: migracja NIEzaaplikowana → rename, nie grandfather
+**Problem:** Godziny po kolizji `0275_*` (wpis wyżej) powtórka na `0276_*`: równoległa sesja
+wypchnęła `0276_raport_biznesplan_kompas` na `develop`, zanim moja `0276_biznesplan_moduly_branzowe`
+dotarła do merge'a. Ten sam objaw (bramka czerwona na develop), ale inna sytuacja: moja migracja
+NIE była nigdzie zaaplikowana — `check:migrations` stoi na POCZĄTKU builda, a `migrate.js` na samym
+końcu, więc czerwona bramka gwarantuje, że deploy nie zdążył jej wykonać.
+**Rozwiązanie:** `git mv` na kolejny wolny numer (`0277`), treść bez zmian, bramka zielona —
+zamiast dopisywania kolejnego wyjątku do `LEGACY_DUPLICATES`.
+**Lekcja:** Kolizja numeracji ma DWA warianty i test rozstrzygający: czy build z kolizją
+kiedykolwiek przeszedł na tym środowisku. Bramka czerwona = `migrate.js` nie ruszył = migracja
+niezaaplikowana = **rename** (właściwy, bo grandfather jest furtką tylko na przypadek bez wyjścia);
+obie zaaplikowane = **grandfather**. Kolejność kroków w `build` (bramki przed migracją) jest tu
+mechanizmem bezpieczeństwa — dzięki niej „wykryto po pushu" nie znaczy „wykonano na bazie".
+
+---
+
+## 2026-08-29 — Seed w `catch` z ostrzeżeniem ukrywał, że nie działa od wielu wydań
+**Problem:** `scripts/migrate.js` sadził domyślne przypisania LLM zapytaniem
+`findUnique({ where: { operationType } })`, a klucz `LlmAssignment` jest ZŁOŻONY
+(`operationType`, `level`) od przebiegu 034. Prisma odrzucała zapytanie przy każdym
+buildzie, ale cały blok siedzi w `try/catch` z `console.warn("⚠ Failed to seed…")`,
+więc build był zielony — na świeżej bazie po prostu nie było żadnych przypisań
+i asystent nie miał modeli, a nikt nie wiedział dlaczego.
+**Rozwiązanie:** zapytanie i `create` przepisane na klucz złożony z poziomem
+`"standard"` (pozostałe poziomy dziedziczą). Zauważone dopiero, bo pełny build 115
+szedł na lokalnej, świeżo zasianej bazie i ktoś PRZECZYTAŁ log builda do końca.
+**Lekcja:** „nie-fatalny" seed z `catch`+`warn` to miejsce, gdzie regres może żyć
+latami — po każdej zmianie klucza/kształtu modelu grepnij seedy i skrypty deployu
+za starym kształtem (`findUnique({ where:` po zmienionym polu), bo `tsc` nie widzi
+plików `.js`, a build nie czerwienieje od ostrzeżenia.
+
+---
+
+## 2026-08-30 — Zmiennej CSS ustawionej inline na <html> nie nadpisze żadna media query
+**Problem:** Skórka zaawansowana (116) miała nadpisywać kilka tokenów na telefonie
+(`responsive.mobile.tokens`). Tokeny skórki są aplikowane inline na `<html>`
+(`style={tokensToStyle(...)}`), a styl inline wygrywa z każdą regułą arkusza — także
+z `@media (max-width: …) { :root { --token: … } }`. Reguła mobilna była więc martwa
+dokładnie wtedy, gdy skórka ustawiała ten token, czyli zawsze.
+**Rozwiązanie:** Kompilator przenosi nadpisywany token do PARY nowych zmiennych
+(`--d-font-size-base` / `--m-font-size-base`), USUWA go z mapy inline i ustawia bramkę
+`data-resp-mobile`; statyczne reguły w globals.css składają właściwą wartość po obu
+stronach progu md (`:root[data-resp-mobile] { --font-size-base: var(--d-…) }` + media
+query z wariantem `--m-…`). Cykli nie ma, bo nazwy są różne; wartości dopełnia kompilator.
+**Lekcja:** Responsywność wartości niesionej inline wymaga POŚREDNICTWA nazw: inline może
+nieść tylko warianty (`--d-*`/`--m-*`), a wybór między nimi musi zostać w arkuszu, bo tylko
+on widzi media queries. Przy okazji: `:root[data-x]` (0,2,0) świadomie przebija `:root`
+(0,1,0) — samo `html[data-x]` (0,1,1) przegrałoby z `:root` z globals.css.
+
+## 2026-08-31 — Bramka może być czerwona już na develop: build feature'a pada na cudzym pliku
+**Problem:** Pełny `npm run build` gałęzi 117 padł na `check:ownership-scope` w
+`src/actions/skinAssets.ts` — pliku z feature'a 116 (advanced skins), którego 117 nie dotykał.
+116 dodał ręczny zakres własności (`ownerTeamId: { in: … }`, poprawny — grafiki skórek mają gałąź
+systemową jak `skins.ts`), ale nie dopisał wyjątku do `ownership-scope-coverage.json`; rozjazd
+wszedł na develop i pierwszy pełny build PO merge'u go ujawnił.
+**Rozwiązanie:** Wpis wyjątku z uzasadnieniem (wzorem `skins.ts`) dodany w 117, z adnotacją skąd
+się wziął. To samo dotyczyło zapadki `check:domain` (36 > 33 pomocników w plikach akcji): 116 dodał
+`poleSkorki` i `toView` assetów w akcjach — wyprowadzone do `src/lib/skins/zapis.ts` (eksportowalne,
+testowalne), a własny `doDTO` w `obszary.ts` zastąpiony `select` Prismy. Build od tego miejsca zielony.
+**Lekcja:** Gdy build pada na pliku spoza własnego diffa, najpierw `git log -- <plik>` — czerwień
+mogła przyjechać z bazą. Naprawę i tak robimy u siebie (czekanie na cudzy fix to też czekanie),
+ale w komunikacie/commicie nazywamy źródło, żeby recenzent nie szukał związku z bieżącym feature'em.
+
+---
+
+## 2026-09-01 — Ikona inline + brak `nowrap` = etykieta przycisku łamie się POD ikonę
+**Problem:** Właściciel zgłosił cztery osobne usterki („Nowa przestrzeń", „Usuń przestrzeń",
+rząd akcji przestrzeni, nagłówek „Pomiary"), które wyglądały na cztery bugi, a były JEDNYM:
+ikony wstawiane inline (`<Icon style={{verticalAlign:-2, marginRight:4}}/>{tekst}`) w elemencie
+bez reguły łamania. W ciasnym rzędzie flex przeglądarka łamała linię zaraz za ikoną i etykieta
+lądowała pod nią. Wspólny `Button` miał ten sam brak (`inline-flex` bez `whitespace-nowrap`).
+**Rozwiązanie:** Reguła w STYLU WSPÓLNYM, nie w miejscach zgłoszeń: `whitespace-nowrap` w bazie
+`components/ui/Button`, a w module Rośliny `przycisk` dostał `inline-flex + alignItems + gap +
+nowrap` i `naglowekSekcji` `flex + gap` — po czym hack `verticalAlign/marginRight` zszedł z ~30
+ikon (w kontenerze flex `vertical-align` i tak nie działa, a `marginRight` dublował `gap`).
+Ikony inline w akapitach (`<p>`) świadomie zostały po staremu.
+**Lekcja:** Gdy kilka zgłoszeń opisuje ten sam symptom w różnych miejscach, najpierw szukaj
+wspólnego wzorca stylu — poprawka per zgłoszenie zostawiłaby tę samą minę w każdym kolejnym
+przycisku. Przycisk to etykieta akcji, nie akapit: w kontenerach akcji z `flex-wrap` zawijać ma
+się CAŁY przycisk, nigdy jego wnętrze — `whitespace-nowrap` należy do prymitywu.
+
+---
+
+---
+
+## 2026-08-30 — Twardy JSON.parse obok gotowego parseJsonLoose — martwy import to nie wpięta ochrona
+**Problem:** Generator skórek (oba tryby) zbijał użytkownika komunikatem „Model zwrócił
+nieprawidłowy format" przy pierwszej odpowiedzi w niekanonicznym kształcie. W pliku od 081
+leżały ZAIMPORTOWANE `parseJsonLoose` (tolerancyjny odczyt) i `wyodrebnijTokeny` (pojemniki
+`variables`/`theme`), ale ścieżka odczytu używała twardego `JSON.parse` po naiwnym zdjęciu
+płotków — regex `/```$/` nie znosił nawet znaku nowej linii po płotku zamykającym. Do tego
+`chatComplete` od 032 zwraca flagę `truncated` (ucięte wyjście), której nikt nie czytał,
+więc ucięcie i śmieci zgłaszały się identycznym, bezużytecznym zdaniem — bez ponowienia,
+mimo że pętla ponowień (080) stała trzy linie niżej.
+**Rozwiązanie:** `odczytajOdpowiedzJson(content, truncated)` na `parseJsonLoose` z przyczyną
+`"ucieta" | "brak-json"`; nieudany odczyt = nieudane PODEJŚCIE (komunikat korygujący o
+kształcie + ponowienie w ramach istniejącego limitu), ostateczna porażka = komunikat
+nazywający przyczynę i kierunek naprawy (`opisPorazkiFormatu`). Tryb prosty czyta mapę
+tokenów przez `wyodrebnijTokeny`. Testy odtwarzają każdy kształt, który wcześniej padał.
+**Lekcja:** Import bez wywołania to obietnica bez pokrycia — mechanizm ochronny istnieje
+dopiero wtedy, gdy leży NA ŚCIEŻCE danych, i to powinien łapać test odtwarzający realny
+kształt wejścia, nie code review. Druga połowa lekcji: transport często WIE więcej niż
+treść (flaga `truncated`) — diagnoza z flagi bije wróżenie z zepsutego tekstu, bo mówi,
+czy naprawa leży w budżecie wyjścia, czy w modelu.

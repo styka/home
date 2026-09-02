@@ -11,6 +11,7 @@ import { assertListAccess } from "@/modules/shopping/contract";
 import type { MealSlot, MealStatus } from "@/types/kitchen";
 import type { MealPlanEntry, Item } from "@prisma/client";
 import { dayKeyUTC } from "../domain/dzienPlanu";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 import { wlasnoscDoZapisu, przestrzenZespoluBezKontroliDostepu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
 
@@ -140,12 +141,13 @@ export async function getMealPlanCost(range: { from: Date; to: Date }, teamId?: 
 }
 
 export async function getTodaysMeals(): Promise<MealPlanEntryWithRecipe[]> {
-  const today = new Date();
-  const from = new Date(today);
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(today);
-  to.setHours(23, 59, 59, 999);
-  return getMealPlan({ from, to });
+  // Dzień kalendarzowy w strefie UŻYTKOWNIKA, zamieniony na klucz dnia planu (południe UTC) —
+  // `setHours(0/23)` na serwerze (Render = UTC) wyznaczało dobę UTC, więc między północą a 2:00
+  // czasu PL briefing/pulpit pokazywał wczorajszy jadłospis. Wpisy planu żyją pod `dayKeyUTC`,
+  // dlatego pytamy o dokładnie ten jeden klucz, a nie o przedział godzin.
+  const dzis = dataWStrefie(userTimeZone()); // "YYYY-MM-DD"
+  const klucz = dayKeyUTC(new Date(`${dzis}T12:00:00Z`));
+  return getMealPlan({ from: klucz, to: klucz });
 }
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────

@@ -13,8 +13,21 @@ import {
   ALL_CONTROLS,
   DEFAULT_DARK_TOKENS,
   validateTokens,
+  type SkinControlKind,
   type SkinTokens,
 } from "@/lib/skins";
+import {
+  CELE_ANIMACJI,
+  KOMPONENTY,
+  MOBILE_TOKENY,
+  SLOTY_ASSETOW,
+  STANY_GLOBALNE,
+  WARIANTY_NAWIGACJI,
+  walidujDefinicje,
+  type DefinicjaZaawansowana,
+  type OpisWlasciwosci,
+} from "@/lib/skins/zaawansowane";
+import { resolveGeneratorObrazow } from "@/platform/ai/generatorObrazow";
 
 /**
  * Katalog tokenów dla modelu — GENEROWANY z `ALL_CONTROLS`, nie przepisany ręcznie.
@@ -23,6 +36,25 @@ import {
  * się przy pierwszym nowym tokenie i model po cichu przestałby go ustawiać. Tu rozjazd
  * jest niemożliwy z definicji.
  */
+function opisRodzaju(kind: SkinControlKind, options?: { value: string }[]): string {
+  switch (kind) {
+    case "color": return "kolor #rrggbb";
+    case "scheme": return "light | dark";
+    case "font":
+    case "keyword": return (options ?? []).map((o) => o.value).join(" | ");
+    case "radius":
+    case "density": return "wartość w px, max 3 cyfry (np. 6px), albo 0";
+    case "length": return "px, rem albo em (np. 16px, 1.5rem)";
+    case "tracking": return "em albo px, może być ujemne (np. 0.08em)";
+    case "number": return "liczba bez jednostki (np. 1.5)";
+    case "weight": return "100..900 (setki)";
+    case "duration": return "ms albo s (np. 120ms, 0.3s)";
+    case "easing": return "linear | ease | ease-in | ease-out | ease-in-out | cubic-bezier(a,b,c,d)";
+    case "shadow": return "cień CSS; kolory tylko przez rgba()/rgb()/color-mix(); albo none";
+    case "background": return "kolor #rrggbb albo linear-gradient()/radial-gradient()/conic-gradient(); albo none";
+  }
+}
+
 function buildTokenCatalog(): string {
   const lines = ALL_CONTROLS.map((c) => {
     const dflt = DEFAULT_DARK_TOKENS[c.key];
@@ -147,6 +179,103 @@ Zwróć {"error":"not-a-theme"} WYŁĄCZNIE wtedy, gdy opis nie niesie ŻADNEJ i
 kultury albo marka — to wszystko SĄ opisy wyglądu i masz je przełożyć na tokeny.`;
 }
 
+// ─── 116: katalog i prompt trybu ZAAWANSOWANEGO ────────────────────────────────
+//
+// Katalog jest GENEROWANY z tych samych obiektów, którymi waliduje `walidujDefinicje`
+// (KOMPONENTY, CELE_ANIMACJI, WARIANTY_NAWIGACJI, SLOTY_ASSETOW, MOBILE_TOKENY) —
+// ten sam powód co przy `buildTokenCatalog`: rozjazd promptu z walidacją jest
+// niemożliwy z definicji, bo źródło jest jedno.
+
+function katalogWlasciwosci(wpisy: Record<string, OpisWlasciwosci>, wciecie: string): string {
+  return Object.entries(wpisy)
+    .map(([prop, o]) => {
+      const rodzaj =
+        o.cel.typ === "var"
+          ? opisRodzaju(o.cel.rodzaj, o.cel.opcje)
+          : opisRodzaju(
+              ALL_CONTROLS.find((c) => c.key === (o.cel as { klucz: string }).klucz)?.kind ?? "color",
+              ALL_CONTROLS.find((c) => c.key === (o.cel as { klucz: string }).klucz)?.options,
+            );
+      return `${wciecie}${prop} — ${o.opis}; format: ${rodzaj}`;
+    })
+    .join("\n");
+}
+
+function katalogZaawansowany(): string {
+  const komponenty = Object.entries(KOMPONENTY)
+    .map(([nazwa, k]) => {
+      let s = `- ${nazwa} (${k.opis}):\n${katalogWlasciwosci(k.wlasciwosci, "    ")}`;
+      for (const [stan, props] of Object.entries(k.stany ?? {})) {
+        s += `\n    states.${stan}:\n${katalogWlasciwosci(props, "      ")}`;
+      }
+      return s;
+    })
+    .join("\n");
+  const stany = Object.entries(STANY_GLOBALNE)
+    .map(([nazwa, props]) => `- ${nazwa}:\n${katalogWlasciwosci(props, "    ")}`)
+    .join("\n");
+  const animacje = Object.entries(CELE_ANIMACJI)
+    .map(([cel, k]) => `- ${cel} (${k.opis}) — dozwolone name: ${k.nazwy.join(" | ")}`)
+    .join("\n");
+  return `KATALOG TOKENÓW (sekcja "tokens" — ustaw WSZYSTKIE):
+${buildTokenCatalog()}
+
+KOMPONENTY (sekcja "components" — tylko te nazwy i te właściwości):
+${komponenty}
+
+KOLORY STANÓW (sekcja "states"):
+${stany}
+
+UKŁAD (sekcja "layout"): { "nav": ${WARIANTY_NAWIGACJI.map((w) => `"${w}"`).join(" | ")} }
+
+ANIMACJE (sekcja "animations" — obiekt cel → {name, duration?, easing?, intensity?}):
+${animacje}
+  Parametry: duration 60ms–3000ms; easing jak w tokenach; intensity: subtle | normal | strong.
+
+TELEFON (sekcja "responsive"): { "mobile": { "tokens": {...} } } — wolno nadpisać tylko:
+${MOBILE_TOKENY.join(", ")}
+
+GRAFIKI (sekcja "assets" — tablica, max jeden wpis na slot):
+  Sloty: ${SLOTY_ASSETOW.join(" | ")}. Wpis: { "slot": "...", "status": "missing",
+  "prompt": "opis grafiki po polsku", "fit": "cover"|"tile" }.
+  NIE znasz żadnych id grafik — zawsze status "missing" z opisem; system dołączy grafikę,
+  gdy będzie dostępny generator obrazów. Używaj oszczędnie: gradienty z "tokens" często
+  wystarczą zamiast grafiki.`;
+}
+
+function systemPromptZaawansowany(): string {
+  return `Jesteś projektantem interfejsów. Tworzysz ZAAWANSOWANĄ skórkę aplikacji Omnia z opisu po polsku — motyw tak głęboki, że aplikacja może przypominać inną aplikację (panel sci-fi, bajkowy pastel, retro terminal, elegancki premium).
+
+Skórka to JEDEN obiekt JSON o ściśle zamkniętym schemacie. Wszystko spoza katalogów zostanie odrzucone.
+
+${katalogZaawansowany()}
+
+${RULES}
+
+6. WARSTWY MAJĄ WSPÓŁGRAĆ. Wariant układu, komponenty, animacje i grafiki dobieraj tak,
+   żeby budowały JEDEN charakter (terminal → pasek-gorny + zero animacji + ostre rogi;
+   bajkowy → duże zaokrąglenia + slide-up + pastelowe gradienty).
+
+Zwróć WYŁĄCZNIE JSON (bez markdown) w schemacie:
+{
+  "schemaVersion": 1,
+  "name": string,               // krótka, własna nazwa skórki po polsku
+  "description": string,        // jedno zdanie o charakterze motywu
+  "colorScheme": "light"|"dark",
+  "rationale": string,          // 1-2 zdania: jak opis przełożyłeś na decyzje
+  "tokens": { ... },            // komplet tokenów z katalogu
+  "components": { ... },        // co najmniej button i card
+  "states": { ... },
+  "layout": { "nav": "..." },
+  "animations": { ... },        // 0-3 celów; umiar przed efektownością
+  "responsive": { "mobile": { "tokens": { ... } } },   // opcjonalnie
+  "assets": [ ... ]             // opcjonalnie, status "missing" + prompt
+}
+
+KAŻDA wartość liczbowa jest NAPISEM ("700", nie 700). Zwróć {"error":"not-a-theme"} WYŁĄCZNIE,
+gdy opis nie niesie żadnej informacji o wyglądzie.`;
+}
+
 /** 080 (Z10): łącznie tyle podejść do wygenerowania skórki (pierwsze + jedno ponowienie). */
 export const SKIN_MAX_ATTEMPTS = 2;
 
@@ -208,8 +337,68 @@ export function opisPorazki(przyslanych: number, odrzucone: string[]): string {
   );
 }
 
+// ─── 119: odczyt odpowiedzi modelu — tolerancja na KSZTAŁT, nie na treść ────────
+//
+// Zgłoszenie użytkownika: „błąd o formacie" przy generowaniu skórki. Przyczyna: oba
+// tryby czytały odpowiedź twardym `JSON.parse` po naiwnym zdjęciu płotków (regex nie
+// radził sobie nawet ze znakiem nowej linii po ``` zamykającym) i rzucały 502 BEZ
+// ponowienia — mimo że `parseJsonLoose` był w tym pliku zaimportowany od 081, a
+// `chatComplete` od 032 zwraca flagę `truncated` (ucięte wyjście). Tolerancja dotyczy
+// WYŁĄCZNIE opakowania: odzyskana treść i tak przechodzi pełną walidację (116).
+
+export type PrzyczynaFormatu = "ucieta" | "brak-json";
+
+export function odczytajOdpowiedzJson(
+  content: string | null | undefined,
+  truncated: boolean,
+): { ok: true; parsed: Record<string, unknown> } | { ok: false; przyczyna: PrzyczynaFormatu } {
+  const parsed = parseJsonLoose<unknown>(content ?? "");
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    return { ok: true, parsed: parsed as Record<string, unknown> };
+  }
+  // Ucięcie znamy z FLAGI transportu, nie z wróżenia po treści — to rozróżnienie
+  // decyduje, czy naprawa leży w budżecie wyjścia, czy w samym modelu.
+  return { ok: false, przyczyna: truncated ? "ucieta" : "brak-json" };
+}
+
+/** Komunikat korygujący drugiego podejścia — jak `korekta`, ale o KSZTAŁCIE odpowiedzi. */
+export function korektaFormatu(przyczyna: PrzyczynaFormatu): string {
+  if (przyczyna === "ucieta") {
+    return (
+      "Twoja poprzednia odpowiedź została UCIĘTA — skończył się budżet wyjścia. " +
+      "Odpowiedz zwięźlej: wyłącznie jeden obiekt JSON, bez komentarzy i bez markdown, " +
+      "„rationale” najwyżej jedno zdanie."
+    );
+  }
+  return (
+    "W twojej poprzedniej odpowiedzi nie dało się znaleźć obiektu JSON. " +
+    "Zwróć WYŁĄCZNIE jeden obiekt JSON w ustalonym kształcie — bez tekstu przed ani po " +
+    "i bez płotków markdown."
+  );
+}
+
+/** Komunikat ostatecznej porażki formatu — mówi CO zawiodło i GDZIE szukać naprawy,
+ *  wzorem `opisPorazki` (080): enigmatyczne „nieprawidłowy format" niczego nie naprawia. */
+export function opisPorazkiFormatu(przyczyna: PrzyczynaFormatu): string {
+  if (przyczyna === "ucieta") {
+    return (
+      "Odpowiedź modelu została ucięta (skończył się budżet wyjścia) i nie dało się z niej " +
+      "odczytać skórki — także po ponowieniu. Spróbuj ponownie albo uprość opis; jeśli problem " +
+      "wraca, sprawdź model przypisany do operacji „generation” w panelu LLM — modele rozumujące " +
+      "zużywają część budżetu na myślenie."
+    );
+  }
+  return (
+    "Model nie zwrócił obiektu JSON, z którego dałoby się odczytać skórkę — także po ponowieniu. " +
+    "To wygląda na problem z modelem, nie z opisem: spróbuj ponownie, a jeśli się powtarza, " +
+    "sprawdź model przypisany do operacji „generation” w panelu LLM."
+  );
+}
+
 export interface GenerateSkinPayload {
   prompt?: string;
+  /** 116: rodzaj generowanej skórki. Domyślnie `simple` — dotychczasowe zachowanie. */
+  tryb?: "simple" | "advanced";
 }
 
 export interface GeneratedSkin {
@@ -222,10 +411,116 @@ export interface GeneratedSkin {
   rejected: string[];
 }
 
+/** 116: wynik trybu zaawansowanego — pełna, zwalidowana definicja. */
+export interface GeneratedAdvancedSkin {
+  name: string;
+  description: string;
+  colorScheme: "light" | "dark";
+  rationale: string;
+  definition: DefinicjaZaawansowana;
+  /** Ścieżki pól, których nie przyjęła walidacja — pokazywane, nie chowane. */
+  rejected: string[];
+  /** Zamówione grafiki, których nie ma czym wygenerować (brak dostawcy obrazów). */
+  brakujaceGrafiki: string[];
+}
+
+async function skinGenerateAdvanced(trimmed: string, ctx: JobContext) {
+  const historia: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    { role: "system", content: systemPromptZaawansowany() },
+    { role: "user", content: trimmed },
+  ];
+  const wywolania: Array<Parameters<typeof usageFromChat>[0][number]> = [];
+  let definicja: DefinicjaZaawansowana = { schemaVersion: 1 };
+  let odrzucone: string[] = [];
+  let parsed: Record<string, unknown> = {};
+  // Recenzja 116 (ust. 6): do diagnozy porażki idzie liczba pól PRZYSŁANYCH przez model
+  // (kontrakt `opisPorazki` z 080), nie liczność listy odrzuconych ścieżek — te dwa
+  // rozjeżdżają się, gdy walidacja odrzuca całe sekcje.
+  let przyslanychPol = 0;
+
+  for (let podejscie = 1; podejscie <= SKIN_MAX_ATTEMPTS; podejscie++) {
+    const result = await chatComplete({
+      op: "generation",
+      userId: ctx.ownerId ?? undefined,
+      messages: historia,
+      temperature: 0.7,
+      // Definicja zaawansowana jest 2-3× większa niż mapa tokenów (komponenty, animacje,
+      // layout) — budżet odpowiednio wyżej, z tego samego powodu co 4500 w trybie prostym.
+      maxTokens: 8000,
+      json: true,
+    });
+    if (!result.ok) throw new JobError(result.message, result.status);
+    wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
+
+    // 119: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
+    const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
+    if (!odczyt.ok) {
+      if (podejscie < SKIN_MAX_ATTEMPTS) {
+        historia.push({ role: "assistant", content: result.content ?? "" });
+        historia.push({ role: "user", content: korektaFormatu(odczyt.przyczyna) });
+        continue;
+      }
+      throw new JobError(opisPorazkiFormatu(odczyt.przyczyna), 502);
+    }
+    parsed = odczyt.parsed;
+    if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
+
+    przyslanychPol = Object.keys(parsed).length;
+    // Model jest źródłem równie obcym jak cudzy plik — pełna walidacja definicji.
+    const w = walidujDefinicje(parsed);
+    definicja = w.definicja;
+    odrzucone = w.odrzucone;
+
+    // Sukces = jest czym motywować: warstwa tokenów albo komponentów.
+    if (definicja.tokens || definicja.components) break;
+
+    if (podejscie < SKIN_MAX_ATTEMPTS) {
+      historia.push({ role: "assistant", content: result.content ?? "" });
+      historia.push({
+        role: "user",
+        content:
+          `Żadne z pól, które zwróciłeś, nie przeszło walidacji: ${wymien(odrzucone)}.\n\n` +
+          "Popraw odpowiedź. Nazwy sekcji, komponentów, właściwości i animacji MUSZĄ pochodzić " +
+          "z katalogu (co do znaku), a wartości mieć podany format — każda liczba jako NAPIS.\n\n" +
+          `${katalogZaawansowany()}\n\nZwróć wyłącznie JSON w ustalonym kształcie.`,
+      });
+    }
+  }
+
+  if (!definicja.tokens && !definicja.components) {
+    throw new JobError(opisPorazki(przyslanychPol, odrzucone), 502);
+  }
+
+  // 116: zamówione grafiki — bez dostawcy obrazów zostają `missing` (jawnie, nie cicho).
+  // Gdy dostawca będzie podłączony (`resolveGeneratorObrazow`), tu jest miejsce, w którym
+  // zamówienie zamienia się w rekord `SkinAsset` i status `ready`.
+  const generator = resolveGeneratorObrazow();
+  const brakujaceGrafiki: string[] = [];
+  if (!generator && definicja.assets) {
+    for (const ref of definicja.assets) {
+      if (ref.status === "missing") brakujaceGrafiki.push(ref.prompt || ref.slot);
+    }
+  }
+
+  const skin: GeneratedAdvancedSkin = {
+    name: typeof parsed.name === "string" ? parsed.name.trim().slice(0, 60) : "Nowa skórka",
+    description: typeof parsed.description === "string" ? parsed.description.trim().slice(0, 200) : "",
+    colorScheme: parsed.colorScheme === "light" ? "light" : "dark",
+    rationale: typeof parsed.rationale === "string" ? parsed.rationale.trim().slice(0, 400) : "",
+    definition: definicja,
+    rejected: odrzucone,
+    brakujaceGrafiki,
+  };
+  return { skin, usage: usageFromChat(wywolania) };
+}
+
 export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: JobContext) {
   const trimmed = payload?.prompt?.trim();
   if (!trimmed) throw new JobError("Opisz, jak ma wyglądać skórka", 400);
   if (trimmed.length > 600) throw new JobError("Opis za długi (max 600 znaków)", 400);
+
+  if (payload.tryb === "advanced") return skinGenerateAdvanced(trimmed, ctx);
 
   // 080 (Z10): DWA PODEJŚCIA. Zgłoszenie właściciela („Star Trek" → „Model nie zwrócił ani jednego
   // poprawnego tokenu") pokazało, że jedna nieudana odpowiedź kończyła całą operację, a komunikat
@@ -264,12 +559,18 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     if (!result.ok) throw new JobError(result.message, result.status);
     wywolania.push({ res: result, label: podejscie === 1 ? "wygenerowana skórka" : `wygenerowana skórka (podejście ${podejscie})` });
 
-    try {
-      const cleaned = (result.content || "{}").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "");
-      parsed = JSON.parse(cleaned);
-    } catch {
-      throw new JobError("Model zwrócił nieprawidłowy format", 502);
+    // 119: tolerancyjny odczyt + ponowienie zamiast twardego 502 przy pierwszym
+    // niekanonicznym kształcie (płotki, tekst wokół JSON-a, ucięcie).
+    const odczyt = odczytajOdpowiedzJson(result.content, result.truncated === true);
+    if (!odczyt.ok) {
+      if (podejscie < SKIN_MAX_ATTEMPTS) {
+        historia.push({ role: "assistant", content: result.content ?? "" });
+        historia.push({ role: "user", content: korektaFormatu(odczyt.przyczyna) });
+        continue;
+      }
+      throw new JobError(opisPorazkiFormatu(odczyt.przyczyna), 502);
     }
+    parsed = odczyt.parsed;
 
     // Odmowa opisu jest odpowiedzią, nie awarią — ponowienie nie ma czego poprawić.
     if (parsed.error) throw new JobError("Z tego opisu nie wynika wygląd interfejsu — doprecyzuj", 422);
@@ -278,7 +579,10 @@ export async function skinGenerateHandler(payload: GenerateSkinPayload, ctx: Job
     // url() z obrazkiem tła albo font-family z nazwą czcionki z sieci — jedno i drugie
     // przechodzi tu przez tę samą sanityzację co import. Sanityzacji NIE luzujemy pod
     // żaden opis: to jest bramka bezpieczeństwa (wstrzyknięcie CSS), a nie próg jakości.
-    const rawTokens = (parsed.tokens ?? {}) as Record<string, unknown>;
+    //
+    // 119: mapę tokenów czytamy przez `wyodrebnijTokeny` (081) — modele oddają ją też
+    // w pojemnikach `variables`/`theme`/… i w parach-liczbach; import istniał, ścieżka nie.
+    const rawTokens = wyodrebnijTokeny(parsed).tokeny;
     tokens = validateTokens(rawTokens);
     rejected = Object.keys(rawTokens).filter((k) => !(k in tokens));
     ostatnieOdrzucone = Object.keys(rawTokens).length;

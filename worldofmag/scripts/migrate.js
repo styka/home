@@ -103,10 +103,15 @@ async function seedLlmDefaults() {
       { operationType: "generation", model: "llama-3.3-70b-versatile" },
     ]
     for (const d of defaults) {
-      const existing = await prisma.llmAssignment.findUnique({ where: { operationType: d.operationType } })
+      // 115: klucz LlmAssignment jest ZŁOŻONY (operationType, level) od 034 — zapytanie po samym
+      // operationType Prisma odrzucała i seed po cichu nie działał na świeżej bazie (łapał go
+      // catch niżej). Sadzimy poziom "standard": pozostałe poziomy dziedziczą z niego.
+      const existing = await prisma.llmAssignment.findUnique({
+        where: { operationType_level: { operationType: d.operationType, level: "standard" } },
+      })
       if (!existing) {
         await prisma.llmAssignment.create({
-          data: { operationType: d.operationType, providerId: provider.id, model: d.model },
+          data: { operationType: d.operationType, level: "standard", providerId: provider.id, model: d.model },
         })
       }
     }

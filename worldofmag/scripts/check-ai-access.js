@@ -38,6 +38,10 @@ const MECHANIZMY = [
   /filtrMoichRekordow\s*\(/,
   /[A-Za-z]*[Ss]cope\s*\(\s*userId/, // lokalny helper zakresu (np. `ownerScope(userId)`)
   /accessible[A-Za-z]*\s*\(\s*userId/, // lokalny helper „co widzę"
+  // 114: zakres Roślin — „moje przestrzenie + nadane mi" (lib/sharingGuard). To jest zawężenie
+  // SZERSZE o nadania niż `ownedWhereAsync`, ale wciąż zawężenie do tego, co użytkownik widzi
+  // w widokach — asystent ma odpowiadać na pytanie o dostęp tak samo jak agenda i kalendarz.
+  /zakresPrzestrzeni\s*\(\s*userId/,
 ];
 
 /**

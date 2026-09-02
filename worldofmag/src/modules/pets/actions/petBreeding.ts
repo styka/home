@@ -6,6 +6,7 @@ import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from "@/platform/auth/serverUtils";
 import { trackActivity } from "@/actions/activity";
 import { assertPetAccess } from "./pets";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
 import type { PetBreedingData, PetBreedingPair, PetClutch, PetSale, PetStatus } from "@/types";
 import type { PetGene } from "../lib/petGenetics";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
@@ -298,11 +299,43 @@ export async function recordSale(petId: string, data: {
   return sale as PetSale;
 }
 
+/**
+ * 115 (Z-INT-03): przychód ze sprzedaży zwierzęcia do Portfela (kind: income).
+ * Idempotentnie po (pets, sale-<id>) — prefiks odróżnia od kosztów wizyt w tym samym module.
+ */
+export async function bookSaleIncome(id: string): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  const sale = await prisma.petSale.findUnique({
+    where: { id },
+    select: { petId: true, price: true, buyerName: true, soldAt: true, pet: { select: { name: true } } },
+  });
+  if (!sale) throw new Error("Nie znaleziono sprzedaży");
+  await assertPetAccess(sale.petId, user.id, true);
+  if (!sale.price || sale.price <= 0) throw new Error("Ta sprzedaż nie ma wpisanej ceny");
+  const wynik = await bookAutoExpense(user.id, {
+    module: "pets",
+    sourceId: `sale-${id}`,
+    amount: sale.price,
+    category: "Zwierzęta — sprzedaż",
+    note: [sale.pet?.name, sale.buyerName].filter(Boolean).join(" → ") || null,
+    date: sale.soldAt,
+    kind: "income",
+    force: true,
+  });
+  revalidatePet(sale.petId);
+  revalidatePath("/portfel");
+  return wynik;
+}
+
 export async function deleteSale(id: string): Promise<void> {
   const user = await requireAuth();
   const sale = await prisma.petSale.findUnique({ where: { id }, select: { petId: true } });
   if (!sale) return;
   await assertPetAccess(sale.petId, user.id, true);
   await prisma.petSale.delete({ where: { id } });
+  // Recenzja 115 (R-4): fantomowy PRZYCHÓD po skasowanej sprzedaży jest gorszy niż fantomowy
+  // wydatek — odwracamy auto-wpis razem ze źródłem (precedens Floty).
+  await removeAutoExpense("pets", `sale-${id}`);
   revalidatePet(sale.petId);
+  revalidatePath("/portfel");
 }

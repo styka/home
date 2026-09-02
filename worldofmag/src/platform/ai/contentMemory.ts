@@ -39,7 +39,13 @@ export type AiContentKind =
   // I długość, bo to trzy osobne treści do zapamiętania, a nie jedna w trzech wariantach.
   // Świadomie NIE ma tego w `AI_SECTION_KINDS`: tryb odświeżania dotyczy sekcji, która sama się
   // pokazuje przy wejściu na stronę, a streszczenie powstaje wyłącznie po kliknięciu długości.
-  | "youtube.streszczenie";
+  | "youtube.streszczenie"
+  // 113: plan sezonu dla przestrzeni roślinnej. Klucz zakresu niesie identyfikator przestrzeni,
+  // bo kwiaciarnia i prywatny ogród tego samego użytkownika to dwa różne plany, a nie jeden
+  // w dwóch wariantach.
+  | "rosliny.planSezonu"
+  // 113: wnioski o przestrzeni roślinnej (przeżywalność, plon, porównanie z poprzednim sezonem).
+  | "rosliny.wnioski";
 
 export interface RememberedContent<T> {
   value: T;

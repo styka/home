@@ -254,6 +254,8 @@ export async function getWatchers(): Promise<WatcherDTO[]> {
  */
 export interface WeatherPrefDTO {
   watchersLayout: WatchersLayout;
+  /** 115 (Z-INT-15): czy prognoza domyślnej lokalizacji ma się pokazywać we wspólnym kalendarzu. */
+  kalendarzPrognoza: boolean;
 }
 
 export async function getWeatherPref(): Promise<WeatherPrefDTO> {
@@ -265,7 +267,72 @@ export async function getWeatherPref(): Promise<WeatherPrefDTO> {
   });
   return {
     watchersLayout: czytajUklad(row.watchersLayout),
+    kalendarzPrognoza: row.kalendarzPrognoza,
   };
+}
+
+// ─── 115 (Z-INT-15): prognoza we wspólnym kalendarzu ─────────────────────────
+
+export interface DzienPrognozyKalendarza {
+  /** "YYYY-MM-DD" — klucz komórki siatki kalendarza. */
+  date: string;
+  tMax: number;
+  tMin: number;
+  emoji: string;
+  opis: string;
+}
+
+export interface KalendarzPrognozaDTO {
+  wlaczona: boolean;
+  dni: DzienPrognozyKalendarza[];
+}
+
+/**
+ * Prognoza dla siatki wspólnego kalendarza: domyślna lokalizacja, najbliższe dni.
+ * Brak lokalizacji albo awaria Open-Meteo = pusta lista, nigdy wyjątek — kalendarz
+ * jest agregatem wielu modułów i pogoda nie ma prawa go wywrócić.
+ */
+export async function getKalendarzPrognoza(): Promise<KalendarzPrognozaDTO> {
+  const user = await requireAuth();
+  const pref = await prisma.weatherPref.findFirst({
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    select: { kalendarzPrognoza: true },
+  });
+  const wlaczona = pref?.kalendarzPrognoza ?? true;
+  if (!wlaczona) return { wlaczona: false, dni: [] };
+
+  try {
+    const lokalizacje = await prisma.weatherLocation.findMany({
+      take: SUFIT_LISTY,
+      where: { ...(await filtrMoichRekordow(user.id)) },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    });
+    const domyslna = lokalizacje[0];
+    if (!domyslna) return { wlaczona, dni: [] };
+
+    const f = await fetchForecast(domyslna.lat, domyslna.lon);
+    if (!f) return { wlaczona, dni: [] };
+    return {
+      wlaczona,
+      dni: f.daily.slice(0, 7).map((d) => {
+        const meta = wmo(d.code);
+        return { date: d.date, tMax: d.tMax, tMin: d.tMin, emoji: meta.emoji, opis: meta.label };
+      }),
+    };
+  } catch {
+    return { wlaczona, dni: [] };
+  }
+}
+
+export async function setKalendarzPrognoza(on: boolean): Promise<void> {
+  const user = await requireAuth();
+  await prisma.weatherPref.upsert({
+    where: { ...(await filtrMoichRekordow(user.id)) },
+    create: { ...(await wlasnoscOsobistaDoZapisu(user.id)), kalendarzPrognoza: on },
+    update: { kalendarzPrognoza: on },
+  });
+  revalidatePath("/calendar");
+  revalidatePath("/pogoda");
 }
 
 /**

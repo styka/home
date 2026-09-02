@@ -90,24 +90,18 @@ function extractJson(content: string): RawParsed | null {
 // 030: eksportowany — route agenta reużywa go do klasyfikacji „prostej tury odczytowej"
 // (tani model op:"dispatch" z fallbackiem do "reasoning").
 /**
- * 112: GRANICA SŁOWA ŚWIADOMA POLSKICH LITER.
- *
- * `\b` w JavaScripcie jest ASCII-owe: „ż", „ź", „ć", „ń", „ó", „ę", „ą", „ł", „ś" NIE są dla niego
- * znakami słowa. Skutek jest zdradliwy, bo cichy: w alternatywie `(pokaż|pokaz|…)\b` człon kończący
- * się polską literą **nigdy nie pasuje** — po „ż" i po spacji stoją dwa znaki nie-słowne, więc
- * granicy tam nie ma. Tak samo `\b(…|śniadanie|…)` nie złapie słowa zaczynającego się od „ś".
+ * 112: GRANICA SŁOWA ŚWIADOMA POLSKICH LITER — patrz `src/lib/ai/granice.ts`.
  *
  * Zmierzone przed poprawką: `pokaż`, `znajdź`, `sprawdź`, `doradź`, `oceń`, `streść`, `przychód`,
  * `odhaczyć`, `wąż` — wszystkie martwe, podczas gdy ich warianty bez diakrytyków działały. To jest
  * wprost koszt: strażnik, który nie łapie „pokaż zadania", wysyła tę turę do PŁATNEGO klasyfikatora
  * i do płatnego routera, choć odpowiedź obu była znana z góry (AC-14, AC-15).
  *
- * Zamiast `\b` używamy asercji na „nie litera" (dowolnego alfabetu) — stąd flaga `u`.
+ * Sama funkcja mieszka w `granice.ts` (bez importów serwerowych), bo potrzebują jej też komponenty
+ * klienckie — ten plik importuje `chatComplete`. Re-eksport utrzymuje dotychczasowych konsumentów.
  */
-export function granicePolskie(rdzen: string, kotwiczOdPoczatku = false): RegExp {
-  const przod = kotwiczOdPoczatku ? "^\\s*" : "(?<!\\p{L})";
-  return new RegExp(`${przod}(?:${rdzen})(?!\\p{L})`, "iu");
-}
+export { granicePolskie } from "./granice";
+import { granicePolskie } from "./granice";
 
 export const READ_INTENT_RE = granicePolskie(
   "podaj|pokaż|pokaz|wyświetl|wyswietl|wylistuj|wypisz|listuj|znajdź|znajdz|wyszukaj|poszukaj|ile|jak(?:ie|i|a|ich)|któr\\w+|co (?:mam|mogę|moge|powinien|powinienem|jest|robić|zrobić|warto)|masz|czy (?:mam|jest|są|sa|mogę|moge)|zaproponuj|zasugeruj|doradź|doradz|poradź|poradz|przypomnij|kiedy|gdzie|sprawdź|sprawdz",
@@ -164,7 +158,8 @@ export function wartoKlasyfikowac(text: string): boolean {
 // Wskazanie nazwanej listy zakupów (np. „do listy Apteka", „na listę Tygodniowe") — fast-path
 // add_item gubi nazwę listy (buduje tylko rawText), więc oddajemy takie polecenie agentowi, który
 // wypełni listName (executor go respektuje). Sygnałem jest rdzeń słowa „lista".
-const SHOPPING_NAMED_LIST_RE = /\blist[aąeęiy]\w*/i;
+// Przez `granicePolskie` jak reszta pliku — surowe `\b`/`\w` są ASCII-owe (komentarz 112 wyżej).
+const SHOPPING_NAMED_LIST_RE = granicePolskie("list[aąeęiy]\\p{L}*");
 
 function isBlank(v: unknown): boolean {
   return typeof v !== "string" || !v.trim();

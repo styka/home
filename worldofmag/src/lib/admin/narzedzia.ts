@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArchiveRestore,
   BookOpen,
   Boxes,
   Bug,
@@ -109,7 +110,7 @@ export const GRUPY_NARZEDZI: GrupaNarzedzi[] = [
   {
     id: "dostep",
     kluczNazwy: "grupy.dostep",
-    narzedzia: [n("access", Shield), n("audit", FileText)],
+    narzedzia: [n("access", Shield), n("audit", FileText), n("kosz", ArchiveRestore)],
   },
   {
     id: "diagnostyka",

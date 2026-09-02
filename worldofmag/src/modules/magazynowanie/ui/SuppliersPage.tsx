@@ -67,7 +67,7 @@ export function SuppliersPage({ suppliers }: { suppliers: StorageSupplier[] }) {
         setSelectedId(null);
       },
     };
-  }, [suppliers, selectedId, editing, showToast]);
+  }, [suppliers, selectedId, editing, showToast, confirmDialog]);
 
   useKeyboardShortcuts(handlers);
 

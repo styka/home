@@ -1,11 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Truck, MapPin, ExternalLink, Loader2, AlertTriangle, Save, Check, Info } from "lucide-react";
 import { SectionHeading } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
-import { saveVehicleProfile, planTruckRoute, type VehicleInput, type PlanResult } from "../actions/truck";
+import { saveVehicleProfile, planTruckRoute, zaksiegujKosztTrasy, type VehicleInput, type PlanResult } from "../actions/truck";
+import { getVehicles, computeConsumption, avgFuelPrice, type VehicleWithStats } from "@/modules/flota/contract";
 
 const DEFAULTS: VehicleInput = { weight: 40, height: 4.0, length: 16.5, width: 2.55, axleload: 11.5 };
 
@@ -58,6 +59,31 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
   const [destination, setDestination] = useState("");
   const [result, setResult] = useState<PlanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 115 (Z-INT-14): koszt paliwa trasy ze średnich wybranego pojazdu Floty.
+  const [pojazdy, setPojazdy] = useState<VehicleWithStats[] | null>(null);
+  const [pojazdId, setPojazdId] = useState("");
+  // Recenzja 115 (R-5): komunikat niesie TON — błąd nie może wyglądać jak sukces.
+  const [kosztInfo, setKosztInfo] = useState<{ tekst: string; blad: boolean } | null>(null);
+  useEffect(() => {
+    if (!result || pojazdy !== null) return;
+    getVehicles().then(setPojazdy).catch(() => setPojazdy([]));
+  }, [result, pojazdy]);
+  const pojazd = pojazdy?.find((v) => v.id === pojazdId) ?? null;
+  const spalanie = pojazd ? computeConsumption(pojazd.fuelLogs).avg : null;
+  const cenaLitra = pojazd ? avgFuelPrice(pojazd.fuelLogs) : null;
+  const kosztPaliwa = result && spalanie != null && cenaLitra != null
+    ? (result.distanceKm * spalanie / 100) * cenaLitra
+    : null;
+  async function ksiegujTrase() {
+    if (!result || kosztPaliwa == null) return;
+    try {
+      const w = await zaksiegujKosztTrasy({ start: result.origin.label, cel: result.destination.label, kwota: kosztPaliwa });
+      setKosztInfo(w.zaksiegowano ? { tekst: t("kosztZaksiegowany"), blad: false } : { tekst: t("brakKontaAuto"), blad: true });
+    } catch (e) {
+      setKosztInfo({ tekst: e instanceof Error ? e.message : t("bladOperacji"), blad: true });
+    }
+    setTimeout(() => setKosztInfo(null), 5000);
+  }
   const [savedAt, setSavedAt] = useState(false);
   const [savingPending, startSaving] = useTransition();
   const [planningPending, startPlanning] = useTransition();
@@ -256,6 +282,36 @@ export function TruckPlannerPage({ initialProfile }: { initialProfile: VehicleIn
               <Metric value={formatDuration(result.durationMin)} label="czas jazdy" />
               <Metric value={String(result.roadworksAvoided)} label={t("robotUwzglednionych")} />
             </div>
+
+            {/* 115 (Z-INT-14): szacunek kosztu paliwa z realnych danych pojazdu (Flota). */}
+            {pojazdy && pojazdy.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{t("pojazdZFloty")}</label>
+                  <select value={pojazdId} onChange={(e) => setPojazdId(e.target.value)} style={{ ...inputStyle, width: "auto", minWidth: 160 }}>
+                    <option value="">{t("wybierzPojazd")}</option>
+                    {pojazdy.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  </select>
+                  {kosztPaliwa != null && (
+                    <>
+                      <Metric value={`${kosztPaliwa.toFixed(2)} zł`} label={t("szacowanyKosztPaliwa")} />
+                      <button onClick={ksiegujTrase} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 13, cursor: "pointer" }}>
+                        {t("zaksiegujKoszt")}
+                      </button>
+                    </>
+                  )}
+                </div>
+                {pojazd && kosztPaliwa == null && (
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>{t("zaMaloDanychPaliwo")}</p>
+                )}
+                {pojazd && kosztPaliwa != null && (
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+                    {t("zalozeniaKosztu", { spalanie: (spalanie as number).toFixed(1), cena: (cenaLitra as number).toFixed(2) })}
+                  </p>
+                )}
+                {kosztInfo && <p role="status" style={{ fontSize: 12, color: kosztInfo.blad ? "var(--accent-red)" : "var(--accent-green)", margin: 0 }}>{kosztInfo.tekst}</p>}
+              </div>
+            )}
 
             <a
               href={result.googleMapsUrl}

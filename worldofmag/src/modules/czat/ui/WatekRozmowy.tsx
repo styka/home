@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, CornerUpLeft, Pencil, SmilePlus, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, CornerUpLeft, ListTodo, Pencil, SmilePlus, Trash2 } from "lucide-react";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { subskrybujSygnal } from "@/platform/events/sygnalKlienta";
 import { getRozmowa, oznaczPrzeczytane, type SzczegolRozmowyDTO } from "../actions/rozmowy";
@@ -11,6 +11,7 @@ import {
   getWiadomosci,
   przelaczReakcje,
   usunWiadomosc,
+  zadanieZWiadomosci,
   type WiadomoscDTO,
 } from "../actions/wiadomosci";
 import { PoleWiadomosci } from "./PoleWiadomosci";
@@ -49,6 +50,9 @@ export function WatekRozmowy({
   const [odpowiadamNa, setOdpowiadamNa] = useState<WiadomoscDTO | null>(null);
   const [edytowana, setEdytowana] = useState<WiadomoscDTO | null>(null);
   const [reakcjeDla, setReakcjeDla] = useState<string | null>(null);
+  // 115 (Z-INT-10): które wiadomości poszły „Do zadań" — ptaszek zamiast toasta (wzorzec kalendarza).
+  const [zadaniaDodane, setZadaniaDodane] = useState<Set<string>>(new Set());
+  const [bladZadania, setBladZadania] = useState<string | null>(null);
   const przewijanieRef = useRef<HTMLDivElement>(null);
   const doDoluRef = useRef(true);
   /**
@@ -148,6 +152,16 @@ export function WatekRozmowy({
     await przelaczReakcje(id, emoji);
     await wczytaj();
   }, [wczytaj]);
+
+  const onDoZadan = useCallback(async (id: string) => {
+    setBladZadania(null);
+    try {
+      await zadanieZWiadomosci(id);
+      setZadaniaDodane((s) => new Set(s).add(id));
+    } catch (e) {
+      setBladZadania(e instanceof Error && e.message ? e.message : t("zadanieBlad"));
+    }
+  }, [t]);
 
   const piszacy = szczegol?.piszacy ?? [];
   const kolejnosc = [...wiadomosci].reverse();
@@ -275,6 +289,11 @@ export function WatekRozmowy({
                       style={{ padding: 6, color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}>
                       <SmilePlus size={13} />
                     </button>
+                    <button onClick={() => { if (!zadaniaDodane.has(w.id)) void onDoZadan(w.id); }}
+                      title={zadaniaDodane.has(w.id) ? t("zadanieDodane") : t("doZadan")} aria-label={t("doZadan")}
+                      style={{ padding: 6, color: zadaniaDodane.has(w.id) ? "var(--accent-green)" : "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}>
+                      {zadaniaDodane.has(w.id) ? <Check size={13} /> : <ListTodo size={13} />}
+                    </button>
                     {/* Edycja i usunięcie tylko przy WŁASNEJ wiadomości. Serwer sprawdza autorstwo
                         niezależnie — gdyby reguła istniała wyłącznie tutaj, wystarczyłoby wywołać
                         akcję wprost (AC-21). */}
@@ -313,6 +332,12 @@ export function WatekRozmowy({
           })
         )}
       </div>
+
+      {bladZadania && (
+        <div role="status" style={{ padding: "4px 12px", fontSize: 11.5, color: "var(--accent-red)" }}>
+          {bladZadania}
+        </div>
+      )}
 
       <PoleWiadomosci
         rozmowaId={rozmowaId}

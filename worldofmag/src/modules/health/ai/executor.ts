@@ -5,6 +5,7 @@ import { createMedicationSchedule, deleteMedicationSchedule, updateMedicationSch
 import { asStr, resolveHealthEventId, resolveMedicationId, type ExecOutcome } from "@/lib/ai/executorShared";
 import type { AIAction } from "@/platform/ai/aiAction";
 import type { HealthKind, HealthStatus } from "@/types";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 
 export async function executeHealthAction(action: AIAction, userId: string): Promise<string | ExecOutcome> {
   const { type, params, searchQuery } = action;
@@ -71,7 +72,7 @@ export async function executeHealthAction(action: AIAction, userId: string): Pro
   }
   if (type === "log_dose") {
     const id = await resolveMedicationId(userId, params, searchQuery);
-    const date = asStr(params.date) ?? new Date().toISOString().slice(0, 10);
+    const date = asStr(params.date) ?? dataWStrefie(userTimeZone()); // doba użytkownika, nie UTC — nocne „odhacz dawkę" trafiało na wczoraj
     let slot = asStr(params.slot);
     if (!slot) {
       const day = await getMedicationDay(date);
@@ -84,7 +85,7 @@ export async function executeHealthAction(action: AIAction, userId: string): Pro
   }
   if (type === "unlog_dose") {
     const id = await resolveMedicationId(userId, params, searchQuery);
-    const date = asStr(params.date) ?? new Date().toISOString().slice(0, 10);
+    const date = asStr(params.date) ?? dataWStrefie(userTimeZone()); // doba użytkownika, nie UTC — nocne „odhacz dawkę" trafiało na wczoraj
     let slot = asStr(params.slot);
     if (!slot) {
       const day = await getMedicationDay(date);

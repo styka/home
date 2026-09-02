@@ -9,6 +9,8 @@ import { getSuggestions } from "../lib/catalog";
 import type { Workshop, WorkshopItem, WorkshopProject } from "@prisma/client";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { assertListAccess, addItemStructured } from "@/modules/shopping/contract";
 
 export type WarsztatMode = "home" | "pro";
 
@@ -347,6 +349,30 @@ export async function getMaintenanceOverview(): Promise<MaintenanceOverview> {
   };
 }
 
+/**
+ * 115 (Z-INT-04): materiały na wyczerpaniu → lista zakupów jednym przyciskiem
+ * (wzorzec `addLowStockToShoppingList` z Magazynowania). Ilość = deficyt do progu,
+ * a gdy stan nie jest znany liczbowo — sam próg. `addItemStructured` sam pilnuje
+ * dostępu do listy i kategoryzuje pozycję.
+ */
+export async function addWorkshopLowStockToShoppingList(listId: string): Promise<{ added: number }> {
+  const user = await requireAuth();
+  await assertListAccess(listId, user.id);
+
+  const { lowStock } = await getMaintenanceOverview();
+  let added = 0;
+  for (const i of lowStock) {
+    const deficyt =
+      i.minQuantity != null ? Math.max(i.minQuantity - (i.quantity ?? 0), 0) || i.minQuantity : null;
+    await addItemStructured(listId, i.name, deficyt, i.unit ?? null);
+    added += 1;
+  }
+
+  void trackActivity("warsztaty", "replenish", { listId, count: added });
+  revalidatePath(`/shopping/${listId}`);
+  return { added };
+}
+
 // ─── Projekty / zlecenia (Pro) ────────────────────────────────────────────────
 
 export interface WorkshopProjectInput {
@@ -355,6 +381,8 @@ export interface WorkshopProjectInput {
   status?: string | null;
   assignedTo?: string | null;
   dueAt?: Date | string | null;
+  /** 115 (Z-INT-05): koszt projektu — księgowany do Portfela jawnym przyciskiem. */
+  cost?: number | null;
 }
 
 const PROJECT_STATUSES = ["planned", "active", "done"];
@@ -372,6 +400,7 @@ export async function addWorkshopProject(workshopId: string, data: WorkshopProje
       status,
       assignedTo: data.assignedTo?.trim() || null,
       dueAt: toDate(data.dueAt) ?? null,
+      cost: typeof data.cost === "number" && Number.isFinite(data.cost) && data.cost > 0 ? data.cost : null,
       startedAt: status === "active" ? new Date() : null,
       doneAt: status === "done" ? new Date() : null,
     },
@@ -393,6 +422,7 @@ export async function updateWorkshopProject(
   if (patch.description !== undefined) data.description = patch.description?.trim() || null;
   if (patch.assignedTo !== undefined) data.assignedTo = patch.assignedTo?.trim() || null;
   if (patch.dueAt !== undefined) data.dueAt = toDate(patch.dueAt);
+  if (patch.cost !== undefined) data.cost = typeof patch.cost === "number" && Number.isFinite(patch.cost) && patch.cost > 0 ? patch.cost : null;
   if (patch.status !== undefined) {
     const status = PROJECT_STATUSES.includes(patch.status ?? "") ? patch.status! : project.status;
     data.status = status;
@@ -405,11 +435,41 @@ export async function updateWorkshopProject(
   return updated;
 }
 
+/**
+ * 115 (Z-INT-05): jawne księgowanie kosztu projektu warsztatowego w Portfelu.
+ * Idempotentnie po (warsztaty, projekt-<id>) — powtórne kliknięcie koryguje kwotę.
+ */
+export async function bookProjectCost(id: string): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  const project = await prisma.workshopProject.findUnique({
+    where: { id },
+    select: { workshopId: true, name: true, cost: true, doneAt: true, dueAt: true },
+  });
+  if (!project) throw new Error("Projekt nie istnieje");
+  await assertWorkshopAccess(project.workshopId, user.id);
+  if (!project.cost || project.cost <= 0) throw new Error("Wpisz najpierw koszt projektu");
+  const wynik = await bookAutoExpense(user.id, {
+    module: "warsztaty",
+    sourceId: `projekt-${id}`,
+    amount: project.cost,
+    category: "Warsztat",
+    note: project.name,
+    date: project.doneAt ?? project.dueAt ?? null,
+    force: true,
+  });
+  revalidatePath(`/warsztaty/${project.workshopId}`);
+  revalidatePath("/portfel");
+  return wynik;
+}
+
 export async function deleteWorkshopProject(id: string): Promise<void> {
   const user = await requireAuth();
   const project = await prisma.workshopProject.findUnique({ where: { id } });
   if (!project) throw new Error("Projekt nie istnieje");
   await assertWorkshopAccess(project.workshopId, user.id);
   await prisma.workshopProject.delete({ where: { id } });
+  // Recenzja 115 (R-4): kasowanie źródła odwraca auto-wpis w Portfelu (precedens Floty).
+  await removeAutoExpense("warsztaty", `projekt-${id}`);
   revalidatePath(`/warsztaty/${project.workshopId}`);
+  revalidatePath("/portfel");
 }

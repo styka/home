@@ -7,6 +7,9 @@ import { requireAuth, getUserTeamIds, getAccessibleTeamIds, ownedOrAsync } from 
 import type { HealthEvent, HealthKind, HealthStatus } from "@/types";
 import { wlasnoscDoZapisu } from "@/platform/workspaces/zapis";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { userDayBounds } from "@/lib/userTime";
+import { bookAutoExpense, removeAutoExpense, type WynikKsiegowania } from "@/modules/portfel/contract";
+import { zapiszKontaktZWpisu, type WynikZapisuKontaktu } from "@/lib/kontaktZWpisu";
 
 function safeDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
@@ -82,9 +85,9 @@ export async function getHealthEvents(filter?: {
 }
 
 function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  // Północ w strefie UŻYTKOWNIKA — `setHours(0,…)` na serwerze (Render = UTC) przesuwało granicę
+  // „nadchodzące/minione" o 2 h: wizyta z wczorajszego wieczora wisiała w „nadchodzących" do 2:00.
+  return userDayBounds().start;
 }
 
 export async function createHealthEvent(data: {
@@ -101,6 +104,7 @@ export async function createHealthEvent(data: {
   unit?: string | null;
   referral?: string | null;
   reminderAt?: Date | string | null;
+  cost?: number | null;
   ownerTeamId?: string | null;
 }): Promise<HealthEvent> {
   const user = await requireAuth();
@@ -131,6 +135,7 @@ export async function createHealthEvent(data: {
       unit: data.unit?.trim() || null,
       referral: data.referral?.trim() || null,
       reminderAt: safeDate(data.reminderAt),
+      cost: typeof data.cost === "number" && Number.isFinite(data.cost) && data.cost > 0 ? data.cost : null,
       ...(await wlasnoscDoZapisu(user.id, ownerTeamId)),
     },
   });
@@ -155,6 +160,7 @@ export async function updateHealthEvent(
     unit?: string | null;
     referral?: string | null;
     reminderAt?: Date | string | null;
+    cost?: number | null;
   }
 ): Promise<void> {
   const user = await requireAuth();
@@ -178,6 +184,7 @@ export async function updateHealthEvent(
   if (patch.unit !== undefined) data.unit = patch.unit?.trim() || null;
   if (patch.referral !== undefined) data.referral = patch.referral?.trim() || null;
   if (patch.reminderAt !== undefined) data.reminderAt = safeDate(patch.reminderAt);
+  if (patch.cost !== undefined) data.cost = typeof patch.cost === "number" && Number.isFinite(patch.cost) && patch.cost > 0 ? patch.cost : null;
 
   await prisma.healthEvent.update({ where: { id }, data });
   revalidatePath("/health");
@@ -194,7 +201,62 @@ export async function deleteHealthEvent(id: string): Promise<void> {
   const user = await requireAuth();
   await assertEventAccess(id, user.id);
   await prisma.healthEvent.delete({ where: { id } });
+  // Recenzja 115 (R-4): kasowanie źródła odwraca auto-wpis w Portfelu (precedens Floty) —
+  // inaczej zostaje wydatek-widmo, którego przycisk-korektor już nie istnieje.
+  await removeAutoExpense("health", id);
   revalidatePath("/health");
+  revalidatePath("/portfel");
+}
+
+/**
+ * 115 (Z-INT-02): jawne księgowanie kosztu wizyty/badania w Portfelu.
+ * Idempotentne po (health, id wizyty) — drugie kliknięcie koryguje kwotę zamiast dublować.
+ * `force: true`, bo to świadoma decyzja użytkownika, nie automat w tle.
+ */
+export async function bookHealthEventCost(id: string): Promise<WynikKsiegowania> {
+  const user = await requireAuth();
+  await assertEventAccess(id, user.id);
+  const ev = await prisma.healthEvent.findUnique({
+    where: { id },
+    select: { title: true, cost: true, scheduledAt: true },
+  });
+  if (!ev) throw new Error("Wpis nie istnieje");
+  if (!ev.cost || ev.cost <= 0) throw new Error("Wpisz najpierw koszt wizyty");
+  const wynik = await bookAutoExpense(user.id, {
+    module: "health",
+    sourceId: id,
+    amount: ev.cost,
+    category: "Zdrowie",
+    note: ev.title,
+    date: ev.scheduledAt,
+    force: true,
+  });
+  revalidatePath("/health");
+  revalidatePath("/portfel");
+  return wynik;
+}
+
+/**
+ * 115 (Z-INT-07): lekarz wpisany tekstem przy wizycie staje się kontaktem (tag „lekarz").
+ * Deduplikacja po nazwie — druga wizyta u tej samej osoby nie tworzy duplikatu.
+ */
+export async function saveDoctorToContacts(id: string): Promise<WynikZapisuKontaktu> {
+  const user = await requireAuth();
+  await assertEventAccess(id, user.id);
+  const ev = await prisma.healthEvent.findUnique({
+    where: { id },
+    select: { doctorName: true, facility: true, specialty: true },
+  });
+  if (!ev) throw new Error("Wpis nie istnieje");
+  if (!ev.doctorName?.trim()) throw new Error("Ta wizyta nie ma wpisanego lekarza");
+  const wynik = await zapiszKontaktZWpisu({
+    name: ev.doctorName,
+    company: ev.facility ?? null,
+    tag: "lekarz",
+    notes: ev.specialty ? `Specjalizacja: ${ev.specialty}` : null,
+  });
+  revalidatePath("/contacts");
+  return wynik;
 }
 
 export type TestTrend = {

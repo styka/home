@@ -111,6 +111,23 @@ export interface VehicleTCO {
  * ubezpieczenia) oraz koszt na kilometr (z rozpiętości odometrów). Czysta funkcja
  * (testowalna), spinana z widokiem floty i budżetem.
  */
+/**
+ * 115 (Z-INT-14): średnia cena litra paliwa z historii tankowań — Σkoszt / Σlitry po logach
+ * z wpisanym kosztem. `null`, gdy nie ma ani jednego tankowania z kosztem (Truck pokazuje
+ * wtedy komunikat zamiast zmyślonej liczby).
+ */
+export function avgFuelPrice(logs: FuelLogLike[]): number | null {
+  let koszt = 0;
+  let litry = 0;
+  for (const l of logs) {
+    if (l.totalCost != null && l.totalCost > 0 && l.liters > 0) {
+      koszt += l.totalCost;
+      litry += l.liters;
+    }
+  }
+  return litry > 0 ? koszt / litry : null;
+}
+
 export function computeVehicleTCO(fuelLogs: FuelLogLike[], services: ServiceRecordLike[]): VehicleTCO {
   const fuelCost = fuelLogs.reduce((s, l) => s + (l.totalCost ?? 0), 0);
   let serviceCost = 0;

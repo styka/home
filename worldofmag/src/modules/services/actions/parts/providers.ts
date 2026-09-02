@@ -2,6 +2,7 @@
 
 // Z-213/361: akcje modułu Usługi — kategorie, profil wykonawcy, weryfikacja (M7).
 import { revalidatePath } from "next/cache";
+import { zapiszKontaktZWpisu, type WynikZapisuKontaktu } from "@/lib/kontaktZWpisu";
 import { prisma } from "@/platform/db/prisma";
 import { requireAuth, getUserTeamIds } from "@/platform/auth/serverUtils";
 import { auth } from "@/platform/auth/session";
@@ -147,3 +148,27 @@ export async function setProviderVerified(providerId: string, verified: boolean)
   revalidatePath("/services");
   revalidatePath(`/services/providers/${providerId}`);
 }
+
+/**
+ * 115 (Z-INT-06): sprawdzony wykonawca z marketplace'u trafia do prywatnego CRM użytkownika.
+ * Dane wykonawcy są publiczne (profil), kontakt powstaje w przestrzeni WOŁAJĄCEGO —
+ * przez kontrakt Kontaktów, z deduplikacją po nazwie.
+ */
+export async function saveProviderToContacts(providerId: string): Promise<WynikZapisuKontaktu> {
+  await requireAuth();
+  const provider = await prisma.serviceProvider.findUnique({
+    where: { id: providerId },
+    select: { displayName: true, phone: true, area: true, visible: true },
+  });
+  if (!provider || !provider.visible) throw new Error("Wykonawca nie istnieje");
+  const wynik = await zapiszKontaktZWpisu({
+    name: provider.displayName,
+    phone: provider.phone ?? null,
+    company: provider.area ?? null,
+    tag: "wykonawca",
+    notes: `Profil: /services/providers/${providerId}`,
+  });
+  revalidatePath("/contacts");
+  return wynik;
+}
+

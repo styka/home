@@ -2,6 +2,7 @@ import { prisma } from "@/platform/db/prisma";
 import { HARD_MAX, ownerScope } from "@/lib/ai/readToolShared";
 import type { AiReadToolHandler } from "@/platform/ai/contribution";
 import { SUFIT_LISTY } from "@/platform/pagination";
+import { dataWStrefie, userTimeZone } from "@/lib/userTime";
 
 /**
  * 049: narzędzia ODCZYTU tego modułu — wkład do asystenta, składany z deklaracji.
@@ -21,7 +22,9 @@ export const readTools: Record<string, AiReadToolHandler> = {
         orderBy: { sortOrder: "asc" },
         take: HARD_MAX,
       });
-      const today = new Date().toISOString().slice(0, 10);
+      // Dzień w strefie użytkownika — `toISOString()` to doba UTC, więc nocą asystent
+      // raportował wczorajszy stan odhaczeń (rozjazd z widokiem /habits).
+      const today = dataWStrefie(userTimeZone());
       const ids = habits.map((h) => h.id);
       const doneEntries = ids.length
         ? await prisma.habitEntry.findMany({

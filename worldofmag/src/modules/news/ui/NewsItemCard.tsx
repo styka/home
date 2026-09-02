@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { ExternalLink, Check, Sparkles, Loader2, Headphones, RefreshCw } from "lucide-react";
+import { ExternalLink, Check, Sparkles, Loader2, Headphones, RefreshCw, NotebookPen } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
@@ -11,6 +11,7 @@ import { AiCostBadge, type AiCostUsage } from "@/components/ui/AiCostBadge";
 import {
   acknowledgeItem,
   resummarizeItem,
+  saveItemAsNote,
   type NewsItemDTO,
   type SummaryLength,
 } from "../actions/news";
@@ -50,6 +51,9 @@ export function NewsItemCard({
   const [resummarizing, setResummarizing] = useState(false);
   const [usage, setUsage] = useState<AiCostUsage | undefined>();
   const [imgError, setImgError] = useState(false);
+  // 115 (Z-INT-11): stan zapisu do Notatek — po sukcesie przycisk zostaje ptaszkiem,
+  // bo drugi klik zrobiłby duplikat notatki.
+  const [notatkaStan, setNotatkaStan] = useState<"spoczynek" | "praca" | "ok">("spoczynek");
 
   const color = sourceColor(item.sourceDescriptor);
 
@@ -72,6 +76,20 @@ export function NewsItemCard({
       })
       .catch((e) => showToast(e.message ?? "Nie udało się zmienić streszczenia", "error"))
       .finally(() => setResummarizing(false));
+  }
+
+  function zapiszNotatke() {
+    if (notatkaStan !== "spoczynek") return;
+    setNotatkaStan("praca");
+    saveItemAsNote(item.id)
+      .then(() => {
+        setNotatkaStan("ok");
+        showToast(t("notatkaZapisana"), "success");
+      })
+      .catch((e) => {
+        setNotatkaStan("spoczynek");
+        showToast(e instanceof Error && e.message ? e.message : t("notatkaBlad"), "error");
+      });
   }
 
   function acknowledge() {
@@ -219,6 +237,26 @@ export function NewsItemCard({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={zapiszNotatke}
+            disabled={notatkaStan === "praca"}
+            title={notatkaStan === "ok" ? t("notatkaZapisana") : t("zapiszNotatke")}
+            aria-label={t("zapiszNotatke")}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs",
+              notatkaStan === "ok"
+                ? "text-[var(--accent-green)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            {notatkaStan === "praca" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : notatkaStan === "ok" ? (
+              <Check size={13} />
+            ) : (
+              <NotebookPen size={13} />
+            )}
+          </button>
           <button
             onClick={() => onSluchaj?.(item.id)}
             className={cn(

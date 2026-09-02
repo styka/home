@@ -31,8 +31,18 @@
       "powod": "Agregat agendy zbiera wkłady innych modułów; własna reguła to budowa kanału iCal (ma test). `collect.ts` nie ma jeszcze testu — patrz `obserwacje.bez-testu`. W akcji został tylko `feedUrl`, doklejający `AUTH_URL`, czyli infrastruktura."
     },
     "contacts": {
-      "decyzja": "bez-regul",
-      "powod": "Cienki CRUD nad jednym modelem. Dwa pomocniki w akcji to parsowanie etykiet z JSON i mapowanie rekordu na obiekt widoku — żaden nie podejmuje decyzji dziedzinowej."
+      "decyzja": "domena",
+      "pliki": [
+        "domain/urodziny.ts"
+      ],
+      "powod": "114: pierwsza reguła — walidacja/parsowanie daty urodzin (`parseBirthday`: format RRRR-MM-DD, północ UTC, błąd zamiast ciszy; test). Pozostałe dwa pomocniki w akcji to parsowanie etykiet z JSON i mapowanie rekordu na obiekt widoku — infrastruktura, nie decyzje dziedzinowe."
+    },
+    "czat": {
+      "decyzja": "domena",
+      "pliki": [
+        "domain/rozmowa.ts"
+      ],
+      "powod": "107: reguły rozmowy, których nie widać w kodzie akcji — „pisze…” wygasa TTL-em przy ODCZYCIE (wygaszanie zapisem zostawiłoby wieczne „pisze…” po zamkniętej karcie), nieprzeczytane liczą się względem znacznika odczytu i pomijają własne wiadomości, a „przeczytano” pyta o CUDZE znaczniki i mówi przez kogo. Wysyłka, rozgłoszenie sygnału i guardy uczestnictwa to adaptery infrastruktury, nie reguły."
     },
     "flota": {
       "decyzja": "regula-w-lib",
@@ -120,6 +130,19 @@
       "decyzja": "bez-regul",
       "powod": "Moduł przechowuje i wyświetla markdown; sam renderer to współdzielony `src/lib/markdown.ts` (używany też przez Kuchnię, Zadania, QA i asystenta). Wybór miejsca zapisu (baza vs Dysk) to infrastruktura, nie reguła. Plik akcji nie ma pomocników."
     },
+    "rosliny": {
+      "decyzja": "domena",
+      "pliki": [
+        "domain/harmonogram.ts",
+        "domain/plodozmian.ts",
+        "domain/agenda.ts",
+        "domain/roslina.ts",
+        "lib/tryb.ts",
+        "lib/fenologia.ts",
+        "lib/eksportEwidencji.ts"
+      ],
+      "powod": "113: cztery reguły, z których każda decyduje o czymś, czego z widoku nie widać. `harmonogram` — termin zabiegu z gatunku, miejsca, pory roku i prognozy WRAZ z uzasadnieniem: odstęp podlewania nie jest stałą gatunku, a zdanie „dlaczego dziś\" jest częścią wyniku, nie ozdobą. `plodozmian` — ostrzeżenie (nigdy blokada) z historii miejsca i rodziny botanicznej; przerwa w historii kończy liczenie, bo o to właśnie w płodozmianie chodzi. `tryb` — reguła „tryb CHOWA domyślnie, nigdy nie BLOKUJE\", sprawdzalna tablicą 4 tryby × 7 pól zamiast klikaniem. `fenologia` — jeden słownik faz BBCH w dwóch prezentacjach (kod dla zawodowca, słowo dla hobbysty); nieznany kod schodzi do fazy głównej, bo etykiety preparatów podają fazy spoza listy. `agenda` i `roslina` wyprowadzono z plików akcji dopiero po zgłoszeniu zapadki i to jest dowód, że działa: kubełek agendy („zaległe zaczynają się DOBĘ po terminie, nie w chwili jego minięcia\"), odczyt wymagań wodnych (uszkodzony JSON = wartości domyślne, nie awaria całej agendy), zapasowy tryb przestrzeni i przepisanie wiersza rośliny (nazwa gatunku wpisana z ręki NIE znika, gdy nie ma dopasowania w słowniku) to cztery decyzje, które w pliku „use server\" byłyby niesprawdzalne. `tryb`, `fenologia` i `eksportEwidencji` zostają w `lib/` świadomie: czyta je także warstwa widoku, a `domain/` w tym repo trzyma reguły wyprowadzone z plików akcji."
+    },
     "services": {
       "decyzja": "regula-w-lib",
       "pliki": [
@@ -171,13 +194,6 @@
         "domain/film.ts"
       ],
       "powod": "102: reguła przepisania wiersza filmu na kształt dla przeglądarki — `maTranskrypcje` liczone z TREŚCI, nie ze stanu (retencja czyści transkrypcje odrzuconych, zostawiając stan „jest\"). Pobieranie z YouTube (lib/kanal, lib/filmy, lib/transkrypcja) to adaptery infrastruktury, nie reguły — mają własne testy na zapisanych próbkach."
-    },
-    "czat": {
-      "decyzja": "domena",
-      "pliki": [
-        "domain/rozmowa.ts"
-      ],
-      "powod": "107: reguły rozmowy, których nie widać w kodzie akcji — „pisze…” wygasa TTL-em przy ODCZYCIE (wygaszanie zapisem zostawiłoby wieczne „pisze…” po zamkniętej karcie), nieprzeczytane liczą się względem znacznika odczytu i pomijają własne wiadomości, a „przeczytano” pyta o CUDZE znaczniki i mówi przez kogo. Wysyłka, rozgłoszenie sygnału i guardy uczestnictwa to adaptery infrastruktury, nie reguły."
     }
   },
   "obserwacje": {

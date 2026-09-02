@@ -102,15 +102,16 @@ export function CookMode({ recipe }: CookModeProps) {
     return () => clearInterval(interval);
   }, []);
 
+  const ingredients = recipe.ingredients;
   const grouped = useMemo(() => {
-    const groups = new Map<string, typeof recipe.ingredients>();
-    for (const ing of recipe.ingredients) {
+    const groups = new Map<string, typeof ingredients>();
+    for (const ing of ingredients) {
       const key = ing.groupName ?? "";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(ing);
     }
     return Array.from(groups.entries());
-  }, [recipe.ingredients]);
+  }, [ingredients]);
 
   function next() {
     if (stepIdx < steps.length - 1) setStepIdx((i) => i + 1);

@@ -50,6 +50,28 @@ weather, storage, workshop, a service marketplace, contacts/CRM, a unified
 calendar, …) unified by a shared ownership model, RBAC, notifications, a
 soft-delete trash, per-user Google Drive storage, and an AI assistant.
 
+### Positioning & strategic direction (owner decision, 2026-08)
+
+**Omnia is an "ERP for private life"** — one system where all of a person's areas
+run on shared data, the way a company's departments do in an ERP. That framing is
+official and drives the roadmap: Omnia will grow **professional ERP modules**
+(invoicing/KSeF, orders, CRM-for-business, HR-lite, custom vertical modules built
+per company) so people can use ONE system in both their private and professional
+life, with the new business modules integrating with the existing private ones.
+The bet behind it: many modules a company needs are also useful to individuals in
+their hobbies — usually in a simplified form. The proof already in the codebase is
+**Pets** (hobbyist care vs. professional breeding in one module) and the **Dom/Pro
+mode** pattern in Magazynowanie and Warsztaty — new business modules should follow
+that same "one entity, two scales" philosophy (cf. Rośliny 113: the same entity
+from windowsill to hectare) rather than forking into separate apps. **The business
+plan being executed** is the admin report
+`/reports/omnia-biznesplan-rok-pierwszy` (seeded by migration 0275, updated by 0277 with the
+industry-module map) — when work references "the business plan", it means THIS one. The two other
+business-plan reports in the app (`biznesplan-ksef-mikrofirmy-2026` — „Projekt Sekunda", and
+`biznesplan-obowiazki-mikrofirm-2026` — „Projekt Kompas"; root files `biznesplan-projekt-*.md`)
+are idea documents for **entirely different projects**: they stay as admin reports but are NOT
+Omnia's roadmap — do not link them as the plan.
+
 ### UX Philosophy
 - Keyboard-first (vim-style shortcuts: j/k, x, e, d)
 - Dark theme, minimalist (Linear/GitHub/VS Code aesthetic), skinnable
@@ -65,23 +87,46 @@ soft-delete trash, per-user Google Drive storage, and an AI assistant.
 | Notes | `/notes` | `module.notes` | Done — live markdown preview, **wikilinks `[[Title]]`** + weighted full-text search, attachments (`NoteAttachment`), version history (`NoteRevision`) |
 | Kitchen (recipes/meal plan/pantry) | `/kitchen` | `module.kitchen` (+ sub-perms) | Done — recipes/meal plan/pantry + per-recipe nutrition values |
 | Pets (care/husbandry/breeding) | `/pets` | `module.pets` | Done — care/husbandry/breeding + genetics, enclosure alarms, vet export (PDF card + CSV measurements), pet calendar |
+| Rośliny (plants, from windowsill to hectare) | `/rosliny` | `module.rosliny` | Done (113) — **the same entity at four scales**. A user has as many **plant spaces** as they like, each with its own **mode** (`home`/`garden`/`production`/`field`); the mode is on the SPACE, not the account, because a florist's shop and a private windowsill exist in one account at once — the Dom/Pro switch from Storage could not express that. **One `Plant` row covers a specimen, a 100-piece batch and 4.2 ha** (`quantity`+`quantityUnit`); three tables would have split the treatment register, the care agenda and the plant's timeline into three sources. **Places** (windowsill → bed → sector → field) carry the conditions and the history the crop-rotation warning is computed from. Care schedule + a single event table for watering, spraying and harvest; **the watering interval is never a species constant** — `domain/harmonogram` computes it from species × place light × season × forecast (read from Weather's contract) and returns the date **with a one-sentence reason**. Journal with photos, measurements with kind+unit (`source` is the seam for etap-2 sensors), lifecycle with a **required cause of death** (the failure log is the one feature that improves the user). Species catalog = **two tables** on the News (082) pattern: a system `PlantSpeciesCatalog` seeded by migration (182 entries) + a per-workspace copy carrying `origin`. Four LLM uses, each its own operation type: photo identification and **diagnosis with the plant's history** (`vision`, on demand, `unknown` is an allowed answer), season plan and space insights (`reasoning`, remembered). **Treatment register with the fields Polish law requires from 2026-01-01** (application kind, permit number, exact location) + CSV export. Outgoing integrations only: harvest → Kitchen pantry, cost → Portfel, seeds → Shopping, agenda → Calendar + notifications. **Builds no second warehouse, no second bookkeeping** |
 | Health (visits/tests + meds) | `/health` | `module.health` | Done — visits + **lab-test repository** (`HealthAttachment`, PDF/image) with trend analysis + **Leki i pielęgnacja** sub-section (`/health/leki`): medication dosing & recurring care tasks (dressing changes, nails…), "today" agenda with check-off, integrated with Calendar and the AI assistant |
-| Habits (tracker/heatmap) | `/habits` | `module.habits` | Done — heatmap/streaks + weekly goals + habit↔task integration |
+| Habits (tracker/heatmap) | `/habits` | `module.habits` | Done — heatmap/streaks + weekly goals + habit↔task integration; **114**: wkład do wspólnego kalendarza (agregat per dzień „N nawyków do odhaczenia", liczy pozostałe) + soft-delete do kosza (nawyk wraz z dziennikiem wykonań) |
 | Flota (vehicles/fuel/service) | `/flota` | `module.flota` | Done — vehicles/fuel/service + attachments (`VehicleAttachment`: invoices, registration, insurance) |
 | Portfel (personal finance) | `/portfel` | `module.portfel` | Done — wallet elements/entries + **budgets & savings goals** (`/portfel/budzety`), **monthly reports** (`/portfel/raporty`), **settings + multi-currency/exchange rates** (`/portfel/ustawienia`), and **auto-expense booking** from other modules (`WalletEntry.sourceModule/sourceId`) |
 | Languages (SRS flashcards) | `/languages` | `module.languages` | Done — SuperMemo-2 + TTS/pronunciation, writing mode, study series |
 | Wiadomości (news + timeline) | `/wiadomosci` | `module.news` | Done — **reading mode** (087, `czytanie` in the URL so a reading-mode view is favouritable): one toggle in the module bar hides the refresh-status strip, the module tabs and the main actions, leaving the topic navigator, the source filter, the content switch and the reader — measured 303 → 202 px of chrome above the first item at 360 px. Topic edit/delete moved into a three-dot menu; module settings left the tab strip for the frame's `settings` slot. **Topics with nothing new are hidden by default** (085; `NewsPref.showEmptyTopics`, toggle in the module's own **Ustawienia** view — reached from the frame's `settings` gear since 087, not from a tab; „Źródła" is now sources only, and the summary-length setting moved where it belongs). The view filters the SAME set that feeds the jump list, so content and navigator can never disagree. **single-column layout**, **one navigation bar** (`GroupNavigator`, shared component in `components/ui/nav/`): a searchable topic list that is a JUMP, not a filter (084 — the owner reversed 083 here: the view always shows every topic, the list only scrolls to one; prev/next arrows are gone, and `etykietaStala` makes the trigger read „Tematy" rather than a topic name, so the sticky section header stays the only place a topic is named). The old Stream/Single-topic switch is gone (it was the same list under two names) and so is the refresh-history panel (`NewsRefreshRun` still records runs — administrative data). **Source filter of constant height** (`SourceFilter`: one button with a counter + an `AnchoredLayer` panel, multi-select — the old chip strip made the sticky bar height depend on the number of feeds; measured 59 px at both 3 and 15 sources). **Timeline works for ALL topics** (`getStreamTimeline`, same sticky-header sections as the news view). Topic edit/delete live in a three-dot menu in the section header (087), add-topic in the view actions. **Hot-topics lists are a SEGMENTED SWITCH, not a ⋮ menu** (100, `PrzelacznikSegmentowy` in `components/ui/nav/`): „Proponowane | Monitorowane | Odrzucone", each with a counter, in one row of the sticky section header. 099 had hidden the last two behind ⋮ to save a row at 360 px, and the owner reported both resulting faults at once — the menu says neither what is available (you must open it) nor what is selected (the state sits inside a closed layer). A segment whose counter is 0 stays **visible but disabled**: hiding it would change the bar's width mid-work and conceal that the list exists. `NaglowekSekcji` gained an optional `segmenty` prop that replaces the title+counter pair — kept in that file because `top: var(--news-pasek-h)` and the height the cover is computed from live there (086/087). View state — content kind, sources and reading mode — lives in the **URL** (`tresc`/`zrodla`/`czytanie`), so a view is favouritable (`temat` was dropped in 084 together with the filter); `NewsPref.activeSourceKey` was dropped as a second carrier. **systemic RSS source library** (`NewsSourceCatalog`, 419 seeded entries PL + world, browsable by country/language/category from the sources view; manual add unchanged; admin-managed at `/admin/zrodla-rss`), **one `news.refresh` job for the whole module** (shared article pool `NewsArticle` → cheap classification → summaries → timeline), **event timeline** (`NewsTimelineEntry`) replacing the old versioned knowledge base, hot topics read **from the pool** (no re-fetch) with per-topic **hiding/restoring**, **reader** (`NewsReader`, 084): one bar per view, `position: fixed` at the bottom (`sticky bottom-0` only sticks once you scroll down to it — useless), no repeated text of its own; the sentence being read is highlighted **inside the news card**, matched by sentence TEXT (both sides split with `lib/speech/sentences`, so an index would need two lists kept in sync). Silence can no longer masquerade as playback: `lib/tts` `speak()` takes `onSilent` and a 1.5 s watchdog fires when neither `onstart` nor `onend` arrives — iOS rejects speech started outside a user gesture with no event at all. 24h freshness. Chrome above content measured at **163 px** (was 515) after moving to `ModuleView` density=compact |
 | Pogoda (weather) | `/pogoda` | `module.weather` | Done — Open-Meteo (sunrise/sunset + moon phase, day/night icons), **location picking on a map** (Leaflet+OSM, reverse geocoding), watchers (preset + custom, **editable**, status = *is the watcher's condition met* — `met/partial/unmet/unknown`, never a judgement of "nice weather"; **list ordered by state** with an optional grouped view, remembered per user in `WeatherPref`. 085: the status **filter chips are gone** — the owner did not want that filter and they wrapped to a second row; counts survive in the grouped layout. One control bar now sits **above** the list: layout choice + `AiContentMeta` (generated-at / stale / re-analyse / mode / cost). It used to sit at the very bottom, under the wall of watchers, so you learned the rating was stale only after scrolling past everything), **„Co robić?" as a list of AI proposals** with on-demand persistent detail plans + an idea library (`/pogoda/pomysly`, `WeatherIdea`) |
 | Magazynowanie (storage/inventory) | `/magazynowanie` | `module.magazynowanie` | Done — **two modes (Dom/Pro, per-user `StorageSettings`)**. Shared: items by warehouse+location, SKU/EAN, min-stock replenishment→shopping, stocktake, AI photo inventory, movement log. **Dom:** "where is it?" (AI search), QR labels (print+scan), warranties/expiry, value+photos (CSV export). **Pro:** barcode in/out scan (`@zxing`), suppliers, PZ/WZ/invoice documents (OCR), purchase orders (LLM draft), analytics (value/ABC/dead-stock/trend + AI takeaways), batches/lots + FEFO. AI in assistant (`add_storage_item`/`adjust_storage` + read-tool `list_storage_items`) |
-| Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item` |
+| Warsztaty (workshop/studio) | `/warsztaty` | `module.warsztaty` | Done — **two modes (Dom/Pro, per-user `WarsztatSettings`)**. Any workshop type (woodworking/automotive/painting/electronics/metalworking/ceramics/sewing/jewelry/general). Equipment register (`WorkshopItem`: kind tool/machine/material/PPE, condition, qty+min-stock, service `nextServiceAt`), **static equipment-suggestion catalog by profile** (`src/lib/warsztat/catalog.ts`, basic/recommended/advanced tiers) as an "add to equipment" checklist. **Pro:** team ownership, tool assignment (who has / station), service + low-stock agenda (`/warsztaty/przeglady`), project journal (`WorkshopProject`). AI: read-tool `list_workshops` + actions `create_workshop`/`add_workshop_item`. **114**: terminy przeglądów sprzętu (`nextServiceAt`) we wspólnym kalendarzu |
 | Usługi (service marketplace) | `/services` | `module.services` | Done — provider profiles (admin-set **verified** badge, public profile + slug/tagline at `/providers/[id]`), listings (categories, advanced filters/sort), service requests with a status workflow, **in-app chat** (`ServiceMessage`), **quotes** (`ServiceQuote`), **portfolio** images (`ServiceImage`), **availability + slot booking** (`ServiceAvailability`, `lib/serviceSlots.ts`, `lib/serviceGeo.ts`), ratings/reviews (`ServiceReview`), **payments/invoices** (`ServicePayment`, Portfel integration), **favorites** (`ServiceFavorite`), **promo codes** (`ServicePromoCode`), **multi-worker firms** (`ServiceStaff`), **disputes + admin moderation** (`ServiceDispute`, `/services/moderation`) |
-| Calendar | `/calendar` | `module.calendar` | Done — **unified agenda** aggregating tasks (due dates), kitchen meal plan, health meds & care, pet care, SRS language reviews and fleet service/inspection into a month grid (`actions/calendar.ts` `getCalendarEvents` + `lib/calendar.ts`) |
-| Contacts (CRM) | `/contacts` | `module.contacts` | Done — lightweight personal CRM (contacts with tags); model `Contact`, `actions/contacts.ts` |
+| Calendar | `/calendar` | `module.calendar` | Done — **unified agenda** aggregating tasks (due dates), kitchen meal plan, health meds & care, pet care, SRS language reviews, fleet service/inspection, plant care (113) and — since **114** — habits (per-day aggregate), workshop equipment service dates and contact birthdays into a month grid. Guard: `moduleMeta.test.ts` wymusza wpis w `MODULE_META` dla każdego `src/modules/*/calendar.ts` (nieznany moduł wywalał całą stronę), a `assembleCalendar` odrzuca nieznane zamiast rzutować |
+| Contacts (CRM) | `/contacts` | `module.contacts` | Done — lightweight personal CRM (contacts with tags); model `Contact`, `actions/contacts.ts`. **114**: `Contact.birthday` (migracja 0278) + urodziny co rok we wspólnym kalendarzu + soft-delete do kosza |
 | Reports (markdown docs) | `/reports` | authenticated | Done — system/user/team reports; **content stored in DB or per-user Google Drive** (`Report.storage` db\|drive, hydrated transparently) |
 | QA (test scenarios) | `/qa` | `module.qa` | Internal tooling (Epic → Story → Scenario) |
 | Truck (heavy-vehicle routing) | `/truck` | `module.truck` | Done (experimental) — vehicle profile (weight/height/length/width/axle load), ORS truck routing origin→destination, distance/duration + roadworks-in-corridor, "open in Google Maps" deep-link |
 
 > **Keep this table honest.** When you add/finish/stub a module, update this table, the Route Structure block, the permission list, the Server Actions list, and the Database Schema section below.
+
+> **Integracje międzymodułowe (115, 2026-08-29).** Po dogłębnej analizie każdego modułu z każdym
+> (raport `/reports/integracje-miedzymodulowe-115`, seeded by migration 0283; artefakty w
+> `specs/115-integracje-modulow/`) zrealizowano 19 zleceń Z-INT-01…19 — wszystkie przez KONTRAKTY
+> modułów, wg wzorca „akcja w module ŹRÓDŁA z własnym guardem + pre-check uprawnienia modułu CELU":
+> **Portfel** — `bookAutoExpense` zwraca `WynikKsiegowania` (`{zaksiegowano, powod}`) i przyjmuje
+> `kind: "expense"|"income"`; jawne przyciski „Zaksięguj" w Zdrowiu (koszt wizyty, `HealthEvent.cost`,
+> 0280), Zwierzętach (koszt wizyty wet., przychód sprzedaży), Warsztatach (koszt projektu,
+> `WorkshopProject.cost`, 0281) i Trucku (koszt paliwa trasy z pojazdu Floty; flota contract +=
+> `avgFuelPrice`). **Kontakty** — zapis lekarza/weterynarza/wykonawcy z Zdrowia/Zwierząt/Usług
+> (helper `src/lib/kontaktZWpisu.ts` z dedupem) + `createTaskFromContact`. **Zadania** — „Do zadań"
+> z pozycji wspólnego kalendarza (`calendar/actions/doZadan.ts`), notatki, wiadomości czatu.
+> **Notatki** — zapis artykułu Wiadomości i filmu YouTube (streszczenie z `AiContent`, bez ponownej
+> generacji); kontrakty Notatek/Kuchni eksportują `notesModule`/`kitchenModule` dla pre-checków.
+> **Języki** — sekcja „Fiszki z filmu" w YouTube (transkrypcja → `/api/llm/languages/extract` →
+> przegląd → `bulkAddWords`). **Automaty** — braki warsztatowe → lista zakupów
+> (`addWorkshopLowStockToShoppingList`), `completeShopping(doSpizarni)` → spiżarnia (błąd spiżarni
+> nie cofa zakończenia), prognoza Pogody w siatce kalendarza (`WeatherPref.kalendarzPrognoza`, 0282;
+> `getKalendarzPrognoza` w kontrakcie), ewidencja Roślin → `adjustStorageQuantity` Magazynu
+> (kontrakt += `getStorageItems`). **Pulpit** — cztery nowe wkłady `dashboard.ts` (habits, warsztaty,
+> contacts, weather z twardym timeoutem 3 s), pola w `DashboardSnapshot`, render w istniejących
+> sekcjach `today`/`modules`.
 
 ---
 
@@ -157,9 +202,9 @@ GOOGLE_CLIENT_SECRET  # Google OAuth
   Module permissions are likewise seeded in SQL migrations (`gen_random_uuid()::text`).
 - **Migration numbering**: every new migration dir needs a **unique, sequential**
   4-digit prefix. Get the next free number with `npm run next:migration`; `npm run
-  check:migrations` (also wired into `build`) fails on a *new* collision. The 12
-  legacy duplicate prefixes (parallel `claude/*` branches) are grandfathered in
-  `scripts/check-migrations.js` — **never renumber an already-applied migration**:
+  check:migrations` (also wired into `build`) fails on a *new* collision. The 13
+  legacy duplicate prefixes (parallel `claude/*` branches; last: `0275`, 2026-08-29)
+  are grandfathered in `scripts/check-migrations.js` — **never renumber an already-applied migration**:
   `migrate deploy` keys on the full dir name, so a rename re-runs it (CREATE/ALTER →
   deploy breaks). Duplicate prefixes are harmless to leave; only fix them going forward.
 
@@ -335,6 +380,7 @@ dozens of functions is a signal the module does too much.
 /notes/                  # Notes; + /all /groups /tags
 /kitchen/                # Recipes /recipes/[id]/(edit|cook), /cookbooks/[id], /plan, /pantry/stocktake
 /pets/ [petId]           # Pet profiles; + /pets/calendar (care calendar)
+/rosliny/ [spaceId]      # Plant spaces (mode per space); + /[spaceId]/roslina/[plantId] (plant detail: timeline, journal, measurements, offspring, AI diagnosis), /opieka (care agenda across all spaces, each item with its reason), /katalog (species catalog), /ewidencja (plant-protection treatment register + CSV export; professional spaces only)
 /health/                 # Medical visits + lab tests; + /health/leki (medication & care scheduling: dosing, times, recurrence, today-agenda)
 /habits/                 # Habit tracker (heatmap, streaks)
 /flota/ [vehicleId]      # Vehicles (fuel logs, service records)
@@ -605,6 +651,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **Pets**: `pets`, `petCare`, `petHusbandry`, `petBreeding`
 - **Health**: `health`, `medications`
 - **Other modules**: `habits`, `flota`, `portfel`, `portfelBudgets`, `portfelReports`, `portfelCurrency`, `portfelAuto` (Portfel: budgets/reports/multi-currency/auto-expense), `languageDecks`, `news` (incl. `startNewsRefresh`/`getNewsRefreshState` — the module-wide refresh job; `getStreamView`/`getStreamTimeline` — 083, news and timeline for ALL topics in one read each; `getTopicTimeline`; `hideHotTopic`/`unhideHotTopic`/`getHiddenTopics`; **`refreshTopic`, `getNewsRefreshHistory` and `setActiveSource` are gone** — the last two in 083: the history panel left the view, and the source filter moved to the URL, where a favouritable view can carry it), `userFacts` (knowledge about the user; `buildUserContext` lives in `lib/userContext.ts` — a helper, not an action), `weather` (incl. `getWeatherPref`/`setWatchersView` — 082 układ listy obserwatorów, `addLocationByPoint`, `getIdeas`/`generateIdeaDetail`/`getIdeaLibrary`/`setIdeaState`/`blockIdea`/`deleteIdea`/`addIdeaToTasks`), `qa`, `truck`, `storage` (Magazynowanie), `warsztat` (Warsztaty), `services` (marketplace; incl. `getModerationDisputes`), `calendar`, `contacts`
+- **Rośliny (113)** — actions live in `src/modules/rosliny/actions/` (module convention after 046, not `src/actions/`): `przestrzenie`, `miejsca` (incl. `getPlaceHistory` — history + crop-rotation warning), `rosliny` (incl. `propagatePlant` — a cutting that records its parent), `opieka` (`getCareAgenda`/`recordCare`; the next date is recomputed by the domain rule **from the actual completion**, and skipping deliberately does NOT set `lastDoneAt`), `dziennik`, `zbiory` (`harvestToPantry`/`bookCareCost`/`addToShoppingList` — all three go through OTHER modules' contracts), `ewidencja` (register + CSV export; missing fields are reported, never a reason to refuse the write), `gatunki`, `analiza` (the four LLM uses; named `analiza.ts` because `ai.ts` already exists in YouTube and the coverage manifest keys by file name)
 - **Collaboration / system / UX**: `teams`, `invitations`, `access` (incl. `getAuditLog`), `activity`, `reports` (incl. `createUserReport` — per-user reports for AI sessions), `config`, `llmConfig`, `adminCategories`, `adminNewsCatalog` (082: systemowa biblioteka źródeł RSS — CRUD, sprawdzenie kanału, import/eksport; strona użytkownika to `modules/news/actions/katalog.ts`), `aiConversations` (chat persistence), `notifications`, `menuPrefs` (sidebar customization), `dashboardPrefs` (home dashboard personalization), `skins`, `trash` (soft-delete recovery), `privacy` (GDPR: data export + account/data erasure;
   the deletion logic itself lives in `lib/privacy/purge.ts`, the recovery procedure in
   `docs/devops/przywrocenie-wlasnosci.md`), `systemHealth`, `drive` (Google Drive), `assistantPrefs` (per-user assistant settings incl. `autoApprove` + `getSpeechOptions`), `aiSections` (041: per-user AI-section refresh mode + admin system defaults), `feedback` (`submitFeedbackTask`/`getFeedbackInboxInfo` — the user-report inbox)
@@ -616,7 +663,7 @@ Never add manual cache invalidation elsewhere. Action files:
 - **RBAC**: Users have `UserRole` entries → roles have `RolePermission` entries → permissions have slugs.
 - Check permissions via `src/lib/permissions.ts` (`PERMISSIONS` map, `hasPermission`, `permissionForPath`, `isPathLocked`).
 - Permission slugs (`module.*`): `home`, `shopping`, `tasks`, `notes`, `kitchen`,
-  `pets`, `health`, `habits`, `flota`, `portfel`, `languages`, `services`,
+  `pets`, `rosliny`, `health`, `habits`, `flota`, `portfel`, `languages`, `services`,
   `calendar`, `contacts`, `news`, `weather`, `magazynowanie`, `warsztaty`, `qa`,
   `truck`, `invitations`, `settings`, `admin`. Kitchen sub-permissions:
   `kitchen.recipe.create|edit|delete`, `kitchen.mealplan.edit`,
@@ -640,7 +687,7 @@ Notification                                  — Notification engine (per-user;
 AuditLog                                      — Audit trail for RBAC + config changes (category rbac|config; NO FK to User — snapshots actor email)
 TrashItem                                     — Soft-delete recovery (JSON entity snapshot + retention days; surfaced at /trash)
 DriveConnection, DriveFile                    — Google Drive integration (per-user OAuth drive.file tokens + uploaded-file registry; module folder map)
-Contact                                       — Contacts / personal CRM (per-user; tags = JSON)
+Contact                                       — Contacts / personal CRM (per-user; tags = JSON; birthday = 114, zasila kalendarz)
 Workspace, WorkspaceMember                    — 051/079 (Faza 2, zadanie 9 i 11): PRZESTRZEŃ, w której żyje zasób (`kind` personal|team) — **jedyny nośnik własności** od migracji 0244. `Team`/`TeamMember` pozostają ŹRÓDŁEM przestrzeni (lustro utrzymywane w przód, `check:workspace-mirror`), ale odczyty i zapisy idą już wyłącznie przez `workspaceId`. `personalUserId`/`teamId` (oba nullable+unique) łączą przestrzeń ze źródłem: w PostgreSQL NULL-e w indeksie unikalnym są różne, więc jeden indeks daje niezmiennik „dokładnie jedna przestrzeń osobista na użytkownika". Kasowanie = kaskada FK
 ResourceGrant, ResourceInvitation             — 051: nadanie dostępu do JEDNEGO zasobu + zaproszenie. **Tabele bez konsumenta do zadań 10/12** — świadomie, żeby nie robić dwóch migracji na tych samych tabelach. Nie kasować „w ramach porządków". Znane ograniczenie: `@@unique` nie łapie nadań linkowych (`subjectId: NULL`), poprawka w zadaniu 12
 ShoppingList, Item, ItemHistory               — Shopping core
@@ -656,6 +703,13 @@ Cookbook, MealPlanEntry, PantryItem, ItemRecipeOrigin — Kitchen planning/pantr
 Pet, PetShare, PetMeasurement, PetHealthRecord, PetVetVisit, PetTreatment — Pets core/care
 PetCareTask, PetCareLog, PetEnclosure, PetEnvironmentReading — Pets husbandry
 PetBreedingPair, PetClutch, PetSale           — Pets breeding/sales
+PlantSpeciesCatalog                           — 113: SYSTEM species catalog (no owner and no workspace — like `NewsSourceCatalog`), seeded by migration 0273 with 182 entries. `waterJson` is FOUR numbers (watering interval per season), not one: „every 7 days" is harmful in January and late in July
+PlantSpecies                                  — 113: the user's COPY of a species (`workspaceId` required). Adding from the catalog copies the row, so editing „my" Monstera never touches the system entry; `origin` (system|user|ai) answers „where do I know this from"
+PlantSpace, PlantPlace                        — 113: plant space with its `kind` (home|garden|production|field) and places of varying scale (windowsill…field) with sun/soil/area. A user has MANY spaces at once — that is why the mode is here and not on the account
+Plant                                         — 113: one entity for specimen / batch / area (`quantity`+`quantityUnit`), lifecycle (`status`+`statusReason`), BBCH `stage`, and `parentId` (propagation — the foundation genetics will stand on)
+PlantCareTask, PlantCareEvent                 — 113: schedule (`reason` carries the one-sentence justification of the date) + ONE event table for watering, the plant-protection treatment with its statutory fields (`applicationKind`/`permitNumber`/`locationText`/`withdrawalDays`) and the harvest (`quantity`/`pantryItemId`). Splitting it would leave the register without a single source
+PlantJournalEntry, PlantMeasurement           — 113: journal with photos + measurement with kind and unit (`source` manual|sensor — the seam for etap-2 IoT, so it lands as rows, not a migration)
+PlantHealthEvent                              — 113: diagnosis with `confidence` (`unknown` allowed) and `outcome` (helped|no_change|worse — without it the diagnostics teaches nothing)
 HealthEvent                                   — Health module (visits/lab tests)
 HealthAttachment                              — Health lab-test attachments (PDF/image) for the test repository + trend analysis
 MedicationSchedule, MedicationLog             — Leki i pielęgnacja (med/care schedule + check-off log; kind MEDICATION|CARE, freqType DAILY|WEEKLY|HOURLY)
@@ -1451,8 +1505,10 @@ The flow is **`feature → develop → master`**:
   (`git merge-base --is-ancestor origin/master develop`) reads false, and every later run has to open
   with a `master → develop` sync merge — that is where the recurring "the target branch has a merge
   commit" messages and the empty merges in the graph come from. So: promote with `--ff-only`; if it
-  is refused, **stop and report** (never `--no-ff`, never force-push); record the release with
-  `git tag -a prod-<NNN>-<slug> -m "<feature> [produkcja]"` + `git push origin prod-<NNN>-<slug>`.
+  is refused, **stop and report** (never `--no-ff`, never force-push). **Tagi wydań: OPCJONALNE
+  (decyzja właściciela, 2026-08-29 — „nie interesują mnie tagi").** Sandbox i tak ucina push tagów;
+  nie twórz ich, nie ponawiaj i NIE raportuj właścicielowi ich braku — liczy się wyłącznie
+  fast-forward `master`.
   The point of the rule is that production runs **exactly** the commit that was tested on `develop`.
 - **Merge commits belong on the TARGET branch only.** `claude/* → develop` may create one (it lands
   on `develop` and travels onward to `master` with it) — that is fine and unchanged. What is
@@ -1481,7 +1537,7 @@ The flow is **`feature → develop → master`**:
 - [x] Paid hosting migration for production — `master` → `omnia-prod.onrender.com`
   runs on a paid Render tier (does not sleep). Test env (`develop` →
   `worldofmag.onrender.com`) stays on the free tier.
-- [ ] (optional) Chip away the ~64 cosmetic ESLint warnings (Polish JSX quotes + exhaustive-deps)
+- [x] Chip away the cosmetic ESLint warnings — **0 warningów** (114): brakujące zależności hooków naprawione realnie (w tym stale-closure strzałek tygodni w planie posiłków), świadome wzorce mają uzasadnione disable
 - [ ] **Pay down the last ratchet** — JS bytes per route (`check:perf`). Lower the threshold in the
   manifest with every module you finish; the gate fails on a drop precisely so the progress gets
   recorded. *(The other two are gone: 096 turned pagination into an absolute rule — every `findMany`

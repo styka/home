@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/platform/auth/session";
 import { chatComplete } from "@/platform/llm/chat";
 import { usageField } from "@/platform/ai/costVisibility";
+import { pobierzPubliczny } from "@/lib/http/pobierzPubliczny";
 
 interface ParsedRecipe {
   title: string;
@@ -234,12 +235,13 @@ export async function POST(req: NextRequest) {
 
   let html: string;
   try {
-    const res = await fetch(parsed.toString(), {
+    // `pobierzPubliczny` = blokada SSRF: odrzuca sieci prywatne (localhost, 169.254…, 10/8…),
+    // rozwiązuje DNS przed pobraniem i weryfikuje każdy skok przekierowania — trasa przyjmuje
+    // dowolny adres od użytkownika i zwraca treść błędu, więc bez tego była skanerem sieci hostingu.
+    ({ html } = await pobierzPubliczny(parsed.toString(), {
       headers: { "User-Agent": "Mozilla/5.0 (WorldOfMag Recipe Importer)" },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    html = await res.text();
+      timeoutMs: 15000,
+    }));
   } catch (e) {
     return NextResponse.json(
       { error: `Nie udało się pobrać strony: ${e instanceof Error ? e.message : "błąd"}` },

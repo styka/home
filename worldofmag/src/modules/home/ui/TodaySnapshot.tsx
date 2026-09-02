@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { CheckSquare, ChevronRight, Users, Clock, PawPrint, Car, ShieldCheck, Wrench, AlertCircle, GraduationCap, HeartPulse, Stethoscope, FlaskConical } from "lucide-react";
+import { CheckSquare, ChevronRight, Users, Clock, PawPrint, Car, ShieldCheck, Wrench, AlertCircle, GraduationCap, HeartPulse, Stethoscope, FlaskConical, Hammer, Cake } from "lucide-react";
 import type { TaskPriority, CareAgendaItem } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
@@ -46,6 +46,22 @@ interface TodayMealPreview {
   servings: number;
 }
 
+/** 115 (Z-INT-17): pozycja przeglądu warsztatowego (kształt z migawki pulpitu). */
+interface WorkshopDueItem {
+  id: string;
+  name: string;
+  workshopName: string;
+  dueAt: string | null;
+  overdue: boolean;
+}
+
+/** 115 (Z-INT-17): nadchodzące urodziny kontaktu. */
+interface UpcomingBirthday {
+  id: string;
+  name: string;
+  date: string;
+}
+
 interface TodaySnapshotProps {
   tasks: TodayTaskPreview[];
   meals: TodayMealPreview[];
@@ -53,12 +69,16 @@ interface TodaySnapshotProps {
   vehicleAlerts: VehicleAlert[];
   languageDecks: DeckDue[];
   healthUpcoming: HealthUpcoming[];
+  workshopDue: WorkshopDueItem[];
+  upcomingBirthdays: UpcomingBirthday[];
   hasTasksAccess: boolean;
   hasKitchenAccess: boolean;
   hasPetsAccess: boolean;
   hasFlotaAccess: boolean;
   hasLanguagesAccess: boolean;
   hasHealthAccess: boolean;
+  hasWarsztatyAccess: boolean;
+  hasContactsAccess: boolean;
 }
 
 const SLOT_EMOJI: Record<string, string> = {
@@ -99,12 +119,16 @@ export function TodaySnapshot({
   vehicleAlerts,
   languageDecks,
   healthUpcoming,
+  workshopDue,
+  upcomingBirthdays,
   hasTasksAccess,
   hasKitchenAccess,
   hasPetsAccess,
   hasFlotaAccess,
   hasLanguagesAccess,
   hasHealthAccess,
+  hasWarsztatyAccess,
+  hasContactsAccess,
 }: TodaySnapshotProps) {
   const showTasks = hasTasksAccess && tasks.length > 0;
   const showMeals = hasKitchenAccess && meals.length > 0;
@@ -112,8 +136,10 @@ export function TodaySnapshot({
   const showVehicles = hasFlotaAccess && vehicleAlerts.length > 0;
   const showHealth = hasHealthAccess && healthUpcoming.length > 0;
   const showLanguages = hasLanguagesAccess && languageDecks.length > 0;
+  const showWorkshop = hasWarsztatyAccess && workshopDue.length > 0;
+  const showBirthdays = hasContactsAccess && upcomingBirthdays.length > 0;
 
-  if (!showTasks && !showMeals && !showPets && !showVehicles && !showHealth && !showLanguages) return null;
+  if (!showTasks && !showMeals && !showPets && !showVehicles && !showHealth && !showLanguages && !showWorkshop && !showBirthdays) return null;
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
@@ -121,6 +147,8 @@ export function TodaySnapshot({
       {showHealth && <HealthColumn events={healthUpcoming} />}
       {showPets && <PetsColumn agenda={petAgenda} />}
       {showVehicles && <VehiclesColumn alerts={vehicleAlerts} />}
+      {showWorkshop && <WorkshopColumn due={workshopDue} />}
+      {showBirthdays && <BirthdaysColumn birthdays={upcomingBirthdays} />}
       {showLanguages && <LanguagesColumn decks={languageDecks} />}
       {showMeals && <MealsColumn meals={meals} />}
     </div>
@@ -423,6 +451,126 @@ function VehiclesColumn({ alerts }: { alerts: VehicleAlert[] }) {
             </Link>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/** 115 (Z-INT-17): kolumna przeglądów warsztatowych — układ jak `VehiclesColumn`. */
+function WorkshopColumn({ due }: { due: WorkshopDueItem[] }) {
+  const t = useTranslations("modules.home.TodaySnapshot");
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 14,
+        borderRadius: 10,
+        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3
+          style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
+            color: "var(--accent-amber)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em",
+          }}
+        >
+          <Hammer size={13} /> Warsztat
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
+            {due.length}
+          </span>
+        </h3>
+        <Link
+          href="/warsztaty/przeglady"
+          style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2 }}
+        >
+          {t("przegladyLink")} <ChevronRight size={11} />
+        </Link>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {due.map((i) => (
+          <Link
+            key={i.id}
+            href="/warsztaty/przeglady"
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8,
+              background: "var(--bg-elevated)", textDecoration: "none",
+            }}
+          >
+            {i.overdue ? (
+              <AlertCircle size={13} style={{ color: "var(--accent-red)", flexShrink: 0 }} />
+            ) : (
+              <Wrench size={13} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
+            )}
+            <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {i.name}
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}> · {i.workshopName}</span>
+            </span>
+            <span style={{ fontSize: 11, color: i.overdue ? "var(--accent-red)" : "var(--text-muted)", flexShrink: 0, fontWeight: i.overdue ? 600 : 400 }}>
+              {i.dueAt ? new Date(i.dueAt).toLocaleDateString("pl-PL", { day: "2-digit", month: "short" }) : ""}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 115 (Z-INT-17): kolumna nadchodzących urodzin kontaktów. */
+function BirthdaysColumn({ birthdays }: { birthdays: UpcomingBirthday[] }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 14,
+        borderRadius: 10,
+        border: "1px solid var(--border)",
+        background: "var(--bg-surface)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <h3
+          style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600,
+            color: "var(--accent-green)", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em",
+          }}
+        >
+          <Cake size={13} /> Urodziny
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginLeft: 4 }}>
+            {birthdays.length}
+          </span>
+        </h3>
+        <Link
+          href="/contacts"
+          style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2 }}
+        >
+          Kontakty <ChevronRight size={11} />
+        </Link>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {birthdays.map((b) => (
+          <Link
+            key={b.id}
+            href="/contacts"
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8,
+              background: "var(--bg-elevated)", textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: 13, flexShrink: 0 }} aria-hidden>🎂</span>
+            <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {b.name}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
+              {new Date(`${b.date}T12:00:00`).toLocaleDateString("pl-PL", { day: "2-digit", month: "short" })}
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );

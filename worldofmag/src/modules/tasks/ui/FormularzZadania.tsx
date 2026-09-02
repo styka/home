@@ -14,8 +14,9 @@ import type { Task, TaskPriority, TaskProject } from "@/types";
  * Zgłoszenie właściciela dotyczyło dwóch miejsc naraz: paska w widoku projektu („jednolinijkowy,
  * przy dłuższym tekście nie widać całości") i strony `/tasks`, gdzie dodać zadania nie dało się
  * wcale. Dwie implementacje rozjechałyby się przy pierwszej poprawce reguły generowania tytułu,
- * więc komponent powstaje od razu z DWOMA konsumentami (C-35): `QuickAddTask` (widok projektu)
- * i `SzybkieDodanieZadania` (strona modułu).
+ * więc komponent powstaje od razu z DWOMA konsumentami (C-35): widok projektu (od 118 —
+ * `ModalDodaniaZadania`, wcześniej stały pasek `QuickAddTask`) i `SzybkieDodanieZadania`
+ * (strona modułu).
  *
  * Trzy rzeczy, które łatwo tu zepsuć, i dlatego są napisane wprost:
  *

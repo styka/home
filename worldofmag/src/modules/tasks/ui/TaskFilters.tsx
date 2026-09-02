@@ -30,54 +30,61 @@ export function TaskFilters({ active, counts, onChange, allTags, selectedTagIds,
       className="flex-shrink-0 border-b"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
-      {showStatusTabs && (
-      <div className="flex items-center gap-0 overflow-x-auto px-2" style={{ minHeight: 38 }}>
-        {filters.map((f) => {
-          const isActive = active === f;
-          const count = counts[f];
-          return (
-            <button
-              key={f}
-              onClick={() => onChange(f)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap focus:outline-none flex-shrink-0"
-              style={{
-                color: isActive ? "var(--accent-blue)" : "var(--text-muted)",
-                borderBottom: isActive ? "2px solid var(--accent-blue)" : "2px solid transparent",
-                marginBottom: -1,
-              }}
-            >
-              {labels?.[f] ?? TASK_STATUS_FILTER_LABELS[f as TaskStatusFilter] ?? f}
-              {count > 0 && (
-                <span
-                  className="rounded-full px-1.5"
+      {/* 118 (zgł. 1): JEDEN wiersz — zakładki statusu i filtr etykiet obok siebie. Do 118 filtr
+          zajmował własny, drugi wiersz nawet bez żadnej wybranej etykiety, więc chrome nad listą
+          rósł o ~38 px na darmo. Zakładki przewijają się we własnym polu (`flex-1 min-w-0`),
+          filtr stoi po prawej; wysokość wiersza jest stała niezależnie od liczby etykiet. */}
+      <div className="flex items-center gap-0 px-2" style={{ minHeight: 38 }}>
+        {showStatusTabs && (
+          <div className="flex min-w-0 flex-1 items-center gap-0 overflow-x-auto">
+            {filters.map((f) => {
+              const isActive = active === f;
+              const count = counts[f];
+              return (
+                <button
+                  key={f}
+                  onClick={() => onChange(f)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap focus:outline-none flex-shrink-0"
                   style={{
-                    background: isActive ? "var(--accent-blue)" : "var(--bg-elevated)",
-                    color: isActive ? "var(--on-accent)" : "var(--text-muted)",
-                    fontSize: 10,
-                    minWidth: 16,
-                    textAlign: "center",
+                    color: isActive ? "var(--accent-blue)" : "var(--text-muted)",
+                    borderBottom: isActive ? "2px solid var(--accent-blue)" : "2px solid transparent",
+                    marginBottom: -1,
                   }}
                 >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      )}
+                  {labels?.[f] ?? TASK_STATUS_FILTER_LABELS[f as TaskStatusFilter] ?? f}
+                  {count > 0 && (
+                    <span
+                      className="rounded-full px-1.5"
+                      style={{
+                        background: isActive ? "var(--accent-blue)" : "var(--bg-elevated)",
+                        color: isActive ? "var(--on-accent)" : "var(--text-muted)",
+                        fontSize: 10,
+                        minWidth: 16,
+                        textAlign: "center",
+                      }}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-      {/* 100 (AC-6..AC-9): jeden przycisk z licznikiem zamiast chipsa na każdą istniejącą etykietę.
-          Stary pasek rósł liniowo ze słownikiem tagów użytkownika; nowy ma wysokość niezależną od
-          ich liczby, a semantyka filtru (koniunkcja w `TasksPage`) zostaje bez zmiany. */}
-      {allTags.length > 0 && (
-        <FiltrTagow
-          wszystkie={allTags}
-          wybrane={selectedTagIds}
-          onPrzelacz={onTagToggle}
-          onWyczysc={onTagsClear}
-        />
-      )}
+        {/* 100 (AC-6..AC-9): jeden przycisk z licznikiem zamiast chipsa na każdą istniejącą
+            etykietę; semantyka filtru (koniunkcja w `TasksPage`) zostaje bez zmiany. */}
+        {allTags.length > 0 && (
+          <div className="ml-auto flex min-w-0 shrink items-center">
+            <FiltrTagow
+              wszystkie={allTags}
+              wybrane={selectedTagIds}
+              onPrzelacz={onTagToggle}
+              onWyczysc={onTagsClear}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
