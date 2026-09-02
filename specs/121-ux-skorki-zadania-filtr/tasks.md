@@ -1,7 +1,7 @@
 # Zadania: Poprawki UX — edytor skórek w dialogu, panel szczegółów zadania bez zbędnej linii, jeden mechanizm zakresu projektów
 
 - **Plan:** ./plan.md (121-ux-skorki-zadania-filtr)
-- **Status:** in-progress
+- **Status:** done (T-9: wpis/merge po recenzji)
 - **Data:** 2026-09-02
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -59,10 +59,10 @@
 *(pusta — bez nowych `AIAction`/read-tooli; plan §6)*
 
 ## Faza 4 — Bramki i domknięcie
-- [ ] **T-7** — Bramki lokalne: `tsc --noEmit -p tsconfig.test.json`, `npm run check:i18n`,
+- [x] **T-7** — Bramki lokalne: `tsc --noEmit -p tsconfig.test.json`, `npm run check:i18n`,
   `npm run check:ui-contract`, `next lint --dir src`, potem pełny `npm run build` **do kroku
   `next build`** na lokalnym Postgresie (C-13). **Gotowe, gdy:** wszystko zielone (AC-10).
-- [ ] **T-8** — Mapowanie AC-1..AC-10 ze speca na wynik (krótka tabela — input do `/verify`);
+- [x] **T-8** — Mapowanie AC-1..AC-10 ze speca na wynik (krótka tabela — input do `/verify`);
   aktualizacja statusów w tym pliku.
 - [ ] **T-9** — Wpis do `doświadczenia.md`, jeśli po drodze wystąpił nieoczywisty problem (C-51);
   commit + merge `claude/*` → `develop` wg C-52 (wykonuje pipeline po recenzji).
@@ -77,6 +77,25 @@
 | AC-8 (istniejące zestawy działają, bez migracji) | T-1 (rewalidacja), brak migracji strukturalnie |
 | AC-9 (filtr ad hoc bez regresu) | T-4, T-5 |
 | AC-10 (build zielony) | T-7 |
+
+## Wynik bramek (T-7, 2026-09-02)
+Pełny `npm run build` na lokalnym Postgresie: **EXIT=0** — wszystkie bramki (m.in. check:i18n,
+check:ui-contract, check:boundaries, check:pagination, check:owner-columns), `tsc` na tsconfig.test,
+`next lint` (0 ostrzeżeń), `next build`, budżet wydajnościowy w pasmie ±5%. Bez migracji (302 bez zmian).
+
+## Mapowanie AC → wynik (T-8, input do /verify)
+| AC | Wynik | Dowód |
+|----|-------|-------|
+| AC-1 | ✅ | `SkinPicker` renderuje `SkinEditor` w `<Modal wide>`; Esc/klik w tło z Radix Dialog |
+| AC-2 | ✅ | `onClose`/`onSaved` bez zmian; `onSaved → choose(id)` aktywuje skórkę; `SkinEditor` sam zamyka po zapisie |
+| AC-3 | ✅ | `duplicate`/`setEditor` nietknięte — oba wejścia otwierają ten sam modal |
+| AC-4 | ✅ | Blok nagłówka `h-12` usunięty; rozwiń/zwiń (`aria-pressed`), usuń, zamknij w wierszu tytułu |
+| AC-5 | ✅ | Mobilne „Wróć" pierwszym elementem wiersza (`md:hidden`, `py-3`); usuń `p-3` na telefonie |
+| AC-6 | ✅ | Pasek chipów usunięty; `ProjectScopeFilter` z propem `zestaw` w `viewMode="multi"`: edycja zakresu+nazwa/emoji/kolor, zapisz/zapisz-jako/usuń (confirm destructive) |
+| AC-7 | ✅ | Sidebar: grupy jako czyste linki; zarządzanie w dropdownie; `?edit=1` i edytor usunięte |
+| AC-8 | ✅ | Zero migracji; model `ProjectGroup` i adres `/tasks/zestaw/…` nietknięte; akcje już rewalidowały `/tasks` |
+| AC-9 | ✅ | Ścieżka `isVirtualView` niezmieniona (`selected`/`onChange` jak dotąd; pusty wybór = wszystkie) |
+| AC-10 | ✅ | Pełny build EXIT=0 (patrz wyżej) |
 
 ## Notatki / blokady
 - T-1: bez zmian w kodzie — wszystkie trzy akcje grup już kończyły się `revalidatePath("/tasks")`.
