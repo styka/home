@@ -1022,7 +1022,9 @@
         "zapisz": "Zapisz",
         "anuluj": "Anuluj",
         "nazwa": "Nazwa",
-        "opis": "Opis"
+        "opis": "Opis",
+        "nowaSkorka": "Nowa skórka",
+        "edycjaSkorki": "Edycja skórki"
       },
       "UserFactsSection": {
         "teInformacjeTrafiajaDo": "Te informacje trafiają do podpowiedzi w innych modułach (np. propozycji w Pogodzie). Możesz je poprawić, potwierdzić albo odrzucić — odrzucone nie wracają.",
@@ -2997,7 +2999,20 @@
         "wybraneProjekty": "Projekty: {ile}",
         "wyczyscWybor": "Pokaż wszystkie projekty",
         "nazwaZestawu": "Nazwa zestawu…",
-        "zapiszJakoZestaw": "Zapisz wybór jako zestaw projektów"
+        "zapiszJakoZestaw": "Zapisz wybór jako zestaw projektów",
+        "zakresZestawu": "{ile} z {wszystkie} projektów",
+        "ikonaZestawu": "Ikona zestawu",
+        "kolor": "Kolor:",
+        "bezKoloru": "Bez koloru",
+        "kolorZestawu": "Kolor zestawu",
+        "wybierzProjekt": "Wybierz co najmniej jeden projekt",
+        "zapiszZmiany": "Zapisz zmiany",
+        "jakoNowy": "Jako nowy",
+        "zapiszJakoNowy": "Zapisz jako nowy zestaw",
+        "usunZestaw": "Usuń zestaw",
+        "usunZestawPytanie": "Usunąć zestaw „{nazwa}”?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko ten zapisany widok.",
+        "zakresIUstawieniaZestawu": "Zakres i ustawienia zestawu",
+        "bladZapisuZestawu": "Nie udało się zapisać zmian zestawu"
       },
       "FiltrTagow": {
         "filtrEtykiet": "Filtr etykiet",
