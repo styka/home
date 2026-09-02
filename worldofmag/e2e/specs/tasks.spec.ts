@@ -28,15 +28,18 @@ test.describe("Zadania — CRUD", () => {
   });
 
   // 121 (zgł. 2): na stronie modułu nie ma już stałego pola — `a` otwiera MODAL dodawania
-  // zadania. Twarde `toBeVisible` zamiast `requireVisible`: dawny natychmiastowy `isVisible()`
-  // nie czekał na montaż modalu, a quick-add jest bezwarunkową funkcją tej strony — jego brak
-  // ma czerwienić, nie pomijać.
+  // zadania. Dwie zmiany względem starego testu: (1) twarde oczekiwanie zamiast `requireVisible`
+  // (quick-add to bezwarunkowa funkcja tej strony — jej brak ma czerwienić, nie pomijać);
+  // (2) naciśnięcie w `toPass`, bo klawisz wysłany tuż po `load`, przed nawodnieniem Reacta,
+  // ginie bezpowrotnie — dawne pole istniało już w SSR, więc ten wyścig nie miał znaczenia.
   test("[scenario-tasks-add-quick] szybkie dodanie zadania", async ({ page, tasks }) => {
     await tasks.open();
     const title = `E2E zadanie ${Date.now()}`;
-    await page.keyboard.press("a");
     const input = page.getByPlaceholder(/Dodaj zadanie/);
-    await expect(input).toBeVisible();
+    await expect(async () => {
+      await page.keyboard.press("a");
+      await expect(input).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 15_000 });
     await input.fill(title);
     await input.press("Enter");
     await expect(page.getByText(title).first()).toBeVisible();
@@ -44,9 +47,11 @@ test.describe("Zadania — CRUD", () => {
 
   test("[scenario-tasks-add-empty-blocked] pusty tytuł nie tworzy zadania", async ({ page, tasks }) => {
     await tasks.open();
-    await page.keyboard.press("a");
     const input = page.getByPlaceholder(/Dodaj zadanie/);
-    await expect(input).toBeVisible();
+    await expect(async () => {
+      await page.keyboard.press("a");
+      await expect(input).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 15_000 });
     await input.press("Enter");
     await expect(page).toHaveURL(/\/tasks/);
   });

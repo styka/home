@@ -4,6 +4,25 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-09-02 — Klawisz naciśnięty przed nawodnieniem ginie, a „pomiń zamiast czerwienić" to ukrywa
+**Problem:** Po zamianie stałego widgetu „Nowe zadanie" na modal (121) klikacz
+`[scenario-tasks-add-quick]` przestał testować cokolwiek — i zrobił to **bezgłośnie**. Dwa
+nakładające się mechanizmy: (1) test naciskał `a` natychmiast po `load`, a nasłuchiwacz skrótów
+montuje się dopiero po nawodnieniu Reacta — klawisz ginął bezpowrotnie i modal nigdy nie wstawał;
+przy dawnym polu renderowanym w SSR wyścig nie miał znaczenia, bo `fill()` sam czeka na element.
+(2) strażnik `requireVisible` używa natychmiastowego `isVisible()` (Playwright nie czeka w tej
+metodzie mimo parametru `timeout`) i **pomija** test zamiast go czerwienić — więc w raporcie seria
+była „zielona", a scenariusz po prostu przestał istnieć. Diagnozę utrudniło to, że w debugu
+z sekundą odczekania skrót działał bez zarzutu — wyścig widać tylko przy natychmiastowym naciśnięciu.
+**Rozwiązanie:** W teście naciśnięcie klawisza owinięte w `expect(async () => { press; await
+expect(input).toBeVisible({timeout: 1000}) }).toPass()` — zgubiony klawisz jest ponawiany, aż modal
+wstanie. Do tego twarde `toBeVisible` zamiast `requireVisible`: quick-add jest bezwarunkową funkcją
+strony modułu, więc jego brak ma czerwienić, nie pomijać.
+**Lekcja:** Gdy interakcja w e2e zaczyna się od KLAWIatury tuż po nawigacji, naciśnięcie trzeba
+ponawiać (`toPass`), bo przed nawodnieniem nie ma komu go odebrać — kliknięcia są odporne
+(auto-wait), klawisze nie. I drugie: `requireVisible`/`test.skip` jest dla funkcji zależnych od
+środowiska czy danych — użyty na funkcji bezwarunkowej zamienia regresję w zielony raport.
+
 ## 2026-09-02 — Wartość domyślna, która ukryła błąd: pusty obiekt udający poprawną odpowiedź
 **Problem:** Właściciel powtórzył **to samo polecenie**, które naprawialiśmy w 112 („załóż psa Raj na
 podstawie zadań"), już na wdrożonym kodzie — i znów nie dostał wyniku. Dorobek 112 zadziałał

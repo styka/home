@@ -1,7 +1,7 @@
 # Zadania: Poprawki zgłoszeń administratora — słówka bez limitu, zadanie w dialogu, weryfikacja skórek
 
 - **Plan:** ./plan.md (121-zgloszenia-slowka-zadania-skorka)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-09-02
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -62,12 +62,12 @@
   implementacji (C-54), po aktualizacji planu.
 - [x] **T-9** — Bramki lokalne: `npm run check:i18n`, `npm run check:cost-badge`,
   `npm run check:content-memory`, `npm run test:unit` (całość), `next lint` — zielone.
-- [ ] **T-10** — `npm run build` do kroku `next build` włącznie (lokalny Postgres, C-13 — bez
+- [x] **T-10** — `npm run build` do kroku `next build` włącznie (lokalny Postgres, C-13 — bez
   `migrate.js` na prod). Gotowe, gdy: build zielony.
-- [ ] **T-11** — Mapowanie AC-1…AC-6 na wyniki (input do `/verify`); e2e zadań
+- [x] **T-11** — Mapowanie AC-1…AC-6 na wyniki (input do `/verify`); e2e zadań
   (`[scenario-tasks-add-quick]`, `[scenario-tasks-create-project]`) jeśli środowisko e2e
   osiągalne — inaczej odnotować w verify.md weryfikację statyczną.
-- [ ] **T-12** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51);
+- [x] **T-12** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51);
   commit + merge `claude/*` → `develop` wg STANDING AUTHORIZATION (robi to `/review`).
 
 ## Mapowanie kryteriów akceptacji → zadania
