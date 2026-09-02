@@ -463,7 +463,7 @@ export function TaskDetail({ task, allTags, allProjects = [], obszary = [], stat
     )
   );
 
-  /* Title + akcje panelu — 121 (AC-4/AC-5): osobny wiersz nagłówka („Szczegóły zadania") zabierał
+  /* Title + akcje panelu — 122 (AC-4/AC-5): osobny wiersz nagłówka („Szczegóły zadania") zabierał
      ~48 px czystego chromu, więc jego przyciski żyją teraz w wierszu tytułu. Pole tytułu ma
      `min-w-0 flex-1`, a grupa akcji `flex-shrink-0` — długi tytuł nigdy nie wypycha przycisków. */
   const sekcjaTytul = (
@@ -989,7 +989,7 @@ export function TaskDetail({ task, allTags, allProjects = [], obszary = [], stat
       className="flex flex-col h-full border-l overflow-hidden"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
-      {/* 121: bez osobnego wiersza nagłówka — akcje panelu mieszkają w wierszu tytułu (sekcjaTytul). */}
+      {/* 122: bez osobnego wiersza nagłówka — akcje panelu mieszkają w wierszu tytułu (sekcjaTytul). */}
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
         {szeroki ? (

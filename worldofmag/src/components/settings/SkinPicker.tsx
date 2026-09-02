@@ -176,7 +176,7 @@ export function SkinPicker({
         </button>
       </div>
 
-      {/* 121 (AC-1): edytor w modalu, nie inline pod przyciskiem — sekcja wysuwana na dole strony
+      {/* 122 (AC-1): edytor w modalu, nie inline pod przyciskiem — sekcja wysuwana na dole strony
           była niewidoczna, gdy przycisk stał przy dolnej krawędzi okna. Modal (na telefonie arkusz
           dolny) jest zawsze w kadrze, daje Esc i pułapkę focusu za darmo. */}
       {editor.open && (

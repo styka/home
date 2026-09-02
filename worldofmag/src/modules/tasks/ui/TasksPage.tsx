@@ -44,7 +44,7 @@ interface TasksPageProps {
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
   isAdmin?: boolean;
-  /** 121: pełne dane zapisanego zestawu (widok /tasks/zestaw/<id>) — zakres pokazuje i edytuje
+  /** 122: pełne dane zapisanego zestawu (widok /tasks/zestaw/<id>) — zakres pokazuje i edytuje
       wyłącznie dropdown filtra projektów; pasek chipów „Projekty: …" przestał istnieć. */
   zestaw?: ZestawWFiltrze;
   /** 117: obszary bieżącego projektu (tylko widok projektu; widoki wirtualne dostają pustą). */
@@ -663,7 +663,7 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               onChange={(next) => setView({ projekty: next })}
             />
           )}
-          {/* 121: w widoku zapisanego zestawu TEN SAM dropdown pokazuje i edytuje zakres
+          {/* 122: w widoku zapisanego zestawu TEN SAM dropdown pokazuje i edytuje zakres
               (tryb `zestaw`) — jedyny mechanizm zakresu projektów w module. */}
           {viewMode === "multi" && zestaw && (
             <ProjectScopeFilter allProjects={allProjects} zestaw={zestaw} />

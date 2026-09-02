@@ -69,7 +69,7 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   let viewMode: ViewMode;
   let projectName: string;
   // Widok wielu projektów: projekty w zakresie (konfiguracja statusów) + pełne dane zestawu
-  // dla filtra (121: dropdown jest jedynym miejscem pokazywania i edycji zakresu).
+  // dla filtra (122: dropdown jest jedynym miejscem pokazywania i edycji zakresu).
   let scopeProjects: ScopeProject[] = [];
   let zestaw: { id: string; name: string; emoji: string; color: string | null; projectIds: string[] } | undefined;
   let areas: ObszarDTO[] = [];

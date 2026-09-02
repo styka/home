@@ -1,6 +1,6 @@
 # Spec: Poprawki UX — edytor skórek w dialogu, panel szczegółów zadania bez zbędnej linii, jeden mechanizm zakresu projektów
 
-- **ID:** 121-ux-skorki-zadania-filtr
+- **ID:** 122-ux-skorki-zadania-filtr
 - **Status:** draft
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-09-02

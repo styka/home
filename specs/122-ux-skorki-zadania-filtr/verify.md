@@ -1,4 +1,4 @@
-# Weryfikacja: 121-ux-skorki-zadania-filtr
+# Weryfikacja: 122-ux-skorki-zadania-filtr
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md
 - **Data:** 2026-09-02

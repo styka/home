@@ -1,4 +1,4 @@
-# Recenzja: 121-ux-skorki-zadania-filtr
+# Recenzja: 122-ux-skorki-zadania-filtr
 
 - **Data:** 2026-09-02 · **Recenzent:** omnia-reviewer (świeże oko) + dyrygent pipeline'u
 - **Diff:** `origin/develop...HEAD` (3 commity; SkinPicker, TaskDetail, ProjectScopeFilter,

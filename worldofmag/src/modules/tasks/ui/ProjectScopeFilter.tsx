@@ -26,7 +26,7 @@ import type { TaskProject } from "@/types";
  *     Dokładanie drugiego nośnika „filtrów predefiniowanych" obok grup dałoby dwie listy tego
  *     samego, rozjeżdżające się przy pierwszej edycji.
  *
- * 121: ten dropdown jest JEDYNYM mechanizmem zakresu projektów. W widoku zapisanego zestawu
+ * 122: ten dropdown jest JEDYNYM mechanizmem zakresu projektów. W widoku zapisanego zestawu
  * (prop `zestaw`) pokazuje i edytuje zakres ORAZ metadane zestawu (nazwa/emoji/kolor, usunięcie)
  * — pasek chipów „Projekty: …" i osobny edytor grup w nawigacji bocznej przestały istnieć.
  * Edycja zakresu to ZMIANA OCZEKUJĄCA zapisywana przyciskiem: widok zestawu ładuje z serwera

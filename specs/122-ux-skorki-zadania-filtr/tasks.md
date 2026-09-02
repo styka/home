@@ -1,6 +1,6 @@
 # Zadania: Poprawki UX — edytor skórek w dialogu, panel szczegółów zadania bez zbędnej linii, jeden mechanizm zakresu projektów
 
-- **Plan:** ./plan.md (121-ux-skorki-zadania-filtr)
+- **Plan:** ./plan.md (122-ux-skorki-zadania-filtr)
 - **Status:** in-progress (runda 2 — poprawki z recenzji)
 - **Data:** 2026-09-02
 

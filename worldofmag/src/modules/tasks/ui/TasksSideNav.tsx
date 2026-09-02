@@ -45,7 +45,7 @@ export function TasksSideNav() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  // T-10 (121): mutacje zestawów żyją teraz w dropdownie filtra projektów, a ta lista jest stanem
+  // T-10 (122): mutacje zestawów żyją teraz w dropdownie filtra projektów, a ta lista jest stanem
   // klienckim — `revalidatePath` jej nie odświeży. Dropdown ogłasza zmianę zdarzeniem okna,
   // a sidebar przeładowuje grupy (inaczej usunięty zestaw zostawałby tu linkiem do 404).
   useEffect(() => {
@@ -199,7 +199,7 @@ export function TasksSideNav() {
       )}
 
       {/* ——— Grupy projektów (zapisane zestawy; czyste linki) ———
-          121: zarządzanie zestawem (zakres, nazwa, kolor, usunięcie) przejął dropdown filtra
+          122: zarządzanie zestawem (zakres, nazwa, kolor, usunięcie) przejął dropdown filtra
           projektów w widoku zestawu — sidebar tylko do nich prowadzi. Nowy zestaw powstaje
           z zapisu wyboru w tym samym dropdownie (widoki zbiorcze). */}
       {groups.length > 0 && (
