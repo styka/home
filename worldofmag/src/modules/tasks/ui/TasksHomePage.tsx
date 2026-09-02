@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CheckSquare,
@@ -17,10 +18,11 @@ import {
   Users,
 } from "lucide-react";
 import { createTaskProject } from "../actions/taskProjects";
-import { SzybkieDodanieZadania } from "./SzybkieDodanieZadania";
+import { ModalDodaniaZadania } from "./ModalDodaniaZadania";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { TaskProject, TaskPriority } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
@@ -39,7 +41,7 @@ interface TasksHomePageProps {
   upcomingCount: number;
   overdueCount: number;
   todayPreview: TodayPreviewItem[];
-  /** 105: projekt ostatnio utworzonego zadania — domyślny cel widgetu szybkiego dodawania. */
+  /** 105/121: projekt ostatnio utworzonego zadania — domyślny cel w modalu dodawania. */
   ostatniProjektId?: string | null;
 }
 
@@ -52,7 +54,24 @@ export function TasksHomePage({
   ostatniProjektId,
 }: TasksHomePageProps) {
   const t = useTranslations("modules.tasks.TasksHomePage");
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
+  /**
+   * 121 (zgł. 2): dodawanie zadania w MODALU zamiast stałego widgetu (105) — decyzja właściciela:
+   * na stronie modułu ma stać przycisk jak przy projekcie, „byle nie rozwijane inline". Ten sam
+   * modal co w widoku projektu (118), tu z wyborem projektu docelowego.
+   */
+  const [dodawanieZadania, setDodawanieZadania] = useState(false);
+  // Projekt sprzed chwili mógł zostać skasowany albo należeć do przestrzeni, której już nie
+  // widzimy — wtedy domyślną jest Skrzynka, a nie martwe id, które select i tak by odrzucił.
+  const domyslnyProjektId = useMemo(
+    () => (ostatniProjektId && projects.some((p) => p.id === ostatniProjektId) ? ostatniProjektId : null),
+    [ostatniProjektId, projects],
+  );
+  // `a`/`n` otwierają modal — tak jak w widoku projektu (i jak oczekują klikacze e2e).
+  useKeyboardShortcuts(
+    useMemo(() => ({ onQuickAdd: () => setDodawanieZadania(true) }), []),
+  );
   /**
    * 103: gest w dolnym pasku umie prowadzić nie tylko do modułu, ale i do jego AKCJI — a akcję
    * niesie adres (`/tasks?akcja=nowy-projekt`), nie kod wykonywany przez powłokę. Dzięki temu ten
@@ -108,30 +127,64 @@ export function TasksHomePage({
       title="Zadania"
       subtitle={subtitle}
       headerAction={
-        <button
-          onClick={() => (isAdding ? zamknijDodawanie() : setIsAdding(true))}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            padding: "6px 12px",
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-            color: "var(--text-secondary)",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          <Plus size={13} />
-          Nowy projekt
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* 121 (zgł. 2): główna akcja modułu — zadanie dodaje się w modalu, nie w inline widgecie. */}
+          <button
+            onClick={() => setDodawanieZadania(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "none",
+              background: "var(--accent-green)",
+              color: "var(--on-accent)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={13} />
+            {t("noweZadanie")}
+          </button>
+          <button
+            onClick={() => (isAdding ? zamknijDodawanie() : setIsAdding(true))}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--bg-surface)",
+              color: "var(--text-secondary)",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={13} />
+            Nowy projekt
+          </button>
+        </div>
       }
     >
 
-      {/* 105 (AC-1): szybkie dodanie zadania jako PIERWSZA rzecz na stronie modułu —
-          nad kaflami i nad formularzem nowego projektu. */}
-      <SzybkieDodanieZadania projekty={projects} ostatniProjektId={ostatniProjektId ?? null} />
+      {/* 121 (zgł. 2): modal dodawania zadania — ten sam co w widoku projektu (118), z wyborem
+          projektu docelowego. Po zapisie przechodzimy do szczegółów nowego zadania w jego
+          projekcie (`?task=<id>` czyta `TasksRouteView`) — zachowanie 1:1 z dawnym widgetem. */}
+      {dodawanieZadania && (
+        <ModalDodaniaZadania
+          projectId="all"
+          pokazWyborProjektu
+          projekty={projects}
+          domyslnyProjektId={domyslnyProjektId}
+          onClose={() => setDodawanieZadania(false)}
+          onCreated={(task, projektId) => {
+            router.push(`/tasks/${projektId ?? "all"}?task=${task.id}`);
+          }}
+        />
+      )}
 
       {isAdding && (
         <div style={{ display: "flex", gap: 8 }}>

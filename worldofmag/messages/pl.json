@@ -1652,7 +1652,8 @@
         "wklejTekstAiWyciagnie": "Wklej tekst — AI wyciągnie z niego kolejne słówka…",
         "dodajSlowkaZTekstu": "Dodaj słówka z tekstu (AI)",
         "doPowtorki": "Do powtórki",
-        "brakSlowekDodajJe": "Brak słówek. Dodaj je ręcznie lub wygeneruj z tekstu."
+        "brakSlowekDodajJe": "Brak słówek. Dodaj je ręcznie lub wygeneruj z tekstu.",
+        "tekstPrzyciety": "Tekst był dłuższy niż obsługiwany zakres — słówka przygotowano z jego początku."
       },
       "LanguagesHomePage": {
         "naukaJezykow": "Nauka języków",
@@ -2951,7 +2952,8 @@
         "zalegle": "Zaległe",
         "nadchodzace": "Nadchodzące",
         "zarzadzanie": "Zarządzanie",
-        "naDzis": "Na dziś"
+        "naDzis": "Na dziś",
+        "noweZadanie": "Nowe zadanie"
       },
       "TasksPage": {
         "dzis": "📅 Dziś",
@@ -3017,9 +3019,6 @@
         "skrzynka": "Skrzynka",
         "termin": "Termin",
         "nieUdaloSieDodac": "Nie udało się dodać zadania"
-      },
-      "SzybkieDodanieZadania": {
-        "noweZadanie": "Nowe zadanie"
       },
       "WyborObszaru": {
         "przypiszObszar": "Przypisz obszar",

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Modal } from "@/components/ui/Modal";
 import { FormularzZadania, type FormularzZadaniaHandle } from "./FormularzZadania";
-import type { Task } from "@/types";
+import type { Task, TaskProject } from "@/types";
 
 /**
  * 118 (zgł. 2) — dodawanie zadania w MODALU zamiast stałego formularza nad listą.
@@ -14,19 +14,29 @@ import type { Task } from "@/types";
  * wyłącznie na żądanie (przycisk albo skróty `a`/`n`) i leży NAD treścią, więc lista dostaje
  * całą wysokość obszaru roboczego z powrotem.
  *
- * Sam formularz się nie zmienia — to ten sam `FormularzZadania` (105), którego drugim
- * konsumentem pozostaje `SzybkieDodanieZadania` na stronie modułu. Po utworzeniu zadania modal
+ * Sam formularz się nie zmienia — to ten sam `FormularzZadania` (105). 121 (zgł. 2): drugim
+ * konsumentem jest strona modułu (`TasksHomePage`), która zamiast dawnego stałego widgetu
+ * `SzybkieDodanieZadania` otwiera ten modal z wyborem projektu docelowego — stąd opcjonalne
+ * propsy wyboru projektu, przekazywane wprost do formularza. Po utworzeniu zadania modal
  * się zamyka, a konsument otwiera panel szczegółów — dokładnie jak przy starym formularzu.
  */
 export function ModalDodaniaZadania({
   projectId,
+  pokazWyborProjektu = false,
+  projekty = [],
+  domyslnyProjektId = null,
   onClose,
   onCreated,
 }: {
   projectId: string;
+  /** Strona modułu: pokaż listę projektów do wyboru. W widoku projektu nie ma czego wybierać. */
+  pokazWyborProjektu?: boolean;
+  projekty?: TaskProject[];
+  /** Projekt zaznaczony na starcie, gdy pokazujemy wybór (np. ostatnio używany). */
+  domyslnyProjektId?: string | null;
   onClose: () => void;
   /** Po utworzeniu — konsument otwiera szczegóły; modal zamyka się sam. */
-  onCreated: (task: Task) => void;
+  onCreated: (task: Task, projektId: string | null) => void;
 }) {
   const t = useTranslations("modules.tasks.ModalDodaniaZadania");
   const formularzRef = useRef<FormularzZadaniaHandle>(null);
@@ -43,8 +53,11 @@ export function ModalDodaniaZadania({
       <FormularzZadania
         ref={formularzRef}
         projectId={projectId}
-        onCreated={(task) => {
-          onCreated(task);
+        pokazWyborProjektu={pokazWyborProjektu}
+        projekty={projekty}
+        domyslnyProjektId={domyslnyProjektId}
+        onCreated={(task, projektId) => {
+          onCreated(task, projektId);
           onClose();
         }}
       />
