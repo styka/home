@@ -73,7 +73,7 @@ test("Anthropic: stop_reason 'max_tokens' = ucięcie", () => {
   assert.equal(isTruncatedAnthropicResponse(null), false);
 });
 
-// ── 113: przy UCIĘCIU komunikat musi mówić o limicie długości, nie o brakujących krokach ──────────
+// ── 120: przy UCIĘCIU komunikat musi mówić o limicie długości, nie o brakujących krokach ──────────
 //
 // Zgłoszenie: użytkownik dostał „zabrakło kroków na dokończenie odpowiedzi", co sugerowało, że
 // pomogłoby więcej iteracji. Nie pomogłoby — każda kolejna też zostałaby ucięta. Gałąź ucięcia

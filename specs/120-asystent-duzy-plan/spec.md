@@ -1,6 +1,6 @@
 # Spec: Asystent dowozi DUŻY plan — koniec cichego ucinania odpowiedzi
 
-- **ID:** 113-asystent-duzy-plan
+- **ID:** 120-asystent-duzy-plan
 - **Status:** draft
 - **Autor sesji:** Claude Code (spec-driven pipeline)
 - **Data:** 2026-09-01

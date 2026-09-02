@@ -1,6 +1,6 @@
 # Zadania: Asystent dowozi DUŻY plan
 
-- **Plan:** ./plan.md (113-asystent-duzy-plan)
+- **Plan:** ./plan.md (120-asystent-duzy-plan)
 - **Status:** in-progress
 - **Data:** 2026-09-01
 
@@ -65,7 +65,7 @@
 - [x] **T-6** — **Budżet liczony PER WYWOŁANIE, nie raz przed pętlą.**
   W pętli agenta ustawiamy `maDaneWKontekscie` po **pierwszym udanym kroku `query`** i liczymy
   budżet tuż przed każdym `callAgent`.
-  *Gotowe, gdy:* zwykła tura bez odczytu ma budżet **identyczny jak przed 113** (AC-5 to wymóg
+  *Gotowe, gdy:* zwykła tura bez odczytu ma budżet **identyczny jak przed 120** (AC-5 to wymóg
   „bez zmian", nie „prawie bez zmian"); tura po odczycie ma większy. → **AC-4**, **AC-5**
   *Zależy od:* T-5.
 
@@ -133,7 +133,7 @@
   `doświadczenia.md` — lekcja wg C-51: **wartość domyślna, która ukrywa błąd** („jak nie ma treści,
   weź pusty obiekt") wyłączyła strażnik i zamieniła prawdziwą diagnozę w fałszywą; plus obserwacja,
   że budżet ustalany z treści **wiadomości** nie może przewidzieć rozmiaru **odpowiedzi**.
-  `CLAUDE.md` — akapit o 113 w sekcji asystenta.
+  `CLAUDE.md` — akapit o 120 w sekcji asystenta.
   *Gotowe, gdy:* oba pliki zaktualizowane i zacommitowane **razem z fixem** (C-51 — bez pytania
   o zgodę).
 

@@ -82,7 +82,7 @@ interface AgentResponse {
   messages?: ChatMessage[];
   error?: string;
   meta?: AgentMeta;
-  /** 113: plan odzyskany z UCIĘTEJ odpowiedzi — niesie tylko akcje, które zdążyły się zbudować. */
+  /** 120: plan odzyskany z UCIĘTEJ odpowiedzi — niesie tylko akcje, które zdążyły się zbudować. */
   niepelny?: boolean;
 }
 
@@ -1223,7 +1223,7 @@ export function AICommandSheet({
     }
     if (data.step === "plan") {
       const actions = data.actions ?? [];
-      // 113: treść tury planu jest budowana TUTAJ, a `thought` z serwera nie trafia do użytkownika —
+      // 120: treść tury planu jest budowana TUTAJ, a `thought` z serwera nie trafia do użytkownika —
       // dlatego informacja o niepełnym planie musi przyjść osobnym polem (`niepelny`) i zostać tu
       // doklejona. Gdyby poszła w `thought`, byłaby niewidoczna, a użytkownik uznałby, że przeniesiono
       // wszystko. Plan pełny wygląda dokładnie jak dotąd.

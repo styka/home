@@ -44,9 +44,9 @@
  * @param czyDomykajace czy to ostatnie wywołanie przebiegu (podsumowanie/dokończenie)
  */
 /**
- * 113: BUDŻET TOKENÓW WYJŚCIA — dobierany do etapu tury, nie do treści wiadomości użytkownika.
+ * 120: BUDŻET TOKENÓW WYJŚCIA — dobierany do etapu tury, nie do treści wiadomości użytkownika.
  *
- * Do 113 budżet był liczony RAZ, przed pętlą: wklejona długa lista → 4000, prośba o raport → 2800,
+ * Do 120 budżet był liczony RAZ, przed pętlą: wklejona długa lista → 4000, prośba o raport → 2800,
  * wszystko inne → 1200. „Duży plan" nie jest żadną z tych kategorii i **z zasady nie da się go
  * rozpoznać po wiadomości** — o rozmiarze odpowiedzi decyduje ilość danych, które asystent
  * PRZECZYTAŁ, a nie długość prośby. Zgłoszona sesja: prośba na trzy zdania, plan na kilkanaście
@@ -76,7 +76,7 @@ export function budzetWyjscia(opcje: {
 }
 
 /**
- * 113: kroki protokołu, które pętla agenta potrafi wykonać. Odpowiedź niosąca którykolwiek z nich
+ * 120: kroki protokołu, które pętla agenta potrafi wykonać. Odpowiedź niosąca którykolwiek z nich
  * jest UŻYTECZNA — reszta (obiekt bez `step`, `step` spoza listy) jest jałowym obrotem.
  *
  * Lista stoi tutaj, a nie w trasie, bo używają jej dwie decyzje naraz: „czy wolno uznać, że ucięcia
@@ -92,7 +92,7 @@ export function czyUzytecznyKrok(parsed: Record<string, unknown> | null): boolea
 }
 
 /**
- * 113: ile odpowiedzi BEZ użytecznego kroku wolno jeszcze przyjąć, zanim zamkniemy przebieg.
+ * 120: ile odpowiedzi BEZ użytecznego kroku wolno jeszcze przyjąć, zanim zamkniemy przebieg.
  *
  * Dziś odpowiedź bez znanego kroku kosztuje dopisanie „Nieznany step…" i **kolejny obrót pętli** —
  * bez żadnego licznika. W zgłoszonej sesji spaliło to pięć iteracji po 1200 tokenów wyjścia, każda

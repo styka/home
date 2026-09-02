@@ -122,7 +122,7 @@ function sanitizeNavUrl(raw: unknown): string | null {
 // `accrueUsage` — także z routera modułów i fast-path, żeby wskaźnik był realny.
 type AgentMeta = UsageMeter;
 
-// 113: PROGI BUDŻETU WYJŚCIA MIESZKAJĄ W `platform/ai/agentContext` (`budzetWyjscia`).
+// 120: PROGI BUDŻETU WYJŚCIA MIESZKAJĄ W `platform/ai/agentContext` (`budzetWyjscia`).
 //
 // Stały tu trzy osobne stałe (1200 / 2800 / 4000) i reguła „która z nich", wybierana RAZ przed pętlą
 // z treści wiadomości użytkownika. To nie mogło zadziałać dla dużego planu: o rozmiarze odpowiedzi
@@ -130,7 +130,7 @@ type AgentMeta = UsageMeter;
 // prośba na trzy zdania, plan na kilkanaście akcji, pięć odpowiedzi uciętych i wyrzuconych).
 //
 // Dorobek 080 (zapas na zlecenie wsadowe — wklejona lista ~100 pozycji, gdzie KAŻDE wywołanie
-// kończyło się dokładnie na limicie) jest tam zachowany jako próg `wsadowe`; 113 dokłada trzeci
+// kończyło się dokładnie na limicie) jest tam zachowany jako próg `wsadowe`; 120 dokłada trzeci
 // próg, którego nie da się odczytać z wiadomości: „dane z odczytu są już w kontekście".
 
 
@@ -185,7 +185,7 @@ async function callAgent(
     throw err;
   }
   if (meta) accrueUsage(meta, result.usage, result.model, "agent", op);
-  // 113: NIE podstawiamy `"{}"` za pustą treść. Wartość domyślna wyglądała na ostrożność, a była
+  // 120: NIE podstawiamy `"{}"` za pustą treść. Wartość domyślna wyglądała na ostrożność, a była
   // najkosztowniejszym błędem w tej pętli: `extractJsonLoose("{}")` zwraca PRAWDZIWY obiekt, więc
   // ucięta odpowiedź bez użytecznej treści udawała poprawnie sparsowaną. Kasowało to flagę ucięcia,
   // wyłączało strażnik `truncationRetries` (cały żyje w gałęzi „nie sparsowano") i zostawiało pętli
@@ -294,7 +294,7 @@ function normalizeActions(raw: unknown): AIAction[] {
 }
 
 /**
- * 113: plan CZĘŚCIOWY odzyskany z uciętej odpowiedzi — jeden helper, dwa miejsca użycia.
+ * 120: plan CZĘŚCIOWY odzyskany z uciętej odpowiedzi — jeden helper, dwa miejsca użycia.
  *
  * Wołają go blok degradacji w pętli i wywołanie domykające przebieg. Jeden helper, bo obie ścieżki
  * muszą oddawać ten sam kształt; dwie kopie rozjechałyby się przy pierwszej zmianie, a objawem byłby
@@ -331,7 +331,7 @@ async function runAgentLoop(
   userId: string,
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
-  // 113: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
+  // 120: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
   // wywolaniem. Liczba ustalona przed petla nie moze uwzglednic danych, ktore dopiero splyna.
   kontekstBudzetu: { wsadowe?: boolean; raport?: boolean } = {},
   conversationId?: string | null,
@@ -370,7 +370,7 @@ async function runAgentLoopRaw(
   userId: string,
   onThought?: (thought: string) => void,
   meta?: AgentMeta,
-  // 113: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
+  // 120: petla nie dostaje juz gotowej LICZBY, tylko to, z czego liczy budzet przed kazdym
   // wywolaniem. Liczba ustalona przed petla nie moze uwzglednic danych, ktore dopiero splyna.
   kontekstBudzetu: { wsadowe?: boolean; raport?: boolean } = {},
   conversationId?: string | null,
@@ -404,9 +404,9 @@ async function runAgentLoopRaw(
   // model do trzech razy przy naprawie formatu). Decyduje o drugim punkcie cięcia pamięci podręcznej
   // promptu; patrz `czyCachowacKatalog`.
   let numerWywolania = 0;
-  // 113: ile odpowiedzi bez uzytecznego kroku protokolu przyjelismy w tym przebiegu.
+  // 120: ile odpowiedzi bez uzytecznego kroku protokolu przyjelismy w tym przebiegu.
   let odpowiedziBezKroku = 0;
-  // 113: czy do kontekstu trafily juz wyniki odczytu (patrz `budzetWyjscia`).
+  // 120: czy do kontekstu trafily juz wyniki odczytu (patrz `budzetWyjscia`).
   let maDaneWKontekscie = false;
 
   for (let iter = 1; iter <= MAX_ITERATIONS; iter++) {
@@ -423,7 +423,7 @@ async function runAgentLoopRaw(
       let truncated = false;
       try {
         numerWywolania += 1;
-        // 113: budzet liczony PRZED KAZDYM wywolaniem, a nie raz przed petla. Do 113 byl ustalany
+        // 120: budzet liczony PRZED KAZDYM wywolaniem, a nie raz przed petla. Do 120 byl ustalany
         // z tresci wiadomosci uzytkownika, ktora nie moze przewidziec rozmiaru ODPOWIEDZI.
         const res = await callAgent(
           messages,
@@ -470,7 +470,7 @@ async function runAgentLoopRaw(
       lastTruncated = truncated;
       messages.push({ role: "assistant", content });
       parsed = extractJsonLoose(content);
-      // 113: zerujemy flagę dopiero, gdy odpowiedź niesie UŻYTECZNY krok protokołu. Sam fakt, że coś
+      // 120: zerujemy flagę dopiero, gdy odpowiedź niesie UŻYTECZNY krok protokołu. Sam fakt, że coś
       // się sparsowało, nie znaczy, że ucięcie nie nastąpiło — a właśnie tak było, gdy za pustą treść
       // podstawiano `"{}"`. Zerowanie „na parsowanie" kasowało jedyną informację, dzięki której
       // przebieg umiał powiedzieć użytkownikowi prawdę o przyczynie (dorobek 032 zostaje w mocy dla
@@ -506,7 +506,7 @@ async function runAgentLoopRaw(
     }
 
     if (!parsed) {
-      // 113: zanim zdegradujemy do tekstu — spróbuj ODZYSKAĆ gotowe akcje z uciętego planu. Do 113
+      // 120: zanim zdegradujemy do tekstu — spróbuj ODZYSKAĆ gotowe akcje z uciętego planu. Do 120
       // kilkanaście poprawnych akcji lądowało w koszu razem z tą jedną urwaną na końcu.
       const czesciowy = lastTruncated ? planZUcietego(lastContent) : null;
       if (czesciowy) {
@@ -596,7 +596,7 @@ async function runAgentLoopRaw(
       // zakończone bez błędu. Sama deduplikacja (030) chroniła przed powtórnym WYKONANIEM, ale nie
       // przed spalaniem iteracji na wołaniu tego samego w kółko — a każda iteracja to wywołanie LLM.
       const gainedSomething = results.some((r) => !r.repeat && !r.error);
-      // 113: od tej chwili jest z czego budowac duza odpowiedz — kolejne wywolania dostaja
+      // 120: od tej chwili jest z czego budowac duza odpowiedz — kolejne wywolania dostaja
       // wiekszy budzet wyjscia. To ILOSC DANYCH decyduje o rozmiarze planu, nie dlugosc prosby.
       if (gainedSomething) maDaneWKontekscie = true;
       unproductiveIterations = gainedSomething ? 0 : unproductiveIterations + 1;
@@ -670,8 +670,8 @@ async function runAgentLoopRaw(
       return { body: { step: "plan", actions, thought, log, messages: dialog } };
     }
 
-    // 113: odpowiedź bez znanego kroku to JAŁOWY OBRÓT — kosztuje pełne wywołanie modelu i nie wnosi
-    // nic. Do 113 nie miało to żadnego licznika, więc pętla kręciła się do wyczerpania iteracji
+    // 120: odpowiedź bez znanego kroku to JAŁOWY OBRÓT — kosztuje pełne wywołanie modelu i nie wnosi
+    // nic. Do 120 nie miało to żadnego licznika, więc pętla kręciła się do wyczerpania iteracji
     // (zmierzone: pięć obrotów po 1200 tokenów wyjścia, wszystkie wyrzucone). Jedna szansa na
     // poprawę, po drugiej nieudanej wychodzimy z tym, co mamy — tak samo jak przy ucięciu.
     odpowiedziBezKroku += 1;
@@ -771,7 +771,7 @@ async function finishPartialRun(
         },
       ],
       meta,
-      // 113 (AC-6): domknięcie nie może mieć MNIEJ miejsca niż krok, któremu go zabrakło. Dotąd
+      // 120 (AC-6): domknięcie nie może mieć MNIEJ miejsca niż krok, któremu go zabrakło. Dotąd
       // dostawało 2800 przy pętli na 4000 — czyli prośba „dokończ zadanie z zebranych danych"
       // wracała ucięta z tego samego powodu, dla którego nie domknęła się pętla (zmierzone: 2800
       // tokenów wyjścia co do jednego). Bierzemy budżet pętli po odczycie danych, nie mniej.
@@ -794,7 +794,7 @@ async function finishPartialRun(
     }
     const answer = typeof parsed?.answer === "string" ? parsed.answer.trim() : "";
     if (answer) return { answer };
-    // 113: domknięcie też potrafi wrócić UCIĘTE (zmierzone: 2800 tokenów co do jednego). Zamiast
+    // 120: domknięcie też potrafi wrócić UCIĘTE (zmierzone: 2800 tokenów co do jednego). Zamiast
     // wyrzucić je w całości — odzyskaj gotowe akcje. Ten sam helper co w pętli, żeby obie ścieżki
     // oddawały ten sam kształt.
     if (res.truncated) {
@@ -1038,7 +1038,7 @@ export async function POST(req: NextRequest) {
   // 080 (Z6): zlecenie wsadowe potrzebuje NAJWIĘKSZEGO zapasu — dłuższego niż raport, bo plan
   // z listą pozycji jest dłuższy niż jego opis.
   const wsadowe = zlecenieWsadowe(intentText);
-  // 113: zamiast jednej liczby ustalonej z gory — kontekst, z ktorego petla liczy budzet przed
+  // 120: zamiast jednej liczby ustalonej z gory — kontekst, z ktorego petla liczy budzet przed
   // KAZDYM wywolaniem (`budzetWyjscia`). Progi `wsadowe`/`raport` zostaja bez zmian; dochodzi
   // trzeci, ktorego nie da sie odczytac z wiadomosci: „dane z odczytu sa juz w kontekscie".
   const kontekstBudzetu = { wsadowe, raport: wantsReport };

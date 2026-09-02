@@ -57,7 +57,7 @@ test("salvageAnswerText: nigdy nie zwraca pustki", () => {
   assert.ok(text.trim().length > 0, "fallbackowy komunikat po polsku");
 });
 
-// ── 113: odzysk kompletnych akcji z UCIĘTEGO planu ───────────────────────────────────────────────
+// ── 120: odzysk kompletnych akcji z UCIĘTEGO planu ───────────────────────────────────────────────
 //
 // Zgłoszenie: kilkanaście obowiązków psa do przeniesienia, plan nie mieścił się w budżecie wyjścia,
 // pięć odpowiedzi uciętych i wyrzuconych w całości — użytkownik nie dostał ani jednej akcji, choć
@@ -120,7 +120,7 @@ test("odzyskajAkcjeZUcietego: pusta tablica actions → pusta lista", () => {
   assert.deepEqual(odzyskajAkcjeZUcietego('{"step":"plan","actions":[]}').akcje, []);
 });
 
-test("odzyskajAkcjeZUcietego: rozróżnia ucięcie W TABLICY od ucięcia ZA nią (recenzja 113)", () => {
+test("odzyskajAkcjeZUcietego: rozróżnia ucięcie W TABLICY od ucięcia ZA nią (recenzja 120)", () => {
   // Tablica NIEDOMKNIĘTA — plan naprawdę jest niepełny.
   const wTablicy = '{"step":"plan","actions":[{"id":"a1","type":"add_pet"},{"id":"a2","type":"log_we';
   assert.equal(odzyskajAkcjeZUcietego(wTablicy).kompletna, false);

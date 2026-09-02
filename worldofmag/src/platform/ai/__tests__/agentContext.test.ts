@@ -178,7 +178,7 @@ test("wynik KOMPLETNY nie dostaje znacznika, nawet gdy blok przekracza budżet z
   assert.equal(projekty?.truncated, undefined, "brak fałszywego 'pobierz kolejne' dla kompletnego wyniku");
 });
 
-// ── 113: co jest UŻYTECZNĄ odpowiedzią, a co jałowym obrotem ─────────────────────────────────────
+// ── 120: co jest UŻYTECZNĄ odpowiedzią, a co jałowym obrotem ─────────────────────────────────────
 //
 // Zgłoszenie: pięć wywołań po 1200 tokenów wyjścia (dokładnie limit), wszystkie wyrzucone, i
 // komunikat „zabrakło kroków", który był nieprawdą. Przyczyna: pusta treść modelu była zastępowana
@@ -205,9 +205,9 @@ test("czyPrzerwacBezKroku: jedna szansa na poprawę, po drugiej wychodzimy", () 
   assert.equal(czyPrzerwacBezKroku(5), true);
 });
 
-// ── 113: budżet wyjścia dobierany do ETAPU tury ──────────────────────────────────────────────────
+// ── 120: budżet wyjścia dobierany do ETAPU tury ──────────────────────────────────────────────────
 //
-// Do 113 budżet był liczony RAZ, przed pętlą, z treści wiadomości użytkownika. Rozmiar planu zależy
+// Do 120 budżet był liczony RAZ, przed pętlą, z treści wiadomości użytkownika. Rozmiar planu zależy
 // jednak od ilości danych, które asystent PRZECZYTAŁ — prośba o psa Raj ma trzy zdania, a plan to
 // kilkanaście akcji. Rozpoznanie po wiadomości z zasady tego nie wykryje.
 

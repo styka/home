@@ -1,4 +1,4 @@
-# Recenzja: 113 — Asystent dowozi DUŻY plan
+# Recenzja: 120 — Asystent dowozi DUŻY plan
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (14/14) · **Weryfikacja:** ./verify.md
 - **Data:** 2026-09-02
@@ -46,7 +46,7 @@ brzegowym. Odnotowane, żeby następna osoba nie uznała tego za przeoczenie.
 **Plik:** `route.ts`, gałęzie `navigate` (zły adres) i `report` (pusta treść)
 
 Obie robią `continue` bez inkrementowania żadnego licznika, więc mogą spalić wszystkie iteracje —
-tak jak „Nieznany step" przed 113. **To jest defekt sprzed 113**, innego rodzaju niż zgłoszony
+tak jak „Nieznany step" przed 120. **To jest defekt sprzed 120**, innego rodzaju niż zgłoszony
 (dotyczy kroków POPRAWNYCH, ale niewykonalnych), i naprawianie go tutaj byłoby poszerzaniem zakresu
 bez zgłoszenia (C-53). Zapisuję jako znany kandydat na osobny przebieg, a nie ukrywam.
 
@@ -57,8 +57,8 @@ bez zgłoszenia (C-53). Zapisuję jako znany kandydat na osobny przebieg, a nie 
 | Obszar | Wynik |
 |---|---|
 | **Ścieżka SSE (domyślna dla czatu!)** | ✅ Sprawdzona osobno, bo to najbardziej prawdopodobne miejsce cichej regresji: `send({type:"final", body: result.body})` przekazuje **całe** body, a klient robi `applyResponse(evt.body)` — **żadnej białej listy pól**, więc `niepelny` dociera także w streamingu |
-| **Guardy dostępu (C-21/C-17)** | ✅ Nietknięte — 113 nie dotyka ani jednego zapytania do bazy |
-| **`AIAction` bez egzekutora (C-23)** | ✅ `check:actions`: 164 akcje, **tyle samo co przed** — 113 nie dodaje żadnej |
+| **Guardy dostępu (C-21/C-17)** | ✅ Nietknięte — 120 nie dotyka ani jednego zapytania do bazy |
+| **`AIAction` bez egzekutora (C-23)** | ✅ `check:actions`: 164 akcje, **tyle samo co przed** — 120 nie dodaje żadnej |
 | **Odzyskane akcje omijają walidację?** | ✅ Nie. Przechodzą przez `normalizeActions` (odrzuca obiekty bez `type`) i dalej przez kontrakt akcji w egzekutorze — tę samą bramkę co akcje z planu pełnego |
 | **Akcje niszczące** | ✅ `DESTRUCTIVE_ACTION_TYPES` i logika 041 bez zmian; plan częściowy idzie tą samą ścieżką do panelu potwierdzenia |
 | **Zachowanie progów 080 / raportu** | ✅ Policzone: `wsadowe` → max(1200,4000)=4000 (jak było), `raport` → max(1200,2800)=2800 (jak było). Usunięcie trzech stałych **przeniosło** regułę, nie zmieniło jej |
@@ -85,7 +85,7 @@ bez zgłoszenia (C-53). Zapisuję jako znany kandydat na osobny przebieg, a nie 
 
 Jedno realne ustalenie (U-1) — znalezione we własnym diffie, tej samej natury co zgłoszenie
 (nieprawdziwy komunikat o przyczynie), naprawione i pokryte testem. Dwa pozostałe to świadomie
-zostawione obserwacje: jedna brzegowa (U-2), druga **sprzed 113 i poza zakresem** (U-3), zapisana
+zostawione obserwacje: jedna brzegowa (U-2), druga **sprzed 120 i poza zakresem** (U-3), zapisana
 zamiast przemilczana.
 
 Uwagi przechodzące dalej — **żadna nie blokuje merge**, obie to potwierdzenie zachowania modelu,

@@ -1,6 +1,6 @@
 # Plan techniczny: Asystent dowozi DUŻY plan
 
-- **Spec:** ./spec.md (113-asystent-duzy-plan)
+- **Spec:** ./spec.md (120-asystent-duzy-plan)
 - **Status:** draft
 - **Data:** 2026-09-01
 
@@ -154,7 +154,7 @@ wysiłku nadal pochodzą z `/admin/llm`.
 | `src/components/assistant/AICommandSheet.tsx` | edycja | treść tury planu mówi o niekompletności (§ 5, AC-8) |
 | `messages/pl.json` | edycja | tekst o niepełnym planie (C-32) |
 | `doświadczenia.md` | edycja | lekcja o wartości domyślnej ukrywającej błąd (C-51) |
-| `CLAUDE.md` | edycja | akapit o 113 w sekcji asystenta |
+| `CLAUDE.md` | edycja | akapit o 120 w sekcji asystenta |
 
 ## 8. Bramki i weryfikacja (C-50)
 

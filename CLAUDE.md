@@ -495,7 +495,7 @@ successful reads the model is not called at all and 032's honest message stands.
 `/reports/asystent-koszt-tury-rozbicie` (migration 0271) carries the arithmetic, because "is the amount
 counted right?" will be asked again.
 
-**113 — 112 naprawiło odczyt; 113 naprawiło to, co asystent z tym odczytem robi.** Owner repeated the
+**120 — 112 naprawiło odczyt; 120 naprawiło to, co asystent z tym odczytem robi.** Owner repeated the
 *same* request on the deployed 112 code and still got nothing: the read was fixed (one call, whole
 project with descriptions) and the cache policy held, but **five consecutive calls ended at exactly
 the 1200-token output cap** and were thrown away, then a closing call at exactly 2800. Root cause was

@@ -1,4 +1,4 @@
-# Weryfikacja: 113 — Asystent dowozi DUŻY plan
+# Weryfikacja: 120 — Asystent dowozi DUŻY plan
 
 - **Spec:** ./spec.md · **Plan:** ./plan.md · **Zadania:** ./tasks.md (14/14 odhaczonych)
 - **Data:** 2026-09-02
@@ -9,8 +9,8 @@
 
 | Komenda | Wynik |
 |---|---|
-| `check:migrations` | ✅ Numeracja OK (następny wolny: 0272) — **113 nie dodaje migracji** |
-| `check:actions` | ✅ 164 akcje, wszystkie z egzekutorem i kontraktem — **113 nie dodaje żadnej akcji** |
+| `check:migrations` | ✅ Numeracja OK (następny wolny: 0272) — **120 nie dodaje migracji** |
+| `check:actions` | ✅ 164 akcje, wszystkie z egzekutorem i kontraktem — **120 nie dodaje żadnej akcji** |
 | `check:ai-coverage` | ✅ 611 akcji z zakresem i guardem |
 | `check:cost-badge` | ✅ 39 plików wołających model |
 | `check:content-memory` | ✅ 39 plików sklasyfikowanych |
@@ -36,7 +36,7 @@
 | AC | Werdykt | Dowód |
 |---|---|---|
 | **AC-1** — ucięcie rozpoznane, informacja **nie skasowana** | ✅ | **Próba mutacyjna uruchomiona**, wynik w konsoli: przy starym `\|\| "{}"` → `parsed = {}` → flaga ucięcia **kasowana**; po zmianie → `parsed = null` → **zachowana**. Obrona jest **dwuwarstwowa i to jest sprawdzone osobno**: nawet gdyby ktoś cofnął T-1, `czyUzytecznyKrok({})` zwraca `false`, więc flaga i tak przetrwa. Test `czyUzytecznyKrok` ma pusty obiekt jako **jawny przypadek** |
-| **AC-2** — liczba zmarnowanych wywołań ograniczona i mała | ✅ | `czyPrzerwacBezKroku`: `1 → false`, `2 → true` (test). Wpięte w gałąź „Nieznany step", która do 113 **nie miała żadnego licznika** — i to ona spaliła pięć iteracji. Ścieżka ucięcia zachowuje istniejący `truncationRetries` (ten sam próg) |
+| **AC-2** — liczba zmarnowanych wywołań ograniczona i mała | ✅ | `czyPrzerwacBezKroku`: `1 → false`, `2 → true` (test). Wpięte w gałąź „Nieznany step", która do 120 **nie miała żadnego licznika** — i to ona spaliła pięć iteracji. Ścieżka ucięcia zachowuje istniejący `truncationRetries` (ten sam próg) |
 | **AC-3** — komunikat mówi prawdę | ✅ | Trzy testy w `agentPartialRun.test.ts`: przy ucięciu komunikat pasuje do `/długoś\|dopuszczaln/` i **`doesNotMatch(/zabrakło kroków/)`**; bez ucięcia dotychczasowy komunikat 032 zostaje. Asercja negatywna jest tu istotą — to dokładnie zdanie, które użytkownik zobaczył nieprawdziwie |
 
 ### B. Budżet wyjścia
@@ -60,8 +60,8 @@
 | AC | Werdykt | Dowód |
 |---|---|---|
 | **AC-10** — plan z profilem + przeniesionymi obowiązkami | ⚠️ **mechanizm zweryfikowany, zachowanie nie** | Usunięta została **przyczyna**, dla której plan nie miał gdzie się zmieścić (budżet 1200 → 4000 po odczycie) oraz ta, dla której ucięcie kończyło się niczym. Czy model faktycznie zbuduje komplet akcji — rozstrzyga żywy przebieg |
-| **AC-11** — lista informacji nieprzenoszalnych | ⚠️ **jw.** | Wymóg stoi w prompcie od 112; 113 daje mu miejsce, w którym się zmieści. Egzekwowalne wyłącznie obserwacją |
-| **AC-12** — zadania źródłowe nietknięte | ✅ | Weryfikowalne bez modelu: egzekutor Zwierząt ma **zero** odwołań do Zadań, a 113 nie dodało żadnej akcji (`check:actions`: 164, tyle samo co przed) |
+| **AC-11** — lista informacji nieprzenoszalnych | ⚠️ **jw.** | Wymóg stoi w prompcie od 112; 120 daje mu miejsce, w którym się zmieści. Egzekwowalne wyłącznie obserwacją |
+| **AC-12** — zadania źródłowe nietknięte | ✅ | Weryfikowalne bez modelu: egzekutor Zwierząt ma **zero** odwołań do Zadań, a 120 nie dodało żadnej akcji (`check:actions`: 164, tyle samo co przed) |
 
 ### E. Koszt i nienaruszalność 112
 
@@ -83,8 +83,8 @@ Ceny z `LlmModelPrice`: sonnet-5 $3/$15 za 1M, zapis cache ×1,25, odczyt ×0,1.
 | Wariant | Wywołań | Koszt | Zmiana | Co dostaje użytkownik |
 |---|---|---|---|---|
 | **przed** (log zgłoszenia) | 7 | $0,3735 | — | nic — „nie dokończyłem" |
-| po 113, plan mieści się w 4000 | 2 | $0,1544 | **−59 %** | pełny plan |
-| po 113, plan się nie mieści | 3 | $0,2486 | **−33 %** | plan częściowy + informacja |
+| po 120, plan mieści się w 4000 | 2 | $0,1544 | **−59 %** | pełny plan |
+| po 120, plan się nie mieści | 3 | $0,2486 | **−33 %** | plan częściowy + informacja |
 
 Oszczędność nie bierze się z tańszych wywołań, tylko z **zaprzestania produkowania odpowiedzi do
 kosza**: było sześć uciętych, zostaje jedna użyteczna (albo dwie, gdy potrzebna jest próba
@@ -109,7 +109,7 @@ Naruszeń nie stwierdzono.
 
 ## 5. Regresje
 
-- **Testy:** 1364/1364, w tym 9 nowych. Zero zmian w istniejących asercjach — 113 niczego nie
+- **Testy:** 1364/1364, w tym 9 nowych. Zero zmian w istniejących asercjach — 120 niczego nie
   przedefiniowało, tylko dołożyło.
 - **Dorobek 032 zachowany świadomie i sprawdzony testem:** komunikat „zabrakło kroków" **nadal
   pojawia się**, gdy przyczyną faktycznie był brak kroków (test negatywny). Naprawiliśmy fałszywe

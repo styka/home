@@ -129,10 +129,10 @@ export function salvageAnswerText(content: string): string {
 }
 
 /**
- * 113: ODZYSK KOMPLETNYCH AKCJI Z UCIĘTEGO PLANU.
+ * 120: ODZYSK KOMPLETNYCH AKCJI Z UCIĘTEGO PLANU.
  *
  * Gdy model buduje plan większy niż budżet wyjścia, odpowiedź wraca urwana w połowie — zwykle
- * w środku którejś akcji. Do 113 lądowała w koszu w całości, choć zawierała kilkanaście gotowych,
+ * w środku którejś akcji. Do 120 lądowała w koszu w całości, choć zawierała kilkanaście gotowych,
  * poprawnych akcji. Zgłoszona sesja: kilkanaście obowiązków psa do przeniesienia, pięć uciętych
  * odpowiedzi, użytkownik bez ani jednej akcji.
  *
