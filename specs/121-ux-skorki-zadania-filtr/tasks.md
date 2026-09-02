@@ -1,7 +1,7 @@
 # Zadania: Poprawki UX — edytor skórek w dialogu, panel szczegółów zadania bez zbędnej linii, jeden mechanizm zakresu projektów
 
 - **Plan:** ./plan.md (121-ux-skorki-zadania-filtr)
-- **Status:** done (T-9: wpis/merge po recenzji)
+- **Status:** in-progress (runda 2 — poprawki z recenzji)
 - **Data:** 2026-09-02
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -66,6 +66,20 @@
   aktualizacja statusów w tym pliku.
 - [ ] **T-9** — Wpis do `doświadczenia.md`, jeśli po drodze wystąpił nieoczywisty problem (C-51);
   commit + merge `claude/*` → `develop` wg C-52 (wykonuje pipeline po recenzji).
+
+## Faza 5 — Poprawki z recenzji (runda 1)
+- [x] **T-10** — Sygnał odświeżenia sidebara po mutacji zestawu z dropdownu: po udanym
+  `updateProjectGroup`/`createProjectGroup`/`deleteProjectGroup` w `ProjectScopeFilter` wyemituj
+  `window.dispatchEvent(new Event("tasks:groups-changed"))`; w `TasksSideNav` nasłuch tego zdarzenia
+  wołający `reload()`. **Gotowe, gdy:** rename/kolor/zakres/usunięcie zestawu w dropdownie
+  natychmiast aktualizuje listę grup w nawigacji bocznej (usunięty zestaw znika — bez linku do 404).
+- [x] **T-11** — Synchronizacja stanu roboczego po zapisie: `zapiszZmiany` po sukcesie ustawia
+  `roboczy` z rekordu zwróconego przez `updateProjectGroup` (serwer normalizuje trim/emoji).
+  **Gotowe, gdy:** po zapisie „Zapisz zmiany" gaśnie (stan czysty), pola pokazują wartości zapisane.
+- [x] **T-12** — Komunikat błędu w panelu zestawu: lokalny stan błędu (wzorzec `groupError` ze
+  skasowanego edytora) ustawiany w `catch` trzech akcji; czyszczony przy kolejnej próbie/edycji.
+  Przy okazji: `aria-label`/`title` kotwicy w trybie zestawu mówi o zakresie i ustawieniach zestawu
+  (nowy klucz i18n). **Gotowe, gdy:** nieudany zapis/usunięcie pokazuje treść błędu w panelu.
 
 ## Mapowanie AC → zadania
 | AC | Zadania |

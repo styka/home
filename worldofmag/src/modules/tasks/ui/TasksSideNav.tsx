@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "../actions/taskProjects";
 import { getProjectGroups } from "../actions/projectGroups";
+import { ZDARZENIE_ZMIANY_ZESTAWOW } from "./ProjectScopeFilter";
 import type { TaskProject, ProjectGroup } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -43,6 +44,14 @@ export function TasksSideNav() {
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // T-10 (121): mutacje zestawów żyją teraz w dropdownie filtra projektów, a ta lista jest stanem
+  // klienckim — `revalidatePath` jej nie odświeży. Dropdown ogłasza zmianę zdarzeniem okna,
+  // a sidebar przeładowuje grupy (inaczej usunięty zestaw zostawałby tu linkiem do 404).
+  useEffect(() => {
+    window.addEventListener(ZDARZENIE_ZMIANY_ZESTAWOW, reload);
+    return () => window.removeEventListener(ZDARZENIE_ZMIANY_ZESTAWOW, reload);
+  }, [reload]);
 
   useEffect(() => {
     try {

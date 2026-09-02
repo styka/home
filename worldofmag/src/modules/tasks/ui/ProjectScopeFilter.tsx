@@ -51,6 +51,15 @@ const KOLORY_ZESTAWU = [
   "var(--accent-purple)",
 ] as const;
 
+/** T-10: sygnał dla nawigacji bocznej, że lista zestawów się zmieniła. `revalidatePath` odświeża
+    drzewo RSC, ale `TasksSideNav` trzyma grupy w stanie klienckim ładowanym przy montażu — bez
+    tego zdarzenia usunięty zestaw zostawał w sidebarze jako link do 404. */
+export const ZDARZENIE_ZMIANY_ZESTAWOW = "tasks:groups-changed";
+
+function ogloszZmianeZestawow() {
+  window.dispatchEvent(new Event(ZDARZENIE_ZMIANY_ZESTAWOW));
+}
+
 export function ProjectScopeFilter({
   allProjects,
   selected = [],
@@ -71,6 +80,8 @@ export function ProjectScopeFilter({
   const [open, setOpen] = useState(false);
   const [nazwa, setNazwa] = useState("");
   const [zapisywanie, startZapis] = useTransition();
+  // T-12: treść błędu ostatniej akcji trybu zestawu — panel nie może milczeć przy niepowodzeniu.
+  const [blad, setBlad] = useState<string | null>(null);
 
   // ——— Tryb zestawu: roboczy stan (zmiana oczekująca do zapisu) ———
   const [roboczy, setRoboczy] = useState(() =>
@@ -95,6 +106,7 @@ export function ProjectScopeFilter({
 
   function przelacz(id: string) {
     if (trybZestawu) {
+      setBlad(null);
       setRoboczy((p) =>
         p ? { ...p, projekty: p.projekty.includes(id) ? p.projekty.filter((x) => x !== id) : [...p.projekty, id] } : p
       );
@@ -110,6 +122,7 @@ export function ProjectScopeFilter({
     startZapis(async () => {
       try {
         const grupa = await createProjectGroup({ name: tytul, projectIds: selected });
+        ogloszZmianeZestawow();
         setOpen(false);
         setNazwa("");
         router.push(`/tasks/zestaw/${grupa.id}`);
@@ -126,15 +139,20 @@ export function ProjectScopeFilter({
     const r = roboczy!;
     startZapis(async () => {
       try {
-        await updateProjectGroup(r.id, {
+        // T-11: serwer normalizuje wartości (trim, pusty emoji → „🗂") — roboczy stan przyjmuje
+        // ZAPISANY rekord, inaczej „Zapisz zmiany" zostawałby aktywny mimo udanego zapisu.
+        const zapisany = await updateProjectGroup(r.id, {
           name: r.name.trim() || zestaw!.name,
           emoji: r.emoji,
           color: r.color,
           projectIds: r.projekty,
         });
+        setRoboczy({ id: zapisany.id, name: zapisany.name, emoji: zapisany.emoji, color: zapisany.color, projekty: [...zapisany.projectIds] });
+        ogloszZmianeZestawow();
+        setBlad(null);
         setOpen(false);
-      } catch {
-        /* brak dostępu / pusta nazwa — panel zostaje otwarty do poprawy */
+      } catch (err) {
+        setBlad(err instanceof Error ? err.message : t("bladZapisuZestawu"));
       }
     });
   }
@@ -150,10 +168,12 @@ export function ProjectScopeFilter({
           color: r.color,
           projectIds: r.projekty,
         });
+        ogloszZmianeZestawow();
+        setBlad(null);
         setOpen(false);
         router.push(`/tasks/zestaw/${grupa.id}`);
-      } catch {
-        /* jak wyżej */
+      } catch (err) {
+        setBlad(err instanceof Error ? err.message : t("bladZapisuZestawu"));
       }
     });
   }
@@ -164,10 +184,12 @@ export function ProjectScopeFilter({
     startZapis(async () => {
       try {
         await deleteProjectGroup(zestaw!.id);
+        ogloszZmianeZestawow();
+        setBlad(null);
         setOpen(false);
         router.push("/tasks/all");
-      } catch {
-        /* noop */
+      } catch (err) {
+        setBlad(err instanceof Error ? err.message : t("bladZapisuZestawu"));
       }
     });
   }
@@ -191,8 +213,8 @@ export function ProjectScopeFilter({
           color: podswietlona ? "var(--accent-blue)" : "var(--text-muted)",
           backgroundColor: podswietlona ? "var(--bg-hover)" : "transparent",
         }}
-        title={t("filtrProjektow")}
-        aria-label={t("filtrProjektow")}
+        title={trybZestawu ? t("zakresIUstawieniaZestawu") : t("filtrProjektow")}
+        aria-label={trybZestawu ? t("zakresIUstawieniaZestawu") : t("filtrProjektow")}
         aria-expanded={open}
       >
         <FolderTree size={14} />
@@ -245,14 +267,14 @@ export function ProjectScopeFilter({
             <div className="flex items-center gap-1 px-1">
               <input
                 value={roboczy!.emoji}
-                onChange={(e) => setRoboczy((p) => (p ? { ...p, emoji: e.target.value.slice(0, 2) } : p))}
+                onChange={(e) => { setBlad(null); setRoboczy((p) => (p ? { ...p, emoji: e.target.value.slice(0, 2) } : p)); }}
                 className="w-7 shrink-0 rounded bg-transparent text-center text-sm focus:outline-none"
                 style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}
                 aria-label={t("ikonaZestawu")}
               />
               <input
                 value={roboczy!.name}
-                onChange={(e) => setRoboczy((p) => (p ? { ...p, name: e.target.value } : p))}
+                onChange={(e) => { setBlad(null); setRoboczy((p) => (p ? { ...p, name: e.target.value } : p)); }}
                 onKeyDown={(e) => { if (e.key === "Enter") zapiszZmiany(); }}
                 placeholder={t("nazwaZestawu")}
                 aria-label={t("nazwaZestawu")}
@@ -292,6 +314,11 @@ export function ProjectScopeFilter({
             {/* Zakres nie może zdegradować do zera (080) — pusty wybór nie da się zapisać. */}
             {roboczy!.projekty.length === 0 && (
               <div className="mt-2 px-1 text-xs" style={{ color: "var(--accent-red)" }}>{t("wybierzProjekt")}</div>
+            )}
+
+            {/* T-12: niepowodzenie akcji nie może być nieme — panel pokazuje treść błędu. */}
+            {blad && (
+              <div className="mt-2 px-1 text-xs" role="alert" style={{ color: "var(--accent-red)" }}>{blad}</div>
             )}
 
             <div className="mt-2 flex items-center gap-1 px-1 pb-1">

@@ -3006,7 +3006,9 @@
         "jakoNowy": "Jako nowy",
         "zapiszJakoNowy": "Zapisz jako nowy zestaw",
         "usunZestaw": "Usuń zestaw",
-        "usunZestawPytanie": "Usunąć zestaw „{nazwa}”?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko ten zapisany widok."
+        "usunZestawPytanie": "Usunąć zestaw „{nazwa}”?\n\nProjekty i zadania pozostaną nienaruszone — usuwasz tylko ten zapisany widok.",
+        "zakresIUstawieniaZestawu": "Zakres i ustawienia zestawu",
+        "bladZapisuZestawu": "Nie udało się zapisać zmian zestawu"
       },
       "FiltrTagow": {
         "filtrEtykiet": "Filtr etykiet",
