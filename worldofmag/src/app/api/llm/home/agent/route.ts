@@ -302,12 +302,14 @@ function normalizeActions(raw: unknown): AIAction[] {
  *
  * Zwraca `null`, gdy nie ma czego odzyskiwać — wołający zostaje wtedy przy dotychczasowym zachowaniu.
  */
-function planZUcietego(content: string): { actions: AIAction[]; niepelny: true } | null {
-  const odzyskane = odzyskajAkcjeZUcietego(content);
-  if (odzyskane.length === 0) return null;
-  const actions = normalizeActions(odzyskane);
+function planZUcietego(content: string): { actions: AIAction[]; niepelny: boolean } | null {
+  const { akcje, kompletna } = odzyskajAkcjeZUcietego(content);
+  if (akcje.length === 0) return null;
+  const actions = normalizeActions(akcje);
   if (actions.length === 0) return null;
-  return { actions, niepelny: true };
+  // Ucięcie ZA domkniętą tablicą akcji znaczy, że plan jest całością — ostrzegalibyśmy wtedy
+  // o „niepełnym planie" i odsyłali użytkownika po resztę, której nie ma.
+  return { actions, niepelny: !kompletna };
 }
 
 interface LoopResult {
@@ -515,7 +517,7 @@ async function runAgentLoopRaw(
             step: "plan",
             actions: czesciowy.actions,
             thought: "",
-            niepelny: true,
+            ...(czesciowy.niepelny ? { niepelny: true } : {}),
             log,
             messages: dialogCz,
           },
@@ -745,7 +747,7 @@ async function finishPartialRun(
   op: AgentOp,
   truncated: boolean,
   systemBlocks?: { stable: string; variable: string }
-): Promise<{ answer: string } | { actions: AIAction[]; thought: string; niepelny?: true }> {
+): Promise<{ answer: string } | { actions: AIAction[]; thought: string; niepelny?: boolean }> {
   // 112 (AC-8): gdy NIC się nie udało pobrać, nie ma z czego dokańczać — nie wołamy modelu i
   // oddajemy dotychczasowy, uczciwy komunikat „nie dokończyłem + dlaczego". Dorobek 032 zostaje.
   if (countSuccessfulReads(log) === 0) {
@@ -798,7 +800,7 @@ async function finishPartialRun(
     if (res.truncated) {
       const czesciowy = planZUcietego(res.content);
       if (czesciowy) {
-        return { actions: czesciowy.actions, thought: "", niepelny: true };
+        return { actions: czesciowy.actions, thought: "", niepelny: czesciowy.niepelny };
       }
     }
   } catch {

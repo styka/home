@@ -142,18 +142,31 @@ export function salvageAnswerText(content: string): string {
  *
  * Funkcja jest CZYSTA i celowo NIE waliduje semantyki akcji — odzyskane obiekty przechodzą dalej
  * przez `normalizeActions` i kontrakt akcji, czyli tę samą bramkę co akcje z pełnego planu.
+ *
+ * `kompletna` mówi, czy tablica akcji zdążyła się **domknąć** (`]`). Rozróżnienie jest potrzebne,
+ * bo model bywa ucięty DOPIERO ZA nią (na kolejnym polu) — plan jest wtedy całością, mimo że
+ * odpowiedź jest urwana. Bez tego ostrzegalibyśmy o „niepełnym planie" i odsyłali użytkownika po
+ * resztę, której nie ma — czyli popełnialibyśmy dokładnie ten błąd, który ten przebieg naprawia.
  */
-export function odzyskajAkcjeZUcietego(content: string): Record<string, unknown>[] {
+export function odzyskajAkcjeZUcietego(content: string): {
+  akcje: Record<string, unknown>[];
+  kompletna: boolean;
+} {
   const text = stripFences(content ?? "");
   const klucz = /"actions"\s*:\s*\[/.exec(text);
-  if (!klucz) return [];
+  if (!klucz) return { akcje: [], kompletna: false };
 
   const out: Record<string, unknown>[] = [];
+  let kompletna = false;
   let i = klucz.index + klucz[0].length;
   while (i < text.length) {
     // Do początku kolejnego obiektu; napotkany `]` kończy tablicę akcji.
     while (i < text.length && text[i] !== "{" && text[i] !== "]") i++;
-    if (i >= text.length || text[i] === "]") break;
+    if (i >= text.length) break;
+    if (text[i] === "]") {
+      kompletna = true;
+      break;
+    }
 
     let depth = 0;
     let inString = false;
@@ -184,5 +197,5 @@ export function odzyskajAkcjeZUcietego(content: string): Record<string, unknown>
     if (kandydat) out.push(kandydat);
     i = koniec + 1;
   }
-  return out;
+  return { akcje: out, kompletna };
 }
