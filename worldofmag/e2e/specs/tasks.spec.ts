@@ -27,12 +27,16 @@ test.describe("Zadania — CRUD", () => {
     await expect(page).toHaveURL(/\/tasks/);
   });
 
+  // 121 (zgł. 2): na stronie modułu nie ma już stałego pola — `a` otwiera MODAL dodawania
+  // zadania. Twarde `toBeVisible` zamiast `requireVisible`: dawny natychmiastowy `isVisible()`
+  // nie czekał na montaż modalu, a quick-add jest bezwarunkową funkcją tej strony — jego brak
+  // ma czerwienić, nie pomijać.
   test("[scenario-tasks-add-quick] szybkie dodanie zadania", async ({ page, tasks }) => {
     await tasks.open();
     const title = `E2E zadanie ${Date.now()}`;
     await page.keyboard.press("a");
     const input = page.getByPlaceholder(/Dodaj zadanie/);
-    await requireVisible(input, "Brak pola quick-add");
+    await expect(input).toBeVisible();
     await input.fill(title);
     await input.press("Enter");
     await expect(page.getByText(title).first()).toBeVisible();
@@ -42,7 +46,7 @@ test.describe("Zadania — CRUD", () => {
     await tasks.open();
     await page.keyboard.press("a");
     const input = page.getByPlaceholder(/Dodaj zadanie/);
-    await requireVisible(input, "Brak pola quick-add");
+    await expect(input).toBeVisible();
     await input.press("Enter");
     await expect(page).toHaveURL(/\/tasks/);
   });
