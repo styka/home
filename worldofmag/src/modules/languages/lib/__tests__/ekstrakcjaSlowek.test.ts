@@ -5,7 +5,7 @@ import {
   odzyskajSlowka,
   scalSlowka,
   type SlowkoZTekstu,
-} from "@/modules/languages/lib/ekstrakcjaSlowek";
+} from "../ekstrakcjaSlowek";
 
 // 121 (zgł. 1). Zgłoszenie właściciela: „jest ograniczenie przygotowania do 25 słówek z podanego
 // tekstu, a powinny być wszystkie". Te testy pilnują dwóch rzeczy: że NIC w tej warstwie nie

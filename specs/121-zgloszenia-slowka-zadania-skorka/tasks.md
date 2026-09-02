@@ -56,11 +56,11 @@
   `modules.languages.DeckPage.tekstPrzyciety` w `messages/pl.json`.
 
 ## Faza 3 — Bramki i domknięcie
-- [ ] **T-8** — Weryfikacja zgłoszenia 3 (AC-6, bez kodu): `npm run test:unit` obejmujące
+- [x] **T-8** — Weryfikacja zgłoszenia 3 (AC-6, bez kodu): `npm run test:unit` obejmujące
   `skinGenerate.test.ts` zielone na tej gałęzi + potwierdzony ślad 119 w historii
   `develop`/`master` (zanotować hash w verify.md). Gdyby test wykazał lukę — wraca do
   implementacji (C-54), po aktualizacji planu.
-- [ ] **T-9** — Bramki lokalne: `npm run check:i18n`, `npm run check:cost-badge`,
+- [x] **T-9** — Bramki lokalne: `npm run check:i18n`, `npm run check:cost-badge`,
   `npm run check:content-memory`, `npm run test:unit` (całość), `next lint` — zielone.
 - [ ] **T-10** — `npm run build` do kroku `next build` włącznie (lokalny Postgres, C-13 — bez
   `migrate.js` na prod). Gotowe, gdy: build zielony.
