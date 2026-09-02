@@ -6174,3 +6174,20 @@ dopiero wtedy, gdy leży NA ŚCIEŻCE danych, i to powinien łapać test odtwarz
 kształt wejścia, nie code review. Druga połowa lekcji: transport często WIE więcej niż
 treść (flaga `truncated`) — diagnoza z flagi bije wróżenie z zepsutego tekstu, bo mówi,
 czy naprawa leży w budżecie wyjścia, czy w modelu.
+## 2026-09-02 — revalidatePath nie odświeża stanu klienckiego: mutacja przeniesiona między komponentami musi zabrać ze sobą sygnał odświeżenia
+**Problem:** W przebiegu 122 zarządzanie zestawami projektów przenieśliśmy z nawigacji bocznej do
+dropdownu filtra. Akcje serwerowe kończą się `revalidatePath("/tasks")`, więc wyglądało na to, że
+wszystko się odświeży samo. Ale `TasksSideNav` trzyma listę grup w **stanie klienckim** ładowanym
+przy montażu (`useEffect` + `getProjectGroups()`), a `revalidatePath` odświeża wyłącznie drzewo RSC.
+Przed zmianą każda mutacja działa się w sidebarze i kończyła lokalnym `reload()` — przenosiny
+zabrały mutacje, ale nie zabrały sygnału. Skutek: usunięty zestaw zostawał w nawigacji jako link
+prowadzący do 404, a po zmianie nazwy nagłówek widoku i sidebar pokazywały dwie różne nazwy naraz.
+Wyszło dopiero w recenzji (świeże oko), nie w bramkach — build i tsc nie widzą takiej luki.
+**Rozwiązanie:** Lekkie zdarzenie okna (`tasks:groups-changed`) emitowane po każdej udanej mutacji
+zestawu w dropdownie + nasłuch w `TasksSideNav` wołający `reload()` (z czyszczeniem w cleanupie).
+Przy okazji: stan roboczy formularza po zapisie przyjmuje rekord ZWRÓCONY przez akcję (serwer
+normalizuje trim/emoji), a puste `catch {}` dostały widoczny komunikat błędu (`role="alert"`).
+**Lekcja:** Przenosząc mutację z komponentu A do B, wypisz, co A robiło PO mutacji poza samym
+zapisem — lokalne `reload()`, czyszczenie stanu, nawigacja — i przenieś to razem z nią albo zastąp
+jawnym sygnałem. `revalidatePath` odświeża RSC, nigdy cudzy `useState`; każdy komponent kliencki
+trzymający kopię danych potrzebuje własnego kanału inwalidacji.
