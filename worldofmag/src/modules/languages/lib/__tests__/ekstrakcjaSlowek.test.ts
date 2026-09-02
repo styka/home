@@ -32,9 +32,10 @@ test("podzielNaFragmenty: tnie na granicy, nigdy w środku słowa, i niczego nie
   assert.equal(fragmenty.join(" ").replace(/\s+/g, " "), tekst.replace(/\s+/g, " "));
 });
 
-test("podzielNaFragmenty: słowo dłuższe niż limit nie zapętla podziału", () => {
+test("podzielNaFragmenty: słowo dłuższe niż limit nie zapętla podziału i trzyma limit", () => {
   const fragmenty = podzielNaFragmenty("x".repeat(500), 100);
   assert.equal(fragmenty.join(""), "x".repeat(500));
+  for (const f of fragmenty) assert.ok(f.length <= 100, `fragment ponad limit: ${f.length}`);
 });
 
 test("odzyskajSlowka: kanoniczny JSON i płotki markdown wokół niego", () => {

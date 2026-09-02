@@ -43,7 +43,9 @@ export function podzielNaFragmenty(tekst: string, maksFragment: number): string[
       okno.lastIndexOf("\n"),
       okno.lastIndexOf(" "),
     ];
-    const ciecie = granice.find((i) => i > 0) ?? maksFragment;
+    // Fallback to twarde cięcie: `slice(0, ciecie + 1)` bierze o jeden znak więcej niż indeks,
+    // więc granicą jest `maksFragment - 1` — inaczej fragment miałby maksFragment + 1 znaków.
+    const ciecie = granice.find((i) => i > 0) ?? maksFragment - 1;
     const fragment = reszta.slice(0, ciecie + 1).trim();
     if (fragment) fragmenty.push(fragment);
     reszta = reszta.slice(ciecie + 1).trim();

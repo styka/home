@@ -12,7 +12,13 @@ async function post<T>(path: string, body: unknown): Promise<T & { usage?: AiUsa
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);
+  if (!res.ok) {
+    // 121 (recenzja, ust. 2): trasy wkładają w `error` starannie nazwaną przyczynę po polsku —
+    // wyrzucenie body i rzucenie samego statusu czyniło te komunikaty martwymi we WSZYSTKICH
+    // konsumentach klienta. Fallback na status zostaje dla odpowiedzi bez JSON-a.
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error || `LLM request failed: ${res.status}`);
+  }
   return res.json() as Promise<T & { usage?: AiUsageInfo }>;
 }
 
@@ -218,6 +224,8 @@ export const llm = {
           partOfSpeech: string | null;
         }>;
         sourceTruncated?: boolean;
+        /** Odpowiedź modelu ucięta/częściowa — lista może nie obejmować wszystkich słówek. */
+        outputTruncated?: boolean;
         error?: string;
       }>("/api/llm/languages/extract", input),
   },

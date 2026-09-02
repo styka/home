@@ -39,6 +39,9 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   const [aiUsage, setAiUsage] = useState<AiCostUsage | undefined>();
   /** 121: tekst przekroczył obsługiwany zakres — słówka pochodzą z jego początku (nigdy po cichu). */
   const [zrodloPrzyciete, setZrodloPrzyciete] = useState(false);
+  /** 121 (recenzja): odpowiedź modelu ucięta/częściowa — lista może nie być kompletna. */
+  const [odpowiedzNiepelna, setOdpowiedzNiepelna] = useState(false);
+  const [genBlad, setGenBlad] = useState<string | null>(null);
   const [showGen, setShowGen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editTerm, setEditTerm] = useState("");
@@ -57,6 +60,7 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
   async function generate() {
     if (!genText.trim()) return;
     setGenBusy(true);
+    setGenBlad(null);
     try {
       // 121: bez `max` — ekstrakcja obejmuje wszystkie słówka z tekstu.
       const res = await llm.languages.extract({
@@ -66,12 +70,17 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
       });
       setAiUsage(res.usage);
       setZrodloPrzyciete(Boolean(res.sourceTruncated));
+      setOdpowiedzNiepelna(Boolean(res.outputTruncated));
       if (res.words?.length) {
         await bulkAddWords(deck.id, res.words);
         setGenText("");
         setShowGen(false);
         router.refresh();
       }
+    } catch (e) {
+      // 121 (recenzja, ust. 2): trasa nazywa przyczynę porażki po polsku — pokaż ją, zamiast
+      // gasić spinner w ciszy.
+      setGenBlad(e instanceof Error && e.message ? e.message : t("generowanieNieUdane"));
     } finally {
       setGenBusy(false);
     }
@@ -168,9 +177,15 @@ export function DeckPage({ deck }: { deck: LanguageDeck & { cards: Vocabulary[] 
           </button>
         )}
 
-        {/* 121: nota widoczna także po zamknięciu panelu (po udanym generowaniu panel znika). */}
+        {/* 121: noty widoczne także po zamknięciu panelu (po udanym generowaniu panel znika). */}
+        {genBlad && (
+          <p style={{ fontSize: 12, color: "var(--accent-red)", margin: 0 }}>{genBlad}</p>
+        )}
         {zrodloPrzyciete && (
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("tekstPrzyciety")}</p>
+        )}
+        {odpowiedzNiepelna && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("odpowiedzNiepelna")}</p>
         )}
 
         {/* Lista słówek */}

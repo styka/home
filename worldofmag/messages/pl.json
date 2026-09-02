@@ -1653,7 +1653,9 @@
         "dodajSlowkaZTekstu": "Dodaj słówka z tekstu (AI)",
         "doPowtorki": "Do powtórki",
         "brakSlowekDodajJe": "Brak słówek. Dodaj je ręcznie lub wygeneruj z tekstu.",
-        "tekstPrzyciety": "Tekst był dłuższy niż obsługiwany zakres — słówka przygotowano z jego początku."
+        "tekstPrzyciety": "Tekst był dłuższy niż obsługiwany zakres — słówka przygotowano z jego początku.",
+        "odpowiedzNiepelna": "Odpowiedź modelu była niepełna — lista może nie obejmować wszystkich słówek. Spróbuj ponownie albo podziel tekst.",
+        "generowanieNieUdane": "Nie udało się wygenerować słówek — spróbuj ponownie."
       },
       "LanguagesHomePage": {
         "naukaJezykow": "Nauka języków",

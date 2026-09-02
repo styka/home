@@ -94,10 +94,15 @@ Odpowiedz WYŁĄCZNIE obiektem JSON (bez markdown, bez komentarza) w formacie:
     return NextResponse.json({ error }, { status: 502 });
   }
 
+  // Recenzja 121 (ust. 1): częściowy wynik nie może „udawać poprawnego" (lekcja 119/120) —
+  // ucięta odpowiedź fragmentu albo fragment, który zawiódł w połowie pętli, oddaje to, co jest,
+  // ale z jawną flagą, którą UI zamienia na notę dla użytkownika.
+  const outputTruncated = byloUciecie || pierwszyBlad !== null;
   const usage = await visibleUsage(usageFromChat(wywolania));
   return NextResponse.json({
     words,
     ...(sourceTruncated ? { sourceTruncated: true } : {}),
+    ...(outputTruncated ? { outputTruncated: true } : {}),
     ...(usage ? { usage } : {}),
   });
 }

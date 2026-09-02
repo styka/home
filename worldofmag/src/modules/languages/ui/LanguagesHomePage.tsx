@@ -64,7 +64,10 @@ export function LanguagesHomePage({ decks, streak }: { decks: LanguageDeck[]; st
       });
       // Jeśli podano tekst — od razu wygeneruj słówka przez AI.
       if (sourceText.trim()) {
-        // 121: bez `max` — ekstrakcja obejmuje wszystkie słówka z tekstu.
+        // 121: bez `max` — ekstrakcja obejmuje wszystkie słówka z tekstu. Flagi `sourceTruncated`/
+        // `outputTruncated` świadomie pomijamy: ten przepływ natychmiast przechodzi do talii, więc
+        // nie ma gdzie pokazać noty — a błąd ekstrakcji trafia do widocznego `setError` przez
+        // komunikat z trasy (post() od recenzji 121 przekazuje `error` z body).
         const res = await llm.languages.extract({ sourceText, nativeLang, targetLang });
         if (res.words?.length) {
           await bulkAddWords(deck.id, res.words);
