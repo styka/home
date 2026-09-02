@@ -32,7 +32,7 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
   all: "◎ Wszystkie zadania",
 };
 
-/** Projekt w „pasku zakresu” widoku wielu projektów (chip pod nagłówkiem). */
+/** Projekt w zakresie widoku wielu projektów (do scalania konfiguracji statusów). */
 type ScopeProject = { id: string; name: string; emoji: string; isInbox: boolean };
 
 export interface TasksRouteViewProps {
@@ -68,9 +68,10 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   let tasks: Task[];
   let viewMode: ViewMode;
   let projectName: string;
-  // Widok wielu projektów: lista projektów w zakresie + id zapisanej grupy (do edycji).
+  // Widok wielu projektów: projekty w zakresie (konfiguracja statusów) + pełne dane zestawu
+  // dla filtra (121: dropdown jest jedynym miejscem pokazywania i edycji zakresu).
   let scopeProjects: ScopeProject[] = [];
-  let multiGroupId: string | undefined;
+  let zestaw: { id: string; name: string; emoji: string; color: string | null; projectIds: string[] } | undefined;
   let areas: ObszarDTO[] = [];
 
   if (projectId === "today") {
@@ -110,11 +111,11 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
     const group = await getProjectGroup(zestawId);
     if (!group) notFound();
     const scopeIds = group.projectIds;
-    multiGroupId = group.id;
+    zestaw = { id: group.id, name: group.name, emoji: group.emoji, color: group.color, projectIds: scopeIds };
     projectName = `${group.emoji} ${group.name}`;
     tasks = await getTasksForProjects(scopeIds);
     viewMode = "multi";
-    // Zachowaj kolejność z zakresu i opisz każdy projekt (chip pod nagłówkiem).
+    // Zachowaj kolejność z zakresu (scala się z niej konfigurację statusów).
     scopeProjects = scopeIds
       .map((id) => allProjects.find((p) => p.id === id))
       .filter((p): p is NonNullable<typeof p> => !!p)
@@ -168,8 +169,7 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
       statusConfig={statusConfig}
       canEditStatuses={canEditStatuses}
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
-      scopeProjects={scopeProjects}
-      multiGroupId={multiGroupId}
+      zestaw={zestaw}
       areas={areas}
       viewParams={searchParams ?? {}}
     />

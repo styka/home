@@ -463,18 +463,63 @@ export function TaskDetail({ task, allTags, allProjects = [], obszary = [], stat
     )
   );
 
-  /* Title */
+  /* Title + akcje panelu — 121 (AC-4/AC-5): osobny wiersz nagłówka („Szczegóły zadania") zabierał
+     ~48 px czystego chromu, więc jego przyciski żyją teraz w wierszu tytułu. Pole tytułu ma
+     `min-w-0 flex-1`, a grupa akcji `flex-shrink-0` — długi tytuł nigdy nie wypycha przycisków. */
   const sekcjaTytul = (
-    <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+    <div className="flex items-center gap-1 px-4 py-2 md:py-3 border-b" style={{ borderColor: "var(--border)" }}>
+      {/* Mobile: wyraźny powrót — pierwszy element wiersza */}
+      <button
+        onClick={onClose}
+        className="md:hidden flex items-center gap-1 -ml-1.5 pr-2 py-3 rounded focus:outline-none flex-shrink-0"
+        style={{ color: "var(--text-secondary)" }}
+        aria-label={t("wrocDoListyZadan")}
+      >
+        <ChevronLeft size={18} />
+        <span className="text-sm">{t("wroc")}</span>
+      </button>
       <input
         ref={titleRef}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={handleTitleBlur}
-        className="w-full bg-transparent font-semibold focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent font-semibold focus:outline-none"
         style={{ fontSize: 16, color: "var(--text-primary)", lineHeight: 1.4 }}
         placeholder={t("tytulZadania")}
       />
+      <div className="flex items-center flex-shrink-0">
+        {isPending && <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent-blue)" }} />}
+        {/* 105 (AC-11): tryb pełny istnieje wyłącznie na komputerze — na telefonie panel i tak
+            zajmuje cały ekran, więc nie ma czego przełączać (C-31). */}
+        {onPrzelaczSzeroki && (
+          <button
+            onClick={onPrzelaczSzeroki}
+            aria-pressed={szeroki}
+            className="hidden md:flex p-1.5 rounded hover:opacity-70 focus:outline-none"
+            style={{ color: szeroki ? "var(--accent-blue)" : "var(--text-muted)" }}
+            title={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
+            aria-label={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
+          >
+            {szeroki ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        )}
+        <button
+          onClick={handleDelete}
+          className="p-3 md:p-1.5 rounded hover:opacity-70 focus:outline-none"
+          style={{ color: "var(--accent-red)" }}
+          title={t("usunZadanie")}
+        >
+          <Trash2 size={14} />
+        </button>
+        <button
+          onClick={onClose}
+          className="hidden md:flex p-1.5 rounded hover:opacity-70 focus:outline-none"
+          style={{ color: "var(--text-muted)" }}
+          aria-label={t("wrocDoListyZadan")}
+        >
+          <X size={16} />
+        </button>
+      </div>
     </div>
   );
 
@@ -944,50 +989,7 @@ export function TaskDetail({ task, allTags, allProjects = [], obszary = [], stat
       className="flex flex-col h-full border-l overflow-hidden"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-surface)" }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 h-12 border-b flex-shrink-0" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-1">
-          {/* Mobile: wyraźny powrót */}
-          <button
-            onClick={onClose}
-            className="md:hidden flex items-center gap-1 -ml-1.5 pr-2 py-1.5 rounded focus:outline-none"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label={t("wrocDoListyZadan")}
-          >
-            <ChevronLeft size={18} />
-            <span className="text-sm">{t("wroc")}</span>
-          </button>
-          {isPending && <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent-blue)" }} />}
-          <span className="text-xs hidden md:inline" style={{ color: "var(--text-muted)" }}>{t("szczegolyZadania")}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {/* 105 (AC-11): tryb pełny istnieje wyłącznie na komputerze — na telefonie panel i tak
-              zajmuje cały ekran, więc nie ma czego przełączać (C-31). */}
-          {onPrzelaczSzeroki && (
-            <button
-              onClick={onPrzelaczSzeroki}
-              aria-pressed={szeroki}
-              className="hidden md:flex p-1.5 rounded hover:opacity-70 focus:outline-none"
-              style={{ color: szeroki ? "var(--accent-blue)" : "var(--text-muted)" }}
-              title={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
-              aria-label={szeroki ? t("zwinDoPanelu") : t("rozwinNaCalosc")}
-            >
-              {szeroki ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
-          )}
-          <button
-            onClick={handleDelete}
-            className="p-1.5 rounded hover:opacity-70 focus:outline-none"
-            style={{ color: "var(--accent-red)" }}
-            title={t("usunZadanie")}
-          >
-            <Trash2 size={14} />
-          </button>
-          <button onClick={onClose} className="p-1.5 rounded hover:opacity-70 focus:outline-none" style={{ color: "var(--text-muted)" }}>
-            <X size={16} />
-          </button>
-        </div>
-      </div>
+      {/* 121: bez osobnego wiersza nagłówka — akcje panelu mieszkają w wierszu tytułu (sekcjaTytul). */}
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
         {szeroki ? (

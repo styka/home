@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { SkinPreview } from "@/components/skins/SkinPreview";
 import { SkinEditor } from "@/components/skins/SkinEditor";
+import { Modal } from "@/components/ui/Modal";
 import { setActiveSkin, deleteSkin, updateSkin, type SkinView } from "@/actions/skins";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -175,11 +176,15 @@ export function SkinPicker({
         </button>
       </div>
 
+      {/* 121 (AC-1): edytor w modalu, nie inline pod przyciskiem — sekcja wysuwana na dole strony
+          była niewidoczna, gdy przycisk stał przy dolnej krawędzi okna. Modal (na telefonie arkusz
+          dolny) jest zawsze w kadrze, daje Esc i pułapkę focusu za darmo. */}
       {editor.open && (
-        <div style={{ border: "1px solid var(--border)", borderRadius: 12, background: "var(--bg-surface)", padding: 16 }}>
-          <h3 style={{ margin: "0 0 14px", color: "var(--text-primary)", fontSize: 15, fontWeight: 600 }}>
-            {editor.existingId ? "Edycja skórki" : "Nowa skórka"}
-          </h3>
+        <Modal
+          onClose={() => setEditor({ open: false })}
+          title={editor.existingId ? t("edycjaSkorki") : t("nowaSkorka")}
+          wide
+        >
           <SkinEditor
             mode="user"
             initial={editor.initial}
@@ -188,7 +193,7 @@ export function SkinPicker({
             onClose={() => setEditor({ open: false })}
             onSaved={(id) => choose(id)}
           />
-        </div>
+        </Modal>
       )}
     </div>
   );

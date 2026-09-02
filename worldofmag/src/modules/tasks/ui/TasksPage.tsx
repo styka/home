@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, Pencil, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
+import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
@@ -16,7 +16,7 @@ import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { useTranslations } from "next-intl";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
-import { ProjectScopeFilter } from "./ProjectScopeFilter";
+import { ProjectScopeFilter, type ZestawWFiltrze } from "./ProjectScopeFilter";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useIsNarrowScreen } from "@/hooks/useVisualViewport";
 import { odczytajUklad, zapiszUklad, ograniczSzerokosc, UKLAD_DOMYSLNY } from "../lib/ukladSzczegolow";
@@ -44,10 +44,9 @@ interface TasksPageProps {
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
   isAdmin?: boolean;
-  /** Widok wielu projektów: projekty w zakresie (chipy pod nagłówkiem). */
-  scopeProjects?: Array<{ id: string; name: string; emoji: string; isInbox: boolean }>;
-  /** Id zapisanej grupy projektów (gdy widok otwarty z grupy) — do edycji. */
-  multiGroupId?: string;
+  /** 121: pełne dane zapisanego zestawu (widok /tasks/zestaw/<id>) — zakres pokazuje i edytuje
+      wyłącznie dropdown filtra projektów; pasek chipów „Projekty: …" przestał istnieć. */
+  zestaw?: ZestawWFiltrze;
   /** 117: obszary bieżącego projektu (tylko widok projektu; widoki wirtualne dostają pustą). */
   areas?: ObszarDTO[];
   /**
@@ -58,7 +57,7 @@ interface TasksPageProps {
   viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, scopeProjects = [], multiGroupId, areas = [], viewParams = {} }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, zestaw, areas = [], viewParams = {} }: TasksPageProps) {
   // 085 (AC-8): administracyjny eksport listy do schowka jest DODATKIEM dla administratora, więc
   // znika razem z resztą, gdy tryb administratora jest wyłączony.
   const { wlaczony: trybAdmina } = useTrybAdmina();
@@ -664,6 +663,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
               onChange={(next) => setView({ projekty: next })}
             />
           )}
+          {/* 121: w widoku zapisanego zestawu TEN SAM dropdown pokazuje i edytuje zakres
+              (tryb `zestaw`) — jedyny mechanizm zakresu projektów w module. */}
+          {viewMode === "multi" && zestaw && (
+            <ProjectScopeFilter allProjects={allProjects} zestaw={zestaw} />
+          )}
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}
           </span>
@@ -848,41 +852,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         </>
       }
     >
-
-      {/* Pasek zakresu widoku wielu projektów: zawsze widać, z jakich projektów są zadania.
-          Każdy chip prowadzi do pojedynczego projektu; ołówek otwiera edycję zapisanego widoku. */}
-      {viewMode === "multi" && scopeProjects.length > 0 && (
-        <div
-          className="flex items-center gap-1.5 px-4 py-1.5 border-b flex-shrink-0 overflow-x-auto"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
-        >
-          <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-            Projekty:
-          </span>
-          {scopeProjects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/tasks/${p.id}`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs flex-shrink-0"
-              style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-              title={`Otwórz projekt: ${p.name}`}
-            >
-              <span>{p.isInbox ? "📥" : p.emoji}</span>
-              <span className="truncate" style={{ maxWidth: 140 }}>{p.name}</span>
-            </Link>
-          ))}
-          {multiGroupId && (
-            <Link
-              href={`/tasks/zestaw/${multiGroupId}?edit=1`}
-              className="flex items-center gap-1 px-2 py-0.5 rounded text-xs flex-shrink-0 ml-1"
-              style={{ color: "var(--text-muted)" }}
-              title={t("edytujGrupeNazwaProjekty")}
-            >
-              <Pencil size={11} />
-            </Link>
-          )}
-        </div>
-      )}
 
       {canEditStatuses && statusConfigOpen && (
         <TaskStatusConfigEditor
