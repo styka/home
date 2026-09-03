@@ -19,7 +19,7 @@
 | `npm run test:unit` (heurystyka) | ✅ `jezykTytulu.test.ts` 8/8 |
 | e2e `scripts/e2e-web.sh e2e/specs/124-wiadomosci-doczytania.spec.ts` | ✅ 6/6 (desktop) |
 | `check:schema-drift` | ⚠️ pominięty (sandbox nie przygotował bazy cienia — udokumentowane zachowanie bramki); ręcznie: migracja 0290 = dokładnie jedno `ADD COLUMN "readLater"`, identyczne z jedynym nowym polem w `schema.prisma` |
-| `scripts/migrate.js` (ostatni krok builda) | ⚠️ padł na pustym `DIRECT_URL` w podprocesie npm (osobliwość env sandboxa); **sama migracja 0290 zaaplikowana czysto** przez `prisma migrate deploy` w kroku 4/6 `e2e-web.sh`. C-50 każe lokalnie weryfikować do `next build` — spełnione z zapasem |
+| `scripts/migrate.js` (ostatni krok builda) | ✅ po korekcie env (pusty `DIRECT_URL` był błędem jednolinijkowego `export A=… B="$A"` w powłoce sesji, nie repo) — `migrate deploy` + seed na lokalnym Postgresie EXIT=0; migracja 0290 zaaplikowana czysto |
 
 ## Kryteria akceptacji
 
