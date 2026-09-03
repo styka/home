@@ -6210,3 +6210,19 @@ jednorazowo wszystkie „niedostepna" do „oczekuje" (sączą się przez limit 
 traktuj „sukces transportu, pusty wynik" jako sygnał do drogi zapasowej i loguj skuteczność per
 droga. I druga: stan błędu bez ścieżki powrotu („niedostepna" bez ponowień) zamienia każdą usterkę
 przejściową w trwałą — naprawa kodu musi wtedy iść w parze z migracją danych zawracającą ofiary.
+
+## 2026-09-03 — Tłumaczenie „tylko dla nowych" utrwala obcy tytuł na zawsze
+**Problem:** Wiadomości od 084 tłumaczą tytuł tym samym wywołaniem co streszczenie — ale wyłącznie
+dla pozycji NOWYCH w danym przebiegu (`newItemIds`). Pozycja, której partia streszczeń padła
+(`summaryFailed`) albo której model pominął pole `title`, zostawała z angielskim tytułem NA ZAWSZE,
+bo żaden następny przebieg jej nie dotykał. Reguła „po polsku" istniała, prompt był poprawny —
+a właściciel i tak widział „The economics of agent scale…" na liście. Usterka nie leżała w regule,
+tylko w tym, KOGO reguła obejmuje.
+**Rozwiązanie:** Dwa etapy naprawcze w przebiegu odświeżania (124): ponowienie streszczeń dla
+`summaryFailed` istniejącą maszynerią partii oraz tanie dotłumaczenie samych tytułów (`dispatch`)
+dla pozycji z poprawnym streszczeniem, wskazanych heurystyką „tytuł wygląda na obcy" (diakrytyk
+przesądza o polskości; ≥2 różne obce słowa funkcyjne jako osobne wyrazy; podział na wyrazy bez
+ASCII-owego `\b` — lekcja 112). Limit 40/przebieg, tylko `PENDING`, pusty wynik nigdy nie nadpisuje.
+**Lekcja:** Reguła stosowana w jednym punkcie rurociągu chroni tylko to, co przez ten punkt
+przepływa. Gdy wynik reguły może przepaść (awaria partii, pominięte pole), potrzebny jest etap
+naprawczy, który obejmuje ZASTANE rekordy — inaczej każdy błąd jednorazowy staje się trwały.

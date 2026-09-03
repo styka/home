@@ -133,7 +133,11 @@ export function NewsItemCard({
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+    <div
+      // 124: uchwyt dla klikacza — karta jest przedmiotem testu odłożenia, a klasy nie są kontraktem.
+      data-news-karta={item.id}
+      className="min-w-0 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-4"
+    >
       <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
         <span
           className="rounded px-1.5 py-0.5 font-medium"
