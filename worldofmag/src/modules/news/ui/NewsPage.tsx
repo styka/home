@@ -754,7 +754,10 @@ export function NewsPage({
                     <button
                       type="button"
                       onClick={() => setViewState({ doczytania: filtrDoczytania ? "0" : "1" })}
-                      disabled={liczbaOdlozonych === 0 && !filtrDoczytania}
+                      /* Recenzja 124: przy bezpośrednim wejściu na oś czasu strumień jeszcze nie
+                         jest wczytany — NIEZNANY licznik to nie ZERO, więc przycisk nie może być
+                         wtedy wyłączony, a licznika nie pokazujemy zamiast pokazywać fałszywe 0. */
+                      disabled={stream !== null && liczbaOdlozonych === 0 && !filtrDoczytania}
                       aria-pressed={filtrDoczytania}
                       title={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
                       aria-label={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
@@ -767,7 +770,7 @@ export function NewsPage({
                     >
                       {filtrDoczytania ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
                       <span className="hidden lg:inline">{t("doDoczytania")}</span>
-                      <span>{liczbaOdlozonych}</span>
+                      {stream !== null && <span>{liczbaOdlozonych}</span>}
                     </button>
                     {/**
                       * 087 (AC-3): przełącznik trybu czytania stoi W PASKU MODUŁU, a nie w akcjach

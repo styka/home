@@ -23,8 +23,9 @@ const POLSKIE_DIAKRYTYKI = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
  * Słowa funkcyjne najczęstszych języków źródeł RSS (angielski, niemiecki, francuski, hiszpański).
  * Tylko słowa, które w polskim tytule nie występują jako samodzielne wyrazy — dlatego nie ma tu
  * np. „on" (po polsku zaimek), „a" (spójnik) ani HOMOGRAFÓW: „to", „by", „los" (przeznaczenie),
- * „las", „para" — każde z nich jest zwykłym polskim słowem i wpuszczone tutaj oznaczałoby polskie
- * tytuły bez diakrytyków jako obce (recenzja 124).
+ * „las", „para", „mit" (niem. przyimek = pol. rzeczownik), „por" (hiszp. przyimek = pol. warzywo) —
+ * każde z nich jest zwykłym polskim słowem i wpuszczone tutaj oznaczałoby polskie tytuły bez
+ * diakrytyków jako obce (recenzja 124).
  */
 const OBCE_SLOWA_FUNKCYJNE = new Set([
   // angielski
@@ -32,12 +33,12 @@ const OBCE_SLOWA_FUNKCYJNE = new Set([
   "in", "at", "into", "will", "has", "have", "his", "her", "its", "their",
   "this", "that", "new", "after", "over", "more", "your", "you", "not",
   // niemiecki
-  "der", "die", "das", "und", "für", "mit", "von", "nach", "über", "ist", "sind",
+  "der", "die", "das", "und", "für", "von", "nach", "über", "ist", "sind",
   "ein", "eine", "nicht", "wird",
   // francuski
   "le", "la", "les", "des", "une", "est", "dans", "pour", "avec", "sur", "aux",
   // hiszpański
-  "el", "una", "del", "por", "con", "más", "está",
+  "el", "una", "del", "con", "más", "está",
 ]);
 
 /**

@@ -41,9 +41,10 @@ test("pusty i biały tytuł nie jest oznaczany", () => {
   assert.equal(tytulWygladaNaObcy("   "), false);
 });
 
-test("polskie homografy (to, by, los, las, para) nie liczą się jako obce", () => {
-  // Bez diakrytyków i z trzema słowami, które wyglądają jak hiszpańskie/angielskie — a są polskie.
+test("polskie homografy (to, by, los, las, para, mit, por) nie liczą się jako obce", () => {
+  // Bez diakrytyków i ze słowami, które wyglądają jak obce przyimki — a są polskie.
   assert.equal(tytulWygladaNaObcy("Los lasu to temat na lata: para ministrow o planach"), false);
+  assert.equal(tytulWygladaNaObcy("Mit o zdrowym porze: por kontra cebula w kuchni"), false);
 });
 
 test("dwa różne obce słowa muszą być OSOBNYMI wyrazami, nie fragmentami", () => {
