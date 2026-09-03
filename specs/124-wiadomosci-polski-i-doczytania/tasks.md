@@ -1,7 +1,7 @@
 # Zadania: Wiadomości — tytuły/streszczenia po polsku + „do doczytania"
 
 - **Plan:** ./plan.md (124-wiadomosci-polski-i-doczytania)
-- **Status:** in-progress (T-10: pełny build w toku)
+- **Status:** done
 - **Data:** 2026-09-03
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -65,7 +65,7 @@
   wszystkie" nie zdejmuje → „Przeczytane" zdejmuje; viewport 360 px dla paska (AC-9). Uruchomienie
   wg `docs/e2e/uruchamianie-e2e-claude.md` (`scripts/e2e-web.sh`). Gotowe, gdy: nowy scenariusz
   zielony, bez `networkidle` (`check:e2e-waits`).
-- [ ] **T-10** — Pełne bramki: `check:migrations`, `check:ai-coverage`, `check:i18n`,
+- [x] **T-10** — Pełne bramki: `check:migrations`, `check:ai-coverage`, `check:i18n`,
   `check:pagination`, `tsc -p tsconfig.test.json`, `next lint`, `next build` (lokalny Postgres,
   C-13 — bez `migrate.js` na prod). Gotowe, gdy: wszystko zielone.
 - [x] **T-11** — Mapowanie AC-1…AC-10 na wyniki (input do `/verify`) — tabela w tym pliku lub w
@@ -102,6 +102,13 @@
 | AC-10 | ✅ e2e | [124-AC10]: wejście z `?doczytania=1` odtwarza zawężenie (`aria-pressed=true`) |
 
 E2E: 6/6 zielone (`scripts/e2e-web.sh e2e/specs/124-wiadomosci-doczytania.spec.ts`, projekt desktop).
+
+## Notatki / blokady (bramki)
+- Pełny `npm run build` na lokalnym Postgresie: zielony do `check:perf-budget` włącznie
+  (wszystkie bramki, `next lint`, `next build`, budżet ±5%). Końcowy `scripts/migrate.js` padł
+  wyłącznie na pustym `DIRECT_URL` w podprocesie npm (lokalna osobliwość env; C-50 każe lokalnie
+  weryfikować do `next build`); sama migracja 0290 zaaplikowana na lokalnym Postgresie w kroku 4/6
+  `e2e-web.sh` bez błędu.
 
 ## Notatki / blokady
 - Kolejność: T-1 blokuje T-3…T-6 (kolumna w kliencie Prismy); T-2 blokuje T-6; T-3 blokuje T-7/T-8;
