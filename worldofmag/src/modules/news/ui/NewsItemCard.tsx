@@ -2,7 +2,17 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { ExternalLink, Check, Sparkles, Loader2, Headphones, RefreshCw, NotebookPen } from "lucide-react";
+import {
+  ExternalLink,
+  Check,
+  Sparkles,
+  Loader2,
+  Headphones,
+  RefreshCw,
+  NotebookPen,
+  Bookmark,
+  BookmarkCheck,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import { sourceColor } from "@/lib/news/sourceColor";
 import { timeAgo, SUMMARY_LENGTHS } from "@/lib/news/format";
@@ -12,6 +22,7 @@ import {
   acknowledgeItem,
   resummarizeItem,
   saveItemAsNote,
+  setItemReadLater,
   type NewsItemDTO,
   type SummaryLength,
 } from "../actions/news";
@@ -97,6 +108,23 @@ export function NewsItemCard({
       try {
         await acknowledgeItem(item.id);
         showToast("Oznaczono jako przeczytane", "success");
+        onChanged();
+      } catch (e: any) {
+        showToast(e.message ?? "Błąd", "error");
+      }
+    });
+  }
+
+  /**
+   * 124 (AC-5): „do doczytania" — jeden gest, odwracalny TYM SAMYM przyciskiem. Znacznik jest
+   * ortogonalny do „Przeczytane": pozycja zostaje na liście nowych, ale zbiorcze „oznacz
+   * wszystkie" ją omija, a filtr w pasku pokazuje same odłożone.
+   */
+  function przelaczDoczytanie() {
+    startTransition(async () => {
+      try {
+        await setItemReadLater(item.id, !item.readLater);
+        showToast(item.readLater ? t("zdjetoOdlozenie") : t("odlozonoInfo"), "success");
         onChanged();
       } catch (e: any) {
         showToast(e.message ?? "Błąd", "error");
@@ -278,6 +306,21 @@ export function NewsItemCard({
            * została jedna. Podpowiedź mówi, czego akcja dotyczy, bo drugie pytanie brzmiało, czy to
            * przypadkiem nie jest usuwanie.
            */}
+          <button
+            onClick={przelaczDoczytanie}
+            disabled={pending}
+            title={item.readLater ? t("odlozoneOpis") : t("doczytamOpis")}
+            aria-pressed={item.readLater}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs",
+              item.readLater
+                ? "bg-[var(--bg-hover)] font-medium text-[var(--accent-amber)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            {item.readLater ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}{" "}
+            {item.readLater ? t("odlozone") : t("doczytam")}
+          </button>
           <button
             onClick={acknowledge}
             disabled={pending}

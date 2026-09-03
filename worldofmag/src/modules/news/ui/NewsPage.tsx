@@ -13,7 +13,7 @@ import {
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical, BookOpen, Minimize2
+import { Newspaper, RefreshCw, Flame, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical, BookOpen, Minimize2, Bookmark, BookmarkCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -128,6 +128,12 @@ export function NewsPage({
        * w chwili zapisu. Decyzja właściciela na etapie `/specify`.
        */
       czytanie: oneOf(["0", "1"] as const, "0"),
+      /**
+       * 124 (AC-10): ZAWĘŻENIE „DO DOCZYTANIA" W ADRESIE — ta sama zasada co `czytanie`/`zrodla`:
+       * gwiazdka „zapisz ten widok" bierze adres, więc zawężenie trzymane w pamięci komponentu
+       * dawałoby ulubione pokazujące co innego niż w chwili zapisu.
+       */
+      doczytania: oneOf(["0", "1"] as const, "0"),
     }),
     []
   );
@@ -169,6 +175,7 @@ export function NewsPage({
   }, [viewState.tresc, view, setViewState]);
   const wybraneZrodla = viewState.zrodla;
   const trybCzytania = viewState.czytanie === "1";
+  const filtrDoczytania = viewState.doczytania === "1";
 
   /**
    * 084: NIE MA JUŻ „TEMATU WYBRANEGO" — jest tylko temat CZYTANY.
@@ -342,13 +349,23 @@ export function NewsPage({
    * (`GroupNavigator`). Gdyby serwer odsiewał, a widok nie, lista skoku prowadziłaby do sekcji,
    * których nie ma — i odwrotnie.
    */
+  /**
+   * 124 (AC-6): zawężenie „do doczytania" filtruje TEN SAM zbiór co filtr portali — nawigator
+   * tematów, liczniki sekcji, lektor i pusty stan konsumują wynik, więc treść i nawigacja nie mogą
+   * się rozjechać (lekcja 085). Przy włączonym zawężeniu puste tematy znikają zawsze — pusta ramka
+   * w widoku „tylko odłożone" jest szumem, nie informacją.
+   */
   const widoczneWiadomosci = useMemo(() => {
     const zPortalami = (stream ?? []).map((x) => ({
       ...x,
-      items: x.items.filter((i) => pasujeZrodlo(i.sourceKey)),
+      items: x.items.filter(
+        (i) => pasujeZrodlo(i.sourceKey) && (!filtrDoczytania || i.readLater)
+      ),
     }));
-    return showEmptyTopics ? zPortalami : zPortalami.filter((x) => x.items.length > 0);
-  }, [stream, pasujeZrodlo, showEmptyTopics]);
+    return showEmptyTopics && !filtrDoczytania
+      ? zPortalami
+      : zPortalami.filter((x) => x.items.length > 0);
+  }, [stream, pasujeZrodlo, showEmptyTopics, filtrDoczytania]);
 
   const widocznaOs = useMemo(() => {
     const zPortalami = (timeline ?? []).map((x) => ({
@@ -574,7 +591,12 @@ export function NewsPage({
 
   // ── Nawigator ─────────────────────────────────────────────────────────────
   // 084: jedynym filtrem został wybór portali — tematy są zawsze wszystkie.
-  const filtrAktywny = wybraneZrodla.length > 0;
+  const filtrAktywny = wybraneZrodla.length > 0 || filtrDoczytania;
+  /** 124: licznik odłożonych liczony z PEŁNEGO strumienia (przed zawężeniem), żeby nie znikał sam sobie. */
+  const liczbaOdlozonych = useMemo(
+    () => (stream ?? []).reduce((n, x) => n + x.items.filter((i) => i.readLater).length, 0),
+    [stream]
+  );
 
   return (
     <ModuleView
@@ -721,6 +743,32 @@ export function NewsPage({
                          działa — ulubione zapisane wcześniej muszą prowadzić tam, gdzie prowadziły. */
                       onZarzadzaj={() => setView("sources")}
                     />
+                    {/**
+                      * 124 (AC-6, AC-9): zawężenie „do doczytania" — jeden przycisk STAŁEJ
+                      * wysokości z licznikiem (wzorzec 083/100). Przy zerze odłożonych widoczny,
+                      * ale wyłączony (100: ukrycie zmieniałoby szerokość paska i chowało, że
+                      * funkcja istnieje) — chyba że zawężenie właśnie działa, bo wyjście z niego
+                      * musi być zawsze możliwe tym samym gestem. Dotyczy widoku wiadomości;
+                      * oś czasu nie zna pojęcia odłożenia.
+                      */}
+                    <button
+                      type="button"
+                      onClick={() => setViewState({ doczytania: filtrDoczytania ? "0" : "1" })}
+                      disabled={liczbaOdlozonych === 0 && !filtrDoczytania}
+                      aria-pressed={filtrDoczytania}
+                      title={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
+                      aria-label={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-3 text-xs transition-colors disabled:opacity-40",
+                        filtrDoczytania
+                          ? "border-[var(--accent-amber)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                          : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                      )}
+                    >
+                      {filtrDoczytania ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+                      <span className="hidden lg:inline">{t("doDoczytania")}</span>
+                      <span>{liczbaOdlozonych}</span>
+                    </button>
                     {/**
                       * 087 (AC-3): przełącznik trybu czytania stoi W PASKU MODUŁU, a nie w akcjach
                       * widoku — bo w trybie czytania akcji widoku nie ma, więc byłby jedynym

@@ -1804,7 +1804,13 @@
         "wygenerujPonownieOpis": "Wygeneruj to streszczenie od nowa (bieżący poziom szczegółowości)",
         "zapiszNotatke": "Zapisz jako notatkę",
         "notatkaZapisana": "Zapisano notatkę",
-        "notatkaBlad": "Nie udało się zapisać notatki"
+        "notatkaBlad": "Nie udało się zapisać notatki",
+        "doczytam": "Doczytam",
+        "doczytamOpis": "Odłóż do doczytania — tytuł i streszczenie to za mało, wrócisz do pełnej treści.",
+        "odlozone": "Odłożone",
+        "odlozoneOpis": "Odłożone do doczytania. Kliknij, żeby zdjąć odłożenie.",
+        "odlozonoInfo": "Odłożono do doczytania",
+        "zdjetoOdlozenie": "Zdjęto odłożenie"
       },
       "NewsPage": {
         "wiadomosci": "Wiadomości",
@@ -1827,7 +1833,10 @@
         "trybCzytania": "Tryb czytania — schowaj wszystko poza wiadomościami",
         "wyjdzZTrybuCzytania": "Wyjdź z trybu czytania",
         "ostatnieOdswiezanie": "Ostatnie odświeżanie: {kiedy}",
-        "szczegolyPrzebiegu": "źródeł: {zrodel} · nowych materiałów: {nowych} · pozycji: {pozycji} · faktów na osi: {faktow}"
+        "szczegolyPrzebiegu": "źródeł: {zrodel} · nowych materiałów: {nowych} · pozycji: {pozycji} · faktów na osi: {faktow}",
+        "doDoczytania": "Do doczytania",
+        "doczytaniaWlacz": "Pokaż tylko wiadomości odłożone do doczytania",
+        "doczytaniaWylacz": "Pokaż wszystkie wiadomości"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
