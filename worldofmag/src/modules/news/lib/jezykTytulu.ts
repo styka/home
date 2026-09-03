@@ -38,12 +38,15 @@ const OBCE_SLOWA_FUNKCYJNE = new Set([
   "el", "los", "las", "una", "del", "por", "para", "con", "más", "está",
 ]);
 
-/** Podział na wyrazy bez `\b`: wszystko, co nie jest literą (Unicode), tnie. */
+/**
+ * Podział na wyrazy bez `\b`: wszystko, co nie jest literą (Unicode), tnie.
+ * `new RegExp(...)` zamiast literału, bo `\p{L}` w literale wymaga celu ES6+ w tsconfig
+ * (ten sam zabieg co `granicePolskie` w `lib/ai/granice.ts`).
+ */
+const NIE_LITERY = new RegExp("[^\\p{L}]+", "u");
+
 function wyrazy(tekst: string): string[] {
-  return tekst
-    .toLowerCase()
-    .split(/[^\p{L}]+/u)
-    .filter(Boolean);
+  return tekst.toLowerCase().split(NIE_LITERY).filter(Boolean);
 }
 
 /**

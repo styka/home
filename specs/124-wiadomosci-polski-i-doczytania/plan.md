@@ -81,8 +81,10 @@ Plik: `src/modules/news/actions/news.ts` (konwencja modułu po 046 — akcje w m
   tytuły dzieł i utrwalone terminy branżowe zostaw w oryginale" (AC-1/AC-2 — wyjątek jest częścią
   kryterium). Liczniki wyniku przebiegu (`NewsRefreshResult`) dostają pole `repaired`
   (naprawione tytuły/streszczenia) — trafia do `NewsRefreshRun` przez istniejące `recordRun`?
-  **Nie** — `NewsRefreshRun` ma stały zestaw kolumn; nie ruszamy schematu kroniki, `repaired`
-  doliczamy do `summarized` i logujemy osobno przez `logEvent` (C-53: schemat kroniki bez migracji).
+  **Nie** — `NewsRefreshRun` ma stały zestaw kolumn; nie ruszamy schematu kroniki. *(Korekta z
+  implementacji, C-54: do `summarized` doliczają się WYŁĄCZNIE ponowione streszczenia z 3b — one
+  faktycznie są streszczeniami; dotłumaczone tytuły z 3c nie są i idą tylko do `logEvent`, żeby
+  licznik kroniki nie kłamał.)*
 
 ### Heurystyka języka (`src/modules/news/lib/jezykTytulu.ts` — nowy)
 

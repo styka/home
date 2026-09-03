@@ -32,6 +32,7 @@ import {
   poziomStreszczenia,
   LIMIT_MATERIALU_WSAD,
 } from "../lib/dlugoscStreszczenia";
+import { tytulWygladaNaObcy } from "../lib/jezykTytulu";
 
 /** Okno pierwszego przebiegu, gdy nigdy jeszcze nie pobieraliśmy puli. */
 const FIRST_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -41,6 +42,15 @@ const MAX_ITEMS_PER_SOURCE = 40;
 const CLASSIFY_BATCH = 40;
 /** Ile świeżych artykułów z puli w ogóle rozważamy w jednym przebiegu. */
 const MAX_POOL_PER_RUN = 120;
+/**
+ * 124: ile ZASTANYCH pozycji naprawiamy w jednym przebiegu (osobno: ponowienia streszczeń
+ * i dotłumaczenia tytułów). Górna granica kosztu naprawy — zbiór i tak maleje, bo pozycje
+ * wypadają przez „przeczytane", ale bez limitu pierwszy przebieg po wdrożeniu zapłaciłby
+ * za cały backlog naraz.
+ */
+const NAPRAWA_LIMIT = 40;
+/** 124: ile tytułów jedzie w jednym wywołaniu dotłumaczenia. */
+const TITLE_BATCH = 20;
 
 export interface NewsRefreshPayload {
   /** Zignoruj próg czasu i pobierz pełne okno 24 h (przycisk „Odśwież mimo wszystko"). */
@@ -507,7 +517,9 @@ async function summarizeItems(
         `${instrukcjaDlugosci(poziom)}\n\nMATERIAŁY:\n${blocks}\n\n` +
           `Zwróć JSON: {"summaries":[{"index":0,"title":"...","summary":"..."}]} dla KAŻDEGO materiału.\n` +
           `Pole "title" to TYTUŁ PO POLSKU: przetłumacz go, a jeśli już jest po polsku — przepisz bez zmian. ` +
-          `Nie dopisuj do tytułu niczego, czego nie ma w oryginale, i nie zmieniaj jego sensu.`,
+          `Nie dopisuj do tytułu niczego, czego nie ma w oryginale, i nie zmieniaj jego sensu. ` +
+          // 124 (AC-1/AC-2): wyjątek jest częścią kryterium — „po polsku" nie znaczy „tłumacz nazwy własne".
+          `Nazwy własne, tytuły dzieł i utrwalone terminy branżowe zostaw w oryginale.`,
         2000,
         sink,
         "streszczenia"
@@ -568,6 +580,107 @@ async function summarizeItems(
   }
 
   return done;
+}
+
+// ─── Etapy 3b/3c: naprawa zastanych pozycji (124) ───────────────────────────
+//
+// Tłumaczenie tytułu (084) i streszczenie działały wyłącznie dla pozycji NOWYCH w danym przebiegu
+// (`newItemIds`) — pozycja, której partia padła albo której model pominął pole `title`, zostawała
+// z obcym tytułem NA ZAWSZE, bo żaden następny przebieg jej nie dotykał. To jest zgłoszenie
+// właściciela („The economics of agent scale…" na liście). Oba etapy są ograniczone
+// `NAPRAWA_LIMIT` na przebieg i dotyczą tylko `PENDING` — zbiór maleje przez odhaczanie.
+
+/**
+ * Etap 3b: ponowienie streszczeń dla pozycji z `summaryFailed` — TĄ SAMĄ maszynerią partii,
+ * która streszcza nowe pozycje (tłumaczy tytuł i streszczenie razem, ustawia `summaryFailed`
+ * zgodnie z wynikiem). Zero nowej ścieżki zapisu.
+ */
+async function ponowNieudaneStreszczenia(
+  ownerId: string,
+  newItemIds: string[],
+  defaultLength: string,
+  sink: LlmSink,
+  ctx: JobContext
+): Promise<number> {
+  const doPonowienia = await prisma.newsItem.findMany({
+    take: NAPRAWA_LIMIT,
+    where: {
+      status: "PENDING",
+      summaryFailed: true,
+      id: { notIn: newItemIds },
+      topic: await filtrMoichRekordow(ownerId),
+    },
+    orderBy: { publishedAt: "desc" },
+    select: { id: true },
+  });
+  if (doPonowienia.length === 0) return 0;
+
+  ctx.progress?.(`Ponawiam nieudane streszczenia (${doPonowienia.length} poz.)…`);
+  const repaired = await summarizeItems(
+    doPonowienia.map((i) => i.id),
+    defaultLength,
+    sink,
+    ctx
+  );
+  logEvent("info", "news.repair.summaries", { attempted: doPonowienia.length, repaired });
+  return repaired;
+}
+
+const TITLE_SYSTEM =
+  "Tłumaczysz tytuły wiadomości prasowych na język polski. Nazwy własne, tytuły dzieł i utrwalone " +
+  "terminy branżowe zostaw w oryginale. Tytuł już polski przepisz bez zmian. Nie dopisuj niczego " +
+  "i nie zmieniaj sensu. Zwróć WYŁĄCZNIE JSON.";
+
+/**
+ * Etap 3c: dotłumaczenie SAMYCH tytułów dla pozycji z poprawnym streszczeniem, ale obcym tytułem
+ * (model pominął pole `title` w partii albo pozycja jest sprzed 084).
+ *
+ * Osobna, tania ścieżka (`dispatch`) zamiast ponownego `generation`: streszczenie tych pozycji jest
+ * już dobre, więc pełna regeneracja byłaby płaceniem drugi raz za to samo. Kandydatów odsiewa
+ * heurystyka W KODZIE (języka nie widać w SQL); wynik, który nadal wygląda na obcy, ZOSTAJE — bez
+ * pętli w ramach przebiegu (spec 124, ryzyka), następny przebieg spróbuje ponownie.
+ */
+async function dotlumaczTytuly(ownerId: string, sink: LlmSink, ctx: JobContext): Promise<number> {
+  const pending = await prisma.newsItem.findMany({
+    take: SUFIT_LISTY,
+    where: { status: "PENDING", summaryFailed: false, topic: await filtrMoichRekordow(ownerId) },
+    orderBy: { publishedAt: "desc" },
+    select: { id: true, title: true },
+  });
+  const obce = pending.filter((p) => tytulWygladaNaObcy(p.title)).slice(0, NAPRAWA_LIMIT);
+  if (obce.length === 0) return 0;
+
+  let repaired = 0;
+  for (let i = 0; i < obce.length; i += TITLE_BATCH) {
+    const batch = obce.slice(i, i + TITLE_BATCH);
+    ctx.progress?.(`Tłumaczę tytuły (${batch.length} poz.)…`);
+    try {
+      const out = await llmJson<{ titles?: Array<{ index: number; title: string }> }>(
+        "dispatch",
+        TITLE_SYSTEM,
+        `TYTUŁY:\n${batch.map((it, idx) => `${idx}. ${it.title}`).join("\n")}\n\n` +
+          `Zwróć JSON: {"titles":[{"index":0,"title":"..."}]} dla KAŻDEJ pozycji.`,
+        1200,
+        sink,
+        "tytuły"
+      );
+      for (const t of out.titles ?? []) {
+        const item = batch[t.index];
+        const tytul = t.title?.trim();
+        // Pusty wynik NIGDY nie nadpisuje tytułu (wzorzec 084: brak tłumaczenia < oryginał < pustka).
+        if (!item || !tytul || tytul === item.title) continue;
+        await prisma.newsItem.update({ where: { id: item.id }, data: { title: tytul } });
+        repaired++;
+      }
+    } catch (e) {
+      // Awaria partii tytułów nie może przewrócić przebiegu — to naprawa, nie jego rdzeń.
+      logEvent("warn", "news.repair.titles_failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+  logEvent("info", "news.repair.titles", { candidates: obce.length, repaired });
+  return repaired;
 }
 
 // ─── Etap 4: linia czasu ────────────────────────────────────────────────────
@@ -799,6 +912,12 @@ async function runNewsRefresh(
 
     // ── Etap 3: streszczenia ───────────────────────────────────────────────
     base.summarized = await summarizeItems(newItemIds, defaultLength, sink, ctx);
+
+    // ── Etapy 3b/3c: naprawa zastanych (124) ───────────────────────────────
+    // Ponowione streszczenia SĄ streszczeniami, więc doliczają się do `summarized`;
+    // dotłumaczone tytuły nie są — trafiają tylko do logu naprawy.
+    base.summarized += await ponowNieudaneStreszczenia(ownerId, newItemIds, defaultLength, sink, ctx);
+    await dotlumaczTytuly(ownerId, sink, ctx);
 
     // ── Etap 4: linia czasu ────────────────────────────────────────────────
     if (newItemIds.length > 0) {
