@@ -6191,3 +6191,22 @@ normalizuje trim/emoji), a puste `catch {}` dostały widoczny komunikat błędu 
 zapisem — lokalne `reload()`, czyszczenie stanu, nawigacja — i przenieś to razem z nią albo zastąp
 jawnym sygnałem. `revalidatePath` odświeża RSC, nigdy cudzy `useState`; każdy komponent kliencki
 trzymający kopię danych potrzebuje własnego kanału inwalidacji.
+
+## 2026-09-03 — Puste 200 z YouTube udawało „film bez napisów", a stan „niedostepna" nie znał ponowienia
+**Problem:** Moduł YouTube raportował „brak transkrypcji" nawet dla filmów, które napisy mają
+(zgłoszenie właściciela z `/youtube`). Dwie nakładające się przyczyny: (1) adresy ścieżek napisów
+wycinane z HTML strony filmu wymagają od ~2025 tokenu POT („proof of origin") — bez niego YouTube
+odpowiada **HTTP 200 z pustym ciałem**, więc `tekstZNapisow("")` dawało pusty tekst i cały łańcuch
+kończył się `null`, nieodróżnialnie od filmu bez napisów; (2) stan `transkrypcjaStan: "niedostepna"`
+był terminalny — etap odświeżania pobiera wyłącznie `"oczekuje"`, więc każda ofiara usterki zostawała
+„bez transkrypcji" NA ZAWSZE, nawet po naprawie kodu.
+**Rozwiązanie:** Pobranie jest łańcuchem trzech niezależnych dróg (strona → `youtubei/v1/player`
+jako klient ANDROID, którego adresy napisów nie wymagają POT → `youtubei/v1/get_transcript`, czyli
+endpoint przycisku „Wyświetl transkrypcję"); pusty tekst na dowolnym etapie spuszcza łańcuch niżej
+zamiast kończyć całość. Wynik niesie `zrodlo`, zliczane w logu `youtube.transkrypcje.skutecznosc` —
+wyzerowanie jednej drogi będzie widoczne zanim zgłosi je użytkownik. Migracja danych 0289 zawraca
+jednorazowo wszystkie „niedostepna" do „oczekuje" (sączą się przez limit 25/przebieg).
+**Lekcja:** Przy scrapingu cudzego serwisu 200 z pustym ciałem to tryb AWARII, nie odpowiedź —
+traktuj „sukces transportu, pusty wynik" jako sygnał do drogi zapasowej i loguj skuteczność per
+droga. I druga: stan błędu bez ścieżki powrotu („niedostepna" bez ponowień) zamienia każdą usterkę
+przejściową w trwałą — naprawa kodu musi wtedy iść w parze z migracją danych zawracającą ofiary.

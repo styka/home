@@ -102,6 +102,10 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
       select: { id: true, videoId: true },
     });
 
+    // 123: pobranie jest łańcuchem trzech dróg (strona → player → panel), więc sama liczba
+    // udanych już nie wystarcza — rozbicie po źródle mówi, która droga niesie ruch, a jej
+    // wyzerowanie jest pierwszym sygnałem kolejnej zmiany po stronie YouTube.
+    const zrodla: Record<string, number> = {};
     for (let i = 0; i < doPobrania.length; i++) {
       const film = doPobrania[i];
       ctx.progress?.(`Pobieram transkrypcje (${i + 1}/${doPobrania.length})…`);
@@ -113,7 +117,10 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
           ? { transkrypcja: t.tekst, transkrypcjaJezyk: t.jezyk, transkrypcjaStan: "jest" }
           : { transkrypcjaStan: "niedostepna" },
       });
-      if (t) wynik.transkrypcji++;
+      if (t) {
+        wynik.transkrypcji++;
+        zrodla[t.zrodlo] = (zrodla[t.zrodlo] ?? 0) + 1;
+      }
     }
 
     // **Odsetek udanych pobrań jest tu po to, żeby dało się ocenić, czy wariant lekki wystarcza.**
@@ -124,6 +131,7 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
         probowano: wynik.transkrypcjiProbowano,
         udane: wynik.transkrypcji,
         odsetek: Math.round((wynik.transkrypcji / wynik.transkrypcjiProbowano) * 100),
+        zrodla,
       });
     }
   } catch (e) {

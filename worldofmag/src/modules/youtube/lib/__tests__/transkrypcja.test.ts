@@ -2,8 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   sciezkiNapisowZHtml,
+  sciezkiNapisowZPlayerResponse,
   wybierzSciezke,
   tekstZNapisow,
+  tekstZPanelu,
+  paramsPanelu,
   pobierzTranskrypcje,
 } from "../transkrypcja";
 
@@ -109,4 +112,133 @@ test("każde niepowodzenie kończy się wartością null — NIGDY wyjątkiem", 
     null,
     "pusta transkrypcja to brak transkrypcji, a nie film z pustym tekstem"
   );
+});
+
+/**
+ * 123 — próbki dróg `player` i `panel`. Droga `strona` przestała wystarczać (adresy napisów z
+ * webowej odpowiedzi odtwarzacza wymagają tokenu POT i zwracają 200 z pustym ciałem), więc
+ * pobranie jest łańcuchem — te testy przypinają kształty odpowiedzi obu dróg zapasowych oraz
+ * samo spadanie łańcucha w dół.
+ */
+
+const PLAYER_RESPONSE = JSON.stringify({
+  playabilityStatus: { status: "OK" },
+  captions: {
+    playerCaptionsTracklistRenderer: {
+      captionTracks: [
+        { baseUrl: "https://yt.example/timedtext?v=abc&lang=en&kind=asr", languageCode: "en", kind: "asr" },
+        { baseUrl: "https://yt.example/timedtext?v=abc&lang=pl", languageCode: "pl" },
+      ],
+    },
+  },
+});
+
+const PANEL_RESPONSE = JSON.stringify({
+  actions: [
+    {
+      updateEngagementPanelAction: {
+        content: {
+          transcriptRenderer: {
+            content: {
+              transcriptSearchPanelRenderer: {
+                body: {
+                  transcriptSegmentListRenderer: {
+                    initialSegments: [
+                      { transcriptSectionHeaderRenderer: { snippet: { runs: [{ text: "Wstęp" }] } } },
+                      { transcriptSegmentRenderer: { snippet: { runs: [{ text: "Dzień " }, { text: "dobry" }] } } },
+                      { transcriptSegmentRenderer: { snippet: { runs: [{ text: "to jest test" }] } } },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  ],
+});
+
+test("ścieżki napisów wycinają się z odpowiedzi odtwarzacza (droga player)", () => {
+  const s = sciezkiNapisowZPlayerResponse(PLAYER_RESPONSE);
+  assert.equal(s.length, 2);
+  assert.equal(s[0].jezyk, "en");
+  assert.equal(s[0].automatyczne, true);
+  assert.equal(s[1].jezyk, "pl");
+  assert.equal(s[1].automatyczne, false);
+  assert.equal(wybierzSciezke(s)?.jezyk, "pl", "wybór ścieżki jest wspólny z drogą strony");
+});
+
+test("odpowiedź odtwarzacza bez napisów albo uszkodzona daje pustą listę, nie wyjątek", () => {
+  assert.deepEqual(sciezkiNapisowZPlayerResponse("{}"), []);
+  assert.deepEqual(sciezkiNapisowZPlayerResponse(JSON.stringify({ playabilityStatus: { status: "LOGIN_REQUIRED" } })), []);
+  assert.deepEqual(sciezkiNapisowZPlayerResponse("nie-json"), []);
+  assert.deepEqual(sciezkiNapisowZPlayerResponse(""), []);
+});
+
+test("tekst składa się z odpowiedzi panelu transkrypcji (droga panel)", () => {
+  assert.equal(tekstZPanelu(PANEL_RESPONSE), "Dzień dobry to jest test");
+});
+
+test("panel bez segmentów albo uszkodzony daje pusty tekst, nie wyjątek", () => {
+  assert.equal(tekstZPanelu("{}"), "");
+  assert.equal(tekstZPanelu("nie-json"), "");
+  assert.equal(tekstZPanelu(""), "");
+});
+
+test("parametr panelu to base64 minimalnego protobufa z identyfikatorem filmu", () => {
+  const params = paramsPanelu("jNQXAC9IVRw");
+  const bajty = Buffer.from(params, "base64");
+  assert.equal(bajty[0], 0x0a, "tag pola 1");
+  assert.equal(bajty[1], 11, "długość identyfikatora");
+  assert.equal(bajty.subarray(2).toString("utf8"), "jNQXAC9IVRw");
+  assert.equal(paramsPanelu("jNQXAC9IVRw"), params, "wynik jest stabilny");
+});
+
+test("pusty timedtext (POT) spuszcza łańcuch do drogi player", async () => {
+  const wywolania: string[] = [];
+  const wynik = await pobierzTranskrypcje("abc", async (url, opcje) => {
+    wywolania.push(url);
+    if (url.includes("/watch")) return HTML_Z_NAPISAMI;
+    // Adresy napisów ze STRONY (youtube.com/api/timedtext) — puste 200, jak przy wymogu POT.
+    if (url.includes("youtube.com/api/timedtext")) return "";
+    if (url.includes("youtubei/v1/player")) {
+      const cialo = JSON.parse(opcje?.body ?? "{}") as {
+        videoId?: string;
+        context?: { client?: { clientName?: string } };
+      };
+      assert.equal(cialo.videoId, "abc", "żądanie odtwarzacza niesie identyfikator filmu");
+      assert.equal(cialo.context?.client?.clientName, "ANDROID", "droga player idzie jako klient ANDROID");
+      return PLAYER_RESPONSE;
+    }
+    if (url.includes("yt.example/timedtext")) return "<transcript><text>Treść z playera</text></transcript>";
+    return null;
+  });
+  assert.equal(wynik?.tekst, "Treść z playera");
+  assert.equal(wynik?.jezyk, "pl");
+  assert.equal(wynik?.zrodlo, "player");
+  assert.ok(wywolania.some((u) => u.includes("youtube.com/api/timedtext")), "droga strony była próbowana najpierw");
+});
+
+test("gdy strona i player zawodzą, tekst przynosi panel", async () => {
+  const wynik = await pobierzTranskrypcje("jNQXAC9IVRw", async (url, opcje) => {
+    if (url.includes("/watch")) return "<html></html>"; // strona okrojona — bez captionTracks
+    if (url.includes("youtubei/v1/player")) return "{}"; // odtwarzacz bez napisów
+    if (url.includes("youtubei/v1/get_transcript")) {
+      const cialo = JSON.parse(opcje?.body ?? "{}") as { params?: string };
+      assert.equal(cialo.params, paramsPanelu("jNQXAC9IVRw"), "żądanie panelu niesie zakodowany identyfikator");
+      return PANEL_RESPONSE;
+    }
+    return null;
+  });
+  assert.equal(wynik?.tekst, "Dzień dobry to jest test");
+  assert.equal(wynik?.jezyk, "", "panel nie zdradza języka — kolumna języka jest opcjonalna");
+  assert.equal(wynik?.zrodlo, "panel");
+});
+
+test("droga strony, gdy działa, wygrywa i raportuje swoje źródło", async () => {
+  const wynik = await pobierzTranskrypcje("abc", async (url) =>
+    url.includes("/watch") ? HTML_Z_NAPISAMI : "<transcript><text>Treść filmu</text></transcript>"
+  );
+  assert.equal(wynik?.zrodlo, "strona");
 });
