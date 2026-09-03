@@ -75,6 +75,8 @@ export interface NewsItemDTO {
   imageUrl: string | null;
   publishedAt: string;
   status: ItemStatus;
+  /** 124: „do doczytania" — odłożona jawną decyzją, akcje zbiorcze „przeczytane" ją omijają. */
+  readLater: boolean;
 }
 
 /** 039: pozycja linii czasu tematu — zastąpiła wersjonowaną, narracyjną bazę wiedzy. */
@@ -234,6 +236,7 @@ function toItemDTO(i: NewsItem & { source: NewsSource }): NewsItemDTO {
     imageUrl: i.imageUrl,
     publishedAt: i.publishedAt.toISOString(),
     status: i.status as ItemStatus,
+    readLater: i.readLater,
   };
 }
 
@@ -831,7 +834,28 @@ export async function acknowledgeItem(itemId: string): Promise<void> {
     include: { topic: { select: { workspaceId: true } } },
   });
   if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
-  await prisma.newsItem.update({ where: { id: itemId }, data: { status: "ACKNOWLEDGED" } });
+  // 124 (AC-8): przeczytanie zdejmuje odłożenie — „do doczytania" nie jest wieczne.
+  await prisma.newsItem.update({
+    where: { id: itemId },
+    data: { status: "ACKNOWLEDGED", readLater: false },
+  });
+  revalidatePath("/wiadomosci");
+}
+
+/**
+ * 124: „do doczytania" — tytuł i streszczenie nie wystarczyły, użytkownik chce wrócić do pełnej
+ * treści. Znacznik jest ortogonalny do statusu: pozycja zostaje PENDING (nie znika ze strumienia),
+ * a akcje zbiorcze „przeczytane" ją omijają — jawna decyzja jest silniejsza niż hurtowe sprzątanie.
+ * Guard jak w `acknowledgeItem`: własność pozycji płynie przez temat.
+ */
+export async function setItemReadLater(itemId: string, readLater: boolean): Promise<void> {
+  const user = await requireAuth();
+  const item = await prisma.newsItem.findUnique({
+    where: { id: itemId },
+    include: { topic: { select: { workspaceId: true } } },
+  });
+  if (!item || !(await czyMojRekord(item?.topic, user.id))) throw new Error("Pozycja nie istnieje");
+  await prisma.newsItem.update({ where: { id: itemId }, data: { readLater } });
   revalidatePath("/wiadomosci");
 }
 
@@ -874,7 +898,8 @@ export async function acknowledgeTopicItems(topicId: string): Promise<{ count: n
   const user = await requireAuth();
   await assertTopic(topicId, user.id);
   const r = await prisma.newsItem.updateMany({
-    where: { topicId, status: "PENDING" },
+    // 124 (AC-7): odłożone „do doczytania" NIE podlegają zbiorczemu sprzątaniu.
+    where: { topicId, status: "PENDING", readLater: false },
     data: { status: "ACKNOWLEDGED" },
   });
   revalidatePath("/wiadomosci");
@@ -891,7 +916,8 @@ export async function acknowledgeTopicItems(topicId: string): Promise<{ count: n
 export async function acknowledgeAllItems(): Promise<{ count: number }> {
   const user = await requireAuth();
   const r = await prisma.newsItem.updateMany({
-    where: { status: "PENDING", topic: await filtrMoichRekordow(user.id) },
+    // 124 (AC-7): odłożone „do doczytania" NIE podlegają zbiorczemu sprzątaniu.
+    where: { status: "PENDING", readLater: false, topic: await filtrMoichRekordow(user.id) },
     data: { status: "ACKNOWLEDGED" },
   });
   revalidatePath("/wiadomosci");

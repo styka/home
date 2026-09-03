@@ -1345,6 +1345,11 @@
     "reason": "interactive",
     "status": "excluded"
   },
+  "news:setItemReadLater": {
+    "access": "owner",
+    "reason": "interactive",
+    "status": "excluded"
+  },
   "news:acknowledgeTopicItems": {
     "access": "owner",
     "reason": "interactive",
