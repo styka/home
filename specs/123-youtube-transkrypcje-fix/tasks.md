@@ -1,7 +1,7 @@
 # Zadania: Transkrypcje YouTube — naprawa pobierania
 
 - **Plan:** ./plan.md (123-youtube-transkrypcje-fix)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-09-03
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -44,10 +44,10 @@
   konsumentów wykonuje `/verify` przy AC-7.
 
 ## Faza 4 — Bramki i domknięcie
-- [ ] **T-6** — Pełna weryfikacja lokalna: `npm run test:unit`, `next lint --dir src`,
+- [x] **T-6** — Pełna weryfikacja lokalna: `npm run test:unit`, `next lint --dir src`,
   build do `next build` włącznie na lokalnym Postgresie (C-13 — bez `migrate.js` na prod). Gotowe,
   gdy wszystko zielone.
-- [ ] **T-7** — Mapowanie AC → wynik (input do `/verify`); aktualizacja statusów w artefaktach.
+- [x] **T-7** — Mapowanie AC → wynik (input do `/verify`); aktualizacja statusów w artefaktach.
 - [x] **T-8** — Wpis do `doświadczenia.md` (C-51): przyczyna (POT na timedtext, pusty 200 ≠ brak
   napisów, „niedostepna" bez ponawiania utrwala usterkę) + commit razem z fixem.
 
