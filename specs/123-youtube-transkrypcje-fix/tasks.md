@@ -29,7 +29,9 @@
   Gotowe, gdy łańcuch działa na wstrzykniętym fetcherze (sprawdzone testem z T-5).
 - [x] **T-4** `[P]` — `jobs/youtubeRefresh.ts`: w istniejącym logu
   `youtube.transkrypcje.skutecznosc` dodaj rozbicie zliczeń po `zrodlo` (AC-6). Gotowe, gdy log
-  emituje pola `probowano/udane/odsetek/zrodla` i `tsc` przechodzi.
+  emituje pola `probowano/udane/odsetek` + płaskie `zrodloStrona/zrodloPlayer/zrodloPanel`
+  (korekta z review: `oczysc` spłaszcza obiekty, więc zagnieżdżone `zrodla` gubiłoby liczby —
+  ślad C-54) i `tsc` przechodzi.
 
 ## Faza 2 — Testy jednostkowe (próbki obecnych odpowiedzi)
 - [x] **T-5** — `lib/__tests__/transkrypcja.test.ts`: dopisz próbki i testy — (a) player response

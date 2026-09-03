@@ -131,7 +131,11 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
         probowano: wynik.transkrypcjiProbowano,
         udane: wynik.transkrypcji,
         odsetek: Math.round((wynik.transkrypcji / wynik.transkrypcjiProbowano) * 100),
-        zrodla,
+        // Pola płaskie, nie obiekt — `oczysc` w logach strukturalnych spłaszcza obiekty do
+        // "[obiekt N pól]", więc zagnieżdżone liczniki nigdy nie dotarłyby do agregatora.
+        zrodloStrona: zrodla.strona ?? 0,
+        zrodloPlayer: zrodla.player ?? 0,
+        zrodloPanel: zrodla.panel ?? 0,
       });
     }
   } catch (e) {

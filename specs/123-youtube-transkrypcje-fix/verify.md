@@ -39,8 +39,10 @@
 - **AC-5 — preferencja pl→en, autorskie>auto: ✅.** `wybierzSciezke` niezmieniona, wspólna dla dróg
   `strona` i `player` (asercja w teście drogi player); istniejące testy preferencji przechodzą.
 - **AC-6 — log skuteczności: ✅.** `youtubeRefresh.ts` emituje
-  `youtube.transkrypcje.skutecznosc {probowano, udane, odsetek, zrodla}` — rozbicie po źródle
-  dodane, dotychczasowe pola zachowane.
+  `youtube.transkrypcje.skutecznosc {probowano, udane, odsetek, zrodloStrona, zrodloPlayer,
+  zrodloPanel}` — rozbicie po źródle jako pola płaskie (korekta z review: `oczysc` logów
+  strukturalnych spłaszcza obiekty do „[obiekt N pól]", więc zagnieżdżony rekord zgubiłby liczniki),
+  dotychczasowe pola zachowane.
 - **AC-7 — Notatki/Fiszki korzystają z transkrypcji: ✅ (przegląd kodu).** Jedynym konsumentem
   `pobierzTranskrypcje` jest job; wszyscy pozostali (streszczenie/Q&A w `actions/ai.ts:52,139`,
   zapis do Notatek, „Fiszki z filmu") czytają kolumnę `transkrypcja` — dostaną dane bez żadnych
