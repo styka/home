@@ -113,12 +113,17 @@ test("[124-AC5..AC8] odlozenie, zawezenie, odpornosc na oznacz-wszystkie, zdjeci
   await expect(karta(page, POZYCJA_ODKLADANA)).toHaveCount(1);
   await expect(karta(page, POZYCJA_ZWYKLA)).toHaveCount(0);
 
-  // AC-7: „oznacz wszystkie" nie zabiera odłożonych (okno potwierdzenia jest NEUTRALNE — C-34).
+  // AC-7: „oznacz wszystkie" nie zabiera odłożonych. Zawężenie schodzi PRZED akcją — w widoku
+  // samych odłożonych przycisk jest słusznie wyłączony (nie miałby czego oznaczyć), więc masową
+  // akcję wykonujemy na pełnej liście: zwykła pozycja znika, odłożona zostaje.
+  await filtr.click();
+  await expect(karta(page, POZYCJA_ZWYKLA)).toHaveCount(1);
   await page.getByRole("button", { name: "Oznacz wszystkie" }).click();
   await page.getByRole("button", { name: "Potwierdź" }).click();
-  await expect(karta(page, POZYCJA_ODKLADANA)).toHaveCount(1, { timeout: 15_000 });
+  await expect(karta(page, POZYCJA_ZWYKLA)).toHaveCount(0, { timeout: 15_000 });
+  await expect(karta(page, POZYCJA_ODKLADANA)).toHaveCount(1);
 
-  // AC-8: pojedyncze „Przeczytane" na odłożonej pozycji zdejmuje odłożenie — znika z zawężenia.
+  // AC-8: pojedyncze „Przeczytane" na odłożonej pozycji zdejmuje odłożenie — znika z listy.
   await karta(page, POZYCJA_ODKLADANA).getByRole("button", { name: "Przeczytane" }).click();
   await expect(karta(page, POZYCJA_ODKLADANA)).toHaveCount(0, { timeout: 15_000 });
   await expect(przyciskFiltra(page)).toContainText("0");

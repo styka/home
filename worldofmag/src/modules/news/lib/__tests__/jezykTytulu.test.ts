@@ -41,6 +41,11 @@ test("pusty i biały tytuł nie jest oznaczany", () => {
   assert.equal(tytulWygladaNaObcy("   "), false);
 });
 
+test("polskie homografy (to, by, los, las, para) nie liczą się jako obce", () => {
+  // Bez diakrytyków i z trzema słowami, które wyglądają jak hiszpańskie/angielskie — a są polskie.
+  assert.equal(tytulWygladaNaObcy("Los lasu to temat na lata: para ministrow o planach"), false);
+});
+
 test("dwa różne obce słowa muszą być OSOBNYMI wyrazami, nie fragmentami", () => {
   // „theatre" zawiera „the", „android" zawiera „and" — podział na wyrazy nie może ich łapać.
   assert.equal(tytulWygladaNaObcy("Theatre android premiera w Warszawie"), false);

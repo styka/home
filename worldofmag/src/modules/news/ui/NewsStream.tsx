@@ -144,6 +144,12 @@ export function NewsStream({
   );
 
   const totalItems = topics.reduce((n, t) => n + t.items.length, 0);
+  /**
+   * 124 (AC-7): „Oznacz wszystkie" OMIJA pozycje odłożone „do doczytania", więc okno potwierdzenia
+   * musi liczyć to, co faktycznie zniknie — liczba z `totalItems` obiecywałaby zdjęcie także
+   * odłożonych. Gdy w widoku zostały same odłożone, przycisk jest wyłączony: akcja nic by nie zrobiła.
+   */
+  const doOznaczenia = topics.reduce((n, t) => n + t.items.filter((i) => !i.readLater).length, 0);
 
   // ── Lektor ────────────────────────────────────────────────────────────────
   const readerBlocks = useMemo<ReaderBlock[]>(() => {
@@ -247,7 +253,7 @@ export function NewsStream({
      */
     const potwierdzone = await confirmDialog({
       title: t("oznaczycWszystkieTytul"),
-      description: t("oznaczycWszystkieOpis", { liczba: totalItems }),
+      description: t("oznaczycWszystkieOpis", { liczba: doOznaczenia }),
     });
     if (!potwierdzone) return;
     setBusyAll(true);
@@ -325,7 +331,7 @@ export function NewsStream({
           <span aria-hidden className="h-5 w-px shrink-0 bg-[var(--border)]" />
           <button
             onClick={markAll}
-            disabled={busyAll || totalItems === 0}
+            disabled={busyAll || doOznaczenia === 0}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
           >
             {busyAll ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
