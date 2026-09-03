@@ -17,6 +17,14 @@ const TEMAT = "124 doczytania test";
 const POZYCJA_ODKLADANA = "Pozycja do odłożenia 124";
 const POZYCJA_ZWYKLA = "Pozycja zwykła 124";
 
+/**
+ * SERIAL, bo scenariusze dzielą jeden zestaw danych i mutują go po kolei — a przy `fullyParallel`
+ * testy jednego pliku idą do RÓŻNYCH workerów, z których każdy odpala własne `beforeAll`.
+ * Pierwszy przebieg pokazał to wprost: dwa sejdy naraz i `Unique constraint failed` na
+ * (`workspaceId`,`key`) źródła.
+ */
+test.describe.configure({ mode: "serial" });
+
 async function przestrzenAdmina(): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { email: E2E_ADMIN.email } });
   const ws = await prisma.workspace.findFirst({ where: { personalUserId: user.id } });
@@ -30,17 +38,18 @@ test.beforeAll(async () => {
   const stary = await prisma.newsTopic.findFirst({ where: { workspaceId, title: TEMAT } });
   if (stary) await prisma.newsTopic.delete({ where: { id: stary.id } });
 
-  const zrodlo =
-    (await prisma.newsSource.findFirst({ where: { workspaceId, key: "e2e-124" } })) ??
-    (await prisma.newsSource.create({
-      data: {
-        key: "e2e-124",
-        name: "Źródło 124",
-        rssUrl: "https://example.com/rss-124",
-        homepageUrl: "https://example.com",
-        workspaceId,
-      },
-    }));
+  // Upsert na unikacie (workspaceId, key) — odporny na powtórne uruchomienia suity.
+  const zrodlo = await prisma.newsSource.upsert({
+    where: { workspaceId_key: { workspaceId, key: "e2e-124" } },
+    create: {
+      key: "e2e-124",
+      name: "Źródło 124",
+      rssUrl: "https://example.com/rss-124",
+      homepageUrl: "https://example.com",
+      workspaceId,
+    },
+    update: {},
+  });
 
   const temat = await prisma.newsTopic.create({
     data: { title: TEMAT, semanticFilter: TEMAT, workspaceId },
@@ -69,11 +78,11 @@ test.beforeAll(async () => {
   });
 });
 
-async function otworz(page: import("@playwright/test").Page) {
+async function otworz(page: import("@playwright/test").Page, tytul: string) {
   await page.goto("/wiadomosci");
   await page.waitForLoadState("load").catch(() => {});
   // Strumień ładuje się akcją po stronie klienta — czekamy na TREŚĆ, nie na czas.
-  await expect(page.getByText(POZYCJA_ODKLADANA)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(tytul)).toBeVisible({ timeout: 20_000 });
 }
 
 function karta(page: import("@playwright/test").Page, tytul: string) {
@@ -87,7 +96,7 @@ function przyciskFiltra(page: import("@playwright/test").Page) {
 test("[124-AC5..AC8] odlozenie, zawezenie, odpornosc na oznacz-wszystkie, zdjecie przez Przeczytane", async ({
   page,
 }) => {
-  await otworz(page);
+  await otworz(page, POZYCJA_ODKLADANA);
 
   // AC-5: jeden gest odkłada; ten sam przycisk pokazuje stan i cofa.
   const odkladana = karta(page, POZYCJA_ODKLADANA);
@@ -135,7 +144,9 @@ test("[124-AC9] telefon 360 px: przełącznik stoi w pasku i strona nie przewija
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 780 });
-  await otworz(page);
+  // W trybie serial pierwszy scenariusz odhaczył już POZYCJĘ ODKŁADANĄ — czekamy na tę,
+  // którą [124-AC10] zostawił jako PENDING + readLater.
+  await otworz(page, POZYCJA_ZWYKLA);
 
   const filtr = przyciskFiltra(page);
   await expect(filtr).toBeVisible();
