@@ -6226,3 +6226,22 @@ ASCII-owego `\b` — lekcja 112). Limit 40/przebieg, tylko `PENDING`, pusty wyni
 **Lekcja:** Reguła stosowana w jednym punkcie rurociągu chroni tylko to, co przez ten punkt
 przepływa. Gdy wynik reguły może przepaść (awaria partii, pominięte pole), potrzebny jest etap
 naprawczy, który obejmuje ZASTANE rekordy — inaczej każdy błąd jednorazowy staje się trwały.
+
+## 2026-09-04 — „Open-Meteo chwilowo nie odpowiada": awaria zewnętrzna bez logu i bez degradacji
+**Problem:** Właściciel zgłosił, że moduł Pogoda pokazuje błąd „serwis nie odpowiada" i pusty ekran.
+W kodzie pogody nic się nie zmieniało od tygodni — winowajcą było samo Open-Meteo, które bywa
+niedostępne per adres IP (limity darmowego tieru liczone na współdzielone IP hostingu — na Renderze
+cudzy ruch potrafi wyczerpać limit „nasz"). Diagnozy nie dało się postawić z aplikacji, bo
+`fetchForecast` łykał każdy błąd (`catch → null`) bez `logEvent` — timeout, 429 i zmiana API
+wyglądały identycznie. A degradacji nie było żadnej: chwilowa czkawka = pusty ekran, choć proces
+chwilę wcześniej miał kompletną prognozę.
+**Rozwiązanie:** (1) `logEvent("warn", "integration.http"/"integration.failed")` z kodem statusu
+w obu ścieżkach awarii — od teraz w logach widać, CZYM jest niedostępność. (2) Pamięć procesu
+z ostatnią udaną prognozą per lokalizacja (6 h, sufit 100 wpisów): przy awarii wraca ona oznaczona
+`stale: true` + `fetchedAt`, a UI pokazuje pasek „pokazuję ostatnią pobraną prognozę (z HH:MM)"
+zamiast błędu. Błąd zostaje wyłącznie na zimny start. Testy z wstrzykniętym `fetchImpl`/`sleep`.
+**Lekcja:** Integracja zewnętrzna, która przy awarii zwraca gołe `null` bez logu, jest
+niediagnozowalna — pierwsze pytanie („co dokładnie odpowiedział dostawca?") nie ma wtedy żadnego
+śladu. Każdy `catch → null` przy wywołaniu zewnętrznym ma logować status/wyjątek przez `logEvent`.
+I druga połowa: gdy dane są prognozą/odczytem świata (nie stanem użytkownika), ostatnia udana
+odpowiedź OZNACZONA jako nieaktualna bije pusty ekran — degradacja zamiast odmowy.

@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { observedWmo, precipKind, wmo } from "./openMeteo"
+import { fetchForecast, observedWmo, precipKind, wmo, wyczyscPamiecPrognoz } from "./openMeteo"
 
 // 044: zgłoszenie właściciela — „mam deszcz, a moduł pogody pokazuje chmurkę i 82%".
 // Błąd tego rodzaju jest CICHY: ikona zawsze wygląda wiarygodnie, więc nieprawdy nie widać
@@ -102,4 +102,84 @@ test("korekta zachowuje porę doby — nocny deszcz nie świeci słońcem", () =
 
 test("brak `isDay` traktujemy jak dzień (prognoza dobowa nie ma pory doby)", () => {
   assert.deepEqual(observedWmo({ code: 0 }), wmo(0, false))
+})
+
+// ─── Degradacja: ostatnia udana prognoza przy awarii Open-Meteo ─────────────
+//
+// Zgłoszenie właściciela (2026-09): „serwis chwilowo nie odpowiada" kończyło się pustym ekranem,
+// choć chwilę wcześniej moduł miał kompletną prognozę. Atrapy `fetchImpl`/`sleep` — logika retry
+// i pamięci musi być sprawdzalna bez sieci i bez realnych timerów.
+
+function odpowiedzOk(temp: number): Response {
+  return new Response(
+    JSON.stringify({
+      latitude: 52,
+      longitude: 21,
+      timezone: "Europe/Warsaw",
+      current: {
+        time: "2026-09-04T10:00",
+        temperature_2m: temp,
+        apparent_temperature: temp - 2,
+        weather_code: 3,
+        wind_speed_10m: 5,
+        is_day: 1,
+        precipitation: 0,
+        rain: 0,
+        showers: 0,
+        snowfall: 0,
+      },
+      hourly: { time: [] },
+      daily: { time: [] },
+    }),
+    { status: 200 }
+  )
+}
+
+const natychmiast = async () => {}
+
+test("udane pobranie niesie fetchedAt i nie jest oznaczone jako stale", async () => {
+  wyczyscPamiecPrognoz()
+  const f = await fetchForecast(52.1, 21.1, { fetchImpl: async () => odpowiedzOk(10), sleep: natychmiast })
+  assert.ok(f, "udane pobranie nie może zwrócić null")
+  assert.equal(f.current?.temp, 10)
+  assert.equal(f.stale, undefined, "świeża prognoza nie jest nieaktualna")
+  assert.ok(f.fetchedAt, "znacznik pobrania musi być ustawiony")
+})
+
+test("awaria sieci po udanym pobraniu → ostatnia prognoza z pamięci, oznaczona stale", async () => {
+  wyczyscPamiecPrognoz()
+  await fetchForecast(52.2, 21.2, { fetchImpl: async () => odpowiedzOk(17), sleep: natychmiast })
+  const f = await fetchForecast(52.2, 21.2, {
+    fetchImpl: async () => {
+      throw new Error("sieć padła")
+    },
+    sleep: natychmiast,
+  })
+  assert.ok(f, "z zapełnioną pamięcią awaria nie może zwrócić null")
+  assert.equal(f.stale, true, "prognoza z pamięci MUSI być oznaczona jako nieaktualna")
+  assert.equal(f.current?.temp, 17, "treść ma pochodzić z ostatniego udanego pobrania")
+  assert.ok(f.fetchedAt, "znacznik mówi, z kiedy jest ta prognoza")
+})
+
+test("status 429 (limit per IP) po udanym pobraniu → też degradacja do pamięci", async () => {
+  wyczyscPamiecPrognoz()
+  await fetchForecast(52.3, 21.3, { fetchImpl: async () => odpowiedzOk(21), sleep: natychmiast })
+  const f = await fetchForecast(52.3, 21.3, {
+    fetchImpl: async () => new Response("Too Many Requests", { status: 429 }),
+    sleep: natychmiast,
+  })
+  assert.ok(f)
+  assert.equal(f.stale, true)
+  assert.equal(f.current?.temp, 21)
+})
+
+test("awaria bez niczego w pamięci → null (zachowanie sprzed zmiany)", async () => {
+  wyczyscPamiecPrognoz()
+  const f = await fetchForecast(52.4, 21.4, {
+    fetchImpl: async () => {
+      throw new Error("sieć padła")
+    },
+    sleep: natychmiast,
+  })
+  assert.equal(f, null)
 })
