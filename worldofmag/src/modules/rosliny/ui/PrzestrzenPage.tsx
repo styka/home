@@ -168,6 +168,8 @@ export function PrzestrzenPage({
     startTransition(async () => {
       if (!(await confirmDialog({ title: t("usunPytanie", { nazwa: przestrzen.name }), destructive: true }))) return;
       await deleteSpace(przestrzen.id);
+      // 125: dialog ustawień zamykamy PRZED nawigacją — inaczej mignąłby nad listą przestrzeni.
+      setUstawienia(false);
       // Po usunięciu nie ma czego pokazywać pod tym adresem — wracamy na listę, zamiast zostawiać
       // widok, który przy odświeżeniu skończy się błędem.
       router.push("/rosliny");
@@ -233,7 +235,9 @@ export function PrzestrzenPage({
         </Link>
       }
       state="ready"
-      settings={{ onClick: () => setUstawienia((v) => !v), active: ustawienia, label: t("ustawienia") }}
+      /* 125 (zgł. 1): wejście zostaje w slocie `settings` (C-33), zmienia się prezentacja —
+         dialog zamyka się przez X/Esc/tło, więc klik zawsze OTWIERA. */
+      settings={{ onClick: () => setUstawienia(true), active: ustawienia, label: t("ustawienia") }}
       actions={
         <>
           <button type="button" style={przycisk} onClick={() => setUdostepnianie(true)}>
@@ -278,38 +282,45 @@ export function PrzestrzenPage({
         />
       )}
 
+      {/* 125 (zgł. 1): ustawienia w DIALOGU — jak „Udostępnij" i formularze z 118. Rozsuwana
+          sekcja na początku treści spychała stronę przy każdym otwarciu; zamknięcie czyści też
+          komunikat zapisu, żeby przy ponownym otwarciu nie wracał stary „zapisano". */}
       {ustawienia && (
-        <section style={sekcja}>
-          <h2 style={naglowekSekcji}>
-            <CloudSun size={13} aria-hidden />
-            {t("lokalizacjaTytul")}
-          </h2>
-          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("lokalizacjaOpis")}</p>
-          {lokalizacje.length === 0 ? (
-            <p style={{ ...drobny, margin: 0 }}>{t("brakLokalizacji")}</p>
-          ) : (
-            <select
-              value={lokalizacja}
-              onChange={(e) => zapiszLokalizacje(e.target.value)}
-              aria-label={t("lokalizacjaEtykieta")}
-              style={{ ...pole, maxWidth: 280 }}
-              disabled={pending}
-            >
-              <option value="">{t("bezLokalizacji")}</option>
-              {lokalizacje.map((l) => (
-                <option key={l.id} value={l.id}>{l.label}</option>
-              ))}
-            </select>
-          )}
-          {komunikat && <p style={{ ...drobny, margin: "8px 0 0", color: "var(--accent-green)" }}>{komunikat}</p>}
+        <Modal title={t("ustawienia")} onClose={() => { setUstawienia(false); setKomunikat(null); }}>
+          <div>
+            <h2 style={naglowekSekcji}>
+              <CloudSun size={13} aria-hidden />
+              {t("lokalizacjaTytul")}
+            </h2>
+            <p style={{ ...drobny, margin: "0 0 10px" }}>{t("lokalizacjaOpis")}</p>
+            {lokalizacje.length === 0 ? (
+              <p style={{ ...drobny, margin: 0 }}>{t("brakLokalizacji")}</p>
+            ) : (
+              <select
+                value={lokalizacja}
+                onChange={(e) => zapiszLokalizacje(e.target.value)}
+                aria-label={t("lokalizacjaEtykieta")}
+                style={{ ...pole, maxWidth: 280 }}
+                disabled={pending}
+              >
+                <option value="">{t("bezLokalizacji")}</option>
+                {lokalizacje.map((l) => (
+                  <option key={l.id} value={l.id}>{l.label}</option>
+                ))}
+              </select>
+            )}
+            {komunikat && <p style={{ ...drobny, margin: "8px 0 0", color: "var(--accent-green)" }}>{komunikat}</p>}
+          </div>
 
-          <h2 style={{ ...naglowekSekcji, marginTop: 18 }}>{t("usunTytul")}</h2>
-          <p style={{ ...drobny, margin: "0 0 10px" }}>{t("usunOpis")}</p>
-          <button type="button" style={przycisk} onClick={usunPrzestrzen} disabled={pending}>
-            <Trash2 size={13} aria-hidden />
-            {t("usunPrzestrzen")}
-          </button>
-        </section>
+          <div>
+            <h2 style={naglowekSekcji}>{t("usunTytul")}</h2>
+            <p style={{ ...drobny, margin: "0 0 10px" }}>{t("usunOpis")}</p>
+            <button type="button" style={przycisk} onClick={usunPrzestrzen} disabled={pending}>
+              <Trash2 size={13} aria-hidden />
+              {t("usunPrzestrzen")}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* 118 (zgł. 4): oba formularze w MODALU — jak „Udostępnij". Rozsuwana sekcja spychała

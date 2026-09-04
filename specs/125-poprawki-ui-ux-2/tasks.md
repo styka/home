@@ -14,18 +14,18 @@
 
 ## Faza 0 — Poprawki punktowe (bez zależności)
 
-- [ ] **T-1** `[P]` — **Zgł. 4:** `src/components/assistant/AICommandSheet.tsx` — trzy miejsca:
+- [x] **T-1** `[P]` — **Zgł. 4:** `src/components/assistant/AICommandSheet.tsx` — trzy miejsca:
   (1) markdown link trybu robaczka (~1481) → `?task=${res.taskId}`; (2) stan `reportDone`
   (~547) + setter (~1162) poszerzone o `taskId`; (3) przycisk „Otwórz w zadaniach" (~2094) →
   `goTo(…?task=…)`. Potem grep kontrolny `` /tasks/${…projectId} `` w `src` — zero miejsc bez
   `?task=` (poza świadomymi linkami do listy). Gotowe, gdy: `tsc` czysty i grep czysty (AC-4).
-- [ ] **T-2** `[P]` — **Zgł. 2:** `src/modules/tasks/ui/TasksPage.tsx`, wywołanie
+- [x] **T-2** `[P]` — **Zgł. 2:** `src/modules/tasks/ui/TasksPage.tsx`, wywołanie
   `ModalDodaniaZadania` (~908): dodać `pokazWyborProjektu`, `projekty={allProjects}`,
   `domyslnyProjektId={viewMode === "project" ? projectId : null}`; `onCreated` przyjmuje
   (i ignoruje) drugi argument. Gotowe, gdy: dialog z widoku projektu ma select z preselekcją,
   z Dziś/zestawu — bez preselekcji; po dodaniu do innego projektu panel podglądu otwiera się
   w bieżącym widoku (AC-2).
-- [ ] **T-3** `[P]` — **Zgł. 1:** `src/modules/rosliny/ui/PrzestrzenPage.tsx` — blok
+- [x] **T-3** `[P]` — **Zgł. 1:** `src/modules/rosliny/ui/PrzestrzenPage.tsx` — blok
   `{ustawienia && <section>}` → `Modal` (title = istniejący klucz `ustawienia`, onClose czyści
   też `komunikat`); `usunPrzestrzen()` zamyka dialog przed nawigacją; slot `settings` otwiera
   na `true`. Gotowe, gdy: AC-1 (dialog nad treścią, zawartość kompletna, usunięcie działa,

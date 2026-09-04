@@ -905,9 +905,17 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
       {/* 118 (zgł. 2): formularz dodawania tylko na żądanie — przycisk w pasku akcji albo `a`/`n`.
           Po utworzeniu ta sama ścieżka co przy starym formularzu: panel szczegółów nowego zadania. */}
+      {/* 125 (zgł. 2): pole projektu jest widoczne ZAWSZE — w widoku projektu wstępnie ustawione
+          na ten projekt, w widokach bez kontekstu jednego projektu (Dziś/Nadchodzące/Zaległe/
+          Wszystkie/zestawy) bez preselekcji (puste = Skrzynka, jak na stronie modułu). Po dodaniu
+          do INNEGO projektu zostajemy w bieżącym widoku — panel podglądu otwiera `justCreated`,
+          który obsługuje zadanie spoza przefiltrowanej listy (decyzja właściciela). */}
       {dodawanie && (
         <ModalDodaniaZadania
           projectId={addProjectId}
+          pokazWyborProjektu
+          projekty={allProjects}
+          domyslnyProjektId={viewMode === "project" ? projectId : null}
           onClose={() => setDodawanie(false)}
           onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
         />
