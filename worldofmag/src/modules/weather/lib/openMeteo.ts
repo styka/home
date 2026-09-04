@@ -1,6 +1,7 @@
 // Klient Open-Meteo (darmowy, bez klucza API). Pobiera prognozę godzinową i dzienną
 // oraz geokoduje nazwy miejscowości. Mapowanie kodów pogody WMO → polski opis + emoji.
 import { resilientFetch } from "@/lib/integrations/resilientFetch"; // Z-157: timeout+retry+degradacja
+import { logEvent } from "@/platform/observability/log";
 
 export interface HourPoint {
   time: string; // ISO local
@@ -67,6 +68,13 @@ export interface Forecast {
   current: CurrentPoint | null;
   hourly: HourPoint[];
   daily: DayPoint[];
+  /** Chwila udanego pobrania z API (ISO UTC). Przy odpowiedzi z pamięci — chwila TAMTEGO pobrania. */
+  fetchedAt?: string;
+  /**
+   * `true` = Open-Meteo nie odpowiedziało, a to jest ostatnia udana prognoza z pamięci procesu.
+   * Pole jest informacją dla UI (pasek „prognoza sprzed…"), nigdy wyzwalaczem ponownego pobrania.
+   */
+  stale?: boolean;
 }
 
 export interface GeoResult {
@@ -302,7 +310,57 @@ function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-export async function fetchForecast(lat: number, lon: number): Promise<Forecast | null> {
+// ─── Degradacja: ostatnia udana prognoza ───────────────────────────────────
+//
+// Zgłoszenie właściciela (2026-09): „serwis Open-Meteo chwilowo nie odpowiada" — moduł pokazywał
+// błąd i PUSTY ekran, choć chwilę wcześniej miał kompletną prognozę. Open-Meteo bywa niedostępne
+// per adres IP (limity darmowego tieru liczone na współdzielone IP hostingu), więc awaria potrafi
+// trwać minuty i nie zależy od nas. Prognoza sprzed godziny jest wtedy nieporównanie lepsza niż
+// brak prognozy — trzymamy więc ostatnią udaną odpowiedź w pamięci procesu i przy awarii oddajemy
+// ją OZNACZONĄ jako nieaktualną. Pamięć procesu wystarcza: to degradacja, nie poprawność — po
+// restarcie instancji po prostu wraca dawne zachowanie (komunikat błędu).
+
+/** Jak stara może być prognoza łatająca awarię. 6 h — dalej opis dnia wciąż jest prawdziwy. */
+const PAMIEC_PROGNOZ_MAX_MS = 6 * 60 * 60 * 1000;
+/** Sufit wpisów — lokalizacji jest niewiele, ale mapa nie może rosnąć bez końca. */
+const PAMIEC_PROGNOZ_SUFIT = 100;
+
+const pamiecPrognoz = new Map<string, { f: Forecast; at: number }>();
+
+const kluczPrognozy = (lat: number, lon: number) => `${lat.toFixed(3)},${lon.toFixed(3)}`;
+
+/** Wyłącznie do testów: czyści pamięć ostatnich prognoz. */
+export function wyczyscPamiecPrognoz(): void {
+  pamiecPrognoz.clear();
+}
+
+function zapamietajPrognoze(lat: number, lon: number, f: Forecast): void {
+  const key = kluczPrognozy(lat, lon);
+  if (!pamiecPrognoz.has(key) && pamiecPrognoz.size >= PAMIEC_PROGNOZ_SUFIT) {
+    // Map trzyma kolejność wstawień — pierwszy klucz to najstarszy wpis.
+    const najstarszy = pamiecPrognoz.keys().next().value;
+    if (najstarszy !== undefined) pamiecPrognoz.delete(najstarszy);
+  }
+  pamiecPrognoz.set(key, { f, at: Date.now() });
+}
+
+function prognozaZPamieci(lat: number, lon: number): Forecast | null {
+  const wpis = pamiecPrognoz.get(kluczPrognozy(lat, lon));
+  if (!wpis || Date.now() - wpis.at > PAMIEC_PROGNOZ_MAX_MS) return null;
+  return { ...wpis.f, stale: true };
+}
+
+/** Wstrzykiwane atrapy do testów — logika degradacji musi być sprawdzalna bez sieci i timerów. */
+export interface FetchForecastOpts {
+  fetchImpl?: typeof fetch;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+export async function fetchForecast(
+  lat: number,
+  lon: number,
+  testOpts?: FetchForecastOpts
+): Promise<Forecast | null> {
   try {
     const params = new URLSearchParams({
       latitude: String(lat),
@@ -324,8 +382,14 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
     const res = await resilientFetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
       cache: "no-store",
       timeoutMs: 12_000,
+      ...testOpts,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // Status w logu jest jedyną szansą odróżnienia limitu (429) od awarii (5xx) — bez niego
+      // każda niedostępność Open-Meteo wygląda identycznie i nie da się jej zdiagnozować.
+      logEvent("warn", "integration.http", { url: "open-meteo.forecast", status: res.status });
+      return prognozaZPamieci(lat, lon);
+    }
     const d = (await res.json()) as any;
 
     const hourly: HourPoint[] = (d.hourly?.time ?? []).map((t: string, i: number) => ({
@@ -352,10 +416,11 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
       uvMax: d.daily.uv_index_max?.[i] ?? 0,
     }));
 
-    return {
+    const forecast: Forecast = {
       latitude: d.latitude,
       longitude: d.longitude,
       timezone: d.timezone ?? "auto",
+      fetchedAt: new Date().toISOString(),
       current: d.current
         ? {
             time: typeof d.current.time === "string" ? d.current.time : "",
@@ -375,7 +440,10 @@ export async function fetchForecast(lat: number, lon: number): Promise<Forecast 
       hourly,
       daily,
     };
-  } catch {
-    return null;
+    zapamietajPrognoze(lat, lon, forecast);
+    return forecast;
+  } catch (e) {
+    logEvent("warn", "integration.failed", { url: "open-meteo.forecast", error: e });
+    return prognozaZPamieci(lat, lon);
   }
 }

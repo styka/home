@@ -166,7 +166,9 @@ export async function deleteLocation(id: string): Promise<void> {
 export async function getWeather(lat: number, lon: number): Promise<Forecast> {
   await requireAuth();
   const f = await fetchForecast(lat, lon);
-  if (!f) throw new Error("Nie udało się pobrać prognozy (Open-Meteo).");
+  // Błąd zostaje tylko na zimny start: przy awarii z zapełnioną pamięcią `fetchForecast` oddaje
+  // ostatnią udaną prognozę oznaczoną `stale` i UI pokazuje pasek zamiast pustego ekranu.
+  if (!f) throw new Error("Serwis pogodowy (Open-Meteo) chwilowo nie odpowiada. Spróbuj ponownie za chwilę.");
   return f;
 }
 

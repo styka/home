@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { CloudSun, MapPin, Plus, Loader2, LocateFixed, Star, Trash2, Map } from "lucide-react";
+import { CloudSun, MapPin, Plus, Loader2, LocateFixed, Star, Trash2, Map, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -146,6 +146,21 @@ export function WeatherPage({
       {forecast && coords && (
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 space-y-5">
+            {/* Degradacja: Open-Meteo nie odpowiedziało, więc serwer oddał ostatnią udaną prognozę.
+                Pasek mówi o tym wprost — stara prognoza bez ostrzeżenia byłaby kłamstwem. */}
+            {forecast.stale && (
+              <div className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                <TriangleAlert size={15} className="shrink-0 text-[var(--accent-amber)]" />
+                <span>
+                  Serwis pogodowy chwilowo nie odpowiada — pokazuję ostatnią pobraną prognozę
+                  {forecast.fetchedAt
+                    ? ` (z ${new Date(forecast.fetchedAt).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })})`
+                    : ""}
+                  .
+                </span>
+              </div>
+            )}
+
             {/* 037: kolejność sekcji wg zgłoszenia właściciela — najpierw pogoda na teraz, potem
                 „Co robić?", a dopiero pod tym najbliższe godziny i prognoza tygodniowa. */}
             <ForecastNow forecast={forecast} />
