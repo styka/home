@@ -6,6 +6,7 @@ import { CheckCheck, Crosshair, Headphones, Loader2, Newspaper } from "lucide-re
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/ui/Toast";
 import { NewsItemCard } from "./NewsItemCard";
+import { WierszTytulu } from "./WierszTytulu";
 import { NewsReader, type ReaderBlock } from "./NewsReader";
 import { primeSpeech } from "@/lib/tts";
 import { SekcjaTematu } from "./sekcjeTematow";
@@ -79,6 +80,8 @@ export function NewsStream({
   onGra,
   wszystkieUkryte = false,
   akcjeTematu,
+  trybTytulow = false,
+  onPrzelaczDoczytanie,
 }: {
   /** Tematy JUŻ przefiltrowane przez pasek nawigacji — widok nie zna reguł filtrowania. */
   topics: StreamTopicDTO[];
@@ -100,6 +103,13 @@ export function NewsStream({
   wszystkieUkryte?: boolean;
   /** Akcje tematu (edycja, usunięcie) wstawiane do przyklejonego nagłówka sekcji. */
   akcjeTematu?: (topicId: string) => ReactNode;
+  /**
+   * 125: widok samych tytułów (triage „do doczytania"). Zmienia WYŁĄCZNIE render pozycji —
+   * sekcje, nawigator, pusty stan i lektor pozostają wspólne, bo oba tryby rysują ten sam zbiór.
+   */
+  trybTytulow?: boolean;
+  /** 125: przełączenie „doczytam" z wiersza tytułu — optymistykę robi właściciel stanu (NewsPage). */
+  onPrzelaczDoczytanie?: (itemId: string, next: boolean) => void;
 }) {
   const t = useTranslations("modules.news.NewsStream");
   const confirmDialog = useConfirm();
@@ -420,9 +430,15 @@ export function NewsStream({
                 {t("brakNowychWiadomosciW")}
               </p>
             ) : (
-              <div className="mt-3 space-y-3">
+              <div className={cn("mt-3", trybTytulow ? "space-y-1" : "space-y-3")}>
                 {topic.items.map((item) => (
                   <div key={item.id} data-news-item={item.id}>
+                    {trybTytulow ? (
+                      <WierszTytulu
+                        item={item}
+                        onPrzelacz={(id, next) => onPrzelaczDoczytanie?.(id, next)}
+                      />
+                    ) : (
                     <NewsItemCard
                       item={zStreszczeniem(item)}
                       onChanged={onChanged}
@@ -433,6 +449,7 @@ export function NewsStream({
                       czytana={reader.kind === "item" && reader.itemId === item.id}
                       onSluchaj={(id) => toggleReader({ kind: "item", itemId: id })}
                     />
+                    )}
                   </div>
                 ))}
               </div>

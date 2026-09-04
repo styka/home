@@ -13,7 +13,7 @@ import {
 import { useViewState } from "@/hooks/useViewState";
 import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
 import { useRouter } from "next/navigation";
-import { Newspaper, RefreshCw, Flame, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical, BookOpen, Minimize2, Bookmark, BookmarkCheck
+import { Newspaper, RefreshCw, Flame, Library, Plus, Loader2, Trash2, Pencil, CalendarClock, MoreVertical, BookOpen, Minimize2, Bookmark, BookmarkCheck, List
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -45,6 +45,7 @@ import {
   type StreamTimelineTopicDTO,
   startNewsRefresh,
   getNewsRefreshState,
+  setItemReadLater,
   createTopic,
   updateTopic,
   deleteTopic,
@@ -134,6 +135,12 @@ export function NewsPage({
        * dawałoby ulubione pokazujące co innego niż w chwili zapisu.
        */
       doczytania: oneOf(["0", "1"] as const, "0"),
+      /**
+       * 125: WIDOK SAMYCH TYTUŁÓW (triage „doczytam") — tryb istniejącego widoku, nie podstrona.
+       * W adresie z tych samych powodów co `czytanie`/`doczytania`; poranny przegląd tytułów da się
+       * zapisać gwiazdką jako ulubiony.
+       */
+      tytuly: oneOf(["0", "1"] as const, "0"),
     }),
     []
   );
@@ -176,6 +183,7 @@ export function NewsPage({
   const wybraneZrodla = viewState.zrodla;
   const trybCzytania = viewState.czytanie === "1";
   const filtrDoczytania = viewState.doczytania === "1";
+  const trybTytulow = viewState.tytuly === "1";
 
   /**
    * 084: NIE MA JUŻ „TEMATU WYBRANEGO" — jest tylko temat CZYTANY.
@@ -335,6 +343,33 @@ export function NewsPage({
     loadStream();
     router.refresh();
   }, [loadStream, router]);
+
+  /**
+   * 125: przełączenie „doczytam" z wiersza tytułu — OPTYMISTYCZNE.
+   *
+   * Triage to seria szybkich dotknięć; pełne przeładowanie strumienia po każdym (ścieżka karty,
+   * `onItemChanged`) robiłoby z przeglądu czekanie. Stan `stream` jest tu jedynym nośnikiem
+   * (licznik, filtr i nawigator liczą z niego), więc przepisanie go od razu aktualizuje wszystko
+   * naraz, a serwer dostaje tę samą akcję co karta w 124. Błąd zapisu wraca do prawdy serwera
+   * (`loadStream`) i mówi o tym wprost — cichy rozjazd stanu z bazą byłby gorszy niż mrugnięcie.
+   */
+  const przelaczDoczytanie = useCallback(
+    (itemId: string, next: boolean) => {
+      setStream((prev) =>
+        prev === null
+          ? prev
+          : prev.map((topic) => ({
+              ...topic,
+              items: topic.items.map((i) => (i.id === itemId ? { ...i, readLater: next } : i)),
+            }))
+      );
+      setItemReadLater(itemId, next).catch((e: any) => {
+        showToast(e?.message ?? t("doczytanieBlad"), "error");
+        loadStream();
+      });
+    },
+    [loadStream, showToast, t]
+  );
 
   // ── Filtrowanie ───────────────────────────────────────────────────────────
   const pasujeZrodlo = useCallback(
@@ -744,6 +779,27 @@ export function NewsPage({
                       onZarzadzaj={() => setView("sources")}
                     />
                     {/**
+                      * 125 (AC-1): WIDOK SAMYCH TYTUŁÓW — przełącznik trybu, wejście i wyjście
+                      * tym samym przyciskiem (wzorzec trybu czytania z 087). Zmienia wyłącznie
+                      * sposób rysowania pozycji; zbiór, nawigator i filtry zostają wspólne.
+                      */}
+                    <button
+                      type="button"
+                      onClick={() => setViewState({ tytuly: trybTytulow ? "0" : "1" })}
+                      aria-pressed={trybTytulow}
+                      title={trybTytulow ? t("tytulyWylacz") : t("tytulyWlacz")}
+                      aria-label={trybTytulow ? t("tytulyWylacz") : t("tytulyWlacz")}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-3 text-xs transition-colors",
+                        trybTytulow
+                          ? "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                          : "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
+                      )}
+                    >
+                      <List size={14} />
+                      <span className="hidden lg:inline">{t("tytuly")}</span>
+                    </button>
+                    {/**
                       * 124 (AC-6, AC-9): zawężenie „do doczytania" — jeden przycisk STAŁEJ
                       * wysokości z licznikiem (wzorzec 083/100). Przy zerze odłożonych widoczny,
                       * ale wyłączony (100: ukrycie zmieniałoby szerokość paska i chowało, że
@@ -753,14 +809,34 @@ export function NewsPage({
                       */}
                     <button
                       type="button"
-                      onClick={() => setViewState({ doczytania: filtrDoczytania ? "0" : "1" })}
+                      /* 125 (AC-4): w trybie tytułów ten przycisk jest PRZEJŚCIEM „przejrzałem,
+                         teraz doczytuję" — jeden gest z triage'u do pełnego widoku samych
+                         odłożonych (zawężenie z 124, z lektorem). Poza trybem tytułów: toggle
+                         zawężenia jak w 124. Jedna kontrolka, jedno znaczenie „pokaż odłożone". */
+                      onClick={() =>
+                        trybTytulow
+                          ? setViewState({ doczytania: "1", tytuly: "0" })
+                          : setViewState({ doczytania: filtrDoczytania ? "0" : "1" })
+                      }
                       /* Recenzja 124: przy bezpośrednim wejściu na oś czasu strumień jeszcze nie
                          jest wczytany — NIEZNANY licznik to nie ZERO, więc przycisk nie może być
                          wtedy wyłączony, a licznika nie pokazujemy zamiast pokazywać fałszywe 0. */
                       disabled={stream !== null && liczbaOdlozonych === 0 && !filtrDoczytania}
                       aria-pressed={filtrDoczytania}
-                      title={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
-                      aria-label={filtrDoczytania ? t("doczytaniaWylacz") : t("doczytaniaWlacz")}
+                      title={
+                        trybTytulow
+                          ? t("doczytaniaPrzejdz")
+                          : filtrDoczytania
+                            ? t("doczytaniaWylacz")
+                            : t("doczytaniaWlacz")
+                      }
+                      aria-label={
+                        trybTytulow
+                          ? t("doczytaniaPrzejdz")
+                          : filtrDoczytania
+                            ? t("doczytaniaWylacz")
+                            : t("doczytaniaWlacz")
+                      }
                       className={cn(
                         "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-3 text-xs transition-colors disabled:opacity-40",
                         filtrDoczytania
@@ -812,6 +888,8 @@ export function NewsPage({
                   onGra={setLektorGra}
                   wszystkieUkryte={wszystkieUkryte}
                   akcjeTematu={akcjeTematu}
+                  trybTytulow={trybTytulow}
+                  onPrzelaczDoczytanie={przelaczDoczytanie}
                 />
               ) : (
                 <NewsTimelineStream
