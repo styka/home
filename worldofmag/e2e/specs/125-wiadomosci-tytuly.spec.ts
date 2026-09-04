@@ -50,6 +50,14 @@ test.beforeAll(async () => {
   const stary = await prisma.newsTopic.findFirst({ where: { workspaceId, title: TEMAT } });
   if (stary) await prisma.newsTopic.delete({ where: { id: stary.id } });
 
+  // Baza e2e jest współdzielona między specami (124 zostawia pozycję PENDING+readLater), a licznik
+  // „Przejdź do odłożonych" jest GLOBALNY dla konta — bez wyzerowania cudzych odłożeń asercje
+  // liczbowe zależałyby od kolejności plików w suicie.
+  await prisma.newsItem.updateMany({
+    where: { readLater: true, topic: { workspaceId } },
+    data: { readLater: false },
+  });
+
   const zrodloA = await zapewnijZrodlo(workspaceId, KLUCZ_A, "Źródło 125A");
   const zrodloB = await zapewnijZrodlo(workspaceId, KLUCZ_B, "Źródło 125B");
 
@@ -109,10 +117,14 @@ test("[125-AC1..AC5] przelacznik, oznaczanie wierszem, licznik, przejscie do odl
   await otworz(page, "/wiadomosci", WIERSZ_ODKLADANY);
 
   // AC-1: jeden gest wejścia — karty znikają, wiersze wchodzą, sekcje tematów zostają.
+  // Asercje zakresowane po tytułach seedu, nie globalnym licznikiem: baza e2e może nieść
+  // pozycje innych speców, a w trybie tytułów one też rysują się wierszami.
   await przelacznikTytulow(page).click();
   await expect(page).toHaveURL(/tytuly=1/);
   await expect(page.locator("[data-news-karta]")).toHaveCount(0);
-  await expect(page.locator("[data-news-wiersz]")).toHaveCount(3);
+  await expect(wiersz(page, WIERSZ_ODKLADANY)).toHaveCount(1);
+  await expect(wiersz(page, WIERSZ_ZWYKLY)).toHaveCount(1);
+  await expect(wiersz(page, WIERSZ_ZRODLO_B)).toHaveCount(1);
 
   // AC-2 + AC-5: dotknięcie wiersza oznacza, stan widać natychmiast, licznik rośnie na bieżąco.
   const odkladany = wiersz(page, WIERSZ_ODKLADANY);
@@ -148,26 +160,28 @@ test("[125-AC1..AC5] przelacznik, oznaczanie wierszem, licznik, przejscie do odl
   await page.getByRole("button", { name: "Przejdź do odłożonych" }).click();
   await expect(page).toHaveURL(/doczytania=1/);
   expect(page.url()).not.toMatch(/tytuly=1/);
-  await expect(page.locator("[data-news-karta]")).toHaveCount(1, { timeout: 20_000 });
-  await expect(page.locator("[data-news-karta]", { hasText: WIERSZ_ODKLADANY })).toHaveCount(1);
+  await expect(page.locator("[data-news-karta]", { hasText: WIERSZ_ODKLADANY })).toHaveCount(1, {
+    timeout: 20_000,
+  });
+  await expect(page.locator("[data-news-karta]", { hasText: WIERSZ_ZWYKLY })).toHaveCount(0);
 });
 
 test("[125-AC6] adres z ?tytuly=1 odtwarza widok tytulow", async ({ page }) => {
   await otworz(page, "/wiadomosci?tytuly=1", WIERSZ_ZWYKLY);
-  await expect(page.locator("[data-news-wiersz]")).toHaveCount(3);
+  await expect(wiersz(page, WIERSZ_ZWYKLY)).toHaveCount(1);
   await expect(page.locator("[data-news-karta]")).toHaveCount(0);
   await expect(przelacznikTytulow(page)).toHaveAttribute("aria-pressed", "true");
 });
 
 test("[125-AC9] filtr zrodel zaweza identycznie w obu trybach", async ({ page }) => {
-  // Tryb tytułów, tylko źródło A → dwa wiersze (bez pozycji ze źródła B).
+  // Tryb tytułów, tylko źródło A → pozycje A są, pozycja ze źródła B odsiana.
   await otworz(page, `/wiadomosci?tytuly=1&zrodla=${KLUCZ_A}`, WIERSZ_ZWYKLY);
-  await expect(page.locator("[data-news-wiersz]")).toHaveCount(2);
+  await expect(wiersz(page, WIERSZ_ODKLADANY)).toHaveCount(1);
   await expect(wiersz(page, WIERSZ_ZRODLO_B)).toHaveCount(0);
 
-  // Pełny widok, ten sam filtr → te same dwie pozycje jako karty.
+  // Pełny widok, ten sam filtr → dokładnie te same pozycje, tylko jako karty.
   await otworz(page, `/wiadomosci?zrodla=${KLUCZ_A}`, WIERSZ_ZWYKLY);
-  await expect(page.locator("[data-news-karta]")).toHaveCount(2);
+  await expect(page.locator("[data-news-karta]", { hasText: WIERSZ_ODKLADANY })).toHaveCount(1);
   await expect(page.locator("[data-news-karta]", { hasText: WIERSZ_ZRODLO_B })).toHaveCount(0);
 });
 
