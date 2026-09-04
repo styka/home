@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-09-04 — Pusta linia wewnątrz bloku ``` cicho rozbija blok w naszym rendererze markdown
+**Problem:** Raport z diagramem ASCII (moduł Rośliny, migracja 0291) wyświetlał się rozsypany:
+pierwsza linia diagramu zostawała w `<pre>`, a cała reszta lądowała w `<p class="md-p">` ze
+**zlepionymi w jeden ciąg** liniami — czyli dokładnie tam, gdzie ASCII-art przestaje cokolwiek
+znaczyć. Sam blok kodu był rozpoznany poprawnie (`markdownToHtml` zwracał 2 bloki, tyle ile było
+w treści), więc na pierwszy rzut oka wyglądało to na problem ze znakami ramek, a nie ze strukturą.
+
+**Rozwiązanie:** Przyczyna leży w kolejności przebiegów w `src/lib/markdown.ts`. Wyrażenie
+``/```(\w*)\n?([\s\S]*?)```/g`` poprawnie zabiera całą zawartość bloku **razem z pustymi liniami**,
+ale **późniejsze przebiegi blokowe (akapity) nie omijają już wyprodukowanego `<pre>`** i tną go po
+pustej linii. Diagram został przepisany tak, żeby **nie miał ani jednej pustej linii w środku**
+(puste miejsca niosą znak ramki `│`), a alignment jest generowany programowo, a nie na oko.
+Weryfikacja przez uruchomienie prawdziwego `markdownToHtml` na treści raportu: liczba `<pre>` i brak
+`<p` wewnątrz nich.
+
+**Lekcja:** W treściach dla naszego renderera **blok ``` nie może zawierać pustej linii** — to jest
+ograniczenie, nie preferencja stylistyczna. Dotyczy wszystkiego, co przez niego idzie: raportów,
+przepisów, zadań, QA i arkusza asystenta. Gdy diagram potrzebuje „oddechu", wstaw linię z samym
+znakiem ramki albo kropką, nigdy pustą. I ogólniej: renderer markdown, w którym przebieg blokowy
+działa na całym stringu (a nie na drzewie), zawsze będzie miał tę klasę błędów — więc **treść
+sprawdzaj uruchamiając renderer**, nie oglądając źródło; źródło wyglądało tu bez zarzutu.
+
+---
+
 ## 2026-09-02 — Klawisz naciśnięty przed nawodnieniem ginie, a „pomiń zamiast czerwienić" to ukrywa
 **Problem:** Po zamianie stałego widgetu „Nowe zadanie" na modal (121) klikacz
 `[scenario-tasks-add-quick]` przestał testować cokolwiek — i zrobił to **bezgłośnie**. Dwa
