@@ -37,3 +37,18 @@ wyłącznie na `youtube.com` ze stałymi ciałami zbudowanymi z `videoId`.
 ograniczenia. Po merge do `develop`: uruchomić „Odśwież" w `/youtube` na środowisku testowym
 i odczytać `youtube.transkrypcje.skutecznosc` (rozbicie `zrodlo*`) — to domyka AC-1 na żywych
 filmach (sandbox nie ma sieci do YouTube).
+
+---
+
+## Nawrót v2 (2026-09-04)
+
+Wdrożenie v1 nie przyniosło transkrypcji na produkcji (zgłoszenie właściciela). Research wskazał
+blokadę IP centrów danych (ASN chmur) i za ubogi ręczny protobuf `params`. v2 (plan §Nawrót v2):
+prawdziwe `params` z `getTranscriptEndpoint` (HTML strony → `next` → ręczna budowa wg pełnego
+przepisu Invidiousa), przeglądarkowy UA + `SOCS=CAI`, log diagnozy per droga
+(`youtube.transkrypcje.diagnoza`, ≤3 filmy/przebieg), migracja 0292 (rekwalifikacja po v1).
+Recenzja diffa v2: funkcje czyste z testami dekodującymi protobuf pole po polu (22/22), sygnatury
+wstecznie zgodne, nic nie rzuca, bez nowych zależności; pełny build zielony na lokalnym Postgresie.
+**Werdykt: APPROVE Z UWAGAMI** — rozstrzygnięcie skuteczności wyłącznie na produkcji (log
+skutecznosc/diagnoza po „Odśwież"); jeśli diagnoza pokaże blokadę IP na wszystkich drogach,
+dalszy krok (proxy rezydenckie / hostowany API transkrypcji) jest decyzją właściciela.

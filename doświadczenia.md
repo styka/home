@@ -6269,3 +6269,27 @@ niediagnozowalna — pierwsze pytanie („co dokładnie odpowiedział dostawca?"
 śladu. Każdy `catch → null` przy wywołaniu zewnętrznym ma logować status/wyjątek przez `logEvent`.
 I druga połowa: gdy dane są prognozą/odczytem świata (nie stanem użytkownika), ostatnia udana
 odpowiedź OZNACZONA jako nieaktualna bije pusty ekran — degradacja zamiast odmowy.
+
+## 2026-09-04 — Poprawny klient to za mało: YouTube odcina IP chmur, a params panelu trzeba brać ze strony
+**Problem:** Naprawa 123 v1 (łańcuch strona → player[ANDROID] → get_transcript z minimalnym
+protobufem) przeszła testy i bramki, a na produkcji dalej „brak transkrypcji" — właściciel
+zgłosił nawrót. Dwie przyczyny, obu nie dało się zobaczyć z sandboxa (proxy blokuje youtube.com,
+WebFetch też): (1) YouTube odcina żądania z adresów IP centrów danych **na poziomie ASN, od
+pierwszego żądania** — Render jest chmurą, więc strona filmu i endpoint odtwarzacza dostają ścianę
+„potwierdź, że nie jesteś botem" niezależnie od poprawności klienta; (2) ręcznie budowany protobuf
+`params` dla `get_transcript` niósł sam videoId, a pełny przepis (Invidious
+`produce_transcript_params`) to videoId + zagnieżdżony `{kind, język}` w base64 + varint 1 +
+identyfikator `engagement-panel-searchable-transcript-search-panel`, całość base64url z paddingiem
+i procentowaniem.
+**Rozwiązanie:** v2 bierze **prawdziwe** `params` z pola `getTranscriptEndpoint` — najpierw z HTML
+strony filmu, potem z odpowiedzi `youtubei/v1/next` (dokładnie to robi przycisk „Wyświetl
+transkrypcję"), a ręczna budowa wg pełnego przepisu została ostatnią deską (pl/en ×
+autorskie/asr). Do tego przeglądarkowy UA + ciasteczko zgody `SOCS=CAI` i log
+`youtube.transkrypcje.diagnoza` z powodami odpadnięcia każdej drogi (próbka ≤3 filmów/przebieg),
+w tym `playabilityStatus` odtwarzacza — bo tylko log z produkcji odróżni „film bez napisów" od
+„YouTube odcina serwer". Migracja 0292 zawraca ofiary v1 do kolejki prób.
+**Lekcja:** Gdy scraping działa „u wszystkich" a nie działa z serwera, pierwszym podejrzanym jest
+**adres IP (ASN chmury), nie kod** — i trzeba to rozstrzygnąć diagnostyką w logu, zanim
+przepisze się klienta trzeci raz. Parametrów wewnętrznych API nie zgadujemy: bierzemy je z tej
+samej odpowiedzi, z której korzysta prawdziwy interfejs (`getTranscriptEndpoint`), a ręczne
+kodowanie kopiujemy z utrzymywanej implementacji (Invidious/Protodec) pole po polu.

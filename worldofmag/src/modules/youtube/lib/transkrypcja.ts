@@ -1,22 +1,28 @@
 /**
- * 102 (AC-7, AC-8) → 123 — DOCIĄGNIĘCIE TRANSKRYPCJI FILMU.
+ * 102 (AC-7, AC-8) → 123 (v2) — DOCIĄGNIĘCIE TRANSKRYPCJI FILMU.
  *
  * **Dlaczego to w ogóle jest trudne.** YouTube nie daje oficjalnej drogi do pobrania napisów
- * CUDZEGO filmu — udostępniony interfejs wymaga bycia właścicielem materiału. Pierwotny wariant
- * (102) czytał adres ścieżki napisów ze strony filmu i pobierał go GET-em. Od ~2025 te adresy
- * (wycięte z webowej odpowiedzi odtwarzacza) wymagają tokenu POT („proof of origin") — bez niego
- * YouTube odpowiada **200 z pustym ciałem**, więc film Z napisami wyglądał jak film bez nich
- * (zgłoszenie 123). Dlatego pobranie jest teraz ŁAŃCUCHEM trzech niezależnych dróg:
+ * CUDZEGO filmu. Do tego dochodzą dwie blokady odkryte w 123: (1) adresy napisów z webowej
+ * odpowiedzi odtwarzacza wymagają tokenu POT — bez niego przychodzi **200 z pustym ciałem**;
+ * (2) YouTube odcina żądania z adresów IP centrów danych (ASN chmur — a Render jest chmurą)
+ * już na pierwszym żądaniu, serwując ścianę „potwierdź, że nie jesteś botem" zamiast strony.
  *
- *   1. `strona`  — dotychczasowa: HTML strony filmu → `captionTracks` → GET adresu napisów.
- *   2. `player`  — wewnętrzny endpoint odtwarzacza (`youtubei/v1/player`) wywołany jako klient
- *                  ANDROID; adresy napisów z tego klienta nie wymagają POT.
- *   3. `panel`   — `youtubei/v1/get_transcript`, czyli dokładnie to, co wywołuje przycisk
- *                  „Wyświetl transkrypcję" w rozwiniętym opisie filmu.
+ * Właściciel podpowiedział właściwą drogę: przycisk „Wyświetl transkrypcję" w rozwiniętym opisie
+ * filmu. Ten przycisk wywołuje `youtubei/v1/get_transcript` z parametrem `params`, który strona
+ * (albo odpowiedź `youtubei/v1/next`) niesie w polu `getTranscriptEndpoint` — v2 wyciąga więc
+ * PRAWDZIWE `params` zamiast zgadywać, a dopiero w ostateczności buduje je ręcznie wg przepisu
+ * z Invidiousa (protobuf: videoId + zagnieżdżony {kind, język} w base64 + identyfikator panelu).
+ * Łańcuch dróg, od najtańszej:
+ *
+ *   1. `strona`  — HTML strony filmu → `captionTracks` → GET adresu napisów; gdy napisy puste
+ *                  (POT), z TEGO SAMEGO HTML-a wyciągamy `getTranscriptEndpoint.params` → panel.
+ *   2. `player`  — `youtubei/v1/player` jako klient ANDROID (adresy bez wymogu POT).
+ *   3. `panel`   — `youtubei/v1/get_transcript`: params z HTML-a / z `next`, na końcu ręczne
+ *                  (pl/en × autorskie/automatyczne).
  *
  * Pusty tekst na dowolnym etapie NIE kończy całości — spada do następnej drogi. Wynik niesie
- * `zrodlo`, żeby log skuteczności odświeżania mówił, która droga faktycznie niesie ruch — to
- * jedyny sposób wykrycia następnej zmiany po stronie YouTube zanim zgłosi ją użytkownik.
+ * `zrodlo`, a łańcuch może zbierać **diagnozę** (dlaczego każda droga odpadła) — bo środowisko
+ * budowy nie widzi youtube.com i jedynym mikroskopem jest log z produkcji.
  *
  * **Najważniejsza decyzja projektowa tego pliku bez zmian: nic tu nie rzuca.** Każde niepowodzenie
  * na dowolnym kroku kończy się wartością `null`, którą wołający zamienia na stan „niedostepna".
@@ -29,12 +35,22 @@
  */
 import { resilientFetch } from "@/lib/integrations/resilientFetch";
 
-const UA = "Mozilla/5.0 (compatible; OmniaYoutubeBot/1.0; +https://worldofmag.onrender.com)";
+/**
+ * Przeglądarkowy UA zamiast dawnego jawnie botowego „OmniaYoutubeBot": deklaracja bota
+ * gwarantowała ścianę anty-botową na starcie. Standardowa praktyka wszystkich bibliotek
+ * transkrypcji; wolumen pozostaje śladowy (limit 25 filmów na przebieg).
+ */
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 /** UA klienta Android — endpoint odtwarzacza rozpoznaje klienta także po tym nagłówku. */
 const UA_ANDROID = "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
 const WERSJA_ANDROID = "20.10.38";
+/** Wersja klienta WEB (za Invidiousem) — do `next` i `get_transcript`. */
+const WERSJA_WEB = "2.20260722.01.00";
+/** Ciasteczko zgody: bez niego EU dostaje przekierowanie na consent.youtube.com zamiast strony. */
+const CIASTECZKO_ZGODY = "SOCS=CAI";
 
 const ADRES_PLAYER = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
+const ADRES_NEXT = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false";
 const ADRES_PANELU = "https://www.youtube.com/youtubei/v1/get_transcript?prettyPrint=false";
 
 export interface OpcjePobrania {
@@ -126,10 +142,6 @@ function sciezkiZSurowych(surowe: unknown): SciezkaNapisow[] {
 
 /**
  * Wycina ścieżki napisów z odpowiedzi endpointu odtwarzacza (droga `player`). CZYSTA.
- *
- * W przeciwieństwie do strony filmu to jest zwykły JSON, więc nie trzeba liczyć nawiasów —
- * ale kształt jest ten sam (`captionTracks`), więc dalszy ciąg (wybór ścieżki, składanie
- * tekstu) jest wspólny dla obu dróg.
  */
 export function sciezkiNapisowZPlayerResponse(json: string): SciezkaNapisow[] {
   try {
@@ -139,6 +151,25 @@ export function sciezkiNapisowZPlayerResponse(json: string): SciezkaNapisow[] {
     return sciezkiZSurowych(dane.captions?.playerCaptionsTracklistRenderer?.captionTracks);
   } catch {
     return [];
+  }
+}
+
+/**
+ * Odczytuje z odpowiedzi odtwarzacza POWÓD odmowy (diagnostyka). CZYSTA.
+ *
+ * `LOGIN_REQUIRED` z komunikatem o bocie to podpis blokady adresów IP centrów danych — jedyna
+ * informacja pozwalająca odróżnić „film nie ma napisów" od „YouTube odcina nasz serwer".
+ */
+export function powodOdmowyZPlayerResponse(json: string): string | null {
+  try {
+    const dane = JSON.parse(json) as {
+      playabilityStatus?: { status?: string; reason?: string };
+    };
+    const st = dane.playabilityStatus;
+    if (!st?.status || st.status === "OK") return null;
+    return st.reason ? `${st.status}: ${st.reason}` : st.status;
+  } catch {
+    return null;
   }
 }
 
@@ -203,18 +234,71 @@ export function tekstZNapisow(tresc: string): string {
   return zlozTekst(czesci.join(" "));
 }
 
+/** Varint protobuf (długości i małe liczby). CZYSTA. */
+function varint(n: number): number[] {
+  const bajty: number[] = [];
+  let v = n;
+  do {
+    let b = v & 0x7f;
+    v >>>= 7;
+    if (v > 0) b |= 0x80;
+    bajty.push(b);
+  } while (v > 0);
+  return bajty;
+}
+
+function poleTekstowe(nrPola: number, wartosc: string): Buffer {
+  const tresc = Buffer.from(wartosc, "utf8");
+  return Buffer.concat([Buffer.from([(nrPola << 3) | 2, ...varint(tresc.length)]), tresc]);
+}
+
 /**
- * Parametr żądania `get_transcript` (droga `panel`). CZYSTA.
+ * Parametr żądania `get_transcript` budowany RĘCZNIE (ostatnia deska ratunku). CZYSTA.
  *
- * Endpoint przyjmuje identyfikator filmu opakowany w minimalny protobuf: pole 1 (tag `0x0a`)
- * o długości identyfikatora, zakodowany base64. Ręczne złożenie tych trzech bajtów jest tańsze
- * i pewniejsze niż zależność od biblioteki protobuf (C-53).
+ * Pełny przepis za Invidiousem (`produce_transcript_params`), nie sam identyfikator filmu —
+ * uboższa wersja z pierwszego podejścia 123 nie działała:
+ *   pole 1: videoId · pole 2: base64url zagnieżdżonego {1: kind ("asr"|""), 2: język} ·
+ *   pole 3: varint 1 · pole 5: "engagement-panel-searchable-transcript-search-panel";
+ * całość → base64url (z paddingiem) → procentowanie (`=` → `%3D`), bo tak wyglądają
+ * params, które YouTube sam wkłada w `getTranscriptEndpoint`.
  */
-export function paramsPanelu(videoId: string): string {
-  const bajty = Buffer.from(videoId, "utf8");
-  // Identyfikatory filmów mają 11 znaków ASCII; varint jednobajtowy wystarcza z ogromnym zapasem.
-  const wiadomosc = Buffer.concat([Buffer.from([0x0a, bajty.length]), bajty]);
-  return wiadomosc.toString("base64");
+export function paramsPanelu(videoId: string, jezyk = "pl", automatyczne = false): string {
+  const wewnetrzny = Buffer.concat([
+    poleTekstowe(1, automatyczne ? "asr" : ""),
+    poleTekstowe(2, jezyk),
+  ]);
+  const zewnetrzny = Buffer.concat([
+    poleTekstowe(1, videoId),
+    poleTekstowe(2, base64urlZPaddingiem(wewnetrzny)),
+    Buffer.from([0x18, 0x01]),
+    poleTekstowe(5, "engagement-panel-searchable-transcript-search-panel"),
+  ]);
+  return encodeURIComponent(base64urlZPaddingiem(zewnetrzny));
+}
+
+/** Node `base64url` ucina padding, a YouTube (jak Crystal `urlsafe_encode`) go oczekuje. */
+function base64urlZPaddingiem(b: Buffer): string {
+  const base = b.toString("base64url");
+  return base + "=".repeat((4 - (base.length % 4)) % 4);
+}
+
+/**
+ * Wyciąga PRAWDZIWE `params` panelu transkrypcji z dokumentu YouTube. CZYSTA.
+ *
+ * Działa i na HTML-u strony filmu (ytInitialData), i na surowej odpowiedzi `youtubei/v1/next` —
+ * celowo po tekście, nie po ścieżce w drzewie: YouTube przestawia pośrednie poziomy częściej niż
+ * sam `getTranscriptEndpoint`. To są dokładnie te params, których używa przycisk
+ * „Wyświetl transkrypcję" wskazany przez właściciela.
+ */
+export function paramsPaneluZDokumentu(dokument: string): string | null {
+  const m = dokument.match(/"getTranscriptEndpoint"\s*:\s*\{[^{}]*?"params"\s*:\s*"([^"]+)"/);
+  if (!m) return null;
+  try {
+    // Wartość może nieść ucieczki JSON (= itp.) — odkodowujemy je jak parser JSON.
+    return JSON.parse(`"${m[1]}"`) as string;
+  } catch {
+    return m[1];
+  }
 }
 
 /**
@@ -271,7 +355,11 @@ async function domyslnePobranie(url: string, opcje?: OpcjePobrania): Promise<str
     const res = await resilientFetch(url, {
       method: opcje?.method ?? "GET",
       body: opcje?.body,
-      headers: opcje?.headers ?? { "User-Agent": UA, "Accept-Language": "pl,en;q=0.8" },
+      headers: opcje?.headers ?? {
+        "User-Agent": UA,
+        "Accept-Language": "pl,en;q=0.8",
+        Cookie: CIASTECZKO_ZGODY,
+      },
       cache: "no-store",
       timeoutMs: 12_000,
     });
@@ -311,18 +399,34 @@ function zadaniePlayer(videoId: string): OpcjePobrania {
   };
 }
 
-function zadaniePanelu(videoId: string): OpcjePobrania {
+function kontekstWeb() {
+  return { client: { clientName: "WEB", clientVersion: WERSJA_WEB, hl: "pl", gl: "PL" } };
+}
+
+function naglowkiWeb(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "User-Agent": UA,
+    "Accept-Language": "pl,en;q=0.8",
+    Cookie: CIASTECZKO_ZGODY,
+    "X-YouTube-Client-Name": "1",
+    "X-YouTube-Client-Version": WERSJA_WEB,
+  };
+}
+
+function zadanieNext(videoId: string): OpcjePobrania {
   return {
     method: "POST",
-    body: JSON.stringify({
-      context: { client: { clientName: "WEB", clientVersion: "2.20260101.00.00", hl: "pl", gl: "PL" } },
-      params: paramsPanelu(videoId),
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": UA,
-      "Accept-Language": "pl,en;q=0.8",
-    },
+    body: JSON.stringify({ context: kontekstWeb(), videoId }),
+    headers: naglowkiWeb(),
+  };
+}
+
+function zadaniePanelu(params: string): OpcjePobrania {
+  return {
+    method: "POST",
+    body: JSON.stringify({ context: kontekstWeb(), params }),
+    headers: naglowkiWeb(),
   };
 }
 
@@ -333,52 +437,109 @@ function zadaniePanelu(videoId: string): OpcjePobrania {
 async function zNapisow(
   sciezki: SciezkaNapisow[],
   pobierz: PobierzTresc,
-  zrodlo: ZrodloTranskrypcji
+  zrodlo: ZrodloTranskrypcji,
+  diagnoza?: string[]
 ): Promise<Transkrypcja | null> {
   const sciezka = wybierzSciezke(sciezki);
-  if (!sciezka) return null;
+  if (!sciezka) {
+    diagnoza?.push(`${zrodlo}: brak sciezek napisow`);
+    return null;
+  }
 
   const tresc = await pobierz(sciezka.baseUrl);
-  if (!tresc) return null;
+  if (!tresc) {
+    diagnoza?.push(`${zrodlo}: napisy ${tresc === "" ? "puste (POT?)" : "nieosiagalne"}`);
+    return null;
+  }
 
   const tekst = tekstZNapisow(tresc);
-  if (!tekst) return null;
+  if (!tekst) {
+    diagnoza?.push(`${zrodlo}: napisy bez tekstu (${tresc.length} B)`);
+    return null;
+  }
 
   return { tekst, jezyk: sciezka.jezyk, automatyczna: sciezka.automatyczne, zrodlo };
+}
+
+/** Jedno uderzenie w `get_transcript` z gotowymi params. */
+async function zPanelu(
+  params: string,
+  pobierz: PobierzTresc,
+  diagnoza: string[] | undefined,
+  etykieta: string
+): Promise<string | null> {
+  const odpowiedz = await pobierz(ADRES_PANELU, zadaniePanelu(params));
+  if (!odpowiedz) {
+    diagnoza?.push(`panel(${etykieta}): brak odpowiedzi`);
+    return null;
+  }
+  const tekst = tekstZPanelu(odpowiedz);
+  if (!tekst) diagnoza?.push(`panel(${etykieta}): bez segmentow (${odpowiedz.length} B)`);
+  return tekst || null;
 }
 
 /**
  * Pobiera transkrypcję filmu albo zwraca `null`.
  *
- * `null` znaczy „ten film nie dostanie transkrypcji" i jest odpowiedzią **oczekiwaną**, nie błędem:
- * film mógł mieć napisy wyłączone, YouTube mógł odmówić serwerowi, kształt strony mógł się zmienić.
- * We wszystkich tych przypadkach moduł ma dalej działać (AC-8). Trzy drogi próbowane po kolei;
- * każda porażka (w tym 200 z pustym ciałem) przechodzi do następnej.
+ * `null` znaczy „ten film nie dostanie transkrypcji" i jest odpowiedzią **oczekiwaną**, nie błędem.
+ * Opcjonalna tablica `diagnoza` zbiera po drodze powody odpadnięcia każdej drogi — job loguje z niej
+ * próbkę, bo to jedyny sposób odróżnienia „film bez napisów" od „YouTube odcina serwer".
  */
 export async function pobierzTranskrypcje(
   videoId: string,
-  pobierz: PobierzTresc = domyslnePobranie
+  pobierz: PobierzTresc = domyslnePobranie,
+  diagnoza?: string[]
 ): Promise<Transkrypcja | null> {
-  // Droga 1: `strona` — darmowa, gdy działa; jej porażka niczego już nie przesądza.
+  // Droga 1: `strona` — jedno pobranie daje i captionTracks, i params panelu.
   const html = await pobierz(adresStronyFilmu(videoId));
   if (html) {
-    const t = await zNapisow(sciezkiNapisowZHtml(html), pobierz, "strona");
+    const t = await zNapisow(sciezkiNapisowZHtml(html), pobierz, "strona", diagnoza);
     if (t) return t;
+
+    const paramsZeStrony = paramsPaneluZDokumentu(html);
+    if (paramsZeStrony) {
+      const tekst = await zPanelu(paramsZeStrony, pobierz, diagnoza, "strona");
+      if (tekst) return { tekst, jezyk: "", automatyczna: false, zrodlo: "panel" };
+    } else {
+      diagnoza?.push(`strona: bez params panelu (${html.length} B)`);
+    }
+  } else {
+    diagnoza?.push("strona: nieosiagalna");
   }
 
   // Droga 2: `player` (klient ANDROID) — adresy napisów bez wymogu POT.
   const odpowiedzPlayera = await pobierz(ADRES_PLAYER, zadaniePlayer(videoId));
   if (odpowiedzPlayera) {
-    const t = await zNapisow(sciezkiNapisowZPlayerResponse(odpowiedzPlayera), pobierz, "player");
+    const odmowa = powodOdmowyZPlayerResponse(odpowiedzPlayera);
+    if (odmowa) diagnoza?.push(`player: ${odmowa}`);
+    const t = await zNapisow(sciezkiNapisowZPlayerResponse(odpowiedzPlayera), pobierz, "player", diagnoza);
     if (t) return t;
+  } else {
+    diagnoza?.push("player: nieosiagalny");
   }
 
-  // Droga 3: `panel` — endpoint przycisku „Wyświetl transkrypcję". Język nieznany (endpoint
-  // zwraca gotowy panel, nie listę ścieżek), więc zostaje pusty — kolumna języka jest opcjonalna.
-  const odpowiedzPanelu = await pobierz(ADRES_PANELU, zadaniePanelu(videoId));
-  if (odpowiedzPanelu) {
-    const tekst = tekstZPanelu(odpowiedzPanelu);
+  // Droga 3a: `panel` z params z odpowiedzi `next` — dokładnie droga przycisku z UI.
+  const odpowiedzNext = await pobierz(ADRES_NEXT, zadanieNext(videoId));
+  const paramsZNext = odpowiedzNext ? paramsPaneluZDokumentu(odpowiedzNext) : null;
+  if (paramsZNext) {
+    const tekst = await zPanelu(paramsZNext, pobierz, diagnoza, "next");
     if (tekst) return { tekst, jezyk: "", automatyczna: false, zrodlo: "panel" };
+  } else {
+    diagnoza?.push(odpowiedzNext ? `next: bez params panelu (${odpowiedzNext.length} B)` : "next: nieosiagalny");
+  }
+
+  // Droga 3b: `panel` z params budowanymi ręcznie — preferencja jak w wybierzSciezke:
+  // polski przed angielskim, autorskie przed automatycznymi.
+  const kombinacje: Array<{ jezyk: string; automatyczne: boolean }> = [
+    { jezyk: "pl", automatyczne: false },
+    { jezyk: "pl", automatyczne: true },
+    { jezyk: "en", automatyczne: false },
+    { jezyk: "en", automatyczne: true },
+  ];
+  for (const k of kombinacje) {
+    const etykieta = `${k.jezyk}${k.automatyczne ? "/asr" : ""}`;
+    const tekst = await zPanelu(paramsPanelu(videoId, k.jezyk, k.automatyczne), pobierz, diagnoza, etykieta);
+    if (tekst) return { tekst, jezyk: k.jezyk, automatyczna: k.automatyczne, zrodlo: "panel" };
   }
 
   return null;

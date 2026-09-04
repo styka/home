@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import {
   sciezkiNapisowZHtml,
   sciezkiNapisowZPlayerResponse,
+  powodOdmowyZPlayerResponse,
   wybierzSciezke,
   tekstZNapisow,
   tekstZPanelu,
   paramsPanelu,
+  paramsPaneluZDokumentu,
   pobierzTranskrypcje,
 } from "../transkrypcja";
 
@@ -186,13 +188,58 @@ test("panel bez segmentów albo uszkodzony daje pusty tekst, nie wyjątek", () =
   assert.equal(tekstZPanelu(""), "");
 });
 
-test("parametr panelu to base64 minimalnego protobufa z identyfikatorem filmu", () => {
-  const params = paramsPanelu("jNQXAC9IVRw");
-  const bajty = Buffer.from(params, "base64");
+test("parametr panelu to pełny protobuf wg przepisu Invidiousa (v2)", () => {
+  const params = paramsPanelu("jNQXAC9IVRw", "pl", true);
+  const bajty = Buffer.from(decodeURIComponent(params), "base64url");
+
+  // pole 1: videoId
   assert.equal(bajty[0], 0x0a, "tag pola 1");
   assert.equal(bajty[1], 11, "długość identyfikatora");
-  assert.equal(bajty.subarray(2).toString("utf8"), "jNQXAC9IVRw");
-  assert.equal(paramsPanelu("jNQXAC9IVRw"), params, "wynik jest stabilny");
+  assert.equal(bajty.subarray(2, 13).toString("utf8"), "jNQXAC9IVRw");
+
+  // pole 2: base64url zagnieżdżonego {kind, język}
+  assert.equal(bajty[13], 0x12, "tag pola 2");
+  const dlWewn = bajty[14];
+  const wewnetrzny = Buffer.from(bajty.subarray(15, 15 + dlWewn).toString("utf8"), "base64url");
+  assert.equal(wewnetrzny[0], 0x0a, "tag kind");
+  assert.equal(wewnetrzny.subarray(2, 2 + wewnetrzny[1]).toString("utf8"), "asr");
+  const odJezyka = 2 + wewnetrzny[1];
+  assert.equal(wewnetrzny[odJezyka], 0x12, "tag języka");
+  assert.equal(wewnetrzny.subarray(odJezyka + 2, odJezyka + 2 + wewnetrzny[odJezyka + 1]).toString("utf8"), "pl");
+
+  // pole 3 (varint 1) + pole 5 (identyfikator panelu)
+  const ogon = bajty.subarray(15 + dlWewn);
+  assert.equal(ogon[0], 0x18, "tag pola 3");
+  assert.equal(ogon[1], 1, "wartość pola 3");
+  assert.equal(ogon[2], 0x2a, "tag pola 5");
+  assert.equal(ogon.subarray(4, 4 + ogon[3]).toString("utf8"), "engagement-panel-searchable-transcript-search-panel");
+
+  // napisy autorskie = pusty kind, ale pole jest emitowane (jak w Invidiousie)
+  const autorskie = Buffer.from(decodeURIComponent(paramsPanelu("jNQXAC9IVRw", "pl", false)), "base64url");
+  const wewnAut = Buffer.from(autorskie.subarray(15, 15 + autorskie[14]).toString("utf8"), "base64url");
+  assert.deepEqual([wewnAut[0], wewnAut[1]], [0x0a, 0], "pusty kind jest emitowany");
+
+  assert.equal(paramsPanelu("jNQXAC9IVRw", "pl", true), params, "wynik jest stabilny");
+});
+
+test("params panelu wycinają się i ze strony filmu, i z odpowiedzi next", () => {
+  const wDokumencie = 'cos{"getTranscriptEndpoint":{"params":"CgtqTlFYQUM5SVZSdw%3D%3D"}}cos';
+  assert.equal(paramsPaneluZDokumentu(wDokumencie), "CgtqTlFYQUM5SVZSdw%3D%3D");
+
+  const zUcieczka = '{"getTranscriptEndpoint":{"params":"Cgt\\u0041BC"}}';
+  assert.equal(paramsPaneluZDokumentu(zUcieczka), "CgtABC", "ucieczki JSON są odkodowywane");
+
+  assert.equal(paramsPaneluZDokumentu("<html>bez panelu</html>"), null);
+  assert.equal(paramsPaneluZDokumentu(""), null);
+});
+
+test("powód odmowy odtwarzacza jest odczytywany (diagnostyka blokady IP)", () => {
+  const blokada = JSON.stringify({
+    playabilityStatus: { status: "LOGIN_REQUIRED", reason: "Sign in to confirm you're not a bot" },
+  });
+  assert.equal(powodOdmowyZPlayerResponse(blokada), "LOGIN_REQUIRED: Sign in to confirm you're not a bot");
+  assert.equal(powodOdmowyZPlayerResponse(PLAYER_RESPONSE), null, "OK nie jest odmową");
+  assert.equal(powodOdmowyZPlayerResponse("nie-json"), null);
 });
 
 test("pusty timedtext (POT) spuszcza łańcuch do drogi player", async () => {
@@ -220,20 +267,64 @@ test("pusty timedtext (POT) spuszcza łańcuch do drogi player", async () => {
   assert.ok(wywolania.some((u) => u.includes("youtube.com/api/timedtext")), "droga strony była próbowana najpierw");
 });
 
-test("gdy strona i player zawodzą, tekst przynosi panel", async () => {
+test("params znalezione w HTML-u strony prowadzą prosto do panelu (droga przycisku)", async () => {
+  const htmlZPanelem =
+    '<html><script>var ytInitialData = {"getTranscriptEndpoint":{"params":"PRAWDZIWE%3D"}}</script></html>';
   const wynik = await pobierzTranskrypcje("jNQXAC9IVRw", async (url, opcje) => {
-    if (url.includes("/watch")) return "<html></html>"; // strona okrojona — bez captionTracks
-    if (url.includes("youtubei/v1/player")) return "{}"; // odtwarzacz bez napisów
+    if (url.includes("/watch")) return htmlZPanelem; // bez captionTracks, ale z przyciskiem transkrypcji
     if (url.includes("youtubei/v1/get_transcript")) {
       const cialo = JSON.parse(opcje?.body ?? "{}") as { params?: string };
-      assert.equal(cialo.params, paramsPanelu("jNQXAC9IVRw"), "żądanie panelu niesie zakodowany identyfikator");
+      assert.equal(cialo.params, "PRAWDZIWE%3D", "params idą ze strony, nie z ręcznej budowy");
       return PANEL_RESPONSE;
     }
     return null;
   });
   assert.equal(wynik?.tekst, "Dzień dobry to jest test");
-  assert.equal(wynik?.jezyk, "", "panel nie zdradza języka — kolumna języka jest opcjonalna");
   assert.equal(wynik?.zrodlo, "panel");
+});
+
+test("gdy strona i player zawodzą, params przynosi odpowiedź next", async () => {
+  const wynik = await pobierzTranskrypcje("jNQXAC9IVRw", async (url, opcje) => {
+    if (url.includes("/watch")) return "<html></html>"; // ściana bota — bez niczego
+    if (url.includes("youtubei/v1/player")) return "{}"; // odtwarzacz bez napisów
+    if (url.includes("youtubei/v1/next"))
+      return '{"engagementPanels":[{"getTranscriptEndpoint":{"params":"Z_NEXT"}}]}';
+    if (url.includes("youtubei/v1/get_transcript")) {
+      const cialo = JSON.parse(opcje?.body ?? "{}") as { params?: string };
+      assert.equal(cialo.params, "Z_NEXT");
+      return PANEL_RESPONSE;
+    }
+    return null;
+  });
+  assert.equal(wynik?.tekst, "Dzień dobry to jest test");
+  assert.equal(wynik?.zrodlo, "panel");
+});
+
+test("ostatnia deska: ręczne params w kolejności preferencji, z językiem w wyniku", async () => {
+  const probowane: string[] = [];
+  const diagnoza: string[] = [];
+  const wynik = await pobierzTranskrypcje(
+    "jNQXAC9IVRw",
+    async (url, opcje) => {
+      if (url.includes("/watch")) return null; // strona nieosiągalna
+      if (url.includes("youtubei/v1/player")) return "{}";
+      if (url.includes("youtubei/v1/next")) return "{}";
+      if (url.includes("youtubei/v1/get_transcript")) {
+        const cialo = JSON.parse(opcje?.body ?? "{}") as { params?: string };
+        probowane.push(cialo.params ?? "");
+        // Autorskiego polskiego nie ma — dopiero automatyczny polski przynosi segmenty.
+        return cialo.params === paramsPanelu("jNQXAC9IVRw", "pl", true) ? PANEL_RESPONSE : "{}";
+      }
+      return null;
+    },
+    diagnoza
+  );
+  assert.equal(wynik?.tekst, "Dzień dobry to jest test");
+  assert.equal(wynik?.jezyk, "pl", "ręczne params znają język");
+  assert.equal(wynik?.automatyczna, true);
+  assert.equal(wynik?.zrodlo, "panel");
+  assert.equal(probowane[0], paramsPanelu("jNQXAC9IVRw", "pl", false), "autorskie przed automatycznymi");
+  assert.ok(diagnoza.some((d) => d.startsWith("strona:")), "diagnoza odnotowała odpadnięcie strony");
 });
 
 test("droga strony, gdy działa, wygrywa i raportuje swoje źródło", async () => {
