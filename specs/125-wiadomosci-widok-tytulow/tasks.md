@@ -1,7 +1,7 @@
 # Zadania: Wiadomości — widok samych tytułów do oznaczania „do doczytania"
 
 - **Plan:** ./plan.md (125-wiadomosci-widok-tytulow)
-- **Status:** todo
+- **Status:** in-progress
 - **Data:** 2026-09-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -13,19 +13,19 @@
 - `[P]` — niezależne od poprzedniego, można robić równolegle
 
 ## Faza 0 — Komponent wiersza
-- [ ] **T-1** — `src/modules/news/ui/WierszTytulu.tsx` (nowy): pełnoszerokościowy `<button>`
+- [x] **T-1** — `src/modules/news/ui/WierszTytulu.tsx` (nowy): pełnoszerokościowy `<button>`
   z `aria-pressed` i `py-3` (ikona `Bookmark`/`BookmarkCheck` + tytuł + `źródło · czas` przez
   `timeAgo`), OBOK osobny `<a target="_blank">` z `ExternalLink` do artykułu; `data-news-wiersz={id}`;
   kolory wyłącznie ze zmiennych CSS (`--accent-amber` dla stanu oznaczonego); teksty przez `t()`
   do `messages/pl.json`. Gotowe, gdy: `tsc --noEmit` i `check:i18n` zielone.
 
 ## Faza 1 — Wpięcie w strumień i stronę
-- [ ] **T-2** — `NewsStream.tsx`: props `trybTytulow?: boolean` i
+- [x] **T-2** — `NewsStream.tsx`: props `trybTytulow?: boolean` i
   `onPrzelaczDoczytanie?: (id: string, next: boolean) => void`; w `topic.items.map` przy
   `trybTytulow` render `WierszTytulu` zamiast `NewsItemCard` (kontener `data-news-item` zostaje).
   Nagłówek strumienia, sekcje, pusty stan, lektor — bez zmian. Gotowe, gdy: `tsc --noEmit` czysto,
   a przy `trybTytulow=false` render identyczny jak przed zmianą.
-- [ ] **T-3** — `NewsPage.tsx`: (a) `tytuly: oneOf(["0","1"],"0")` w `viewSpec` + komentarz wzorca;
+- [x] **T-3** — `NewsPage.tsx`: (a) `tytuly: oneOf(["0","1"],"0")` w `viewSpec` + komentarz wzorca;
   (b) przycisk-przełącznik „Tytuły" (`List`, `aria-pressed`, etykieta ukryta poniżej `lg`, `py-3`)
   w pasku obok „Do doczytania"; (c) `przelaczDoczytanie(itemId, next)` — optymistyczny `setStream`
   + `setItemReadLater`, catch ⇒ `loadStream()` + toast; (d) w trybie tytułów przycisk
@@ -34,7 +34,7 @@
   i `check:i18n` zielone, URL niesie `tytuly=1`.
 
 ## Faza 2 — Bramki i domknięcie
-- [ ] **T-4** — e2e `e2e/specs/125-wiadomosci-tytuly.spec.ts` (seed wg wzorca 124, tryb `serial`,
+- [~] **T-4** — e2e `e2e/specs/125-wiadomosci-tytuly.spec.ts` (seed wg wzorca 124, tryb `serial`,
   upsert źródła na unikacie): AC-1 (przełącznik ⇒ wiersze zamiast kart, wyjście tym samym
   przyciskiem), AC-2 (klik wiersza ⇒ `aria-pressed`, trwałość po reloadzie), AC-3 (osobny link
   z `href`), AC-4 (przejście ⇒ `doczytania=1` bez `tytuly`, tylko oznaczone karty), AC-5 (licznik
@@ -62,5 +62,8 @@
 | AC-9 (wspólny zbiór z filtrem źródeł) | T-2, T-4 |
 
 ## Notatki / blokady
+- E2E 125+124 uruchamiane razem z `--workers=1`: spec 124 wykonuje globalne „Oznacz wszystkie"
+  (akcja obejmuje wszystkie tematy konta e2e-admin), więc równoległy worker zjadałby pozycje
+  seedowane przez 125 — wyścig międzyplikowy, nie do wykrycia w pojedynczych przebiegach.
 - Ścieżka krytyczna: T-1 → T-2 → T-3 → T-4 → T-5; T-6/T-7 na końcu. Bez migracji i akcji —
   całość po stronie UI modułu.
