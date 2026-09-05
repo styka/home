@@ -202,7 +202,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // dostępu. Widoki wirtualne (dziś/zaległe/wszystkie) nie są zasobem, więc nie mają czego udostępnić.
   const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
   const tShare = useTranslations("tasks");
-  const addProjectId = isVirtualView ? inboxId : projectId;
 
   // Świeża wersja z listy; jeśli zadania tam (jeszcze/już) nie ma — użyj świeżo utworzonego.
   const liveOpenTask = openTaskId
@@ -925,10 +924,12 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
           który obsługuje zadanie spoza przefiltrowanej listy (decyzja właściciela). */}
       {dodawanie && (
         <ModalDodaniaZadania
-          projectId={addProjectId}
+          projectId={projectId}
           pokazWyborProjektu
           projekty={allProjects}
-          domyslnyProjektId={viewMode === "project" ? projectId : null}
+          // Pusty string, nie null: przy null formularz spadłby na fallback z propa `projectId`
+          // (recenzja 125) — a reguła właściciela mówi „bez automatu" poza widokiem projektu.
+          domyslnyProjektId={viewMode === "project" ? projectId : ""}
           onClose={() => setDodawanie(false)}
           onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
         />

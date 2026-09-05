@@ -25,12 +25,14 @@
   Wejście zostaje w slocie `settings` ramy (C-33). Esc/pułapka focusu/safe-area — z prymitywu.
 - **AC-2 ✅** (pole projektu w dialogu dodawania) — `TasksPage.tsx` przekazuje do
   `ModalDodaniaZadania`: `pokazWyborProjektu` (zawsze), `projekty={allProjects}`,
-  `domyslnyProjektId={viewMode === "project" ? projectId : null}`. `FormularzZadania` (121)
-  inicjalizuje select: przy `domyslnyProjektId` — preselekcja projektu; przy `null` w widokach
-  wirtualnych/multi — pole puste (= Skrzynka, spójnie ze stroną modułu). Po dodaniu do innego
-  projektu użytkownik zostaje w widoku: `onCreated` → `setJustCreated` — fallback panelu
-  szczegółów obsługuje zadanie spoza przefiltrowanej listy (komentarz przy stanie, mechanizm
-  ze 105). `viewMode` obejmuje zestawy (`"multi"`).
+  `domyslnyProjektId={viewMode === "project" ? projectId : ""}`. **Korekta po recenzji:**
+  pierwsza wersja podawała `null`, a inicjalizator `FormularzZadania` przy nullish spada na
+  fallback z propa `projectId` — który w widokach wirtualnych niósł `inboxId`, więc select
+  preselekcjonował projekt-skrzynkę wbrew regule „bez automatu". Pusty string nie jest nullish,
+  więc pole startuje bez wyboru (= Skrzynka, dokładnie jak na stronie modułu z 121); martwy
+  `addProjectId` usunięty. Po dodaniu do innego projektu użytkownik zostaje w widoku:
+  `onCreated` → `setJustCreated` — fallback panelu szczegółów obsługuje zadanie spoza
+  przefiltrowanej listy (mechanizm ze 105). `viewMode` obejmuje zestawy (`"multi"`).
 - **AC-3 ✅** (filtr tagów w pasku akcji) — `FiltrTagow.tsx`: przycisk = ikona `Tags` 15 +
   licznik wybranych (badge rounded-full, `--accent-blue`/`--on-accent`), pełna treść
   („Filtr etykiet: 5 z 17" / „…: Wszystkie") w `title` i `aria-label`; rząd chipów usunięty
