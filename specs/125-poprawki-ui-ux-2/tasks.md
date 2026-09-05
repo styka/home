@@ -1,7 +1,7 @@
 # Zadania: Druga paczka poprawek UI/UX ze zgłoszeń administratora
 
 - **Plan:** ./plan.md (125-poprawki-ui-ux-2)
-- **Status:** todo
+- **Status:** done
 - **Data:** 2026-09-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -53,11 +53,11 @@
 
 ## Faza 2 — Bramki i domknięcie
 
-- [ ] **T-8** — `npm run check:i18n`, `npm run check:ui-contract`, `tsc` testowy, `next lint`,
+- [x] **T-8** — `npm run check:i18n`, `npm run check:ui-contract`, `tsc` testowy, `next lint`,
   pełny build do `next build` (lokalny Postgres, C-13). Gotowe, gdy: wszystko zielone.
-- [ ] **T-9** — Mapowanie AC-1…AC-5 → wynik (input do `/verify`); przegląd widoków Zadań
+- [x] **T-9** — Mapowanie AC-1…AC-5 → wynik (input do `/verify`); przegląd widoków Zadań
   (lista/kanban/timeline/obszary, wirtualne, zestaw) i przestrzeni Roślin; skróty `a`/`n`.
-- [ ] **T-10** — Wpis do `doświadczenia.md` (C-51 — lekcja: jeden link, wiele ścieżek
+- [x] **T-10** — Wpis do `doświadczenia.md` (C-51 — lekcja: jeden link, wiele ścieżek
   generowania); commit + merge → `develop` wg C-52 (wykona `/review`).
 
 ## Mapowanie kryteriów akceptacji
@@ -74,3 +74,7 @@
   równoległa względem Fazy 1.
 - Branch roboczy odtworzony z `origin/develop` (2742e617) — poprzedni merge 118 jest już
   w historii; nic do rebase'owania.
+- Bramki (2026-09-05): pełny `npm run build` zielony END-TO-END (exit 0) na lokalnym
+  Postgresie — wszystkie bramki repo, `next build` (148 stron), budżet perf w paśmie,
+  `migrate.js` na lokalnej bazie (0289–0291 dogonione wcześniej `migrate deploy`).
+  Lekcja C-51 w doświadczenia.md. Merge do develop wykona /review (C-52).

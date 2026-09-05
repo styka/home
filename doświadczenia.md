@@ -6269,3 +6269,22 @@ niediagnozowalna — pierwsze pytanie („co dokładnie odpowiedział dostawca?"
 śladu. Każdy `catch → null` przy wywołaniu zewnętrznym ma logować status/wyjątek przez `logEvent`.
 I druga połowa: gdy dane są prognozą/odczytem świata (nie stanem użytkownika), ostatnia udana
 odpowiedź OZNACZONA jako nieaktualna bije pusty ekran — degradacja zamiast odmowy.
+
+---
+
+## 2026-09-05 — „Naprawione, a nadal nie działa": jeden link, trzy niezależne miejsca generowania
+**Problem:** Właściciel zgłosił PONOWNIE błąd naprawiony w 118 — link „Otwórz w zadaniach" po
+utworzeniu zgłoszenia dalej prowadził do listy zamiast do podglądu zadania. Poprawka 118 trafiła
+w gałąź `submit_feedback` egzekutora asystenta i była poprawna — ale ścieżka robaczka (inspektor
+elementów) oraz sekcja „zgłoś problem" wołają `submitFeedbackTask` BEZPOŚREDNIO, bez agenta,
+i budują ten sam napis „Otwórz w zadaniach" w dwóch własnych miejscach `AICommandSheet`
+(markdown link + stan `reportDone` z przyciskiem). Podpowiedź była w samym zgłoszeniu 118:
+„brak logów agenta dla tej rozmowy" — czyli agent w ogóle nie brał udziału.
+**Rozwiązanie:** `?task=<id>` doklejone we wszystkich trzech miejscach (`res.taskId` było w
+zwrotce od zawsze) + grep kontrolny `` /tasks/${…projectId} `` po `src`, żeby nie ostało się
+czwarte. Ślad diagnostyczny („brak logów agenta") wpisany do speca 125, żeby przyszły czytelnik
+wiedział, czemu 118 nie wystarczyło.
+**Lekcja:** Zanim uznasz miejsce naprawy za JEDYNE, grepnij po TREŚCI komunikatu, który widzi
+użytkownik (etykieta linku/przycisku), nie po nazwie funkcji — jedna etykieta bywa budowana w
+kilku ścieżkach (agent vs. wywołanie bezpośrednie). A „brak logów" w zgłoszeniu to nie brak
+danych, tylko dana: mówi, która ścieżka NA PEWNO nie została użyta.
