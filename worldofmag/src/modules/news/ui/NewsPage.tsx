@@ -254,11 +254,23 @@ export function NewsPage({
   const enabledSources = useMemo(() => sources.filter((s) => s.enabled), [sources]);
 
   // ── Odczyty ───────────────────────────────────────────────────────────────
+  /**
+   * 125 (recenzja): NUMER SEKWENCJI żądania. Optymistyczne oznaczenie „doczytam" przepisuje
+   * `stream` od ręki — ale `loadStream` wystartowany PRZED dotknięciem (domknięte odświeżanie,
+   * „oznacz temat") wróciłby z migawką sprzed zapisu i wizualnie cofnął gest. Odpowiedź, która
+   * nie jest najnowsza, po prostu przepada; baza i tak ma stan poprawny.
+   */
+  const numerOdczytuStrumienia = useRef(0);
   const loadStream = useCallback(() => {
+    const nr = ++numerOdczytuStrumienia.current;
     setLoadingStream(true);
     getStreamView()
-      .then(setStream)
-      .catch(() => setStream([]))
+      .then((dane) => {
+        if (nr === numerOdczytuStrumienia.current) setStream(dane);
+      })
+      .catch(() => {
+        if (nr === numerOdczytuStrumienia.current) setStream([]);
+      })
       .finally(() => setLoadingStream(false));
   }, []);
 
@@ -355,6 +367,9 @@ export function NewsPage({
    */
   const przelaczDoczytanie = useCallback(
     (itemId: string, next: boolean) => {
+      // Unieważnij odpowiedzi `loadStream` będące W LOCIE: wystartowały przed tym gestem, więc
+      // niosą migawkę sprzed zapisu i cofnęłyby go wizualnie (recenzja 125, ustalenie 1).
+      numerOdczytuStrumienia.current++;
       setStream((prev) =>
         prev === null
           ? prev
@@ -822,7 +837,9 @@ export function NewsPage({
                          jest wczytany — NIEZNANY licznik to nie ZERO, więc przycisk nie może być
                          wtedy wyłączony, a licznika nie pokazujemy zamiast pokazywać fałszywe 0. */
                       disabled={stream !== null && liczbaOdlozonych === 0 && !filtrDoczytania}
-                      aria-pressed={filtrDoczytania}
+                      /* Recenzja 125: w trybie tytułów to nawigacja, nie przełącznik — czytnik
+                         ekranu nie może ogłaszać przejścia jako „wyłączonego przełącznika". */
+                      aria-pressed={trybTytulow ? undefined : filtrDoczytania}
                       title={
                         trybTytulow
                           ? t("doczytaniaPrzejdz")

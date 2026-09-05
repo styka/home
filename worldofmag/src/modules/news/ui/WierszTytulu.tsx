@@ -59,7 +59,8 @@ export function WierszTytulu({
         rel="noopener noreferrer"
         title={t("otworzArtykul")}
         aria-label={t("otworzArtykul")}
-        className="flex shrink-0 items-center rounded-lg px-2.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+        /* Recenzja 125: min. 44 px szerokości (C-31) — wysokość rozciąga `items-stretch` rodzica. */
+        className="flex min-w-[44px] shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
       >
         <ExternalLink size={15} />
       </a>
