@@ -770,11 +770,16 @@ model TaskProject {
   areas   TaskArea[]
   members TaskProjectMember[]
 
+  // 125: przypisanie do obszaru-kategorii (1:N; SET NULL — usunięcie obszaru zdejmuje przypisanie).
+  areaId String?
+  area   ProjectArea? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([areaId])
 }
 
 model TaskProjectMember {
@@ -793,21 +798,29 @@ model TaskProjectMember {
 // oglądana razem na /tasks/multi?group=<id>. Projekt może należeć do wielu grup (wiele-do-wielu),
 // więc listę trzymamy jako JSON string[] (jak statusConfig / UserMenuPref) — bez tabeli łączącej.
 // Nazwa tabeli w DB to historycznie „TaskView" (@@map) — koncepcja przemianowana na grupy.
-model ProjectGroup {
+model ProjectArea {
   id         String   @id @default(cuid())
   name       String
   emoji      String   @default("🗂")
   color      String? // opcjonalny kolor (hex / token) na kropkę-znacznik przy projekcie
-  projectIds String   @default("[]") // JSON: string[] id projektów w grupie
+  // LEGACY 125 — dane źródłowe migracji grup→obszary (0293). NIE czytać i NIE pisać z kodu;
+  // zostają w bazie, żeby wycofanie kodu odtworzyło grupy 1:1 (AC-8).
+  projectIds String   @default("[]")
   order      Int      @default(0)
+  // 125: drzewo kategorii (obszar w obszarze). SET NULL — usunięcie rodzica awansuje dzieci.
+  parentId   String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
   workspaceId String @default(dbgenerated()) // 054/etap 1 — patrz nagłówek pliku
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parent    ProjectArea?  @relation("ProjectAreaTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  ProjectArea[] @relation("ProjectAreaTree")
+  projects  TaskProject[]
 
   @@index([workspaceId])
+  @@index([workspaceId, parentId])
   @@map("TaskView")
 }
 
@@ -3370,7 +3383,7 @@ model Workspace {
   shoppingLists         ShoppingList[]
   notes                 Note[]
   taskProjects          TaskProject[]
-  projectGroups         ProjectGroup[]
+  projectAreas          ProjectArea[]
   stores                Store[]
   recipes               Recipe[]
   cookbooks             Cookbook[]

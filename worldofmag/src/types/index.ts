@@ -132,21 +132,28 @@ export type TaskProject = {
    */
   workspace?: { teamId: string | null } | null;
   statusConfig: string | null;
+  /** 125: obszar-kategoria, do którego projekt jest przypisany (1:N; null = poza obszarami). */
+  areaId?: string | null;
   createdAt: Date;
   updatedAt: Date;
   _count?: { tasks: number };
   members?: { userId: string; role: string }[];
 };
 
-/** Grupa projektów (np. „Dom + Auto"). projectIds = lista id projektów (wiele-do-wielu). */
-export type ProjectGroup = {
+/**
+ * 125: Obszar-kategoria projektów (następca grup; np. „🏠 Dom", „💼 Praca").
+ * Drzewo przez `parentId`; projekty wskazują obszar przez `TaskProject.areaId` (1:N).
+ */
+export type ObszarProjektow = {
   id: string;
   name: string;
   emoji: string;
   color: string | null;
-  projectIds: string[];
+  parentId: string | null;
   order: number;
-  /** Liczba aktywnych (nie-terminalnych) zadań we wszystkich projektach grupy. */
+  /** Liczba projektów przypisanych BEZPOŚREDNIO do tego obszaru. */
+  projectCount?: number;
+  /** Liczba aktywnych (nie-terminalnych) zadań w projektach całego PODDRZEWA. */
   activeCount?: number;
 };
 
