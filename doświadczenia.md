@@ -4,6 +4,30 @@ Plik prowadzony automatycznie przez Claude Code. Każdy wpis to rzeczywisty prob
 
 ---
 
+## 2026-09-04 — Pusta linia wewnątrz bloku ``` cicho rozbija blok w naszym rendererze markdown
+**Problem:** Raport z diagramem ASCII (moduł Rośliny, migracja 0291) wyświetlał się rozsypany:
+pierwsza linia diagramu zostawała w `<pre>`, a cała reszta lądowała w `<p class="md-p">` ze
+**zlepionymi w jeden ciąg** liniami — czyli dokładnie tam, gdzie ASCII-art przestaje cokolwiek
+znaczyć. Sam blok kodu był rozpoznany poprawnie (`markdownToHtml` zwracał 2 bloki, tyle ile było
+w treści), więc na pierwszy rzut oka wyglądało to na problem ze znakami ramek, a nie ze strukturą.
+
+**Rozwiązanie:** Przyczyna leży w kolejności przebiegów w `src/lib/markdown.ts`. Wyrażenie
+``/```(\w*)\n?([\s\S]*?)```/g`` poprawnie zabiera całą zawartość bloku **razem z pustymi liniami**,
+ale **późniejsze przebiegi blokowe (akapity) nie omijają już wyprodukowanego `<pre>`** i tną go po
+pustej linii. Diagram został przepisany tak, żeby **nie miał ani jednej pustej linii w środku**
+(puste miejsca niosą znak ramki `│`), a alignment jest generowany programowo, a nie na oko.
+Weryfikacja przez uruchomienie prawdziwego `markdownToHtml` na treści raportu: liczba `<pre>` i brak
+`<p` wewnątrz nich.
+
+**Lekcja:** W treściach dla naszego renderera **blok ``` nie może zawierać pustej linii** — to jest
+ograniczenie, nie preferencja stylistyczna. Dotyczy wszystkiego, co przez niego idzie: raportów,
+przepisów, zadań, QA i arkusza asystenta. Gdy diagram potrzebuje „oddechu", wstaw linię z samym
+znakiem ramki albo kropką, nigdy pustą. I ogólniej: renderer markdown, w którym przebieg blokowy
+działa na całym stringu (a nie na drzewie), zawsze będzie miał tę klasę błędów — więc **treść
+sprawdzaj uruchamiając renderer**, nie oglądając źródło; źródło wyglądało tu bez zarzutu.
+
+---
+
 ## 2026-09-02 — Klawisz naciśnięty przed nawodnieniem ginie, a „pomiń zamiast czerwienić" to ukrywa
 **Problem:** Po zamianie stałego widgetu „Nowe zadanie" na modal (121) klikacz
 `[scenario-tasks-add-quick]` przestał testować cokolwiek — i zrobił to **bezgłośnie**. Dwa
@@ -6266,3 +6290,26 @@ produkcja go zredaguje. Oczekiwane błędy zwracamy jako wynik (unia z `ok`), a 
 z akcji serwerowej NIE nadaje się do toasta. Uwaga systemowa: w aplikacji jest ~50 miejsc
 `showToast(e.message ?? …)` po wywołaniach akcji — każde z nich przy rzuconym błędzie pokaże
 w produkcji ten sam angielski akapit; do przejrzenia osobnym zleceniem.
+## 2026-09-04 — Poprawny klient to za mało: YouTube odcina IP chmur, a params panelu trzeba brać ze strony
+**Problem:** Naprawa 123 v1 (łańcuch strona → player[ANDROID] → get_transcript z minimalnym
+protobufem) przeszła testy i bramki, a na produkcji dalej „brak transkrypcji" — właściciel
+zgłosił nawrót. Dwie przyczyny, obu nie dało się zobaczyć z sandboxa (proxy blokuje youtube.com,
+WebFetch też): (1) YouTube odcina żądania z adresów IP centrów danych **na poziomie ASN, od
+pierwszego żądania** — Render jest chmurą, więc strona filmu i endpoint odtwarzacza dostają ścianę
+„potwierdź, że nie jesteś botem" niezależnie od poprawności klienta; (2) ręcznie budowany protobuf
+`params` dla `get_transcript` niósł sam videoId, a pełny przepis (Invidious
+`produce_transcript_params`) to videoId + zagnieżdżony `{kind, język}` w base64 + varint 1 +
+identyfikator `engagement-panel-searchable-transcript-search-panel`, całość base64url z paddingiem
+i procentowaniem.
+**Rozwiązanie:** v2 bierze **prawdziwe** `params` z pola `getTranscriptEndpoint` — najpierw z HTML
+strony filmu, potem z odpowiedzi `youtubei/v1/next` (dokładnie to robi przycisk „Wyświetl
+transkrypcję"), a ręczna budowa wg pełnego przepisu została ostatnią deską (pl/en ×
+autorskie/asr). Do tego przeglądarkowy UA + ciasteczko zgody `SOCS=CAI` i log
+`youtube.transkrypcje.diagnoza` z powodami odpadnięcia każdej drogi (próbka ≤3 filmów/przebieg),
+w tym `playabilityStatus` odtwarzacza — bo tylko log z produkcji odróżni „film bez napisów" od
+„YouTube odcina serwer". Migracja 0292 zawraca ofiary v1 do kolejki prób.
+**Lekcja:** Gdy scraping działa „u wszystkich" a nie działa z serwera, pierwszym podejrzanym jest
+**adres IP (ASN chmury), nie kod** — i trzeba to rozstrzygnąć diagnostyką w logu, zanim
+przepisze się klienta trzeci raz. Parametrów wewnętrznych API nie zgadujemy: bierzemy je z tej
+samej odpowiedzi, z której korzysta prawdziwy interfejs (`getTranscriptEndpoint`), a ręczne
+kodowanie kopiujemy z utrzymywanej implementacji (Invidious/Protodec) pole po polu.

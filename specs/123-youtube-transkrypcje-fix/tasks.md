@@ -68,3 +68,17 @@
 - Ścieżka krytyczna: T-2 → T-3 → T-5 → T-6. T-1 i T-4 niezależne (można równolegle).
 - Sandbox nie widzi youtube.com (proxy 403) — weryfikacja „na żywo" wyłącznie po deployu na
   `develop`, przez log `youtube.transkrypcje.skutecznosc` (plan §1, §8).
+
+## Nawrót v2 (2026-09-04 — zgłoszenie właściciela: v1 nie działa na produkcji; plan §Nawrót v2)
+- [x] **T-9** — `lib/transkrypcja.ts` v2: `paramsPaneluZDokumentu` (params z HTML/`next`),
+  pełny `paramsPanelu` wg Invidiousa (videoId + {kind,język} b64 + panel-id), droga `next`,
+  ręczne kombinacje pl/en × autorskie/asr, przeglądarkowy UA + `SOCS=CAI`,
+  `powodOdmowyZPlayerResponse` + zbieranie `diagnoza[]`.
+- [x] **T-10** — `jobs/youtubeRefresh.ts`: log `youtube.transkrypcje.diagnoza` (próbka ≤3
+  nieudanych filmów na przebieg — powody odpadnięcia każdej drogi).
+- [x] **T-11** — Migracja `0292_youtube_transkrypcje_ponowna_proba_v2` (rekwalifikacja po v1).
+- [x] **T-12** — Testy: pełny protobuf (dekodowanie pól), ekstrakcja params z dokumentu,
+  drogi HTML-panel / next-panel / ręczne kombinacje, powód odmowy playera — 22/22 zielone.
+- [x] **T-13** — Bramki + merge + weryfikacja NA PRODUKCJI: właściciel klika „Odśwież" w
+  `/youtube`; log `skutecznosc`/`diagnoza` rozstrzyga (transkrypcje są ↔ blokada IP → decyzja
+  właściciela o proxy/hostowanym API).

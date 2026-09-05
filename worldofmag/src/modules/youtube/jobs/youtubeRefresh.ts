@@ -106,11 +106,16 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
     // udanych już nie wystarcza — rozbicie po źródle mówi, która droga niesie ruch, a jej
     // wyzerowanie jest pierwszym sygnałem kolejnej zmiany po stronie YouTube.
     const zrodla: Record<string, number> = {};
+    // 123 v2: środowisko budowy nie widzi youtube.com, więc log z produkcji jest jedynym
+    // mikroskopem — dla pierwszych trzech NIEUDANYCH filmów zapisujemy, dlaczego odpadła
+    // każda droga (to odróżnia „film bez napisów" od „YouTube odcina serwerowe IP").
+    let zdiagnozowanych = 0;
     for (let i = 0; i < doPobrania.length; i++) {
       const film = doPobrania[i];
       ctx.progress?.(`Pobieram transkrypcje (${i + 1}/${doPobrania.length})…`);
       wynik.transkrypcjiProbowano++;
-      const t = await pobierzTranskrypcje(film.videoId);
+      const diagnoza: string[] | undefined = zdiagnozowanych < 3 ? [] : undefined;
+      const t = await pobierzTranskrypcje(film.videoId, undefined, diagnoza);
       await prisma.youtubeVideo.update({
         where: { id: film.id },
         data: t
@@ -120,6 +125,12 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
       if (t) {
         wynik.transkrypcji++;
         zrodla[t.zrodlo] = (zrodla[t.zrodlo] ?? 0) + 1;
+      } else if (diagnoza) {
+        zdiagnozowanych++;
+        logEvent("info", "youtube.transkrypcje.diagnoza", {
+          film: film.videoId,
+          powody: diagnoza.join(" | "),
+        });
       }
     }
 

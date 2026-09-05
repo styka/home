@@ -8,6 +8,22 @@
 > feature. Plan pisze się pod istniejący kod — najpierw czytamy sąsiedni moduł i naśladujemy jego
 > wzorzec (C-53), potem projektujemy.
 
+> **Nawrót v2 (2026-09-04, C-54).** Wdrożenie v1 nie przyniosło transkrypcji na produkcji
+> (zgłoszenie właściciela). Research (youtube-transcript-api, Invidious/Protodec) wskazał dwie
+> przyczyny: (1) **YouTube odcina IP centrów danych na poziomie ASN** — Render dostaje ścianę
+> „potwierdź, że nie jesteś botem" już na stronie filmu i endpointcie odtwarzacza; (2) ręczny
+> protobuf `params` dla `get_transcript` był **za ubogi** (sam videoId) — pełny przepis Invidiousa
+> to videoId + zagnieżdżony `{kind, język}` w base64 + varint 1 + identyfikator panelu
+> `engagement-panel-searchable-transcript-search-panel`, całość base64url+procentowanie.
+> **v2:** (a) `params` wyciągane z `getTranscriptEndpoint` — najpierw z HTML strony, potem
+> z odpowiedzi `youtubei/v1/next` (dokładnie droga przycisku „Wyświetl transkrypcję"), na końcu
+> budowane ręcznie wg pełnego przepisu (pl/en × autorskie/asr); (b) przeglądarkowy UA + ciasteczko
+> zgody `SOCS=CAI` zamiast jawnie botowego UA; (c) **diagnostyka per droga** w logu
+> (`youtube.transkrypcje.diagnoza`, próbka ≤3 filmów/przebieg) — bo tylko log z produkcji odróżni
+> „film bez napisów" od „YouTube odcina serwer"; (d) migracja **0292** — ponowna rekwalifikacja
+> „niedostepna". Jeśli i v2 padnie na blokadzie IP, dalsze opcje (proxy rezydenckie / płatny
+> hostowany API transkrypcji) są decyzją właściciela — poza zakresem tego planu.
+
 ## 1. Podejście (diagnoza + strategia)
 
 **Diagnoza.** Dziś `pobierzTranskrypcje` (`src/modules/youtube/lib/transkrypcja.ts`) pobiera stronę
