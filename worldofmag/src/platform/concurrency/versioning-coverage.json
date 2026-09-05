@@ -13,6 +13,10 @@
     "src/lib/trash/przywracanie.ts": {
       "model": "Task",
       "powod": "Restorator kosza (117): przy przywracaniu obszaru przypina z powrotem `areaId` zadań (`updateMany` z warunkiem na bieżącej wartości — nie kradnie ręcznych przenosin). To odtwarzanie stanu z migawki, nie współbieżna edycja formularzem; wersja zadania celowo nietknięta."
+    },
+    "src/modules/tasks/actions/obszaryProjektow.ts": {
+      "model": "TaskProject",
+      "powod": "125: zapisuje JEDNO pole wskaźnikowe `areaId` przy ustawianiu składu obszaru (updateMany po wielu projektach naraz). To operacja na PRZYPISANIU do drzewa kategorii, nie edycja treści projektu — nikt się o tę wartość nie ściga formularzem edycji projektu; wzorzec identyczny z wpisem obszary.ts (Task.areaId)."
     }
   }
 }
