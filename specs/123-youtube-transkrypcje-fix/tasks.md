@@ -82,3 +82,26 @@
 - [x] **T-13** — Bramki + merge + weryfikacja NA PRODUKCJI: właściciel klika „Odśwież" w
   `/youtube`; log `skutecznosc`/`diagnoza` rozstrzyga (transkrypcje są ↔ blokada IP → decyzja
   właściciela o proxy/hostowanym API).
+
+## Nawrót v3 (2026-09-05 — v2 też nie działa; research: „co robią inni")
+- [x] **T-14** — Research (WebSearch/WebFetch): konsensus branży 2026 — z IP chmury działa tylko
+  (a) proxy rezydenckie (Webshare, wbudowane w youtube-transcript-api), (b) hostowany API
+  (Supadata itp.), (c) publiczne instancje Piped (15 żywych) / Invidious (3–4), które serwują
+  napisy przez własne proxy. Darmowej drogi bezpośredniej brak.
+- [x] **T-15** — `lib/transkrypcja.ts` v3: droga `instancja` (Piped `/streams/{id}`, Invidious
+  `/api/v1/captions/{id}`, adresy względne + autorytatywna pusta lista), `tekstZVtt` (WebVTT
+  z nagłówkiem i sklejaniem duplikatów ASR), `listaInstancji` z Config, zrodlo `instancja`.
+- [x] **T-16** — `lib/transkrypcjaTransport.ts` (nowy) + zależność `undici`: proxy do YouTube
+  z klucza Config `youtube_proxy_secret` (szyfrowany sufiksem `_secret`, C-41) przez
+  `resilientFetch(fetchImpl)`; instancje bez proxy; lista instancji z
+  `youtube_transcript_instances`. Konfiguracja bez deployu.
+- [x] **T-17** — `jobs/youtubeRefresh.ts`: transport raz na przebieg; `zrodloInstancja`
+  i `przezProxy` w logu skuteczności; `diagnostyka` (≤3 próbki) w `WynikOdswiezania`
+  → widoczna w `Job.result` (`GET /api/jobs/[id]`), nie tylko w logach.
+- [x] **T-18** — Migracja `0293_youtube_transkrypcje_ponowna_proba_v3` (rekwalifikacja po v2).
+- [x] **T-19** — Testy: Piped/Invidious/VTT/listaInstancji + scenariusz Rendera („YouTube
+  blokuje wszystko → ratuje instancja") + autorytatywna pusta lista — 28/28 zielone
+  (test złapał realny błąd: metadane nagłówka VTT wpadały do tekstu).
+- [x] **T-20** — Bramki + merge + weryfikacja NA PRODUKCJI („Odśwież"); gdy i instancje padną —
+  decyzja właściciela: Webshare (wklejenie adresu proxy w /admin/config, bez deployu) albo
+  hostowany API.
