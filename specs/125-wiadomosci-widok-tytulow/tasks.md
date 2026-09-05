@@ -1,7 +1,7 @@
 # Zadania: Wiadomości — widok samych tytułów do oznaczania „do doczytania"
 
 - **Plan:** ./plan.md (125-wiadomosci-widok-tytulow)
-- **Status:** in-progress
+- **Status:** done
 - **Data:** 2026-09-04
 
 > **Zasada listy zadań:** kolejność **od najłatwiejszego do najtrudniejszego** i **zgodna z
@@ -41,7 +41,7 @@
   na bieżąco), AC-6 (wejście z `?tytuly=1`), AC-7 (360 px: wiersz ≥ 44 px, brak poziomego scrolla),
   AC-9 (filtr źródeł zawęża identycznie w obu trybach). Bez `networkidle`. Gotowe, gdy: nowy spec
   zielony ORAZ spec 124 zielony bez modyfikacji (AC-8).
-- [ ] **T-5** — Pełne bramki: `check:i18n`, `tsc --noEmit`, `tsc -p tsconfig.test.json`,
+- [x] **T-5** — Pełne bramki: `check:i18n`, `tsc --noEmit`, `tsc -p tsconfig.test.json`,
   `next lint`, pełny `npm run build` na lokalnym Postgresie (env w DWÓCH liniach eksportu —
   lekcja 124). Gotowe, gdy: wszystko zielone.
 - [x] **T-6** — Mapowanie AC-1…AC-9 na wyniki (input do `/verify`) w tym pliku.
