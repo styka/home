@@ -1836,7 +1836,12 @@
         "szczegolyPrzebiegu": "źródeł: {zrodel} · nowych materiałów: {nowych} · pozycji: {pozycji} · faktów na osi: {faktow}",
         "doDoczytania": "Do doczytania",
         "doczytaniaWlacz": "Pokaż tylko wiadomości odłożone do doczytania",
-        "doczytaniaWylacz": "Pokaż wszystkie wiadomości"
+        "doczytaniaWylacz": "Pokaż wszystkie wiadomości",
+        "tytuly": "Tytuły",
+        "tytulyWlacz": "Przełącz na widok samych tytułów",
+        "tytulyWylacz": "Wróć do pełnych wiadomości",
+        "doczytaniaPrzejdz": "Przejdź do odłożonych",
+        "doczytanieBlad": "Nie udało się zapisać oznaczenia"
       },
       "NewsReader": {
         "taPrzegladarkaNieObsluguje": "Ta przeglądarka nie obsługuje odczytu na głos.",
@@ -1910,6 +1915,11 @@
         "listaTematow": "Lista tematów",
         "pokazujPusteTematy": "Pokazuj tematy bez nowych wiadomości",
         "pokazujPusteOpis": "Domyślnie temat, w którym nic nie przyszło, jest ukryty — nie zabiera miejsca na liście."
+      },
+      "WierszTytulu": {
+        "oznacz": "Oznacz do doczytania",
+        "zdejmij": "Zdejmij odłożenie",
+        "otworzArtykul": "Otwórz artykuł u źródła"
       }
     },
     "notes": {

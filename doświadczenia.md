@@ -6313,3 +6313,17 @@ w tym `playabilityStatus` odtwarzacza — bo tylko log z produkcji odróżni „
 przepisze się klienta trzeci raz. Parametrów wewnętrznych API nie zgadujemy: bierzemy je z tej
 samej odpowiedzi, z której korzysta prawdziwy interfejs (`getTranscriptEndpoint`), a ręczne
 kodowanie kopiujemy z utrzymywanej implementacji (Invidious/Protodec) pole po polu.
+
+## 2026-09-05 — Globalny licznik w współdzielonej bazie e2e gryzie w OBIE strony
+**Problem:** Licznik „do doczytania" w Wiadomościach jest globalny dla konta, a baza e2e wspólna
+dla wszystkich plików suity. Spec 125 padł, bo zastał odłożoną pozycję ze specu 124 — utwardziłem
+więc seed 125 (reset cudzych `readLater`). Runda kontrolna odwróciła kolejność plików i padł 124,
+bo zastał pozycję odłożoną przez 125. Playwright nie gwarantuje kolejności plików, więc jednostronne
+utwardzenie tylko przesuwa awarię tam, gdzie akurat nie patrzymy.
+**Rozwiązanie:** KAŻDY plik dotykający globalnego stanu neutralizuje go we własnym `beforeAll`
+(`updateMany readLater=false` w przestrzeni konta e2e) — symetrycznie w 124 i 125; do tego asercje
+zakresowane po tytułach seedu zamiast globalnych liczników elementów.
+**Lekcja:** Gdy asercja liczy stan GLOBALNY dla konta, seed pliku musi ten stan sprowadzić do zera,
+a nie tylko posprzątać po sobie — i to w każdym pliku, który go dotyka, bo kolejność plików w suicie
+jest nieoznaczona. Naprawa „w pliku, który padł" bez lustrzanej naprawy w drugim to ta sama usterka
+odroczona do najbliższej zmiany kolejności.

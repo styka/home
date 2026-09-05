@@ -38,6 +38,14 @@ test.beforeAll(async () => {
   const stary = await prisma.newsTopic.findFirst({ where: { workspaceId, title: TEMAT } });
   if (stary) await prisma.newsTopic.delete({ where: { id: stary.id } });
 
+  // Licznik odłożonych jest GLOBALNY dla konta, a baza e2e współdzielona między specami (125
+  // zostawia pozycję readLater) — bez wyzerowania cudzych odłożeń asercje liczbowe zależałyby
+  // od kolejności plików w suicie. Ten sam zabieg stoi w spec 125.
+  await prisma.newsItem.updateMany({
+    where: { readLater: true, topic: { workspaceId } },
+    data: { readLater: false },
+  });
+
   // Upsert na unikacie (workspaceId, key) — odporny na powtórne uruchomienia suity.
   const zrodlo = await prisma.newsSource.upsert({
     where: { workspaceId_key: { workspaceId, key: "e2e-124" } },
