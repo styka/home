@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from
 import Link from "next/link";
 import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
+import { FiltrTagow } from "./FiltrTagow";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
 import { TimelineView } from "./TimelineView";
@@ -693,6 +694,18 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <Search size={15} />
           </button>
 
+          {/* 125 (zgł. 3): filtr etykiet obok lupy — decyzja właściciela. W wierszu zakładek
+              (118) chipy wybranych tagów wypychały zakładki poza kadr; tu jest ikoną z licznikiem,
+              a wybór ogląda się w panelu. Semantyka filtru (koniunkcja niżej) bez zmian. */}
+          {allTags.length > 0 && (
+            <FiltrTagow
+              wszystkie={allTags}
+              wybrane={selectedTagIds}
+              onPrzelacz={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+              onWyczysc={() => setSelectedTagIds([])}
+            />
+          )}
+
           {/* Przełącznik układu: Lista / Kanban / Timeline — częsty, więc blisko lewej */}
           <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
             {([
@@ -925,10 +938,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         active={activeFilter}
         counts={counts}
         onChange={setActiveFilter}
-        allTags={allTags}
-        selectedTagIds={selectedTagIds}
-        onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-        onTagsClear={() => setSelectedTagIds([])}
         filters={statusFilters}
         labels={filterLabels}
         showStatusTabs={layout !== "kanban"}

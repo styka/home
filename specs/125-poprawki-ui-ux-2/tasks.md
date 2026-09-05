@@ -33,21 +33,21 @@
 
 ## Faza 1 — Filtr tagów do paska akcji (zgł. 3; jeden ciąg zmian w 3 plikach)
 
-- [ ] **T-4** — `src/modules/tasks/ui/FiltrTagow.tsx`: wariant kompaktowy jako JEDYNY render
+- [x] **T-4** — `src/modules/tasks/ui/FiltrTagow.tsx`: wariant kompaktowy jako JEDYNY render
   przycisku — ikona `Tags` size 15 + licznik wybranych (badge jak liczniki zakładek; akcent
   `--accent-blue` gdy wybór aktywny), styl sąsiadów paska (p-1.5, rounded, flex-shrink-0),
   `title`/`aria-label` z pełną treścią („Filtr etykiet: 5 z 17"); rząd chipów wybranych
   etykiet USUNIĘTY (wybór ogląda się i zdejmuje w panelu `AnchoredLayer` — bez zmian w panelu).
   Gotowe, gdy: komponent renderuje tylko przycisk+panel, bez chipów; i18n przez `t()`.
-- [ ] **T-5** — `src/modules/tasks/ui/TaskFilters.tsx`: usunąć `FiltrTagow` i propsy tagów
+- [x] **T-5** — `src/modules/tasks/ui/TaskFilters.tsx`: usunąć `FiltrTagow` i propsy tagów
   (`allTags`/`selectedTagIds`/`onTagToggle`/`onTagsClear`); wiersz = same zakładki; warunek
   `if (!showStatusTabs) return null`. Gotowe, gdy: `tsc` pokazuje wszystkich konsumentów do
   poprawy (tylko `TasksPage`), a Kanban nie renderuje pustego wiersza.
-- [ ] **T-6** — `src/modules/tasks/ui/TasksPage.tsx`: `<FiltrTagow …>` w pasku akcji zaraz za
+- [x] **T-6** — `src/modules/tasks/ui/TasksPage.tsx`: `<FiltrTagow …>` w pasku akcji zaraz za
   przyciskiem Szukaj (scrollowany `role="toolbar"`); propsy tagów zdjęte z `<TaskFilters>`.
   Gotowe, gdy: AC-3 w całości (zakładki pełne przy 5 tagach, przycisk z licznikiem obok lupy,
   klik otwiera panel, koniunkcja nietknięta).
-- [ ] **T-7** — Grep `e2e/` pod `FiltrTagow`/„Filtr etykiet"/licznik „z N" — dostosować
+- [x] **T-7** — Grep `e2e/` pod `FiltrTagow`/„Filtr etykiet"/licznik „z N" — dostosować
   selektory, jeśli jakiś spec celuje w filtr w starym miejscu. Gotowe, gdy: żaden spec nie
   szuka filtra w wierszu zakładek.
 
