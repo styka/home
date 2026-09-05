@@ -34,7 +34,10 @@ export const readTools: Record<string, AiReadToolHandler> = {
       const loc = (wanted && locations.find((l) => l.label.toLowerCase().includes(wanted.toLowerCase())))
         || locations.find((l) => l.isDefault)
         || locations[0];
-      const f = await getWeather(loc.lat, loc.lon);
+      const wynik = await getWeather(loc.lat, loc.lon);
+      // Niedostępność dostawcy wraca jako notatka dla agenta — jak brak lokalizacji wyżej.
+      if (!wynik.ok) return { note: wynik.blad };
+      const f = wynik.forecast;
       return {
         location: loc.label,
         current: f.current ? { temp: f.current.temp, apparent: f.current.apparent, windKph: f.current.windKph, code: f.current.code } : null,

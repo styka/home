@@ -163,13 +163,29 @@ export async function deleteLocation(id: string): Promise<void> {
 
 // ─── Forecast (live) ───────────────────────────────────────────────────────
 
-export async function getWeather(lat: number, lon: number): Promise<Forecast> {
+/**
+ * Wynik pobrania prognozy — niedostępność dostawcy wraca jako DANE, nie wyjątek.
+ *
+ * Zgłoszenie właściciela (2026-09): toast na /pogoda pokazywał angielski akapit „An error occurred
+ * in the Server Components render… A digest property is included…". To standardowe REDAGOWANIE
+ * Nexta w produkcji: treść `Error` rzuconego w Server Action nigdy nie dociera do klienta (zostaje
+ * tylko `digest`), więc komunikat dla użytkownika NIE MOŻE podróżować przez `throw`. Wzorzec jak
+ * `WynikKsiegowania` z Portfela (115).
+ */
+export type WynikPrognozy = { ok: true; forecast: Forecast } | { ok: false; blad: string };
+
+export async function getWeather(lat: number, lon: number): Promise<WynikPrognozy> {
   await requireAuth();
   const f = await fetchForecast(lat, lon);
-  // Błąd zostaje tylko na zimny start: przy awarii z zapełnioną pamięcią `fetchForecast` oddaje
-  // ostatnią udaną prognozę oznaczoną `stale` i UI pokazuje pasek zamiast pustego ekranu.
-  if (!f) throw new Error("Serwis pogodowy (Open-Meteo) chwilowo nie odpowiada. Spróbuj ponownie za chwilę.");
-  return f;
+  // Niedostępność zostaje tylko na zimny start: przy awarii z zapełnioną pamięcią `fetchForecast`
+  // oddaje ostatnią udaną prognozę oznaczoną `stale` i UI pokazuje pasek zamiast pustego ekranu.
+  if (!f) {
+    return {
+      ok: false,
+      blad: "Serwis pogodowy (Open-Meteo) chwilowo nie odpowiada. Spróbuj ponownie za chwilę.",
+    };
+  }
+  return { ok: true, forecast: f };
 }
 
 // ─── AI helpers ────────────────────────────────────────────────────────────

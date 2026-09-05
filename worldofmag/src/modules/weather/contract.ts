@@ -14,6 +14,7 @@
 export {
   // odczyt
   getWeather,
+  type WynikPrognozy,
   getLocations,
   getWatchers,
   // 115 (Z-INT-15): prognoza we wspólnym kalendarzu (odczyt dla modułu Kalendarz)

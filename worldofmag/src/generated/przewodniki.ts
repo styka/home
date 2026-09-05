@@ -168,4 +168,4 @@ export const PRZEWODNIKI: Przewodnik[] = [
   }
 ]
 
-export const PRZEWODNIKI_GENERATED_AT = "2026-09-04T20:50:36.741Z"
+export const PRZEWODNIKI_GENERATED_AT = "2026-09-04T22:44:50.642Z"

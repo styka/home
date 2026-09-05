@@ -30,8 +30,12 @@ export async function prognozaDlaPrzestrzeni(weatherLocationId: string | null | 
     // klucza obcego (to inny moduł). Cisza jest tu właściwą odpowiedzią.
     if (!lok) return [];
 
-    const forecast = await getWeather(lok.lat, lok.lon);
-    return (forecast.daily ?? []).slice(0, DNI_PROGNOZY).map((d) => ({
+    const wynik = await getWeather(lok.lat, lok.lon);
+    if (!wynik.ok) {
+      logEvent("warn", "rosliny/prognoza.niedostepna", { weatherLocationId, powod: wynik.blad });
+      return [];
+    }
+    return (wynik.forecast.daily ?? []).slice(0, DNI_PROGNOZY).map((d) => ({
       date: d.date,
       precipSum: d.precipSum,
       tMin: d.tMin,

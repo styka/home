@@ -6245,3 +6245,24 @@ niediagnozowalna — pierwsze pytanie („co dokładnie odpowiedział dostawca?"
 śladu. Każdy `catch → null` przy wywołaniu zewnętrznym ma logować status/wyjątek przez `logEvent`.
 I druga połowa: gdy dane są prognozą/odczytem świata (nie stanem użytkownika), ostatnia udana
 odpowiedź OZNACZONA jako nieaktualna bije pusty ekran — degradacja zamiast odmowy.
+
+## 2026-09-05 — Produkcyjny Next REDAGUJE treść błędu z Server Action: `throw` nigdy nie dowiezie komunikatu
+**Problem:** Po wdrożeniu poprawki pogodowej właściciel dostał na /pogoda toast z angielskim
+akapitem „An error occurred in the Server Components render. The specific message is omitted in
+production builds… A digest property is included…". Wyglądało jak awaria renderu, a było
+REDAKCJĄ: w produkcji Next zamienia treść każdego `Error` rzuconego w Server Action na ten
+generyczny tekst (klient dostaje tylko `digest`), więc `showToast(e.message)` pokazuje bełkot —
+i to niezależnie od tego, jak starannie po polsku napiszemy komunikat w `throw`. Potwierdzone
+empirycznie sondą Playwright na lokalnym buildzie produkcyjnym: stary kod → angielski akapit,
+poprawka → polski komunikat. W dev tego NIE widać (dev przekazuje treść), więc błąd ujawnia się
+dopiero na wdrożeniu.
+**Rozwiązanie:** Oczekiwany, operacyjny błąd („dostawca nie odpowiada") wraca jako DANE:
+`getWeather` zwraca unię `WynikPrognozy = {ok:true; forecast} | {ok:false; blad}` (wzorzec
+`WynikKsiegowania` z 115), a trzej konsumenci jawnie ją obsługują (toast w WeatherPage, pusta
+lista w Roślinach, `note` dla agenta AI). `catch` w kliencie zostaje na błędy NIEoczekiwane,
+ale pokazuje własny polski tekst — nigdy `e.message` z akcji serwerowej.
+**Lekcja:** Komunikat dla użytkownika nie może podróżować przez `throw` z Server Action —
+produkcja go zredaguje. Oczekiwane błędy zwracamy jako wynik (unia z `ok`), a `e.message`
+z akcji serwerowej NIE nadaje się do toasta. Uwaga systemowa: w aplikacji jest ~50 miejsc
+`showToast(e.message ?? …)` po wywołaniach akcji — każde z nich przy rzuconym błędzie pokaże
+w produkcji ten sam angielski akapit; do przejrzenia osobnym zleceniem.

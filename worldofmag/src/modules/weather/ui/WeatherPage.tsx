@@ -85,9 +85,19 @@ export function WeatherPage({
     (c: Coords) => {
       setLoading(true);
       getWeather(c.lat, c.lon)
-        .then(setForecast)
-        .catch((e) => {
-          showToast(e.message ?? "Nie udało się pobrać prognozy", "error");
+        .then((wynik) => {
+          if (wynik.ok) {
+            setForecast(wynik.forecast);
+          } else {
+            showToast(wynik.blad, "error");
+            setForecast(null);
+          }
+        })
+        .catch(() => {
+          // Nieoczekiwany błąd akcji serwerowej. Jego `message` w produkcji jest ZREDAGOWANY przez
+          // Nexta (angielski akapit o „Server Components render" + digest), więc pokazywanie
+          // `e.message` daje użytkownikowi nieczytelny bełkot — stąd własny komunikat.
+          showToast("Nie udało się pobrać prognozy. Spróbuj ponownie.", "error");
           setForecast(null);
         })
         .finally(() => setLoading(false));
