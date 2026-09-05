@@ -6314,6 +6314,28 @@ przepisze się klienta trzeci raz. Parametrów wewnętrznych API nie zgadujemy: 
 samej odpowiedzi, z której korzysta prawdziwy interfejs (`getTranscriptEndpoint`), a ręczne
 kodowanie kopiujemy z utrzymywanej implementacji (Invidious/Protodec) pole po polu.
 
+## 2026-09-05 — Gdy YouTube odcina IP chmury, ratunkiem jest cudze IP: instancje Piped/Invidious albo proxy rezydenckie
+**Problem:** 123 v2 (prawdziwe `params` panelu, przeglądarkowy UA, ciasteczko zgody) też nie
+przyniosło transkrypcji na produkcji. Research potwierdził: to nie kwestia kształtu żądań —
+YouTube odcina adresy IP centrów danych klasami ASN i żadna kombinacja nagłówków tego nie
+obchodzi. Konsensus branży 2026: z chmury działa wyłącznie (a) rotujące proxy rezydenckie
+(Webshare — de facto standard, wbudowany w youtube-transcript-api), (b) płatny hostowany API
+transkrypcji, (c) publiczne instancje Piped/Invidious, które pobierają z YouTube po swojej
+stronie i serwują napisy przez własne proxy.
+**Rozwiązanie:** v3 dodaje do łańcucha drogę `instancja` (Piped `/streams/{id}` → `subtitles[]`,
+Invidious `/api/v1/captions/{id}` → WebVTT; wspólny `wybierzSciezke`, nowy `tekstZVtt`) — lista
+instancji jest DANYMI (Config `youtube_transcript_instances`), bo publiczne instancje bywają
+ulotne i wymiana martwej nie może wymagać deployu. Równolegle wszedł transport z opcjonalnym
+proxy (Config `youtube_proxy_secret` → undici `ProxyAgent` przez `fetchImpl` w `resilientFetch`;
+proxy tylko dla youtube.com — płatnego łącza rezydenckiego nie marnujemy na instancje).
+Diagnostyka trafiła też do `Job.result`, bo panel /admin/jobs nie pokazuje wyników, a właściciel
+nie powinien musieć czytać logów Rendera.
+**Lekcja:** Blokada po ADRESIE nadawcy ma tylko trzy wyjścia: inny adres (proxy), cudzy adres
+(instancja pośrednicząca) albo płatny pośrednik — kolejne wersje klienta HTTP nic nie zmienią,
+więc po dwóch nieudanych iteracjach należało od razu szukać „jak robią to inni w produkcji",
+zamiast szlifować żądania. I druga: sekret w Config nazywaj z sufiksem `_secret`/`_password` —
+szyfrowanie i maskowanie dostajesz wtedy za darmo z istniejącej reguły.
+
 ## 2026-09-05 — Globalny licznik w współdzielonej bazie e2e gryzie w OBIE strony
 **Problem:** Licznik „do doczytania" w Wiadomościach jest globalny dla konta, a baza e2e wspólna
 dla wszystkich plików suity. Spec 125 padł, bo zastał odłożoną pozycję ze specu 124 — utwardziłem

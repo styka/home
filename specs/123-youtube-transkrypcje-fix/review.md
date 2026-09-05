@@ -52,3 +52,17 @@ wstecznie zgodne, nic nie rzuca, bez nowych zależności; pełny build zielony n
 **Werdykt: APPROVE Z UWAGAMI** — rozstrzygnięcie skuteczności wyłącznie na produkcji (log
 skutecznosc/diagnoza po „Odśwież"); jeśli diagnoza pokaże blokadę IP na wszystkich drogach,
 dalszy krok (proxy rezydenckie / hostowany API transkrypcji) jest decyzją właściciela.
+
+---
+
+## Nawrót v3 (2026-09-05)
+
+v2 również bez transkrypcji na produkcji. Research („co robią inni", źródła w plan §Nawrót v3)
+rozstrzygnął, że blokada ADRESU IP nie ma obejścia po stronie klienta — v3 dodaje drogę
+`instancja` (publiczne Piped/Invidious; lista nadpisywalna z Config) oraz transport z opcjonalnym
+proxy rezydenckim (`youtube_proxy_secret`, undici ProxyAgent przez `fetchImpl` w `resilientFetch`)
+— aktywacja bez deployu. Diagnostyka trafia też do `Job.result`. Recenzja diffa v3: testy 28/28
+(złapały realny błąd nagłówka VTT), autorytatywność pustej listy instancji przetestowana, sekret
+proxy pod regułą szyfrowania `_secret` (C-41), jedna nowa zależność (`undici`) z uzasadnieniem
+w planie; nic nie rzuca, granice modułu zachowane. **Werdykt: APPROVE Z UWAGAMI** — skuteczność
+instancji rozstrzyga produkcja; gdy padną, aktywacja proxy = wklejenie adresu w /admin/config.

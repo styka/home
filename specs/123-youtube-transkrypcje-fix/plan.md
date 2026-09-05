@@ -180,3 +180,31 @@ zmian po swojej stronie (AC-7 weryfikowane przeglądem kodu konsumentów). Bramk
 - [x] C-53 — minimalizm: brak nowych zależności (protobuf kodowany ręcznie ~10 linii), brak
   refaktorów „przy okazji"; jedyny naddatek — pole `zrodlo` — jest uzasadniony brakiem innej drogi
   weryfikacji po deployu
+
+---
+
+## Nawrót v3 (2026-09-05, C-54) — „co robią inni" zamiast trzeciej wersji klienta
+
+v2 też padło na produkcji. Research (youtube-transcript-api #593, przeglądy metod 2026, listy
+instancji Piped/Invidious) rozstrzygnął: blokada po ADRESIE IP (ASN chmur) nie ma darmowego
+obejścia po stronie klienta HTTP — działają wyłącznie: (a) rotujące proxy rezydenckie (Webshare,
+standard branżowy), (b) hostowany API transkrypcji, (c) publiczne instancje Piped/Invidious,
+które pobierają z YouTube u siebie i serwują napisy przez własne proxy.
+
+**v3 wdraża (c) jako drogę darmową + plumbing pod (a) bez deployu:**
+- Droga `instancja` w łańcuchu (po `strona`, przed `player`): Piped `GET {baza}/streams/{id}` →
+  `subtitles[]`; Invidious `GET {baza}/api/v1/captions/{id}` → `captions[]` → treść WebVTT.
+  Wspólny `wybierzSciezke`; nowy czysty `tekstZVtt` (nagłówek do pierwszej pustej linii,
+  sklejanie sąsiadujących duplikatów ASR). Instancja z poprawną listą jest AUTORYTATYWNA
+  (pusta lista = film bez napisów, koniec drogi). Lista instancji = dane: wbudowane
+  `DOMYSLNE_INSTANCJE` (5 z oficjalnych list projektów) nadpisywalne kluczem Config
+  `youtube_transcript_instances` (JSON `"typ:adres"`).
+- `lib/transkrypcjaTransport.ts` + zależność **`undici`** (uzasadnienie C-53: globalny fetch
+  Node'a nie honoruje proxy, agenta nie zbudujemy z modułów wbudowanych; undici to silnik fetch
+  Node'a): klucz Config `youtube_proxy_secret` (sufiks `_secret` ⇒ szyfrowanie+maskowanie, C-41)
+  kieruje żądania do youtube.com przez `ProxyAgent` wstrzyknięty jako `fetchImpl` do
+  `resilientFetch` (wspólny retry/backoff); instancje świadomie bez proxy.
+- Job: transport budowany raz na przebieg; log skuteczności += `zrodloInstancja`, `przezProxy`;
+  `WynikOdswiezania.diagnostyka` (≤3 próbki) — diagnoza czytelna z `Job.result`, nie tylko
+  z logów Rendera.
+- Migracja **0293**: rekwalifikacja „niedostepna" po v2.

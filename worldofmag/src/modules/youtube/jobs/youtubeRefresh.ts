@@ -8,6 +8,7 @@ import { buildUserContext } from "@/lib/userContext";
 import { przestrzenOsobista } from "@/platform/workspaces/zapis";
 import { filmyKanalu } from "../lib/filmy";
 import { pobierzTranskrypcje } from "../lib/transkrypcja";
+import { przygotujTransport } from "../lib/transkrypcjaTransport";
 
 /**
  * 102 (AC-5, AC-11, AC-12) — JEDNO ODŚWIEŻENIE OBEJMUJĄCE CAŁY MODUŁ.
@@ -33,6 +34,12 @@ export interface WynikOdswiezania {
   nowychFilmow: number;
   transkrypcji: number;
   transkrypcjiProbowano: number;
+  /**
+   * 123 v3: próbka powodów niepowodzeń (≤3 filmy) — trafia do `Job.result`, żeby dało się ją
+   * odczytać przez `GET /api/jobs/[id]` bez grzebania w logach Rendera. To samo idzie do
+   * logu `youtube.transkrypcje.diagnoza`.
+   */
+  diagnostyka?: string[];
   ocenionych: number;
   /**
    * Zużycie modelu z tego przebiegu. Handler chodzi w workerze BEZ sesji, więc nie może sam
@@ -106,16 +113,19 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
     // udanych już nie wystarcza — rozbicie po źródle mówi, która droga niesie ruch, a jej
     // wyzerowanie jest pierwszym sygnałem kolejnej zmiany po stronie YouTube.
     const zrodla: Record<string, number> = {};
+    // 123 v3: transport budowany RAZ na przebieg — czyta z Config proxy do YouTube
+    // (`youtube_proxy_secret`) i listę publicznych instancji (`youtube_transcript_instances`).
+    const transport = await przygotujTransport();
     // 123 v2: środowisko budowy nie widzi youtube.com, więc log z produkcji jest jedynym
     // mikroskopem — dla pierwszych trzech NIEUDANYCH filmów zapisujemy, dlaczego odpadła
     // każda droga (to odróżnia „film bez napisów" od „YouTube odcina serwerowe IP").
-    let zdiagnozowanych = 0;
+    const probkiDiagnozy: string[] = [];
     for (let i = 0; i < doPobrania.length; i++) {
       const film = doPobrania[i];
       ctx.progress?.(`Pobieram transkrypcje (${i + 1}/${doPobrania.length})…`);
       wynik.transkrypcjiProbowano++;
-      const diagnoza: string[] | undefined = zdiagnozowanych < 3 ? [] : undefined;
-      const t = await pobierzTranskrypcje(film.videoId, undefined, diagnoza);
+      const diagnoza: string[] | undefined = probkiDiagnozy.length < 3 ? [] : undefined;
+      const t = await pobierzTranskrypcje(film.videoId, transport.pobierz, diagnoza, transport.instancje);
       await prisma.youtubeVideo.update({
         where: { id: film.id },
         data: t
@@ -126,13 +136,14 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
         wynik.transkrypcji++;
         zrodla[t.zrodlo] = (zrodla[t.zrodlo] ?? 0) + 1;
       } else if (diagnoza) {
-        zdiagnozowanych++;
+        probkiDiagnozy.push(`${film.videoId}: ${diagnoza.join(" | ")}`);
         logEvent("info", "youtube.transkrypcje.diagnoza", {
           film: film.videoId,
           powody: diagnoza.join(" | "),
         });
       }
     }
+    if (probkiDiagnozy.length > 0) wynik.diagnostyka = probkiDiagnozy;
 
     // **Odsetek udanych pobrań jest tu po to, żeby dało się ocenić, czy wariant lekki wystarcza.**
     // Bez tej liczby decyzja „dokładamy przeglądarkę w tle" byłaby zgadywaniem, a przy pobieraniu
@@ -145,8 +156,10 @@ export const youtubeRefreshHandler: JobHandler<Record<string, never>, WynikOdswi
         // Pola płaskie, nie obiekt — `oczysc` w logach strukturalnych spłaszcza obiekty do
         // "[obiekt N pól]", więc zagnieżdżone liczniki nigdy nie dotarłyby do agregatora.
         zrodloStrona: zrodla.strona ?? 0,
+        zrodloInstancja: zrodla.instancja ?? 0,
         zrodloPlayer: zrodla.player ?? 0,
         zrodloPanel: zrodla.panel ?? 0,
+        przezProxy: transport.przezProxy,
       });
     }
   } catch (e) {
