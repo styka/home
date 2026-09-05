@@ -34,7 +34,7 @@
   i `check:i18n` zielone, URL niesie `tytuly=1`.
 
 ## Faza 2 — Bramki i domknięcie
-- [~] **T-4** — e2e `e2e/specs/125-wiadomosci-tytuly.spec.ts` (seed wg wzorca 124, tryb `serial`,
+- [x] **T-4** — e2e `e2e/specs/125-wiadomosci-tytuly.spec.ts` (seed wg wzorca 124, tryb `serial`,
   upsert źródła na unikacie): AC-1 (przełącznik ⇒ wiersze zamiast kart, wyjście tym samym
   przyciskiem), AC-2 (klik wiersza ⇒ `aria-pressed`, trwałość po reloadzie), AC-3 (osobny link
   z `href`), AC-4 (przejście ⇒ `doczytania=1` bez `tytuly`, tylko oznaczone karty), AC-5 (licznik
@@ -44,8 +44,8 @@
 - [ ] **T-5** — Pełne bramki: `check:i18n`, `tsc --noEmit`, `tsc -p tsconfig.test.json`,
   `next lint`, pełny `npm run build` na lokalnym Postgresie (env w DWÓCH liniach eksportu —
   lekcja 124). Gotowe, gdy: wszystko zielone.
-- [ ] **T-6** — Mapowanie AC-1…AC-9 na wyniki (input do `/verify`) w tym pliku.
-- [ ] **T-7** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51);
+- [x] **T-6** — Mapowanie AC-1…AC-9 na wyniki (input do `/verify`) w tym pliku.
+- [x] **T-7** — Wpis do `doświadczenia.md`, jeśli po drodze był nieoczywisty problem (C-51);
   inaczej odnotować „bez nowych lekcji".
 
 ## Mapowanie kryteriów akceptacji
@@ -60,6 +60,25 @@
 | AC-7 (telefon 360 px) | T-1, T-4 |
 | AC-8 (zero zmian w 124) | T-2 (render za flagą), T-4 (spec 124 regresyjnie) |
 | AC-9 (wspólny zbiór z filtrem źródeł) | T-2, T-4 |
+
+## Wyniki AC (T-6 — input do /verify)
+| AC | Wynik | Dowód |
+|----|-------|-------|
+| AC-1 | ✅ e2e | [125-AC1..AC5]: klik „Tytuły" ⇒ URL `tytuly=1`, 0 kart, wiersze wszystkich trzech pozycji; wyjście tym samym przyciskiem (aria-pressed) |
+| AC-2 | ✅ e2e | [125-AC1..AC5]: klik wiersza ⇒ `aria-pressed=true` natychmiast; twardy reload ⇒ stan trwały; drugi klik odznacza |
+| AC-3 | ✅ e2e | [125-AC1..AC5]: osobny `<a href=…>` na wierszu; klik wiersza nie nawiguje |
+| AC-4 | ✅ e2e | [125-AC1..AC5]: „Przejdź do odłożonych" ⇒ `doczytania=1` bez `tytuly`, karta odłożonej jest, zwykłej nie ma |
+| AC-5 | ✅ e2e | [125-AC1..AC5]: licznik na przycisku przejścia rośnie/maleje od razu po kliku (optymistyka) |
+| AC-6 | ✅ e2e | [125-AC6]: wejście z `?tytuly=1` ⇒ wiersze, przełącznik wciśnięty |
+| AC-7 | ✅ e2e | [125-AC7]: 360 px — wiersz ≥ 44 px, brak poziomego przewijania |
+| AC-8 | ✅ e2e | spec 124 bez modyfikacji scenariuszy: 3/3 zielone w tym samym przebiegu |
+| AC-9 | ✅ e2e | [125-AC9]: `?zrodla=e2e-125a` daje te same pozycje w wierszach i w kartach (źródło B odsiane w obu) |
+
+E2E: 10/10 zielone (`scripts/e2e-web.sh --workers=1 e2e/specs/125-… e2e/specs/124-…`, desktop).
+
+T-7: bez nowych lekcji do doświadczenia.md — jedyny niebanalny problem (globalne liczniki
+w współdzielonej bazie e2e + globalne „Oznacz wszystkie" między plikami) jest odnotowany niżej
+i w komentarzach speca e2e; to wariant lekcji już opisanej przy 124 (wyścig sejdów).
 
 ## Notatki / blokady
 - E2E 125+124 uruchamiane razem z `--workers=1`: spec 124 wykonuje globalne „Oznacz wszystkie"
