@@ -156,8 +156,10 @@ Założenia przyjęte domyślnie (rekomendowane, bez osobnego pytania):
   tej grupy; adres nieistniejącej grupy zachowuje dotychczasowe zachowanie „nie znaleziono".
 - Projekty bez obszaru pozostają w płaskiej liście „Projekty" (sidebar) i w dotychczasowych
   miejscach — obszar jest opcjonalny, niczego nie wymusza.
-- Sekcja obszarów na stronie głównej pojawia się tylko, gdy użytkownik ma ≥1 obszar (pusta sekcja
-  to szum).
+- Sekcja obszarów na stronie głównej: przy ≥1 obszarze lista z licznikami; przy 0 — zwięzła
+  zachęta z przyciskiem utworzenia pierwszego obszaru (wzorzec sekcji „Projekty" obok). *(Korekta
+  C-54 na implementacji: całkowite ukrycie sekcji nie zostawiałoby żadnej ścieżki utworzenia
+  PIERWSZEGO obszaru najwyższego poziomu — dropdown tworzy tylko pod-obszary istniejących.)*
 
 ## 9. Ryzyka
 

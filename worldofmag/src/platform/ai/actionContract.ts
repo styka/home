@@ -437,9 +437,6 @@ export const ACTION_CONTRACTS: Record<string, ActionContract> = {
   create_project: { label: "Utwórz projekt zadań" },
   update_project: { label: "Zmień projekt zadań" },
   delete_project: { label: "Usuń projekt zadań" },
-  create_project_group: { label: "Utwórz grupę projektów" },
-  update_project_group: { label: "Zmień grupę projektów" },
-  delete_project_group: { label: "Usuń grupę projektów" },
 
   // ── NOTATKI ───────────────────────────────────────────────────────────────
   create_note: { label: "Utwórz notatkę", fields: { content: longText("Treść") } },

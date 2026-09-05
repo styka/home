@@ -2966,7 +2966,14 @@
         "nadchodzace": "Nadchodzące",
         "zarzadzanie": "Zarządzanie",
         "naDzis": "Na dziś",
-        "noweZadanie": "Nowe zadanie"
+        "noweZadanie": "Nowe zadanie",
+        "obszary": "Obszary",
+        "nowyObszar": "Nowy obszar",
+        "nazwaObszaru": "Nazwa obszaru…",
+        "utworz": "Utwórz",
+        "brakObszarow": "Brak obszarów",
+        "brakObszarowPodpowiedz": "Obszar grupuje projekty z jednej dziedziny życia (np. Dom, Praca) i daje wspólny widok ich zadań",
+        "licznikObszaru": "{projekty, plural, one {# projekt} few {# projekty} other {# projektów}} · {zadania, plural, one {# aktywne} other {# aktywnych}}"
       },
       "TasksPage": {
         "dzis": "📅 Dziś",
@@ -2997,7 +3004,10 @@
         "brakDostepnychProjektow": "Brak dostępnych projektów",
         "brakProjektow": "Brak projektów",
         "zmienNazwe": "Zmień nazwę",
-        "usunProjekt": "Usuń projekt"
+        "usunProjekt": "Usuń projekt",
+        "zwinObszar": "Zwiń obszar",
+        "rozwinObszar": "Rozwiń obszar",
+        "otworzWidokObszaru": "Otwórz wspólny widok obszaru"
       },
       "TimelineView": {
         "brakZadanDoPokazania": "Brak zadań do pokazania."
@@ -3092,6 +3102,24 @@
       },
       "ModalDodaniaZadania": {
         "tytul": "Nowe zadanie"
+      },
+      "FiltrObszarow": {
+        "filtrObszarow": "Filtr obszarów",
+        "ustawieniaObszaru": "Zakres i ustawienia obszaru",
+        "wszystkieObszary": "Wszystkie obszary",
+        "projektyObszaru": "{ile, plural, one {# projekt} few {# projekty} other {# projektów}}",
+        "ikonaObszaru": "Ikona obszaru",
+        "nazwaObszaru": "Nazwa obszaru",
+        "kolor": "Kolor:",
+        "bezKoloru": "Bez koloru",
+        "kolorObszaru": "Kolor obszaru",
+        "wInnymObszarze": "W innym obszarze: {nazwa}",
+        "nazwaPodobszaru": "Nazwa pod-obszaru…",
+        "dodajPodobszar": "Dodaj pod-obszar",
+        "zapiszZmiany": "Zapisz zmiany",
+        "usunObszar": "Usuń obszar",
+        "usunObszarPytanie": "Usunąć obszar „{nazwa}”?\n\nProjekty i zadania pozostaną nienaruszone — stracą tylko przypisanie do obszaru; pod-obszary awansują wyżej.",
+        "bladZapisu": "Nie udało się zapisać zmian obszaru"
       }
     },
     "truck": {

@@ -1,4 +1,4 @@
-import { getProjectGroups, getTaskTags } from "../contract";
+import { getTaskTags } from "../contract";
 import { technicalToLabel } from "@/platform/ai/humanize";
 import { describeRecurringRule, parseRecurringRule } from "@/lib/recurrence";
 import { filtrMoichRekordow } from "@/platform/workspaces/zapis"
@@ -20,7 +20,6 @@ export const readToolsPrompt = [
   "- list_tasks: args { projectId?, status?, priority?, search?, tag?, dueBefore?, limit?, offset?, includeDescription? } → [{ id, title, status, priority, dueDate, projectId, projectName, tags, recurring?, hasDescription?, description? }]. projectId może być identyfikatorem ALBO nazwą projektu (dopasowanie bez rozróżniania wielkości liter) — gdy użytkownik nazwie projekt (np. „z projektu LZ\"), podaj tę nazwę wprost. Domyślnie pomija zadania DONE/CANCELLED (chyba że podasz status). dueBefore w ISO. tag = nazwa etykiety (bez rozróżniania wielkości liter) — użyj go, gdy użytkownik pyta „zadania otagowane/z tagiem X\". \"tags\" w wyniku to lista nazw etykiet danego zadania. recurring:true = zadanie CYKLICZNE (powtarzalne; szczegóły reguły przez get_task).\n  WAŻNE — gdy potrzebujesz KOMPLETU zadań: jeśli wynik zawiera pole \"truncated\", dane NIE są pełne. Powtórz WTEDY to samo wywołanie z offset podanym w tym komunikacie, aż komunikat zniknie. NIE zawężaj wtedy filtrów (status/tag/priorytet) — dzielenie zbioru na filtry gubi zadania i marnuje kroki; offset jest jedynym poprawnym sposobem dobrania reszty.\n  includeDescription:true dokłada TREŚĆ opisu każdego zadania — użyj, gdy masz zbudować coś na podstawie szczegółów wielu zadań naraz (zamiast wołać get_task po jednym). Bez tej flagi dostajesz tylko hasDescription:true.",
   "- get_task: args { taskId? | search? } → { id, title, description, status, priority, dueDate, projectName, recurring? } | null. PEŁNY opis jednego zadania — wywołaj PRZED edycją opisu (update_task), gdy potrzebujesz aktualnej treści. recurring = opis reguły cykliczności po polsku (np. \"co tydzień: pon, śr\"), obecny tylko dla zadań cyklicznych.",
   "- list_task_tags: args {} → [{ id, name }]. Dostępne etykiety zadań (użyj, by podać istniejące tagi lub przed set_task_tags).",
-  "- list_project_groups: args {} → [{ id, name, projectCount }]. Grupy projektów zadań (foldery/współdzielone widoki).",
 ].join("\n");
 
 export const readTools: Record<string, AiReadToolHandler> = {
@@ -186,9 +185,5 @@ export const readTools: Record<string, AiReadToolHandler> = {
   list_task_tags: async (args, userId) => {
       const tags = await getTaskTags();
       return tags.map((t) => ({ id: t.id, name: t.name }));
-  },
-  list_project_groups: async (args, userId) => {
-      const groups = await getProjectGroups();
-      return groups.map((g) => ({ id: g.id, name: g.name, projectCount: g.projectIds?.length ?? 0 }));
   },
 };

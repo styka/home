@@ -16,14 +16,18 @@ import {
   Loader2,
   Tag,
   Users,
+  Layers,
 } from "lucide-react";
 import { createTaskProject } from "../actions/taskProjects";
+import { createObszarProjektow } from "../actions/obszaryProjektow";
+import { splaszczDrzewo } from "../lib/poddrzewoObszarow";
+import { ZDARZENIE_ZMIANY_OBSZAROW } from "./FiltrObszarow";
 import { ModalDodaniaZadania } from "./ModalDodaniaZadania";
 import { StatTile, SectionHeading, ManagementGrid, EmptyState } from "@/components/ui/home";
 import { ModuleView } from "@/components/ui/view";
 import { useAkcjaZAdresu } from "@/lib/nawigacja/akcjaZAdresu";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { TaskProject, TaskPriority } from "@/types";
+import type { ObszarProjektow, TaskProject, TaskPriority } from "@/types";
 import { TASK_PRIORITY_COLORS } from "@/types";
 
 interface TodayPreviewItem {
@@ -37,6 +41,8 @@ interface TodayPreviewItem {
 
 interface TasksHomePageProps {
   projects: TaskProject[];
+  /** 125: drzewo obszarów-kategorii (sekcja na stronie głównej modułu). */
+  obszary?: ObszarProjektow[];
   todayCount: number;
   upcomingCount: number;
   overdueCount: number;
@@ -47,6 +53,7 @@ interface TasksHomePageProps {
 
 export function TasksHomePage({
   projects,
+  obszary = [],
   todayCount,
   upcomingCount,
   overdueCount,
@@ -56,6 +63,24 @@ export function TasksHomePage({
   const t = useTranslations("modules.tasks.TasksHomePage");
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
+  // 125: tworzenie obszaru NAJWYŻSZEGO poziomu żyje tutaj — dropdown w widoku obszaru tworzy
+  // wyłącznie pod-obszary, więc bez tego formularza pierwszy obszar nie miałby jak powstać.
+  const [dodawanieObszaru, setDodawanieObszaru] = useState(false);
+  const [nazwaObszaru, setNazwaObszaru] = useState("");
+  const [zapisObszaru, startZapisObszaru] = useTransition();
+  function utworzObszar() {
+    const nazwa = nazwaObszaru.trim();
+    if (!nazwa) return;
+    startZapisObszaru(async () => {
+      try {
+        await createObszarProjektow({ name: nazwa });
+        window.dispatchEvent(new Event(ZDARZENIE_ZMIANY_OBSZAROW));
+        setNazwaObszaru("");
+        setDodawanieObszaru(false);
+        router.refresh();
+      } catch { /* nazwa pusta / brak dostępu — zostawiamy formularz otwarty */ }
+    });
+  }
   /**
    * 121 (zgł. 2): dodawanie zadania w MODALU zamiast stałego widgetu (105) — decyzja właściciela:
    * na stronie modułu ma stać przycisk jak przy projekcie, „byle nie rozwijane inline". Ten sam
@@ -367,6 +392,88 @@ export function TasksHomePage({
           <ProjectCard project={inbox} />
         </div>
       )}
+
+      {/* 125: Obszary — kategorie projektów (drzewo), z licznikami i wejściem do widoku zbiorczego. */}
+      <div>
+        <SectionHeading
+          action={
+            dodawanieObszaru ? undefined : (
+              <button
+                onClick={() => setDodawanieObszaru(true)}
+                className="flex items-center gap-1 text-xs focus:outline-none"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <Plus size={13} /> {t("nowyObszar")}
+              </button>
+            )
+          }
+        >
+          {t("obszary")}
+        </SectionHeading>
+        {dodawanieObszaru && (
+          <div className="mb-2 flex items-center gap-2">
+            <input
+              autoFocus
+              value={nazwaObszaru}
+              onChange={(e) => setNazwaObszaru(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") utworzObszar(); if (e.key === "Escape") { setDodawanieObszaru(false); setNazwaObszaru(""); } }}
+              placeholder={t("nazwaObszaru")}
+              aria-label={t("nazwaObszaru")}
+              className="min-w-0 flex-1 rounded border bg-transparent px-3 py-2 text-sm focus:outline-none"
+              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+            />
+            <button
+              onClick={utworzObszar}
+              disabled={!nazwaObszaru.trim() || zapisObszaru}
+              className="flex shrink-0 items-center gap-1 rounded px-3 py-2 text-sm disabled:opacity-40 focus:outline-none"
+              style={{ backgroundColor: "var(--accent-blue)", color: "var(--on-accent)" }}
+            >
+              {zapisObszaru ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {t("utworz")}
+            </button>
+          </div>
+        )}
+        {obszary.length === 0 ? (
+          !dodawanieObszaru && (
+            <EmptyState
+              icon={<Layers size={28} />}
+              message={t("brakObszarow")}
+              hint={t("brakObszarowPodpowiedz")}
+              cta={{ label: `+ ${t("nowyObszar")}`, onClick: () => setDodawanieObszaru(true), color: "var(--accent-blue)" }}
+            />
+          )
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {splaszczDrzewo(obszary).map((o) => (
+              <Link
+                key={o.id}
+                href={`/tasks/obszar/${o.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 16px",
+                  marginLeft: o.glebokosc * 16,
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-surface)",
+                  textDecoration: "none",
+                }}
+              >
+                <span style={{ fontSize: 18 }}>{o.emoji}</span>
+                <span className="min-w-0 flex-1 truncate text-sm" style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                  {o.name}
+                </span>
+                {o.color && <span className="rounded-full" style={{ width: 8, height: 8, backgroundColor: o.color }} />}
+                <span className="shrink-0 text-xs" style={{ color: "var(--text-muted)" }}>
+                  {t("licznikObszaru", { projekty: o.projectCount ?? 0, zadania: o.activeCount ?? 0 })}
+                </span>
+                <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Projects */}
       <div>

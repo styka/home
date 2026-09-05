@@ -97,7 +97,7 @@ test(
       // Kontakt: kolumna właściciela BEZ klucza obcego (Z-370) — kasuje go wyłącznie jawny wpis.
       { nazwa: "contact", zespol: true, dane: (i) => ({ name: `Kontakt ${i} ${rnd()}` }) },
       // Bez współwłasności zespołowej (`ownerId` NOT NULL).
-      { nazwa: "projectGroup", zespol: false, dane: (i) => ({ name: `PG${i}-${rnd()}` }) },
+      { nazwa: "projectArea", zespol: false, dane: (i) => ({ name: `PG${i}-${rnd()}` }) },
       { nazwa: "weatherLocation", zespol: false, dane: (i) => ({ label: `Loc${i}`, lat: 52.2, lon: 21.0 }) },
       { nazwa: "userFact", zespol: false, dane: (i) => ({ category: "pref", text: `f${i}`, fingerprint: `fp-${rnd()}` }) },
       { nazwa: "newsTopic", zespol: false, dane: (i) => ({ title: `T${i}`, semanticFilter: `q${i}` }) },

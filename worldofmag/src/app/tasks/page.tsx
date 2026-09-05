@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { getTaskProjects } from "@/modules/tasks/actions/taskProjects";
+import { getObszaryProjektow } from "@/modules/tasks/actions/obszaryProjektow";
 import { userDayBounds } from "@/lib/userTime";
 import { TasksHomePage } from "@/modules/tasks/ui/TasksHomePage";
 
@@ -14,8 +15,9 @@ export default async function TasksIndexPage() {
   const userId = session.user.id;
   const { start: todayStart, end: todayEnd } = userDayBounds();
 
-  const [projects, todayCount, upcomingCount, overdueCount, todayTasks, ostatnieZadanie] = await Promise.all([
+  const [projects, obszary, todayCount, upcomingCount, overdueCount, todayTasks, ostatnieZadanie] = await Promise.all([
     getTaskProjects(),
+    getObszaryProjektow(),
     prisma.task.count({
       where: {
         OR: [{ createdById: userId }, { assigneeId: userId }],
@@ -75,6 +77,7 @@ export default async function TasksIndexPage() {
   return (
     <TasksHomePage
       projects={projects}
+      obszary={obszary}
       todayCount={todayCount}
       upcomingCount={upcomingCount}
       overdueCount={overdueCount}

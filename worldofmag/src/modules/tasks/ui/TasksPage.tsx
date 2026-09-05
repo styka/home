@@ -16,7 +16,8 @@ import { useTrybAdmina } from "@/platform/admin/trybAdmina";
 import { useTranslations } from "next-intl";
 import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { BulkActionBar, type BulkPatch } from "./BulkActionBar";
-import { ProjectScopeFilter, type ZestawWFiltrze } from "./ProjectScopeFilter";
+import { FiltrObszarow } from "./FiltrObszarow";
+import { projektyPoddrzewa } from "../lib/poddrzewoObszarow";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useIsNarrowScreen } from "@/hooks/useVisualViewport";
 import { odczytajUklad, zapiszUklad, ograniczSzerokosc, UKLAD_DOMYSLNY } from "../lib/ukladSzczegolow";
@@ -24,10 +25,10 @@ import { odczytajWariantObszarow, zapiszWariantObszarow, WARIANT_DOMYSLNY, type 
 import { ObszaryWidok } from "./ObszaryWidok";
 import type { ObszarDTO } from "../actions/obszary";
 import { useViewState } from "@/hooks/useViewState";
-import { idList, oneOf, type RawParams } from "@/platform/viewState/viewState";
+import { idList, oneOf, text, type RawParams } from "@/platform/viewState/viewState";
 import { deleteTask, toggleTaskStatus, bulkUpdateTasks, bulkDeleteTasks } from "../actions/tasks";
 import { ModuleView } from "@/components/ui/view";
-import type { Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
+import type { ObszarProjektow, Task, TaskProject, TaskTagDef, TaskStatusFilter, ViewMode, ProjectStatusConfig } from "@/types";
 import { resolveStatuses, statusMetaFor, DEFAULT_STATUS_CONFIG } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -44,9 +45,11 @@ interface TasksPageProps {
   statusConfig?: ProjectStatusConfig;
   canEditStatuses?: boolean;
   isAdmin?: boolean;
-  /** 122: pełne dane zapisanego zestawu (widok /tasks/zestaw/<id>) — zakres pokazuje i edytuje
-      wyłącznie dropdown filtra projektów; pasek chipów „Projekty: …" przestał istnieć. */
-  zestaw?: ZestawWFiltrze;
+  /** 125: obszar-kategoria oglądany w widoku /tasks/obszar/<id> — dropdown pokazuje i edytuje
+      jego ustawienia (projekty, nazwa, kolor, pod-obszary). */
+  obszar?: ObszarProjektow;
+  /** 125: pełne drzewo obszarów-kategorii przestrzeni (filtr widoków zbiorczych + zarządzanie). */
+  obszaryKategorie?: ObszarProjektow[];
   /** 117: obszary bieżącego projektu (tylko widok projektu; widoki wirtualne dostają pustą). */
   areas?: ObszarDTO[];
   /**
@@ -57,7 +60,7 @@ interface TasksPageProps {
   viewParams?: RawParams;
 }
 
-export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, zestaw, areas = [], viewParams = {} }: TasksPageProps) {
+export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, viewMode, projectName, teamMembers, initialOpenTaskId, statusConfig = DEFAULT_STATUS_CONFIG, canEditStatuses = false, isAdmin = false, obszar, obszaryKategorie = [], areas = [], viewParams = {} }: TasksPageProps) {
   // 085 (AC-8): administracyjny eksport listy do schowka jest DODATKIEM dla administratora, więc
   // znika razem z resztą, gdy tryb administratora jest wyłączony.
   const { wlaczony: trybAdmina } = useTrybAdmina();
@@ -83,11 +86,11 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   const viewSpec = useMemo(() => ({
     status: oneOf(["ALL", ...statusConfig.enabled], "ALL"),
     tags: idList(),
-    // 080 (Z3): zakres projektów jako FILTR widoku, nie jako źródło danych. Kluczowa różnica:
-    // gdy parametr zniknie z adresu, `idList()` daje pustą listę, a pusta lista znaczy tu
-    // „wszystkie projekty" — nigdy „żaden". Poprzedni widok wielu projektów miał odwrotnie
-    // i to była cała przyczyna pustego ekranu po zmianie statusu zadania.
-    projekty: idList(),
+    // 125 (za 080/Z3): zakres jako FILTR widoku, nie źródło danych — po grupach filtr zmienił
+    // się z multiselect projektów na JEDNOWARTOŚCIOWY wybór obszaru (poddrzewo do liści).
+    // Gdy parametr zniknie z adresu, `text("")` daje pustkę = „wszystkie" — nigdy „żaden"
+    // (stare ulubione z parametrem `projekty` degradują tak samo nieszkodliwie).
+    obszar: text(""),
     groupBy: oneOf(["default", "priority"] as const, "default"),
     layout: oneOf(["list", "kanban", "timeline", "obszary"] as const, "list"),
     // 117 (AC-4): wariant przeglądania „wg obszarów" w ADRESIE (widok ulubiony wraca taki, jaki
@@ -355,10 +358,10 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
    * innego niż lista pod spodem. Pusty wybór = brak zawężenia.
    */
   const zadaniaWZakresie = useMemo(() => {
-    if (view.projekty.length === 0) return tasks;
-    const dozwolone = new Set(view.projekty);
+    if (!view.obszar || !obszaryKategorie.some((o) => o.id === view.obszar)) return tasks;
+    const dozwolone = new Set(projektyPoddrzewa(obszaryKategorie, view.obszar, allProjects));
     return tasks.filter((t) => t.projectId && dozwolone.has(t.projectId));
-  }, [tasks, view.projekty]);
+  }, [tasks, view.obszar, obszaryKategorie, allProjects]);
 
   const displayedTasks = useMemo(() => {
     if (aiSearchResults !== null) {
@@ -654,19 +657,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <span className="hidden sm:inline">{t("dodajZadanie")}</span>
           </button>
 
-          {/* 080 (Z3): filtr projektów tylko w widokach ZBIORCZYCH. W widoku jednego projektu
-              zawężanie do projektów nie ma sensu — pokazywałby jedną pozycję, zawsze zaznaczoną. */}
-          {isVirtualView && allProjects.length > 1 && (
-            <ProjectScopeFilter
-              allProjects={allProjects}
-              selected={view.projekty}
-              onChange={(next) => setView({ projekty: next })}
+          {/* 125: filtr OBSZARU tylko w widokach ZBIORCZYCH — jednowartościowy wybór z drzewa,
+              wynik obejmuje poddrzewo do liści. W widoku jednego projektu nie ma czego zawężać. */}
+          {isVirtualView && obszaryKategorie.length > 0 && (
+            <FiltrObszarow
+              obszary={obszaryKategorie}
+              wybrany={view.obszar || null}
+              onChange={(next) => setView({ obszar: next ?? "" })}
             />
           )}
-          {/* 122: w widoku zapisanego zestawu TEN SAM dropdown pokazuje i edytuje zakres
-              (tryb `zestaw`) — jedyny mechanizm zakresu projektów w module. */}
-          {viewMode === "multi" && zestaw && (
-            <ProjectScopeFilter allProjects={allProjects} zestaw={zestaw} />
+          {/* 125: w widoku obszaru TEN SAM dropdown pokazuje i edytuje jego ustawienia
+              (projekty, nazwa/emoji/kolor, pod-obszary, usunięcie). */}
+          {viewMode === "multi" && obszar && (
+            <FiltrObszarow obszary={obszaryKategorie} obszar={obszar} allProjects={allProjects} />
           )}
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             {counts.ALL > 0 && `${counts.ALL} aktywne`}

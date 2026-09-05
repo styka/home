@@ -10,7 +10,7 @@
  * | **Pogoda** | `createTask` („dodaj pomysł do zadań") |
  * | skrzynka zgłoszeń (`actions/feedback`) | `assertProjectAccess` |
  * | `modules/tasks/lib/access` | `assertProjectAccess` |
- * | narzędzia odczytu asystenta | `getTaskTags`, `getProjectGroups` |
+ * | narzędzia odczytu asystenta | `getTaskTags` |
  * | egzekutor akcji asystenta | zadania, projekty, tagi, grupy |
  * | test izolacji najemcy | `assertProjectAccess` |
  *
@@ -45,13 +45,6 @@ export { getTaskTags, createTaskTag } from "./actions/taskTags";
  * więc wychodzi przez kontrakt (wzorzec `wierszRoslinyZMigawki` z Roślin).
  */
 export { sortujTopologicznie, type WezelObszaru } from "./lib/obszary";
-
-export {
-  getProjectGroups,
-  createProjectGroup,
-  updateProjectGroup,
-  deleteProjectGroup,
-} from "./actions/projectGroups";
 
 /**
  * Slug uprawnienia modułu — dla konsumentów, którzy **sprawdzają dostęp, zanim** utworzą zadanie

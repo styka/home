@@ -21,7 +21,4 @@ export const actionCatalog = `ZADANIA (module "tasks"):
 - submit_feedback { title, description } — ZGŁOSZENIE błędu/sugestii do aplikacji, trafia do skrzynki administratora. Używaj TYLKO w trybie zgłoszeniowym (gdy polecenie tak mówi). NIE używaj create_task do zgłoszeń — skrzynka należy do administratora i zwykły użytkownik nie ma do niej dostępu.
 - create_project { name, emoji? }
 - update_project { name?, emoji?, projectId? } (searchQuery = nazwa projektu)
-- delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE
-- create_project_group { name, projectNames?:[string], emoji?, color? } — grupa/folder projektów (współdzielony widok).
-- update_project_group { name?, projectNames?:[string], emoji?, color?, groupId? } (searchQuery = nazwa grupy)
-- delete_project_group { groupId? } (searchQuery = nazwa) — DESTRUKCYJNE`;
+- delete_project { projectId? } (searchQuery = nazwa) — DESTRUKCYJNE`;

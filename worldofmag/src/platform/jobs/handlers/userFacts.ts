@@ -117,7 +117,7 @@ async function wnioskuj(
     hiddenTopics,
     habits,
     projects,
-    projectGroups,
+    projectAreas,
     cookbooks,
     recipes,
     decks,
@@ -157,7 +157,7 @@ async function wnioskuj(
       take: 20,
       select: { name: true },
     }),
-    prisma.projectGroup.findMany({
+    prisma.projectArea.findMany({
       where: moje,
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -222,7 +222,7 @@ async function wnioskuj(
     hiddenTopics.length,
     habits.length,
     projects.length,
-    projectGroups.length,
+    projectAreas.length,
     cookbooks.length,
     recipes.length,
     decks.length,
@@ -269,7 +269,7 @@ async function wnioskuj(
       ? `Prowadzi nawyki: ${habits.map((h) => (h.weeklyGoal ? `${h.name} (${h.weeklyGoal}×/tydz.)` : h.name)).join("; ")}`
       : null,
     projects.length ? `Prowadzi projekty zadań: ${projects.map((p) => p.name).join("; ")}` : null,
-    projectGroups.length ? `Grupuje projekty jako: ${projectGroups.map((g) => g.name).join("; ")}` : null,
+    projectAreas.length ? `Porządkuje projekty w obszary: ${projectAreas.map((g) => g.name).join("; ")}` : null,
     cookbooks.length ? `Zbiera książki kucharskie: ${cookbooks.map((c) => c.name).join("; ")}` : null,
     recipes.length ? `Zapisał przepisy: ${recipes.map((r) => r.title).join("; ")}` : null,
     decks.length ? `Uczy się z talii językowych: ${decks.map((d) => d.name).join("; ")}` : null,

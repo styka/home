@@ -2160,32 +2160,32 @@
     "reason": "dictionary",
     "status": "excluded"
   },
-  "projectGroups:createProjectGroup": {
+  "obszaryProjektow:createObszarProjektow": {
     "access": "owner",
-    "action": "create_project_group",
-    "status": "ai"
+    "status": "pending"
   },
-  "projectGroups:deleteProjectGroup": {
+  "obszaryProjektow:deleteObszarProjektow": {
     "access": "owner",
-    "action": "delete_project_group",
-    "status": "ai"
+    "status": "pending"
   },
-  "projectGroups:getProjectGroup": {
+  "obszaryProjektow:getObszarProjektow": {
     "access": "owner",
     "kind": "read",
     "reason": "redundant",
     "status": "excluded"
   },
-  "projectGroups:getProjectGroups": {
+  "obszaryProjektow:getObszaryProjektow": {
     "access": "owner",
-    "action": "list_project_groups",
     "kind": "read",
-    "status": "ai"
+    "status": "pending"
   },
-  "projectGroups:updateProjectGroup": {
+  "obszaryProjektow:updateObszarProjektow": {
     "access": "owner",
-    "action": "update_project_group",
-    "status": "ai"
+    "status": "pending"
+  },
+  "obszaryProjektow:ustawProjektyObszaru": {
+    "access": "owner",
+    "status": "pending"
   },
   "promptWznowienia:getPromptDoPokazania": {
     "access": "admin",

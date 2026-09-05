@@ -64,7 +64,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     categoryIcons,
     // tasks
     taskProjects,
-    projectGroups,
+    projectAreas,
     tasksCreated,
     // notes
     notes,
@@ -150,7 +150,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     prisma.categoryIconVariant.findMany({ where: byUser }),
     // tasks
     prisma.taskProject.findMany({ where: own, include: { tasks: { include: { tags: true, comments: true } } } }),
-    prisma.projectGroup.findMany({ where: own }),
+    prisma.projectArea.findMany({ where: own }),
     prisma.task.findMany({ where: { createdById: userId, projectId: null } }),
     // notes
     prisma.note.findMany({ where: own, include: { tags: true, attachments: true, revisions: true } }),
@@ -240,7 +240,7 @@ export async function exportMyData(): Promise<UserDataExport> {
     accounts,
     teams: { owned: ownedTeams, memberships: teamMemberships },
     shopping: { lists: shoppingLists, products, units, categories, stores, categoryIcons },
-    tasks: { projects: taskProjects, projectGroups, personalTasks: tasksCreated },
+    tasks: { projects: taskProjects, projectAreas, personalTasks: tasksCreated },
     notes: { notes, groups: noteGroups },
     kitchen: { recipes, cookbooks, mealPlans, pantryItems, recipeRatings },
     pets: { pets, enclosures: petEnclosures, breedingPairs: petBreedingPairs, sales: petSales },

@@ -67,7 +67,6 @@ export const DESTRUCTIVE_ACTION_TYPES = new Set<string>([
   "delete_budget",
   "delete_goal",
   "delete_cookbook",
-  "delete_project_group",
   "delete_note_group",
   "delete_workshop",
   "delete_workshop_item",

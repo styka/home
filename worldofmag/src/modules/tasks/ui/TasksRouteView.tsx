@@ -3,13 +3,13 @@ import { getTasks, getTodayTasks, getOverdueTasks, getAllUserTasks, getTasksForP
 import { getTaskProjects } from "../actions/taskProjects";
 import { getProjectAreas, type ObszarDTO } from "../actions/obszary";
 import { getTaskTags } from "../actions/taskTags";
-import { getProjectGroup } from "../actions/projectGroups";
+import { getObszarProjektow, getObszaryProjektow } from "../actions/obszaryProjektow";
 import { hasPermission, PERMISSIONS } from "@/platform/auth/permissions";
 import { auth } from "@/platform/auth/session";
 import { prisma } from "@/platform/db/prisma";
 import { userTomorrowStart } from "@/lib/userTime";
 import { TasksPage } from "./TasksPage";
-import type { Task, ViewMode } from "@/types";
+import type { ObszarProjektow, Task, ViewMode } from "@/types";
 import { parseStatusConfig, aggregateStatusConfig } from "@/types";
 
 /**
@@ -36,14 +36,14 @@ const VIRTUAL_LABELS: Record<VirtualView, string> = {
 type ScopeProject = { id: string; name: string; emoji: string; isInbox: boolean };
 
 export interface TasksRouteViewProps {
-  /** Id projektu albo nazwa widoku wirtualnego. Puste, gdy oglądamy zapisany zestaw. */
+  /** Id projektu albo nazwa widoku wirtualnego. Puste, gdy oglądamy obszar-kategorię. */
   projectId: string;
-  /** Id zapisanego zestawu projektów — z SEGMENTU ŚCIEŻKI, nie z parametrów zapytania. */
-  zestawId?: string;
+  /** 125: id obszaru-kategorii — z SEGMENTU ŚCIEŻKI, nie z parametrów zapytania (lekcja 080). */
+  obszarId?: string;
   searchParams?: Record<string, string | undefined>;
 }
 
-export async function TasksRouteView({ projectId, zestawId, searchParams }: TasksRouteViewProps) {
+export async function TasksRouteView({ projectId, obszarId, searchParams }: TasksRouteViewProps) {
   // Sesja jest już sprawdzona przez trasę i przez `layout.tsx` (kontrola uprawnienia modułu),
   // ale potrzebujemy jej tu do zapytania o współdzielących i do flagi administratora.
   const session = await auth();
@@ -55,12 +55,15 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   const initialOpenTaskId = searchParams?.task;
   const isVirtual = VIRTUAL_VIEWS.includes(projectId as VirtualView);
 
-  const [allProjects, allTags] = await Promise.all([
+  // 125: drzewo obszarów-kategorii potrzebne wszędzie — filtr widoków zbiorczych i zarządzanie
+  // w widoku obszaru czytają to samo źródło.
+  const [allProjects, allTags, obszaryKategorie] = await Promise.all([
     getTaskProjects(),
     getTaskTags(),
+    getObszaryProjektow(),
   ]);
 
-  if (!isVirtual && !zestawId) {
+  if (!isVirtual && !obszarId) {
     const project = allProjects.find((p) => p.id === projectId);
     if (!project) notFound();
   }
@@ -68,10 +71,10 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   let tasks: Task[];
   let viewMode: ViewMode;
   let projectName: string;
-  // Widok wielu projektów: projekty w zakresie (konfiguracja statusów) + pełne dane zestawu
-  // dla filtra (122: dropdown jest jedynym miejscem pokazywania i edycji zakresu).
+  // Widok wielu projektów: projekty w zakresie (konfiguracja statusów) + dane obszaru dla
+  // dropdownu zarządzania (125: dropdown pokazuje i edytuje obszar, jak w 122 zestaw).
   let scopeProjects: ScopeProject[] = [];
-  let zestaw: { id: string; name: string; emoji: string; color: string | null; projectIds: string[] } | undefined;
+  let obszar: ObszarProjektow | undefined;
   let areas: ObszarDTO[] = [];
 
   if (projectId === "today") {
@@ -93,26 +96,16 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
     tasks = await getAllUserTasks();
     viewMode = "all";
     projectName = VIRTUAL_LABELS.all;
-  } else if (zestawId) {
-    // 080 (Z3): ZAKRES POCHODZI Z SEGMENTU ŚCIEŻKI, nigdy z parametrów zapytania.
-    //
-    // To jest naprawa zgłoszenia „gdy zmienimy jakiemuś zadaniu status, to naraz z widoku znikają
-    // projekty, jakby grupa projektów była pusta". Wcześniej zakres liczył się wyłącznie
-    // z `searchParams` (?group= / ?projects=), a te potrafią nie dotrzeć przy ponownym renderze
-    // wywołanym przez `revalidatePath` z akcji — stan widoku zapisujemy natywnym `pushState`
-    // (`useViewState`, 043), więc adres i drzewo routera mogą się rozjechać. Pusty parametr dawał
-    // `scopeIds = []`, czyli zero zadań i nagłówek „🗂 Wiele projektów (0)" — dokładnie ten tekst
-    // zgłosił właściciel.
-    //
-    // Pozostałe filtry cierpiały tak samo, tylko nikt tego nie zgłosił: `oneOf(allowed, fallback)`
-    // degraduje je do wartości domyślnej, czyli NIESZKODLIWIE. Zakres jako jedyny miał domyślną
-    // „nic". Stąd reguła, która z tego wynika i obowiązuje dalej: żadne źródło zakresu nie może
-    // degradować do zera zasobów.
-    const group = await getProjectGroup(zestawId);
-    if (!group) notFound();
-    const scopeIds = group.projectIds;
-    zestaw = { id: group.id, name: group.name, emoji: group.emoji, color: group.color, projectIds: scopeIds };
-    projectName = `${group.emoji} ${group.name}`;
+  } else if (obszarId) {
+    // 080 (Z3)/125: ZAKRES POCHODZI Z SEGMENTU ŚCIEŻKI, nigdy z parametrów zapytania — parametry
+    // potrafią nie dotrzeć przy ponownym renderze z `revalidatePath`, a zakres jako jedyny filtr
+    // miał domyślną „nic"; żadne źródło zakresu nie może degradować do zera zasobów.
+    // Zakres obszaru = projekty CAŁEGO PODDRZEWA (obszar + pod-obszary aż do liści).
+    const dane = await getObszarProjektow(obszarId);
+    if (!dane) notFound();
+    const scopeIds = dane.poddrzewoProjektow;
+    obszar = dane;
+    projectName = `${dane.emoji} ${dane.name}`;
     tasks = await getTasksForProjects(scopeIds);
     viewMode = "multi";
     // Zachowaj kolejność z zakresu (scala się z niej konfigurację statusów).
@@ -135,7 +128,7 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
   // Konfiguracja statusów. Realny projekt → jego własna konfiguracja (z edycją).
   // Widok zbiorczy (Wszystkie/Dziś/Nadchodzące/Zaległe/Grupy) → konfiguracja scalona
   // z list w zakresie, by zadania z własnymi statusami miały zakładkę i etykiety; bez edycji.
-  const currentProject = isVirtual || zestawId ? null : allProjects.find((p) => p.id === projectId) ?? null;
+  const currentProject = isVirtual || obszarId ? null : allProjects.find((p) => p.id === projectId) ?? null;
   const canEditStatuses = !!currentProject;
   const scopeForStatuses =
     viewMode === "multi"
@@ -169,7 +162,8 @@ export async function TasksRouteView({ projectId, zestawId, searchParams }: Task
       statusConfig={statusConfig}
       canEditStatuses={canEditStatuses}
       isAdmin={hasPermission(session, PERMISSIONS.ADMIN)}
-      zestaw={zestaw}
+      obszar={obszar}
+      obszaryKategorie={obszaryKategorie}
       areas={areas}
       viewParams={searchParams ?? {}}
     />

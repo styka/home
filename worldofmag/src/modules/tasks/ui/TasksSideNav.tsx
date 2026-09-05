@@ -9,9 +9,10 @@ import {
   Loader2, Pencil, Check, X, LayoutList, Trash2, Layers, ChevronRight,
 } from "lucide-react";
 import { getTaskProjects, createTaskProject, updateTaskProject, deleteTaskProject } from "../actions/taskProjects";
-import { getProjectGroups } from "../actions/projectGroups";
-import { ZDARZENIE_ZMIANY_ZESTAWOW } from "./ProjectScopeFilter";
-import type { TaskProject, ProjectGroup } from "@/types";
+import { getObszaryProjektow } from "../actions/obszaryProjektow";
+import { ZDARZENIE_ZMIANY_OBSZAROW } from "./FiltrObszarow";
+import { splaszczDrzewo } from "../lib/poddrzewoObszarow";
+import type { TaskProject, ObszarProjektow } from "@/types";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const VIRTUAL_VIEWS = [
@@ -21,14 +22,14 @@ const VIRTUAL_VIEWS = [
   { id: "all", label: "Wszystkie", Icon: LayoutList },
 ] as const;
 
-const EXPANDED_KEY = "tasks.groups.expanded";
+const EXPANDED_KEY = "tasks.groups.expanded"; // klucz historyczny — zwinięcia obszarów
 
 export function TasksSideNav() {
   const t = useTranslations("modules.tasks.TasksSideNav");
   const confirmDialog = useConfirm();
   const pathname = usePathname();
   const [projects, setProjects] = useState<TaskProject[]>([]);
-  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [obszary, setObszary] = useState<ObszarProjektow[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,17 +41,17 @@ export function TasksSideNav() {
 
   const reload = useCallback(() => {
     getTaskProjects().then(setProjects).catch(() => {});
-    getProjectGroups().then(setGroups).catch(() => {});
+    getObszaryProjektow().then(setObszary).catch(() => {});
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
 
-  // T-10 (122): mutacje zestawów żyją teraz w dropdownie filtra projektów, a ta lista jest stanem
+  // 122/125: mutacje obszarów żyją w dropdownie widoku obszaru, a ta lista jest stanem
   // klienckim — `revalidatePath` jej nie odświeży. Dropdown ogłasza zmianę zdarzeniem okna,
-  // a sidebar przeładowuje grupy (inaczej usunięty zestaw zostawałby tu linkiem do 404).
+  // a sidebar przeładowuje obszary (inaczej usunięty obszar zostawałby tu linkiem do 404).
   useEffect(() => {
-    window.addEventListener(ZDARZENIE_ZMIANY_ZESTAWOW, reload);
-    return () => window.removeEventListener(ZDARZENIE_ZMIANY_ZESTAWOW, reload);
+    window.addEventListener(ZDARZENIE_ZMIANY_OBSZAROW, reload);
+    return () => window.removeEventListener(ZDARZENIE_ZMIANY_OBSZAROW, reload);
   }, [reload]);
 
   useEffect(() => {
@@ -72,19 +73,14 @@ export function TasksSideNav() {
   }
 
   const inbox = projects.find((p) => p.isInbox);
-  const regularProjects = projects.filter((p) => !p.isInbox);
+  // 125: projekt przypisany do obszaru renderuje się POD obszarem; płaska lista trzyma resztę.
+  const regularProjects = projects.filter((p) => !p.isInbox && !p.areaId);
 
-  // 080 (Z3): zestaw ma teraz własny adres z zakresem w ŚCIEŻCE — stąd czytamy id z `pathname`,
-  // a nie z parametru zapytania. To ta sama zmiana, która naprawiła pustoszejący widok: parametry
-  // zapytania potrafią nie dotrzeć przy ponownym renderze, segment ścieżki jest zawsze.
-  const activeGroupId = pathname.startsWith("/tasks/zestaw/")
-    ? pathname.slice("/tasks/zestaw/".length).split("/")[0] || null
+  // 080 (Z3)/125: obszar ma własny adres z zakresem w ŚCIEŻCE — id czytamy z `pathname`,
+  // nie z parametru zapytania (parametry potrafią nie dotrzeć przy ponownym renderze).
+  const activeObszarId = pathname.startsWith("/tasks/obszar/")
+    ? pathname.slice("/tasks/obszar/".length).split("/")[0] || null
     : null;
-
-  /** Grupy, do których należy dany projekt (kierunek projekt → grupy). */
-  function groupsForProject(projectId: string): ProjectGroup[] {
-    return groups.filter((g) => g.projectIds.includes(projectId));
-  }
 
   function isActive(id: string) {
     return pathname === `/tasks/${id}`;
@@ -198,52 +194,49 @@ export function TasksSideNav() {
         </Link>
       )}
 
-      {/* ——— Grupy projektów (zapisane zestawy; czyste linki) ———
-          122: zarządzanie zestawem (zakres, nazwa, kolor, usunięcie) przejął dropdown filtra
-          projektów w widoku zestawu — sidebar tylko do nich prowadzi. Nowy zestaw powstaje
-          z zapisu wyboru w tym samym dropdownie (widoki zbiorcze). */}
-      {groups.length > 0 && (
+      {/* ——— Obszary (kategorie projektów; drzewo — 125) ———
+          Zarządzanie obszarem (projekty, nazwa, kolor, pod-obszary, usunięcie) żyje w dropdownie
+          widoku obszaru — sidebar tylko prowadzi. Projekty przypisane renderują się pod obszarem. */}
+      {obszary.length > 0 && (
         <div className="flex items-center justify-between mx-2 pr-1 mt-1" style={{ paddingLeft: 16 }}>
           <span className="flex items-center gap-1.5 uppercase tracking-wide" style={{ color: "var(--text-muted)", fontSize: 10 }}>
-            <Layers size={11} /> Grupy
+            <Layers size={11} /> Obszary
           </span>
         </div>
       )}
 
-      {groups.map((g) => {
-        const active = activeGroupId === g.id;
-        const isOpen = expanded.includes(g.id);
-        const members = g.projectIds
-          .map((pid) => projects.find((p) => p.id === pid))
-          .filter((p): p is TaskProject => !!p);
+      {splaszczDrzewo(obszary).map((o) => {
+        const active = activeObszarId === o.id;
+        const isOpen = expanded.includes(o.id);
+        const members = projects.filter((p) => p.areaId === o.id);
         return (
-          <div key={g.id}>
+          <div key={o.id}>
             <div
-              onMouseEnter={() => setHovered(`group:${g.id}`)}
+              onMouseEnter={() => setHovered(`obszar:${o.id}`)}
               onMouseLeave={() => setHovered(null)}
               className="flex items-center mx-2 rounded"
-              style={{ backgroundColor: active ? "var(--bg-elevated)" : hovered === `group:${g.id}` ? "var(--bg-hover)" : undefined }}
+              style={{ backgroundColor: active ? "var(--bg-elevated)" : hovered === `obszar:${o.id}` ? "var(--bg-hover)" : undefined }}
             >
               <button
-                onClick={() => toggleExpanded(g.id)}
+                onClick={() => toggleExpanded(o.id)}
                 className="flex items-center justify-center focus:outline-none flex-shrink-0"
-                style={{ paddingLeft: 18, paddingRight: 2, color: "var(--text-muted)", height: 26 }}
-                title={isOpen ? "Zwiń grupę" : "Rozwiń grupę"}
+                style={{ paddingLeft: 18 + o.glebokosc * 12, paddingRight: 2, color: "var(--text-muted)", height: 26 }}
+                title={isOpen ? t("zwinObszar") : t("rozwinObszar")}
                 aria-expanded={isOpen}
               >
                 <ChevronRight size={12} style={{ transition: "transform 0.12s", transform: isOpen ? "rotate(90deg)" : "none" }} />
               </button>
               <Link
-                href={`/tasks/zestaw/${g.id}`}
+                href={`/tasks/obszar/${o.id}`}
                 className="flex items-center gap-2 flex-1 text-xs py-1 min-w-0"
                 style={{ color: active ? "var(--text-primary)" : "var(--text-muted)" }}
-                title={`${g.projectIds.length} projekty — otwórz wspólny widok`}
+                title={t("otworzWidokObszaru")}
               >
-                {g.color
-                  ? <span className="rounded-full flex-shrink-0" style={{ width: 7, height: 7, backgroundColor: g.color }} />
-                  : <span className="flex-shrink-0">{g.emoji}</span>}
-                <span className="flex-1 truncate">{g.name}</span>
-                {(g.activeCount ?? 0) > 0 && <span style={{ fontSize: 10 }}>{g.activeCount}</span>}
+                {o.color
+                  ? <span className="rounded-full flex-shrink-0" style={{ width: 7, height: 7, backgroundColor: o.color }} />
+                  : <span className="flex-shrink-0">{o.emoji}</span>}
+                <span className="flex-1 truncate">{o.name}</span>
+                {(o.activeCount ?? 0) > 0 && <span style={{ fontSize: 10 }}>{o.activeCount}</span>}
               </Link>
             </div>
             {isOpen && (
@@ -255,13 +248,12 @@ export function TasksSideNav() {
         );
       })}
 
-      {/* ——— Projekty (płaska lista; znacznik = przynależność do grup) ——— */}
+      {/* ——— Projekty (płaska lista: bez obszaru; przypisane żyją pod swoimi obszarami) ——— */}
       <div className="mx-2 mt-1 mb-0.5 uppercase tracking-wide" style={{ paddingLeft: 16, color: "var(--text-muted)", fontSize: 10 }}>
         Projekty
       </div>
 
       {regularProjects.map((p) => {
-        const memberOf = groupsForProject(p.id);
         return (
         <div
           key={p.id}
@@ -296,21 +288,6 @@ export function TasksSideNav() {
               >
                 <span>{p.emoji}</span>
                 <span className="flex-1 truncate">{p.name}</span>
-                {/* Znacznik przynależności do grup (kierunek projekt → grupy) */}
-                {memberOf.length > 0 && hovered !== p.id && (
-                  <span
-                    className="flex items-center gap-0.5 flex-shrink-0"
-                    title={`W grupach: ${memberOf.map((g) => g.name).join(", ")}`}
-                  >
-                    {memberOf.slice(0, 3).map((g) => (
-                      <span
-                        key={g.id}
-                        className="rounded-full"
-                        style={{ width: 5, height: 5, backgroundColor: g.color ?? "var(--text-muted)" }}
-                      />
-                    ))}
-                  </span>
-                )}
                 {(p._count?.tasks ?? 0) > 0 && (
                   <span style={{ fontSize: 10 }}>{p._count!.tasks}</span>
                 )}
