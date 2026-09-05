@@ -6226,3 +6226,17 @@ ASCII-owego `\b` — lekcja 112). Limit 40/przebieg, tylko `PENDING`, pusty wyni
 **Lekcja:** Reguła stosowana w jednym punkcie rurociągu chroni tylko to, co przez ten punkt
 przepływa. Gdy wynik reguły może przepaść (awaria partii, pominięte pole), potrzebny jest etap
 naprawczy, który obejmuje ZASTANE rekordy — inaczej każdy błąd jednorazowy staje się trwały.
+
+## 2026-09-05 — Globalny licznik w współdzielonej bazie e2e gryzie w OBIE strony
+**Problem:** Licznik „do doczytania" w Wiadomościach jest globalny dla konta, a baza e2e wspólna
+dla wszystkich plików suity. Spec 125 padł, bo zastał odłożoną pozycję ze specu 124 — utwardziłem
+więc seed 125 (reset cudzych `readLater`). Runda kontrolna odwróciła kolejność plików i padł 124,
+bo zastał pozycję odłożoną przez 125. Playwright nie gwarantuje kolejności plików, więc jednostronne
+utwardzenie tylko przesuwa awarię tam, gdzie akurat nie patrzymy.
+**Rozwiązanie:** KAŻDY plik dotykający globalnego stanu neutralizuje go we własnym `beforeAll`
+(`updateMany readLater=false` w przestrzeni konta e2e) — symetrycznie w 124 i 125; do tego asercje
+zakresowane po tytułach seedu zamiast globalnych liczników elementów.
+**Lekcja:** Gdy asercja liczy stan GLOBALNY dla konta, seed pliku musi ten stan sprowadzić do zera,
+a nie tylko posprzątać po sobie — i to w każdym pliku, który go dotyka, bo kolejność plików w suicie
+jest nieoznaczona. Naprawa „w pliku, który padł" bez lustrzanej naprawy w drugim to ta sama usterka
+odroczona do najbliższej zmiany kolejności.

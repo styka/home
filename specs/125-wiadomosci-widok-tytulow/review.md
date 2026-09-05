@@ -34,6 +34,12 @@
 - **E2E**: serial, bez `networkidle`, asercje zakresowane po seedzie, reset cudzych odłożeń;
   `--workers=1` przy wspólnym przebiegu plików Wiadomości (globalne „Oznacz wszystkie").
 
+4. **`e2e/specs/124-wiadomosci-doczytania.spec.ts` — correctness testu (wyszło w rundzie
+   kontrolnej):** kontrolny przebieg po poprawkach odwrócił kolejność plików (125 przed 124)
+   i licznik odłożonych w 124 pokazał „2" — pozycję zostawioną przez 125. Utwardzenie seedu 125
+   z T-4 było jednostronne. **Naprawione:** ten sam reset cudzych `readLater` w seedzie 124;
+   oba pliki są teraz odporne na dowolną kolejność. Lekcja dopisana do `doświadczenia.md`.
+
 ## Weryfikacja po poprawkach recenzji
 
 - `tsc --noEmit`, `check:i18n`, `next lint --dir src` — zielone.
