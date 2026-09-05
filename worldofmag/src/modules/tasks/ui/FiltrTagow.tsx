@@ -17,10 +17,14 @@ import { TaskTagBadge } from "./TaskTagBadge";
  * szukało się nazwy wzrokiem, a wysokość paska rosła razem ze słownikiem użytkownika.
  *
  * To jest dokładnie ten sam problem i to samo lekarstwo, co `SourceFilter` w Wiadomościach (083):
- * ta sama informacja mieści się w liczniku („Wszystkie", „3 z 18"), a wybór — w panelu, który
- * niczego nie przesuwa, bo leży NAD treścią. Różnica jest jedna i celowa: obok przycisku zostaje
- * rząd chipsów **wybranych** etykiet. Jest ich tyle, ile zaznaczono (typowo 1–3), a nie tyle, ile
- * istnieje — i to jest cała różnica między starym paskiem a nowym.
+ * ta sama informacja mieści się w liczniku, a wybór — w panelu, który niczego nie przesuwa, bo
+ * leży NAD treścią.
+ *
+ * 125 (zgł. 3): filtr wyprowadził się z wiersza zakładek statusów do GÓRNEGO PASKA AKCJI widoku
+ * (obok lupy) — scalony wiersz ze 118 przy kilku wybranych tagach wypychał zakładki poza kadr.
+ * Przycisk jest teraz ikoną z licznikiem wybranych (wzorzec sąsiadów paska), a rząd chipów
+ * zniknął na życzenie właściciela: wybrane etykiety ogląda się i zdejmuje w panelu, który i tak
+ * pokazuje je z ptaszkami.
  *
  * Plik mieszka w module, nie w `components/ui`, bo jedynym konsumentem są Zadania: przynależność
  * pliku ustala lista jego konsumentów, nie nazwa (C-36).
@@ -50,35 +54,40 @@ export function FiltrTagow({
 
   const bezFiltru = wybrane.length === 0;
   const etykieta = bezFiltru ? t("wszystkie") : t("zIlu", { wybrane: wybrane.length, wszystkie: wszystkie.length });
-  const wybraneTagi = wszystkie.filter((x) => wybrane.includes(x.id));
 
-  // 118 (zgł. 1): bez własnego wypełnienia wiersza — komponent stoi teraz WEWNĄTRZ wspólnego
-  // rzędu zakładek statusu (`TaskFilters`), nie w osobnym wierszu; odstępy nadaje rodzic.
+  // 125 (zgł. 3): sam przycisk-ikona z licznikiem — stylistyka sąsiadów paska akcji (p-1.5,
+  // size 15). Pełna treść („Filtr etykiet: 5 z 17") jedzie w title/aria; kolor akcentu mówi,
+  // że filtr jest aktywny.
   return (
-    <div className="flex min-w-0 items-center gap-1.5 py-1">
-      <div ref={kotwicaRef} className="shrink-0">
-        <button
-          type="button"
-          onClick={() => setOtwarty((v) => !v)}
-          aria-haspopup="dialog"
-          aria-expanded={otwarty}
-          title={t("filtrEtykiet")}
-          // Nazwa dostępna musi mówić, CZYM ten przycisk jest, a nie tylko jaki ma stan: sama
-          // treść („Wszystkie", „3 z 18") czytnikowi ekranu nic nie mówi, a to ona wygrywa
-          // z atrybutem `title`. Stąd jawna etykieta z licznikiem doklejonym na końcu.
-          aria-label={`${t("filtrEtykiet")}: ${etykieta}`}
-          className={cn(
-            // Szerokość zmienia się o kilka znaków licznika i ani razu o wysokość — to jest cały
-            // sens tej zmiany (AC-6).
-            "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors",
-            bezFiltru
-              ? "border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              : "border-[var(--accent-blue)] bg-[var(--bg-elevated)] text-[var(--text-primary)]",
-          )}
-        >
-          <Tags size={14} className="shrink-0" />
-          <span className="whitespace-nowrap">{etykieta}</span>
-        </button>
+    <div ref={kotwicaRef} className="flex-shrink-0">
+      <button
+        type="button"
+        onClick={() => setOtwarty((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={otwarty}
+        title={`${t("filtrEtykiet")}: ${etykieta}`}
+        // Nazwa dostępna musi mówić, CZYM ten przycisk jest, a nie tylko jaki ma stan: sam
+        // licznik czytnikowi ekranu nic nie mówi. Stąd jawna etykieta z licznikiem na końcu.
+        aria-label={`${t("filtrEtykiet")}: ${etykieta}`}
+        className="flex items-center gap-1 rounded p-1.5 focus:outline-none"
+        style={{ color: bezFiltru ? "var(--text-muted)" : "var(--accent-blue)" }}
+      >
+        <Tags size={15} />
+        {!bezFiltru && (
+          <span
+            className="rounded-full px-1.5"
+            style={{
+              background: "var(--accent-blue)",
+              color: "var(--on-accent)",
+              fontSize: 10,
+              minWidth: 16,
+              textAlign: "center",
+            }}
+          >
+            {wybrane.length}
+          </span>
+        )}
+      </button>
 
         <AnchoredLayer
           anchorRef={kotwicaRef}
@@ -138,20 +147,7 @@ export function FiltrTagow({
               })
             )}
           </div>
-        </AnchoredLayer>
-      </div>
-
-      {/* Chipy WYBRANYCH etykiet — nie wszystkich. Rząd ma stałą wysokość; przy nietypowo długim
-          wyborze przewija się w bok, zamiast łamać pasek na drugi wiersz. */}
-      {wybraneTagi.length > 0 && (
-        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
-          {wybraneTagi.map((tag) => (
-            <span key={tag.id} className="shrink-0">
-              <TaskTagBadge tag={tag} size="xs" onRemove={() => onPrzelacz(tag.id)} />
-            </span>
-          ))}
-        </div>
-      )}
+      </AnchoredLayer>
     </div>
   );
 }

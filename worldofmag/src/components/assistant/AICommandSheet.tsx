@@ -544,7 +544,10 @@ export function AICommandSheet({
   // Zgłaszanie problemu z czatem (admin-only): panel z opcjonalnym opisem → zadanie w projekcie „Omnia".
   const [reportDesc, setReportDesc] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
-  const [reportDone, setReportDone] = useState<{ projectId: string; canRead: boolean } | null>(null);
+  // 125 (zgł. 4): `taskId` jedzie w stanie, bo link ma otwierać PODGLĄD zgłoszenia (`?task=`),
+  // nie samą listę — ta ścieżka nie przechodzi przez agenta, więc poprawka egzekutora (118) jej
+  // nie objęła.
+  const [reportDone, setReportDone] = useState<{ projectId: string; taskId: string; canRead: boolean } | null>(null);
   // Wybór głosu lektora (per-urządzenie). Głosy iOS/Safari ładują się asynchronicznie — subskrybujemy.
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURIState] = useState<string>("");
@@ -1159,7 +1162,7 @@ export function AICommandSheet({
       // `submitFeedbackTask`) — wcześniej `ensureOmniaProject()` tworzyło projekt „Omnia" u
       // zgłaszającego, więc zgłoszenia zwykłych użytkowników nigdy nie docierały do admina.
       const res = await submitFeedbackTask({ title, description });
-      setReportDone({ projectId: res.projectId, canRead: res.canRead });
+      setReportDone({ projectId: res.projectId, taskId: res.taskId, canRead: res.canRead });
       setReportDesc("");
     } catch {
       setError("Nie udało się utworzyć zgłoszenia.");
@@ -1478,7 +1481,7 @@ export function AICommandSheet({
         const potwierdzenie =
           `✅ **Utworzono zgłoszenie:** ${res.title}` +
           (res.hasScreenshot ? "\n\nDołączyłem zrzut wskazanego elementu." : "") +
-          (res.canRead ? `\n\n[Otwórz w zadaniach](/tasks/${res.projectId})` : "") +
+          (res.canRead ? `\n\n[Otwórz w zadaniach](/tasks/${res.projectId}?task=${res.taskId})` : "") +
           "\n\nMożesz spokojnie zamknąć to okno — zadanie jest już zapisane, tytuł dopracuję w tle.";
         setTurns((t) => [...t, { id: newId(), role: "assistant", kind: "answer", content: potwierdzenie }]);
         void persist("assistant", potwierdzenie, "answer");
@@ -2091,7 +2094,7 @@ export function AICommandSheet({
                     <div style={{ display: "flex", gap: 8 }}>
                       {/* 031: przejście do zadania proponujemy TYLKO, gdy użytkownik ma dostęp do skrzynki. */}
                       {reportDone.canRead && (
-                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>{t("otworzWZadaniach")}</button>
+                        <button onClick={() => goTo(`/tasks/${reportDone.projectId}?task=${reportDone.taskId}`)} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--accent-blue)", cursor: "pointer" }}>{t("otworzWZadaniach")}</button>
                       )}
                       <button onClick={() => setHeaderPanel("none")} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>Zamknij</button>
                     </div>

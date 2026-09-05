@@ -104,20 +104,22 @@ test.describe("Zadania — filtr etykiet", () => {
   });
 
   test("[100-AC6] wysokość paska filtrów nie zależy od liczby etykiet", async ({ page }) => {
+    // 125 (zgł. 3): filtr mieszka w pasku akcji widoku (obok lupy) jako ikona z licznikiem —
+    // tytuł niesie stan („Filtr etykiet: Wszystkie"), a licznik pojawia się TYLKO przy wyborze.
     await otworz(page, `/tasks/${projekt}`);
     await expect(page.getByRole("button", { name: /Filtr etykiet/i }).first()).toBeVisible({ timeout: 20_000 });
 
     const pomiar = await page.evaluate(() => {
       const przycisk = Array.from(document.querySelectorAll<HTMLElement>("button")).find(
-        (b) => (b.getAttribute("title") ?? "") === "Filtr etykiet",
+        (b) => (b.getAttribute("title") ?? "").startsWith("Filtr etykiet"),
       );
-      const wiersz = przycisk?.parentElement?.parentElement ?? null;
+      const wiersz = (przycisk?.closest('[role="toolbar"]') as HTMLElement | null) ?? null;
       if (!przycisk || !wiersz) return null;
       return {
         wysokoscWiersza: Math.round(wiersz.getBoundingClientRect().height),
-        // Ile chipsów WYBRANYCH stoi obok — bez filtru ma być zero, niezależnie od liczby etykiet
+        // Licznik wybranych na przycisku — bez filtru ma być zero, niezależnie od liczby etykiet
         // w słowniku. To jest sedno zmiany: pasek nie rośnie ze słownikiem.
-        chipsow: wiersz.querySelectorAll("span[class*='rounded-full']").length,
+        chipsow: przycisk.querySelectorAll("span").length,
       };
     });
 
@@ -133,9 +135,10 @@ test.describe("Zadania — filtr etykiet", () => {
     const przycisk = page.getByRole("button", { name: /Filtr etykiet/i }).first();
     await expect(przycisk).toBeVisible({ timeout: 20_000 });
 
-    // Bez wyboru przycisk mówi „Wszystkie" — filtr, który po odznaczeniu ostatniej pozycji
-    // pokazuje pustą stronę, wygląda jak usterka.
-    await expect(przycisk).toContainText(/Wszystkie/i);
+    // Bez wyboru przycisk mówi „Wszystkie" — od 125 w nazwie dostępnej (title/aria-label),
+    // bo sam przycisk to ikona z licznikiem. Filtr, który po odznaczeniu ostatniej pozycji
+    // pokazuje pustą stronę, wyglądałby jak usterka.
+    await expect(page.getByRole("button", { name: /Filtr etykiet: Wszystkie/i }).first()).toBeVisible();
 
     await przycisk.click();
     const szukajka = page.getByPlaceholder(/Szukaj etykiety/i);
