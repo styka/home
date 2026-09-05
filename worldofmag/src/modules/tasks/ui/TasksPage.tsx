@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useCallback, useTransition, useEffect } from
 import Link from "next/link";
 import { ListTodo, Search, X, Sparkles, Bell, BellOff, SlidersHorizontal, ListTree, Flag, List as ListIcon, Columns3, CalendarRange, ArchiveRestore, CheckSquare, ChevronLeft, ChevronRight, Share2, FolderTree, Plus } from "lucide-react";
 import { TaskFilters } from "./TaskFilters";
+import { FiltrTagow } from "./FiltrTagow";
 import { TaskList } from "./TaskList";
 import { KanbanBoard } from "./KanbanBoard";
 import { TimelineView } from "./TimelineView";
@@ -201,7 +202,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
   // dostępu. Widoki wirtualne (dziś/zaległe/wszystkie) nie są zasobem, więc nie mają czego udostępnić.
   const [udostepnianieOtwarte, setUdostepnianieOtwarte] = useState(false);
   const tShare = useTranslations("tasks");
-  const addProjectId = isVirtualView ? inboxId : projectId;
 
   // Świeża wersja z listy; jeśli zadania tam (jeszcze/już) nie ma — użyj świeżo utworzonego.
   const liveOpenTask = openTaskId
@@ -693,6 +693,18 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
             <Search size={15} />
           </button>
 
+          {/* 125 (zgł. 3): filtr etykiet obok lupy — decyzja właściciela. W wierszu zakładek
+              (118) chipy wybranych tagów wypychały zakładki poza kadr; tu jest ikoną z licznikiem,
+              a wybór ogląda się w panelu. Semantyka filtru (koniunkcja niżej) bez zmian. */}
+          {allTags.length > 0 && (
+            <FiltrTagow
+              wszystkie={allTags}
+              wybrane={selectedTagIds}
+              onPrzelacz={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+              onWyczysc={() => setSelectedTagIds([])}
+            />
+          )}
+
           {/* Przełącznik układu: Lista / Kanban / Timeline — częsty, więc blisko lewej */}
           <div className="flex items-center gap-0.5 rounded" style={{ border: "1px solid var(--border)" }}>
             {([
@@ -905,9 +917,19 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
 
       {/* 118 (zgł. 2): formularz dodawania tylko na żądanie — przycisk w pasku akcji albo `a`/`n`.
           Po utworzeniu ta sama ścieżka co przy starym formularzu: panel szczegółów nowego zadania. */}
+      {/* 125 (zgł. 2): pole projektu jest widoczne ZAWSZE — w widoku projektu wstępnie ustawione
+          na ten projekt, w widokach bez kontekstu jednego projektu (Dziś/Nadchodzące/Zaległe/
+          Wszystkie/zestawy) bez preselekcji (puste = Skrzynka, jak na stronie modułu). Po dodaniu
+          do INNEGO projektu zostajemy w bieżącym widoku — panel podglądu otwiera `justCreated`,
+          który obsługuje zadanie spoza przefiltrowanej listy (decyzja właściciela). */}
       {dodawanie && (
         <ModalDodaniaZadania
-          projectId={addProjectId}
+          projectId={projectId}
+          pokazWyborProjektu
+          projekty={allProjects}
+          // Pusty string, nie null: przy null formularz spadłby na fallback z propa `projectId`
+          // (recenzja 125) — a reguła właściciela mówi „bez automatu" poza widokiem projektu.
+          domyslnyProjektId={viewMode === "project" ? projectId : ""}
           onClose={() => setDodawanie(false)}
           onCreated={(t) => { setJustCreated(t); setOpenTaskId(t.id); setFocusedTaskId(t.id); }}
         />
@@ -917,10 +939,6 @@ export function TasksPage({ tasks, allProjects, allTags, projectId, inboxId, vie
         active={activeFilter}
         counts={counts}
         onChange={setActiveFilter}
-        allTags={allTags}
-        selectedTagIds={selectedTagIds}
-        onTagToggle={(id) => setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
-        onTagsClear={() => setSelectedTagIds([])}
         filters={statusFilters}
         labels={filterLabels}
         showStatusTabs={layout !== "kanban"}
